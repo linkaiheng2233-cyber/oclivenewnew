@@ -92,6 +92,7 @@ pub(crate) fn register_memory_recollection_modules(
         Arc::new(MemoryRecollectionSource),
         EventModuleRegistryPolicy {
             influence_weight_bps: MEMORY_PROPOSAL_WEIGHT_BPS,
+            ..Default::default()
         },
     )
 }
@@ -331,6 +332,7 @@ mod tests {
                 Arc::new(LowWeightMemorySource),
                 EventModuleRegistryPolicy {
                     influence_weight_bps: 2_000,
+                    ..Default::default()
                 },
             )
             .map_err(AppError::InvalidParameter)?;

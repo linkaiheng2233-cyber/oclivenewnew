@@ -59,6 +59,7 @@ async fn exported_registry_emitter_and_envelope_form_a_complete_public_path() {
             Arc::new(PublicSource),
             EventModuleRegistryPolicy {
                 influence_weight_bps: 6_400,
+                ..Default::default()
             },
         )
         .expect("register public source");
@@ -66,6 +67,7 @@ async fn exported_registry_emitter_and_envelope_form_a_complete_public_path() {
         Arc::new(PublicConsumer),
         EventModuleRegistryPolicy {
             influence_weight_bps: 8_200,
+            ..Default::default()
         },
     )
     .expect("register public consumer");

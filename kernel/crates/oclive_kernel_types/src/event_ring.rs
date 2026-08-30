@@ -13,7 +13,7 @@ pub const EVENT_RING_SCHEMA_VERSION: u16 = 2;
 pub const EVENT_INFLUENCE_WEIGHT_SCALE: u16 = 10_000;
 
 /// Current wire schema for [`EventRingDiagnostics`].
-pub const EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION: u16 = 1;
+pub const EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION: u16 = 2;
 
 /// One immutable-identity event travelling through the kernel Event Ring.
 ///
@@ -126,24 +126,42 @@ pub struct EventModuleDeclaration {
 /// # Examples
 ///
 /// ```
-/// use oclive_kernel_types::EventModuleRegistryPolicy;
+/// use oclive_kernel_types::{EventModuleFailureMode, EventModuleRegistryPolicy};
 ///
 /// let policy = EventModuleRegistryPolicy {
 ///     influence_weight_bps: 7_500,
+///     failure_mode: EventModuleFailureMode::FailFast,
 /// };
 /// assert_eq!(policy.influence_weight_bps, 7_500);
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EventModuleRegistryPolicy {
     pub influence_weight_bps: u16,
+    /// Registry-owned response to handler or output-validation failure.
+    #[serde(default)]
+    pub failure_mode: EventModuleFailureMode,
 }
 
 impl Default for EventModuleRegistryPolicy {
     fn default() -> Self {
         Self {
             influence_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE,
+            failure_mode: EventModuleFailureMode::FailFast,
         }
     }
+}
+
+/// Registry-owned failure boundary for one Event Ring module.
+///
+/// Built-in modules default to [`Self::FailFast`]. Untrusted adapters may be admitted with
+/// [`Self::Isolate`], which quarantines the failing module while allowing the current dispatch to
+/// continue without applying any of that module's output.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EventModuleFailureMode {
+    #[default]
+    FailFast,
+    Isolate,
 }
 
 /// Read-only snapshot of one module admitted to the Event Ring registry.
@@ -163,6 +181,7 @@ impl Default for EventModuleRegistryPolicy {
 ///     },
 ///     policy: EventModuleRegistryPolicy {
 ///         influence_weight_bps: 8_500,
+///         ..Default::default()
 ///     },
 /// };
 /// assert_eq!(entry.policy.influence_weight_bps, 8_500);
@@ -171,6 +190,17 @@ impl Default for EventModuleRegistryPolicy {
 pub struct EventModuleRegistryEntry {
     pub declaration: EventModuleDeclaration,
     pub policy: EventModuleRegistryPolicy,
+}
+
+/// Runtime health of one registered Event Ring module.
+///
+/// Failure details and event content are intentionally excluded. A quarantined module remains in
+/// the registry for diagnosis but is skipped by later dispatches until the host replaces it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventModuleRuntimeDiagnostic {
+    pub module_id: String,
+    pub quarantined: bool,
+    pub failure_count: u64,
 }
 
 /// Privacy-minimized summary of one successfully dispatched event.
@@ -229,6 +259,7 @@ pub struct EventRingEventDiagnostic {
 /// let diagnostics = EventRingDiagnostics {
 ///     schema_version: EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION,
 ///     registry: Vec::new(),
+///     module_runtime: Vec::new(),
 ///     history_len: 0,
 ///     history_capacity: 256,
 ///     last_allocated_sequence: 0,
@@ -240,6 +271,8 @@ pub struct EventRingEventDiagnostic {
 pub struct EventRingDiagnostics {
     pub schema_version: u16,
     pub registry: Vec<EventModuleRegistryEntry>,
+    /// Runtime health in the same deterministic `(priority, module_id)` order as `registry`.
+    pub module_runtime: Vec<EventModuleRuntimeDiagnostic>,
     pub history_len: u64,
     pub history_capacity: u64,
     pub last_allocated_sequence: u64,

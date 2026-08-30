@@ -10,6 +10,10 @@ struct StepModule {
 struct LoopModule;
 struct SourceModule;
 
+struct InvalidIsolatedModule {
+    calls: Arc<AtomicU64>,
+}
+
 #[async_trait]
 impl EventModule for SourceModule {
     fn declaration(&self) -> EventModuleDeclaration {
@@ -44,6 +48,33 @@ impl EventModule for LoopModule {
                 metadata: BTreeMap::new(),
             }],
             ..Default::default()
+        })
+    }
+}
+
+#[async_trait]
+impl EventModule for InvalidIsolatedModule {
+    fn declaration(&self) -> EventModuleDeclaration {
+        EventModuleDeclaration {
+            module_id: "directory.test.invalid".into(),
+            subscriptions: vec!["kernel.test.isolation".into()],
+            emissions: vec!["plugin.test.allowed".into()],
+            priority: 0,
+        }
+    }
+
+    async fn handle(&self, _event: &EventEnvelope) -> Result<EventModuleOutput> {
+        self.calls.fetch_add(1, Ordering::Relaxed);
+        let mut metadata = BTreeMap::new();
+        metadata.insert("plugin.test.changed".into(), Value::Bool(true));
+        Ok(EventModuleOutput {
+            payload: Some(serde_json::json!({"changed": true})),
+            metadata,
+            emitted: vec![EventDraft {
+                kind: "plugin.test.forbidden".into(),
+                payload: Value::Null,
+                metadata: BTreeMap::new(),
+            }],
         })
     }
 }
@@ -107,6 +138,7 @@ fn source_emitter(ring: &EventRing) -> Result<Arc<dyn EventEmitter>> {
         Arc::new(SourceModule),
         EventModuleRegistryPolicy {
             influence_weight_bps: 7_000,
+            ..Default::default()
         },
     )
     .map_err(AppError::InvalidParameter)
@@ -262,6 +294,7 @@ fn registry_rejects_out_of_range_authority_weight() {
             step_module("test.weight", "kernel.test", 0, "weight", false),
             EventModuleRegistryPolicy {
                 influence_weight_bps: EVENT_INFLUENCE_WEIGHT_SCALE + 1,
+                ..Default::default()
             },
         )
         .err()
@@ -339,6 +372,9 @@ async fn diagnostics_snapshot_redacts_content_and_keeps_routing_evidence() -> Re
         EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION
     );
     assert_eq!(diagnostics.registry.len(), 1);
+    assert_eq!(diagnostics.module_runtime.len(), 1);
+    assert!(!diagnostics.module_runtime[0].quarantined);
+    assert_eq!(diagnostics.module_runtime[0].failure_count, 0);
     assert_eq!(diagnostics.history_len, 1);
     assert_eq!(
         diagnostics.history_capacity,
@@ -363,6 +399,63 @@ async fn diagnostics_snapshot_redacts_content_and_keeps_routing_evidence() -> Re
     let without_recent = ring.diagnostics_snapshot(0);
     assert_eq!(without_recent.history_len, 1);
     assert!(without_recent.recent_events.is_empty());
+    Ok(())
+}
+
+#[tokio::test]
+async fn isolate_policy_atomically_rejects_output_and_quarantines_module() -> Result<()> {
+    let ring = EventRing::new();
+    let emitter = source_emitter(&ring)?;
+    let calls = Arc::new(AtomicU64::new(0));
+    ring.register_event_module_with_policy(
+        Arc::new(InvalidIsolatedModule {
+            calls: Arc::clone(&calls),
+        }),
+        EventModuleRegistryPolicy {
+            influence_weight_bps: 4_000,
+            failure_mode: EventModuleFailureMode::Isolate,
+        },
+    )
+    .map_err(AppError::InvalidParameter)?;
+
+    for correlation_id in ["isolation-1", "isolation-2"] {
+        let result = emitter
+            .emit(
+                "test-stream",
+                Some(correlation_id),
+                EventDraft {
+                    kind: "kernel.test.isolation".into(),
+                    payload: serde_json::json!({"original": true}),
+                    metadata: BTreeMap::new(),
+                },
+            )
+            .await?;
+        assert_eq!(
+            result.primary.payload,
+            serde_json::json!({"original": true})
+        );
+        assert!(result.primary.metadata.is_empty());
+        assert!(result.emitted.is_empty());
+    }
+
+    assert_eq!(calls.load(Ordering::Relaxed), 1);
+    let diagnostics = ring.diagnostics_snapshot(0);
+    let runtime = diagnostics
+        .module_runtime
+        .iter()
+        .find(|entry| entry.module_id == "directory.test.invalid")
+        .expect("directory module runtime diagnostic");
+    assert!(runtime.quarantined);
+    assert_eq!(runtime.failure_count, 1);
+    let registry = diagnostics
+        .registry
+        .iter()
+        .find(|entry| entry.declaration.module_id == "directory.test.invalid")
+        .expect("directory module registry entry");
+    assert_eq!(
+        registry.policy.failure_mode,
+        EventModuleFailureMode::Isolate
+    );
     Ok(())
 }
 

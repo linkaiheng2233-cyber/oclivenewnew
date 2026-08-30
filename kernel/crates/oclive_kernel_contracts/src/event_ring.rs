@@ -76,8 +76,8 @@ pub trait EventModule: Send + Sync {
 
     /// # Errors
     ///
-    /// Returns an error when the module cannot safely process the event. Dispatch is fail-fast so
-    /// a partially transformed primary event is never mistaken for a complete result.
+    /// Returns an error when the module cannot safely process the event. The trusted registry
+    /// policy decides whether dispatch fails fast or atomically rejects and isolates this module.
     async fn handle(&self, event: &EventEnvelope) -> Result<EventModuleOutput>;
 }
 
@@ -192,6 +192,7 @@ mod tests {
             Arc::new(LegacyModule),
             EventModuleRegistryPolicy {
                 influence_weight_bps: 7_500,
+                ..Default::default()
             },
         );
 

@@ -8,7 +8,7 @@ mod legacy_event_impact;
 mod memory_recollection;
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 
 use async_trait::async_trait;
@@ -16,9 +16,9 @@ use chrono::Utc;
 use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
     AppError, EventDispatchResult, EventDraft, EventEnvelope, EventModuleDeclaration,
-    EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy, EventRingDiagnostics,
-    EventRingEventDiagnostic, Result, EVENT_INFLUENCE_WEIGHT_SCALE,
-    EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION, EVENT_RING_SCHEMA_VERSION,
+    EventModuleFailureMode, EventModuleOutput, EventModuleRegistryEntry, EventModuleRegistryPolicy,
+    EventModuleRuntimeDiagnostic, EventRingDiagnostics, EventRingEventDiagnostic, Result,
+    EVENT_INFLUENCE_WEIGHT_SCALE, EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION, EVENT_RING_SCHEMA_VERSION,
 };
 use parking_lot::{Mutex, RwLock};
 use serde_json::Value;
@@ -48,6 +48,13 @@ struct RegisteredModule {
     declaration: EventModuleDeclaration,
     policy: EventModuleRegistryPolicy,
     module: Arc<dyn EventModule>,
+    runtime: Arc<EventModuleRuntimeState>,
+}
+
+#[derive(Default)]
+struct EventModuleRuntimeState {
+    quarantined: AtomicBool,
+    failure_count: AtomicU64,
 }
 
 /// Per-kernel Event Ring with a bounded ephemeral history and module registry.
@@ -141,7 +148,7 @@ impl EventRing {
     /// the ring's history capacity, and summaries remain in chronological order.
     #[must_use]
     pub fn diagnostics_snapshot(&self, recent_limit: usize) -> EventRingDiagnostics {
-        let registry = self.event_module_registry();
+        let (registry, module_runtime) = self.registry_diagnostics();
         let history = self.history.lock();
         let last_allocated_sequence = self.sequence.load(Ordering::Relaxed);
         let limit = recent_limit.min(EVENT_HISTORY_CAPACITY);
@@ -150,6 +157,7 @@ impl EventRing {
         EventRingDiagnostics {
             schema_version: EVENT_RING_DIAGNOSTICS_SCHEMA_VERSION,
             registry,
+            module_runtime,
             history_len: usize_to_u64(history.len()),
             history_capacity: usize_to_u64(EVENT_HISTORY_CAPACITY),
             last_allocated_sequence,
@@ -168,15 +176,31 @@ impl EventRing {
             }
             let modules = self.matching_modules(&event.kind);
             for registered in modules {
-                let output = registered.module.handle(&event).await?;
-                apply_module_output(
+                if registered.runtime.quarantined.load(Ordering::Acquire) {
+                    continue;
+                }
+                let output = match registered.module.handle(&event).await {
+                    Ok(output) => output,
+                    Err(error) => {
+                        if isolate_module_failure(&registered) {
+                            continue;
+                        }
+                        return Err(error);
+                    }
+                };
+                if let Err(error) = apply_module_output(
                     self,
                     &registered,
                     &mut event,
                     output,
                     &mut queue,
                     processed.len(),
-                )?;
+                ) {
+                    if isolate_module_failure(&registered) {
+                        continue;
+                    }
+                    return Err(error);
+                }
             }
             processed.push(event);
         }
@@ -195,11 +219,12 @@ impl EventRing {
             .read()
             .values()
             .filter(|registered| {
-                registered
-                    .declaration
-                    .subscriptions
-                    .iter()
-                    .any(|pattern| subscription_matches(pattern, kind))
+                !registered.runtime.quarantined.load(Ordering::Acquire)
+                    && registered
+                        .declaration
+                        .subscriptions
+                        .iter()
+                        .any(|pattern| subscription_matches(pattern, kind))
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -259,6 +284,37 @@ impl EventRing {
             history.push_back(event.clone());
         }
     }
+
+    fn registry_diagnostics(
+        &self,
+    ) -> (
+        Vec<EventModuleRegistryEntry>,
+        Vec<EventModuleRuntimeDiagnostic>,
+    ) {
+        let mut modules = self.modules.read().values().cloned().collect::<Vec<_>>();
+        modules.sort_by(|left, right| {
+            left.declaration
+                .priority
+                .cmp(&right.declaration.priority)
+                .then_with(|| left.declaration.module_id.cmp(&right.declaration.module_id))
+        });
+        let registry = modules
+            .iter()
+            .map(|registered| EventModuleRegistryEntry {
+                declaration: registered.declaration.clone(),
+                policy: registered.policy.clone(),
+            })
+            .collect();
+        let module_runtime = modules
+            .iter()
+            .map(|registered| EventModuleRuntimeDiagnostic {
+                module_id: registered.declaration.module_id.clone(),
+                quarantined: registered.runtime.quarantined.load(Ordering::Acquire),
+                failure_count: registered.runtime.failure_count.load(Ordering::Relaxed),
+            })
+            .collect();
+        (registry, module_runtime)
+    }
 }
 
 impl EventModuleRegistrar for EventRing {
@@ -300,6 +356,7 @@ impl EventModuleRegistrar for EventRing {
                 declaration,
                 policy,
                 module,
+                runtime: Arc::new(EventModuleRuntimeState::default()),
             },
         );
         Ok(Arc::new(BoundEventEmitter {
@@ -360,14 +417,11 @@ fn apply_module_output(
     if output.emitted.len() > MAX_EMISSIONS_PER_MODULE {
         return Err(event_ring_error("module emission limit exceeded"));
     }
-    if let Some(payload) = output.payload {
-        validate_payload(&payload)?;
-        event.payload = payload;
-    }
+    let next_payload = output.payload.unwrap_or_else(|| event.payload.clone());
+    validate_payload(&next_payload)?;
     let mut merged_metadata = event.metadata.clone();
     merged_metadata.extend(output.metadata);
     validate_metadata(&merged_metadata)?;
-    event.metadata = merged_metadata;
 
     if processed_count
         .saturating_add(queue.len())
@@ -376,10 +430,37 @@ fn apply_module_output(
     {
         return Err(event_ring_error("dispatch event limit exceeded"));
     }
-    for draft in output.emitted {
-        queue.push_back(ring.child_envelope(registered, event, draft)?);
-    }
+    let children = output
+        .emitted
+        .into_iter()
+        .map(|draft| ring.child_envelope(registered, event, draft))
+        .collect::<Result<Vec<_>>>()?;
+    event.payload = next_payload;
+    event.metadata = merged_metadata;
+    queue.extend(children);
     Ok(())
+}
+
+fn isolate_module_failure(registered: &RegisteredModule) -> bool {
+    if registered.policy.failure_mode != EventModuleFailureMode::Isolate {
+        return false;
+    }
+    let failure_count = registered
+        .runtime
+        .failure_count
+        .fetch_add(1, Ordering::Relaxed)
+        .saturating_add(1);
+    registered
+        .runtime
+        .quarantined
+        .store(true, Ordering::Release);
+    tracing::warn!(
+        target: "oclive_event_ring",
+        module_id = %registered.declaration.module_id,
+        failure_count,
+        "event module failed and was quarantined"
+    );
+    true
 }
 
 fn validate_declaration(declaration: &EventModuleDeclaration) -> std::result::Result<(), String> {
