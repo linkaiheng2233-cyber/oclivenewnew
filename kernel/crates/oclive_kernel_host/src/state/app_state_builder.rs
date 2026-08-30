@@ -366,6 +366,9 @@ impl AppStateBuilder {
         let event_impact_emitter =
             crate::domain::event_ring::register_legacy_event_impact_source(event_ring.as_ref())
                 .map_err(AppError::InvalidParameter)?;
+        let memory_recollection_emitter =
+            crate::domain::event_ring::register_memory_recollection_modules(event_ring.as_ref())
+                .map_err(AppError::InvalidParameter)?;
 
         let state = AppState {
             db_manager,
@@ -380,6 +383,7 @@ impl AppStateBuilder {
             resource_coordinator,
             event_ring,
             event_impact_emitter,
+            memory_recollection_emitter,
             role_cache: Arc::new(RwLock::new(indexmap::IndexMap::new())),
             role_load_inflight: DashMap::new(),
             http_api_roles: DashMap::new(),

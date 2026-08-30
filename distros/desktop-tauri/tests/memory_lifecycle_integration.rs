@@ -345,15 +345,39 @@ async fn second_turn_prompt_reads_prior_ltm() {
 
     let marker = "蓝色风筝";
     run_turn(&state, role_id, session_id, &format!("记住我喜欢{marker}")).await;
-    run_turn(&state, role_id, session_id, "接着聊别的").await;
+    let cue = format!("还记得我喜欢的{marker}吗？");
+    run_turn(&state, role_id, session_id, cue.as_str()).await;
 
     let guard = prompts.lock();
     let p2 = guard
         .iter()
-        .find(|p| p.contains("接着聊别的"))
+        .find(|p| p.contains(cue.as_str()))
         .expect("turn2 main prompt");
     assert!(
         p2.contains(marker),
         "turn2 prompt should retrieve prior LTM content"
+    );
+    assert!(
+        p2.contains("【本轮被唤起的回忆】"),
+        "an admitted recollection should become a dedicated reply context"
+    );
+    drop(guard);
+
+    let events = state.event_ring.recent_events(16);
+    let candidate = events
+        .iter()
+        .rev()
+        .find(|event| event.kind == oclive_kernel_types::MEMORY_RECALL_CANDIDATE_EVENT_KIND)
+        .expect("memory recall candidate event");
+    let activated = events
+        .iter()
+        .rev()
+        .find(|event| event.kind == oclive_kernel_types::MEMORY_RECOLLECTION_ACTIVATED_EVENT_KIND)
+        .expect("memory recollection activation event");
+    assert_eq!(candidate.correlation_id, activated.correlation_id);
+    assert_eq!(
+        activated.causation_id.as_deref(),
+        Some(candidate.event_id.as_str()),
+        "activation must retain candidate causation"
     );
 }

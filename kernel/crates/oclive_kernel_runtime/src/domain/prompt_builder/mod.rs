@@ -4,8 +4,45 @@
 //! intentional product prompt content (anchors, guardrails, section headers). Do not
 //! English-ize them as code comments; contract-layer `//` comments stay English.
 
-use crate::models::Role;
+use crate::models::{Memory, Role};
 pub use oclive_kernel_types::PromptInput;
+
+/// Converts one persisted memory into safe prompt evidence.
+///
+/// Legacy rows may contain a full user/assistant transcript. Only the user-side evidence is
+/// retained so an old assistant answer cannot become a high-priority reply template.
+///
+/// # Examples
+///
+/// ```
+/// use chrono::Utc;
+/// use oclive_kernel_runtime::domain::prompt_builder::memory_evidence_text;
+/// use oclive_kernel_types::Memory;
+///
+/// let memory = Memory {
+///     id: "m1".into(),
+///     role_id: "role".into(),
+///     content: "用户: 我喜欢蓝色风筝\n助手: 我记住了".into(),
+///     importance: 0.8,
+///     weight: 1.0,
+///     created_at: Utc::now(),
+///     scene_id: None,
+///     mention_count: 1,
+///     accessed_at: None,
+/// };
+/// assert_eq!(memory_evidence_text(&memory), "用户曾表达：我喜欢蓝色风筝");
+/// ```
+#[must_use]
+pub fn memory_evidence_text(memory: &Memory) -> String {
+    let raw = memory.content.trim();
+    if let Some((user, _assistant)) = raw.split_once("\n助手:") {
+        format!("用户曾表达：{}", user.trim_start_matches("用户:").trim())
+    } else if let Some((user, _assistant)) = raw.split_once("\n助手：") {
+        format!("用户曾表达：{}", user.trim_start_matches("用户：").trim())
+    } else {
+        raw.to_string()
+    }
+}
 
 /// Engine default quality anchor (role pack `reply_quality_anchor` may replace the whole block).
 /// General dialogue discipline lives in `KERNEL_DIALOGUE_GUARDRAILS` and cannot be overridden by pack anchors.

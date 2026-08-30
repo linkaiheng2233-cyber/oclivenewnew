@@ -467,6 +467,7 @@ async fn run(
     let turn = TurnContext {
         state,
         req,
+        correlation_id: uuid::Uuid::new_v4().to_string(),
         role: pre.role.as_ref(),
         scene_id,
         scenes,

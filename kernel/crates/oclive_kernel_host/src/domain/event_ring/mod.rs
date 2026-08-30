@@ -5,6 +5,7 @@
 //! a second orchestration authority.
 
 mod legacy_event_impact;
+mod memory_recollection;
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -24,6 +25,9 @@ use uuid::Uuid;
 pub(crate) use legacy_event_impact::register_legacy_event_impact_source;
 pub use legacy_event_impact::{
     publish_legacy_event_impact, LEGACY_EVENT_IMPACT_KIND, LEGACY_EVENT_IMPACT_MODULE_ID,
+};
+pub(crate) use memory_recollection::{
+    propose_memory_recollection, recollection_prompt_body, register_memory_recollection_modules,
 };
 
 const EVENT_HISTORY_CAPACITY: usize = 256;

@@ -95,7 +95,8 @@ pub use prompt_assembler::{
     BuiltinPromptAssembler, PromptAssembler, RemotePromptAssemblerPlaceholder,
 };
 pub use prompt_builder::{
-    effective_reply_quality_anchor, hash_stable_prefix, PromptBuilder, PromptInput, PromptSegments,
+    effective_reply_quality_anchor, hash_stable_prefix, memory_evidence_text, PromptBuilder,
+    PromptInput, PromptSegments,
 };
 #[cfg(test)]
 pub use role_manager::RoleManager;

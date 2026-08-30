@@ -21,6 +21,8 @@ pub struct TurnIds<'a> {
 pub struct TurnContext<'a> {
     pub state: &'a AppState,
     pub req: &'a SendMessageRequest,
+    /// Opaque identifier shared by every Event Ring emission produced by this turn.
+    pub correlation_id: String,
     pub role: &'a Role,
     pub scene_id: &'a str,
     pub scenes: Arc<[String]>,

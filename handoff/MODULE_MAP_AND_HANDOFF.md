@@ -113,6 +113,7 @@
 | **合法 backend** | `builtin` · `remote` · `directory` · `local` · `none` |
 | **Builtin** | `BuiltinMemoryRetrieval` + `MemoryEngine`（STM/LTM 衰减、阈值） |
 | **主链 hook** | `turn_pipeline/pre.rs` 检索 · `post_llm` 写入 STM/LTM |
+| **Event Ring 接入** | 本轮已检索且与当前用户句相关的最高候选由 `builtin.memory_recollection` 提交 `kernel.memory.recall.candidate`（事件只携带记忆 ID、置信度与相关度，不复制正文）；`builtin.event_decision` 按注册基础权重与证据决定是否发出 `kernel.memory.recollection.activated`。只有已激活回忆进入专门的长文本回复上下文，默认 `weave`，且 TTL 固定为当前一轮；没有候选或未采纳时沿用原记忆 Prompt 行为 |
 | **与聊天存储** | **无关** — `chat_messages` 不进 MemoryEngine；回放见 `replay_memory_extraction` |
 | **合并** | 多 memory 实例 → 去重合并 |
 | **可移植边界** | `.ocmemory` 只携带 `memory_seed` + LTM；STM 是可重建缓存，临时局面状态不属于 memory/persona 迁移 |
@@ -359,6 +360,8 @@ flowchart TB
   PRE["pre"]
   EV["EventEstimate"]
   ER["Event Ring"]
+  RC["memory.recall.candidate"]
+  RA["memory.recollection.activated"]
   BP["BuildPrompt"]
   GEN["llm generate"]
   PST["post_llm"]
@@ -366,6 +369,7 @@ flowchart TB
   PM --> CO --> TT --> PRE --> EV --> ER --> BP --> GEN --> PST
 
   PRE --> M1["① memory"] & M2["② emotion"]
+  M1 --> RC --> ER --> RA --> BP
   EV --> M3["③ event.impact（legacy 子槽）"] --> ER
   ER -.-> EM["声明式事件模块"]
   BP --> M4["④ prompt"]

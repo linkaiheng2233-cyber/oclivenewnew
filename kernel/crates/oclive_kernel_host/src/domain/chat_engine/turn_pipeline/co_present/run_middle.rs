@@ -140,7 +140,7 @@ pub(crate) async fn run_middle(
             crate::domain::event_ring::publish_legacy_event_impact(
                 state.event_impact_emitter.as_ref(),
                 ctx.srid,
-                None,
+                Some(ctx.correlation_id.as_str()),
                 estimate,
             ),
         )
@@ -187,13 +187,39 @@ pub(crate) async fn run_middle(
     };
 
     let memory_cap = thinking.memory_cap(&state.host_profile);
-    let prompt_memories: Vec<Memory> = pre
+    let mut prompt_memories: Vec<Memory> = pre
         .memory
         .relevant
         .iter()
         .take(memory_cap)
         .cloned()
         .collect();
+    let activated_recollection = STAGES
+        .stage(
+            ChatStage::MemoryRecollection,
+            crate::domain::event_ring::propose_memory_recollection(
+                state.memory_recollection_emitter.as_ref(),
+                ctx.srid,
+                ctx.correlation_id.as_str(),
+                user_message,
+                prompt_memories.as_slice(),
+            ),
+        )
+        .await?;
+    let recollection_prompt = activated_recollection.as_ref().and_then(|activated| {
+        prompt_memories
+            .iter()
+            .find(|memory| memory.id == activated.memory_id)
+            .map(|memory| {
+                crate::domain::event_ring::recollection_prompt_body(
+                    memory,
+                    activated.expression_mode,
+                )
+            })
+    });
+    if let Some(activated) = activated_recollection.as_ref() {
+        prompt_memories.retain(|memory| memory.id != activated.memory_id);
+    }
 
     let worldview_snippet = if thinking.mode == TurnThinkingMode::Fast {
         String::new()
@@ -304,6 +330,12 @@ pub(crate) async fn run_middle(
             body: s.body.as_str(),
         })
         .collect();
+    if let Some(body) = recollection_prompt.as_deref() {
+        extra_sections.push(PromptExtraSection {
+            title: "本轮被唤起的回忆",
+            body,
+        });
+    }
     let reply_mode_instruction = if adult_prompt.is_empty() && !ctx.is_staged() {
         effective_reply_mode(role)
             .map(|cfg| reply_output_format_instruction(cfg.segments, cfg.separator.as_str()))

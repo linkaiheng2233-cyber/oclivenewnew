@@ -124,6 +124,8 @@ pub struct AppState {
     pub event_ring: Arc<crate::domain::event_ring::EventRing>,
     /// Source-bound emitter for the legacy `event.impact` producer.
     pub event_impact_emitter: Arc<dyn oclive_kernel_contracts::EventEmitter>,
+    /// Source-bound emitter for memory recall proposals.
+    pub memory_recollection_emitter: Arc<dyn oclive_kernel_contracts::EventEmitter>,
     /// Hot-path lock layering:
     /// - `role_cache` / `role_load_inflight`: dedupe role reads;
     /// - `session_cache`: session overrides;

@@ -32,6 +32,7 @@ pub mod event_ring;
 pub mod kernel_error_codes;
 pub mod local_plugin;
 pub mod mcp;
+pub mod memory_event;
 pub mod memory_retrieval;
 pub mod models;
 pub mod policy;
@@ -55,6 +56,11 @@ pub use local_plugin::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LOCAL_PLUGIN_SCHEMA_VERSION,
 };
 pub use mcp::{McpServerInfo, McpToolInfo};
+pub use memory_event::{
+    MemoryRecallCandidate, MemoryRecallReason, MemoryRecollectionActivated,
+    MemoryRecollectionExpressionMode, MEMORY_RECALL_CANDIDATE_EVENT_KIND,
+    MEMORY_RECOLLECTION_ACTIVATED_EVENT_KIND,
+};
 pub use memory_retrieval::MemoryRetrievalInput;
 pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyContext};
 pub use prompt::{PromptExtraSection, PromptInput};

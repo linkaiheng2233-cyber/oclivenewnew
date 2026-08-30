@@ -122,17 +122,7 @@ impl PromptBuilder {
             "关于用户的记忆（已按相关性排序；请勿在回复中复述编号、括号或「重要性」等系统字样）:\n",
         );
         for (i, memory) in memories.iter().enumerate() {
-            let raw = memory.content.trim();
-            // Legacy rows stored the full user/assistant transcript. Preserve
-            // the user-side evidence while preventing an old assistant answer
-            // from becoming a high-priority reply template on later turns.
-            let safe = if let Some((user, _assistant)) = raw.split_once("\n助手:") {
-                format!("用户曾表达：{}", user.trim_start_matches("用户:").trim())
-            } else if let Some((user, _assistant)) = raw.split_once("\n助手：") {
-                format!("用户曾表达：{}", user.trim_start_matches("用户：").trim())
-            } else {
-                raw.to_string()
-            };
+            let safe = memory_evidence_text(memory);
             context.push_str(&format!("{}. {}\n", i + 1, safe));
         }
         context
