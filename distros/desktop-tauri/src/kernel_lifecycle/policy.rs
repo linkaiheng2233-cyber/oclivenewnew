@@ -353,6 +353,20 @@ pub async fn ensure_kernel_with_policy(
     let base_url = format!("http://127.0.0.1:{}", opts.port);
     let conn = Arc::new(KernelConnection::new(base_url.clone(), opts.port));
 
+    ensure_kernel_with_policy_on_conn(conn, opts).await
+}
+
+/// Policy-first bring-up on a connection that is already managed by the UI.
+///
+/// This lets desktop setup expose an immediately usable offline/reconnecting
+/// state while cold kernel discovery and health polling continue off the UI
+/// thread.
+pub(super) async fn ensure_kernel_with_policy_on_conn(
+    conn: SharedKernelConnection,
+    opts: KernelBringUpOptions,
+) -> Result<SharedKernelConnection, String> {
+    let base_url = conn.base_url.clone();
+
     tracing::info!(
         target: "oclive_desktop",
         port = opts.port,

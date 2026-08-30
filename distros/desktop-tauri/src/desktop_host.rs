@@ -1,8 +1,8 @@
 //! Desktop startup: spawn-only kernel client + in-memory UI shell (no local DB writer).
 
 use crate::kernel_lifecycle::{
-    ensure_kernel_ready, start_kernel_watchdog, DesktopKernelMode, EnsureKernelOptions,
-    KernelConnection, SharedKernelConnection,
+    emit_kernel_status, ensure_kernel_ready_on_conn, probe_health_status, start_kernel_watchdog,
+    DesktopKernelMode, EnsureKernelOptions, KernelConnection, SharedKernelConnection, StatusEmit,
 };
 use oclive_kernel_host::infrastructure::MockLlmClient;
 use oclive_kernel_host::state::{AppState, SharedAppState};
@@ -80,30 +80,9 @@ pub async fn bootstrap_desktop(
     let app_data = oclive_kernel_runtime::find_app_data_dir_for_host();
     oclive_kernel_host::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
     crate::api::llm_settings::sync_canonical_db_models_dir(&canonical_models, &app_data).await;
-    let anchors = discovery_anchors(resource_dir);
-    let bundled = bundled_kernel_binary(resource_dir);
-
-    let kernel = match ensure_kernel_ready(EnsureKernelOptions {
-        port,
-        roles_dir: roles_dir.clone(),
-        anchors: anchors.clone(),
-        bundled_binary: bundled.clone(),
-    })
-    .await
-    {
-        Ok(k) => k,
-        Err(e) => {
-            tracing::warn!(
-                target: "oclive_desktop",
-                error = %e,
-                "kernel not ready at startup; UI will run offline until reconnect"
-            );
-            let base_url = format!("http://127.0.0.1:{port}");
-            let conn = Arc::new(KernelConnection::new(base_url, port));
-            conn.set_mode(DesktopKernelMode::Offline);
-            conn
-        }
-    };
+    let base_url = format!("http://127.0.0.1:{port}");
+    let kernel = Arc::new(KernelConnection::new(base_url, port));
+    kernel.set_mode(DesktopKernelMode::Reconnecting);
 
     tracing::info!(
         target: "oclive_desktop",
@@ -112,7 +91,7 @@ pub async fn bootstrap_desktop(
         shared_runtime = %shared_kernel_binary_path().display(),
         roles = %roles_dir.display(),
         models = %canonical_models.display(),
-        "desktop kernel client ready"
+        "desktop kernel client initialized; cold bring-up scheduled in background"
     );
 
     let llm = Arc::new(MockLlmClient {
@@ -121,13 +100,6 @@ pub async fn bootstrap_desktop(
     // UI-only in-memory shell — not an authoritative DB/chat writer; kernel HTTP owns persistence.
     let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
     crate::api::llm_settings::seed_shell_llm_from_canonical(&shell).await;
-    if let Err(e) = crate::kernel_attach::KernelHttpClient::reload_llm_via_http(&kernel).await {
-        tracing::warn!(
-            target: "oclive_llm",
-            error = %e,
-            "kernel LLM reload at desktop bootstrap failed"
-        );
-    }
     Ok((Arc::new(shell), kernel, port))
 }
 
@@ -140,13 +112,47 @@ pub fn finish_desktop_setup(
 ) {
     let anchors = discovery_anchors(resource_dir.as_deref());
     let bundled = bundled_kernel_binary(resource_dir.as_deref());
-    start_kernel_watchdog(
-        app.clone(),
-        Arc::clone(&kernel),
-        roles_dir,
-        anchors,
-        bundled,
-    );
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let bring_up = ensure_kernel_ready_on_conn(
+            Arc::clone(&kernel),
+            EnsureKernelOptions {
+                port: kernel.port,
+                roles_dir: roles_dir.clone(),
+                anchors: anchors.clone(),
+                bundled_binary: bundled.clone(),
+            },
+        )
+        .await;
+
+        match bring_up {
+            Ok(_) => {
+                if let Err(error) =
+                    crate::kernel_attach::KernelHttpClient::reload_llm_via_http(&kernel).await
+                {
+                    tracing::warn!(
+                        target: "oclive_llm",
+                        error = %error,
+                        "kernel LLM reload after background bring-up failed"
+                    );
+                }
+                let status = probe_health_status(&kernel).await;
+                emit_kernel_status(&app, &status, StatusEmit::Reconnected);
+            }
+            Err(error) => {
+                kernel.set_mode(DesktopKernelMode::Offline);
+                tracing::warn!(
+                    target: "oclive_desktop",
+                    error = %error,
+                    "background kernel bring-up failed; watchdog will continue recovery"
+                );
+                let status = probe_health_status(&kernel).await;
+                emit_kernel_status(&app, &status, StatusEmit::None);
+            }
+        }
+
+        start_kernel_watchdog(app, kernel, roles_dir, anchors, bundled);
+    });
 }
 
 #[cfg(test)]

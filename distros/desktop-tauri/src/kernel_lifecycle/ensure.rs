@@ -21,13 +21,28 @@ pub struct EnsureKernelOptions {
 pub async fn ensure_kernel_ready(
     opts: EnsureKernelOptions,
 ) -> Result<SharedKernelConnection, String> {
+    let opts = resolve_bring_up_options(opts);
+    super::policy::ensure_kernel_with_policy(opts).await
+}
+
+/// Bring up the kernel on a connection that has already been registered as
+/// Tauri managed state.
+pub async fn ensure_kernel_ready_on_conn(
+    conn: SharedKernelConnection,
+    opts: EnsureKernelOptions,
+) -> Result<SharedKernelConnection, String> {
+    let opts = resolve_bring_up_options(opts);
+    super::policy::ensure_kernel_with_policy_on_conn(conn, opts).await
+}
+
+fn resolve_bring_up_options(opts: EnsureKernelOptions) -> KernelBringUpOptions {
     let distro_profile_path = find_desktop_distro_profile_path(&opts.anchors);
     let caller_distro_id = distro_profile_path
         .as_ref()
         .and_then(|p| parse_distro_requirements_file(p).ok())
         .map(|req| req.distro_id)
         .unwrap_or_else(|| "desktop".into());
-    super::policy::ensure_kernel_with_policy(KernelBringUpOptions {
+    KernelBringUpOptions {
         port: opts.port,
         roles_dir: opts.roles_dir,
         anchors: opts.anchors,
@@ -35,8 +50,7 @@ pub async fn ensure_kernel_ready(
         caller_distro_id: Some(caller_distro_id),
         distro_profile_path,
         promote_shared: true,
-    })
-    .await
+    }
 }
 
 /// Legacy attach-first path used as fallback from [`super::policy`].
