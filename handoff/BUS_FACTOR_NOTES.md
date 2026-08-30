@@ -63,7 +63,7 @@
 
 `TurnOrigin`边界回归位于`distros/desktop-tauri/tests/turn_origin_sensor.rs`：同一会话先执行sensor回合并断言角色运行时与聊天/记忆/事件零变化，再执行普通user回合证明原持久化路径仍生效。枪械、IoT等宿主专用DeviceContext格式不属于本仓标准DTO，由各自composition root转换为中性消息体并传入类型化origin。
 
-主动输入目前再增加一层 Event 权威边界：可信适配器先取得注册时返回的来源绑定 `EventEmitter`，通过 `propose_proactive_turn` 提交 `ProactiveTurnProposal`；提案不能携带来源或权重，且 `origin=user`、越界分数、空目标或超长观察会失败。只有 `builtin.proactive_turn_decision` 可生成函数接受的 `ProactiveTurnAuthorization`。该授权当前不会自动调用 `process_message_with_origin`：`observation` 明确是待安全渲染的证据，不是用户消息或 prompt 指令；在 Prompt 层增加 origin-aware 证据段与抢占/冷却规则前，不得把它拼进 `user_message`。
+主动输入目前再增加一层 Event 权威边界：可信适配器先取得注册时返回的来源绑定 `EventEmitter`，通过 `propose_proactive_turn` 提交 `ProactiveTurnProposal`；提案不能携带来源或权重，且 `origin=user`、越界分数、空目标或超长观察会失败。只有 `builtin.proactive_turn_decision` 生成且保持正确因果链的授权事件可换取不可构造、不可克隆的一次性 `ProactiveTurnPermit`。宿主可显式调用 `process_proactive_turn` 消耗 Permit；执行发生在 Ring dispatch 返回之后，沿用原 correlation ID，不在 handler 内递归进入 Turn Engine。此时 `SendMessageRequest.user_message` 固定为空，观察内容通过 `TurnInput::ExternalObservation` 仅参与相关性检索，并以 JSON 字符串进入“外部观察证据（非用户发言）”段；非用户回合暂走共景 Prompt，禁止退回 remote-life 的用户消息模板。当前执行器没有调度状态机，调用方仍不得绕过后续去重、冷却和用户输入抢占设计直接做无限循环。
 
 ---
 
