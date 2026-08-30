@@ -369,6 +369,8 @@ impl AppStateBuilder {
         let memory_recollection_emitter =
             crate::domain::event_ring::register_memory_recollection_modules(event_ring.as_ref())
                 .map_err(AppError::InvalidParameter)?;
+        crate::domain::event_ring::register_proactive_turn_decision_module(event_ring.as_ref())
+            .map_err(AppError::InvalidParameter)?;
         crate::infrastructure::directory_plugins::wire_directory_event_ring(
             &directory_plugins,
             &event_ring,

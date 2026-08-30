@@ -36,6 +36,7 @@ pub mod memory_event;
 pub mod memory_retrieval;
 pub mod models;
 pub mod policy;
+pub mod proactive_event;
 pub mod prompt;
 pub mod slot_extension;
 
@@ -65,6 +66,10 @@ pub use memory_event::{
 };
 pub use memory_retrieval::MemoryRetrievalInput;
 pub use policy::{EmotionPolicyConfig, MemoryPolicyConfig, PolicyConfig, PolicyContext};
+pub use proactive_event::{
+    ProactiveSignalKind, ProactiveTurnAuthorization, ProactiveTurnProposal,
+    PROACTIVE_TURN_AUTHORIZED_EVENT_KIND, PROACTIVE_TURN_PROPOSED_EVENT_KIND,
+};
 pub use prompt::{PromptExtraSection, PromptInput};
 pub use slot_extension::SlotExtension;
 

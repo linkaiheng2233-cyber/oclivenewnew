@@ -424,6 +424,16 @@ mod tests {
             vec!["kernel.memory.*".into()];
         assert!(admit_directory_event_config("com.example.events", &broad).is_err());
 
+        let mut proactive = manifest.clone();
+        proactive
+            .event_ring
+            .as_mut()
+            .expect("event ring")
+            .subscriptions = vec![oclive_kernel_types::PROACTIVE_TURN_PROPOSED_EVENT_KIND.into()];
+        proactive.event_ring.as_mut().expect("event ring").emissions =
+            vec![oclive_kernel_types::PROACTIVE_TURN_PROPOSED_EVENT_KIND.into()];
+        assert!(admit_directory_event_config("com.example.events", &proactive).is_err());
+
         let mut foreign = manifest;
         foreign.event_ring.as_mut().expect("event ring").emissions =
             vec!["plugin.com.other.events.changed".into()];
