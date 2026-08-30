@@ -251,6 +251,7 @@
 
 - `subscriptions` 只接受精确事件名，不接受 `*` / `namespace.*`；当前可读内核事件为 `kernel.chat.event_impact.estimated`、`kernel.memory.recall.candidate`、`kernel.memory.recollection.activated`，另允许显式订阅精确的 `plugin.*` 事件。
 - `emissions` 只能位于插件自己的 `plugin.<manifest.id>.*` 命名空间；插件不能直接伪造 `kernel.*` 事件。
+- 主动回合的 `kernel.proactive.turn.proposed` / `kernel.proactive.turn.authorized` 当前既不在目录插件可读清单，也不在可发射范围；目录 manifest 不能借此取得主动输入权或 Event 决策权。
 - `suggestedInfluenceWeightBps` 默认 5000、宿主封顶 8000；权重只表示下游决策采纳提案时的基础影响，不改变执行顺序或调用频率。
 - 目录模块优先级由宿主固定，故障策略固定为 `isolate`。RPC、解码或非法输出失败时，本次模块输出被原子拒绝，模块被隔离并记录失败次数；当前正式事件分发继续。内置模块仍使用 `fail_fast`。
 
@@ -291,7 +292,7 @@
 
 `rpcTimeoutsMs.event_ring.handle` 可建议超时，但宿主限制在 500–5000ms，默认 2000ms。插件被当前角色停用时处理器为 no-op，不会因此进入隔离。首次延迟扫描和后续插件目录重扫都会重建目录模块注册；重扫也构成显式隔离恢复点。
 
-当前切片支持“已注册目录模块观察安全事件并补充插件命名空间子事件”。目录进程在没有入站事件时主动向宿主提交根事件仍需后续通用 ingress / 输入适配器；不得通过前端 `bridge.events` 或伪造用户消息绕过。
+当前切片支持“已注册目录模块观察安全事件并补充插件命名空间子事件”。内核已有供可信输入适配器使用的来源绑定主动提案函数，但目录进程尚未获得该 emitter，也没有主动向宿主提交根事件的 RPC；未来目录 ingress 必须由宿主显式注册并分配范围与权重，不得通过前端 `bridge.events`、现有 `event_ring.handle` 回包或伪造用户消息绕过。
 
 ---
 
