@@ -232,7 +232,7 @@
 
 | `id` | 职责 | 锚点 | 进 `process_message`？ |
 |------|------|------|------------------------|
-| `event_ring` | 通用内核外环与事件流通权威：模块通过 `EventModuleDeclaration` 只声明订阅、允许发射事件与优先级，并只提交 `EventDraft`；可信注册调用通过独立 `EventModuleRegistryPolicy` 分配基础影响权重，模块不能自报权重。Ring 签发来源/权重/顺序/因果链后按 `(priority, module_id)` 路由；`EventModuleRegistryEntry` 提供确定性注册快照，`EventRingDiagnostics` 额外报告历史占用与事件路由/因果摘要，但不包含 payload、metadata 值或 stream key。每个 `AppState` 独立、内存有界、无数据库写者，权重不控制执行顺序 | `oclive_kernel_types::EventDraft` / `EventEnvelope` / `EventModuleRegistryPolicy` / `EventRingDiagnostics` · `oclive_kernel_contracts::EventEmitter` / `EventModule` / `EventModuleRegistrar` · `domain/event_ring/` | **是**（首个桥接点为 legacy `event.impact` 输出） |
+| `event_ring` | 通用内核外环与事件流通权威：模块通过 `EventModuleDeclaration` 只声明订阅、允许发射事件与优先级，并只提交 `EventDraft`；可信注册调用通过独立 `EventModuleRegistryPolicy` 分配基础影响权重与 `fail_fast` / `isolate` 故障边界，模块不能自报权重或故障策略。Ring 签发来源/权重/顺序/因果链后按 `(priority, module_id)` 路由；隔离型模块的处理错误或非法输出会被原子拒绝并隔离，诊断只记录状态和失败次数。目录插件以独立 `eventRing` manifest 建议 + `event_ring.handle` RPC 接入：宿主限制精确安全订阅、插件自有发射命名空间、权重上限与超时，并在首次扫描/重扫时同步；它不复用前端 `bridge.events`。`EventRingDiagnostics` 不包含 payload、metadata 值或 stream key。每个 `AppState` 独立、内存有界、无数据库写者，权重不控制执行顺序 | `oclive_kernel_types::EventDraft` / `EventEnvelope` / `EventModuleRegistryPolicy` / `EventModuleFailureMode` / `EventRingDiagnostics` · `oclive_kernel_contracts::EventEmitter` / `EventModule` / `EventModuleRegistrar` · `domain/event_ring/` · `infrastructure/directory_plugins/event_ring.rs` | **是**（legacy `event.impact`、memory recollection 与目录模块桥） |
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
 | `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
 | `reply_mode` | 回复分段与展示节奏 | `config.json` · post_llm（`reply_post_process` 之后） | **是**（post） |
@@ -372,6 +372,7 @@ flowchart TB
   M1 --> RC --> ER --> RA --> BP
   EV --> M3["③ event.impact（legacy 子槽）"] --> ER
   ER -.-> EM["声明式事件模块"]
+  ER -.-> DP["目录事件模块 event_ring.handle"]
   BP --> M4["④ prompt"]
   GEN --> M5["⑤ llm"]
   PRE -.-> F1["设施① complex_emotion"]

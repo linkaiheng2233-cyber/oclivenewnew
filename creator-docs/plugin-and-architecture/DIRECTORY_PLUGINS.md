@@ -230,6 +230,69 @@
 
 在 **插件管理**（Ctrl+Shift+F）中可为每个插槽单独拖拽排序，或勾选「隐藏 … 嵌入」仅关闭该插槽 iframe（不卸载插件进程，除非同时停用插件）。
 
+### 4.4 内核 Event Ring 适配（与 `bridge.events` 无关）
+
+目录进程可通过 manifest 顶层 **`eventRing`** 声明加入通用内核 Event Ring。这里的事件是内核模块事件，不是 4.3 的前端 `mitt` 总线；两者没有名称、权限或转发继承关系。
+
+```json
+{
+  "permissions": ["process:spawn"],
+  "rpcMethods": ["event_ring.handle"],
+  "process": { "command": "node", "args": ["rpc_server.mjs"] },
+  "eventRing": {
+    "subscriptions": ["kernel.memory.recollection.activated"],
+    "emissions": ["plugin.com.example.events.*"],
+    "suggestedInfluenceWeightBps": 6000
+  }
+}
+```
+
+`eventRing` 是不可信建议，不是最终注册策略。宿主注册表拥有以下裁决权：
+
+- `subscriptions` 只接受精确事件名，不接受 `*` / `namespace.*`；当前可读内核事件为 `kernel.chat.event_impact.estimated`、`kernel.memory.recall.candidate`、`kernel.memory.recollection.activated`，另允许显式订阅精确的 `plugin.*` 事件。
+- `emissions` 只能位于插件自己的 `plugin.<manifest.id>.*` 命名空间；插件不能直接伪造 `kernel.*` 事件。
+- `suggestedInfluenceWeightBps` 默认 5000、宿主封顶 8000；权重只表示下游决策采纳提案时的基础影响，不改变执行顺序或调用频率。
+- 目录模块优先级由宿主固定，故障策略固定为 `isolate`。RPC、解码或非法输出失败时，本次模块输出被原子拒绝，模块被隔离并记录失败次数；当前正式事件分发继续。内置模块仍使用 `fail_fast`。
+
+宿主调用 JSON-RPC **`event_ring.handle`**，参数为 camelCase：
+
+```json
+{
+  "schemaVersion": 1,
+  "event": {
+    "eventId": "...",
+    "kind": "kernel.memory.recollection.activated",
+    "source": "module.builtin.event_decision",
+    "sourceWeightBps": 10000,
+    "correlationId": "...",
+    "causationId": "...",
+    "sequence": 12,
+    "depth": 1,
+    "occurredAt": "2026-08-31T00:00:00Z",
+    "payload": {},
+    "metadataKeys": []
+  }
+}
+```
+
+请求刻意不包含 `streamKey` 和 metadata 值。插件响应只能补充子事件，不能替换父事件 payload 或 metadata：
+
+```json
+{
+  "emitted": [
+    {
+      "kind": "plugin.com.example.events.recollection_seen",
+      "payload": { "memory_id": "memory-1" },
+      "metadata": {}
+    }
+  ]
+}
+```
+
+`rpcTimeoutsMs.event_ring.handle` 可建议超时，但宿主限制在 500–5000ms，默认 2000ms。插件被当前角色停用时处理器为 no-op，不会因此进入隔离。首次延迟扫描和后续插件目录重扫都会重建目录模块注册；重扫也构成显式隔离恢复点。
+
+当前切片支持“已注册目录模块观察安全事件并补充插件命名空间子事件”。目录进程在没有入站事件时主动向宿主提交根事件仍需后续通用 ingress / 输入适配器；不得通过前端 `bridge.events` 或伪造用户消息绕过。
+
 ---
 
 ## 5. 门面命令（B2）
