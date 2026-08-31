@@ -54,7 +54,7 @@
 |------|------|
 | **模块注册表**（四大类 · 逐槽关系 · 改动约束） | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) |
 | Event Ring · 记忆提案 · 主动回合授权 | [`EVENT_RING.md`](../creator-docs/plugin-and-architecture/EVENT_RING.md) |
-| Runtime Event Stream（未来持久时间线 · 当前未实现） | [`RFC_RUNTIME_EVENT_STREAM.md`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) |
+| Runtime Event Stream（未来持久时间线仍未实现 · B0 Trace-only 影子已落地） | [`RFC_RUNTIME_EVENT_STREAM.md`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) |
 | 对外架构叙述 · 模块编号 | [`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 | 解耦全景 · 插件清单（非 MODULE_MAP 双写） | [`human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md`](../human-docs/team/ARCHITECTURE_DECOUPLING_PANORAMA.md) |
 | 单核双态（外核 / Monolith 宏核） | [`RFC_OCLIVE_MONOLITH_MODE.md`](../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |

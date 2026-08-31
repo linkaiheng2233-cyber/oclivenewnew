@@ -144,7 +144,7 @@ memory 找到候选 → recall.candidate → event decision
 
 权重只表示提案被判断时的基础影响力，不代表执行优先级，也不保证被采纳。完整契约见 [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)。
 
-> **不要把当前 Ring 画成永久事件河流**：这里的“外环”是单次 dispatch 路由边界，不是持续轮询模块的运行顺序。跨回合/跨通道/跨重启的 Session Runtime Event Stream、消费游标与回放仍是 [`K-EVENT-STREAM-01` 的未来设计](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)；即使以后实现，也不能替代 Event 决策、Rust 状态提交权或 Stable 回合管线。
+> **不要把当前 Ring 画成永久事件河流**：这里的“外环”是单次 dispatch 路由边界，不是持续轮询模块的运行顺序。现在虽有一个默认关闭、只把成功 dispatch 的脱敏事实头写入独立 SQLite 的 Trace 影子，但它不能被读取来驱动行为。跨回合/跨通道/跨重启的 Session Runtime Event Stream、消费游标与回放仍是 [`K-EVENT-STREAM-01` 的未来设计](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)；即使以后实现，也不能替代 Event 决策、Rust 状态提交权或 Stable 回合管线。
 
 ### 没有用户消息时如何主动开口
 

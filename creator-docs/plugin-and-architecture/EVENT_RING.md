@@ -24,7 +24,9 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 
 ### 1.1 与未来 Runtime Event Stream 的边界
 
-当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件；边界已进入 Draft RFC，但 wire、存储和消费者接口尚未冻结或实现。
+当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件；边界已进入 Draft RFC，但 Production wire、消费者接口与恢复协议尚未冻结或实现。
+
+当前只有一个默认关闭的 **B0 Trace-only 影子**：成功 dispatch 写入 Ring 历史后，可将不含 payload、metadata、`stream_key` 的事实头非阻塞送入独立 SQLite；失败只进入诊断，不能影响 Ring 结果。它没有读取/消费/Replay/Prompt/主动触发权，因此不是 Runtime Event Stream，也没有改变本文件的 Ring 权威边界。
 
 未来设计必须保持以下边界：
 
@@ -33,9 +35,9 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 - Session 是角色运行实例与隔离边界，不因负责投递而自动取得事件采纳、人格修改或状态提交权；
 - 消费模块可观察、查询、提出和派生事件，但状态变化仍须经过 Event 决策与 Rust 编排；
 - 大模型可以获得更广的观察权、查询权和提案权，但不能伪造事实或直接提交权威状态；小模型继续消费经模块筛选和 Prompt 编译的有限上下文；
-- 持久轨迹、重放、消费游标、背压、幂等与隐私策略属于未来 Stream/Trace 契约，不能由当前有界诊断历史冒充。
+- B0 持久 Trace 只证明行为中性的追加记录；重放、消费游标、生产背压/幂等、保留期与完整隐私策略仍属于未来 Stream/Trace 契约，不能由 B0 或当前有界诊断历史冒充。
 
-边界草案见 [`RFC_RUNTIME_EVENT_STREAM`](../rfc/RFC_RUNTIME_EVENT_STREAM.md)，设计与实施状态只在 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。在实现与恢复测试完成前，“河流”仍不是已交付能力。
+边界草案见 [`RFC_RUNTIME_EVENT_STREAM`](../rfc/RFC_RUNTIME_EVENT_STREAM.md)，设计与实施状态只在 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。B0 Trace 已有窄切片证据，但在消费者与恢复合同完成前，“河流”仍不是已交付能力。
 
 ---
 

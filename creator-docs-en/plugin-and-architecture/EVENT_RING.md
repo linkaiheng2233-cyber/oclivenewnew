@@ -28,7 +28,9 @@ The legacy `event` slot remains backend module 3 and estimates dialogue `event.i
 
 ### Boundary with a future Runtime Event Stream
 
-The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Its boundaries now have a Draft RFC, but wire, storage, and consumer interfaces are not frozen or implemented.
+The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Its boundaries now have a Draft RFC, but Production wire, consumer interfaces, and recovery protocol are not frozen or implemented.
+
+Only an off-by-default **B0 trace-only shadow** exists today. After a successful dispatch enters Ring history, redacted fact headers can be sent non-blockingly to an independent SQLite database. Failures affect diagnostics only. The shadow has no read, consumer, replay, Prompt, or proactive-trigger authority, so it is not Runtime Event Stream and does not alter the Ring authority defined here.
 
 Any future design must preserve these boundaries:
 
@@ -37,9 +39,9 @@ Any future design must preserve these boundaries:
 - A Session is a role-runtime instance and isolation boundary. Dispatch responsibility does not grant admission, persona mutation, or state-commit authority.
 - Consumers may observe, query, propose, and derive events, while state changes still pass through Event decisions and Rust orchestration.
 - A large model may receive broader observation, query, and proposal rights, but cannot forge facts or commit authoritative state. Small models continue to consume bounded context selected by modules and compiled by the Prompt layer.
-- Durable traces, replay, consumer cursors, backpressure, idempotency, and privacy belong to a future Stream/Trace contract. The current bounded diagnostics history must not be presented as those capabilities.
+- B0 durable trace proves behavior-neutral append only. Replay, consumer cursors, Production backpressure/idempotency, retention, and the complete privacy contract remain future Stream/Trace work. Neither B0 nor bounded Ring diagnostics may be presented as those capabilities.
 
-See the [`RFC_RUNTIME_EVENT_STREAM` summary](../rfc/RFC_RUNTIME_EVENT_STREAM.md). Design and implementation status remains tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). Until implementation and recovery tests exist, the “river” is not a shipped capability.
+See the [`RFC_RUNTIME_EVENT_STREAM` summary](../rfc/RFC_RUNTIME_EVENT_STREAM.md). Design and implementation status remains tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). B0 has narrow trace evidence; until consumer and recovery contracts exist, the “river” is not a shipped capability.
 
 ---
 

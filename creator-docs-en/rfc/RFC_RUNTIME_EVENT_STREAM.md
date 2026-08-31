@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-09-01.
 
-**Status:** **Draft v0.1 · boundaries agreed · wire and implementation not frozen · not implemented**.
+**Status:** **Draft v0.2 · boundaries agreed · B0 trace-only slice implemented · Production Stream not implemented**.
 
 ---
 
@@ -22,7 +22,7 @@ The following constraints are fixed:
 - A `Decision` is not a committed state. `State` may only describe a successful commit.
 - Proposal influence remains in the existing trusted `EventModuleRegistryPolicy`. A future Stream consumer registry manages subscriptions, read scope, cursors, and backpressure only.
 - Model tiers may change observation, query, and proposal budgets, never source or commit authority.
-- This RFC does not claim that a durable Stream, replay, multi-I/O scheduling, or a productized proactive bot exists today.
+- The optional B0 shadow records redacted headers from successful Ring dispatches only. It does not claim that a durable Stream, consumer cursor, replay, multi-I/O scheduling, or a productized proactive bot exists today.
 
 ---
 
@@ -66,6 +66,19 @@ Rules:
 3. Event handlers cannot recursively start turns; orchestration consumes typed results only after dispatch returns.
 4. Trace-only recording must not become a required dependency of the low-latency user path.
 5. A future Stream-first adapter may route an eligible user input only to the same `process_message`; it cannot create another turn engine.
+
+### Current B0 trace-only slice
+
+Commit `d2320596` adds one independently rollbackable observer, not a Production Stream:
+
+- trace is off by default and creates no file; opt-in uses a separate SQLite database and refuses the main kernel database path;
+- Event Ring calls the observer only after an entire dispatch succeeds and enters bounded Ring history; failed dispatches are absent;
+- the hot path uses bounded `try_send`; open, schema, queue, and write failures update redacted diagnostics/drop counters and never change `EventDispatchResult`;
+- append-only records have a store-owned `position` plus event identity, kind, source, registry weight, correlation, causation, Ring sequence/depth, and occurrence/ingestion times;
+- payload, metadata, and `stream_key` are not stored; no read API, consumer, checkpoint, replay, retention executor, Prompt input, or proactive trigger exists;
+- `runtime_event_trace_diagnostics()` exposes health and counters, not the database path or event content.
+
+The durable position proves restart-safe trace append only. It is not a Session consumer cursor, and Ring `sequence` remains non-durable ordering evidence.
 
 ---
 
@@ -144,6 +157,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 ## Trace, replay, privacy, and degradation
 
 - Trace-only is independently disableable and behavior-neutral.
+- Current B0 persists only redacted headers from successful Ring dispatches. It has no Replay path and is neither an authoritative event store nor a behavior input.
 - Replay defaults to an isolated Session/dry-run with production state and output ports disabled.
 - Recovery uses checkpoints and idempotency, not replaying all historical Output events.
 - Credentials, full system prompts, raw long-term-memory bodies, and unconsented media must not enter generic payloads.
@@ -155,11 +169,11 @@ An Observation or high-influence Proposal does not automatically make the charac
 ## Staged admission
 
 1. Freeze taxonomy, Session mapping, outer record, checkpoint, and failure/recovery tests.
-2. Add a disableable trace-only recorder; prove disabled parity, restart, redaction, and retention.
+2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, and fail-open degradation; retention and commit/output coverage remain open.
 3. Add cursor, at-least-once, idempotency, backpressure, and an effect-free test consumer.
 4. Integrate one low-risk real consumer through Draft → Ring → Decision → Rust application.
 5. Add one real non-user adapter, scheduler state machine, and output port with TTL/cooldown/preemption/cancellation/recovery tests.
 
 Real multi-I/O consumers and relevant reference projects must be studied before production implementation. They inform consumer and recovery semantics but cannot weaken the authority boundaries above.
 
-Open implementation choices remain tracked by Chinese [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md). The debt stays OPEN until code, recovery tests, and repository evidence exist.
+Open implementation choices remain tracked by Chinese [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md). The debt stays OPEN: B0 trace evidence does not satisfy Production Stream consumer, recovery, retention, and domain-loop acceptance.

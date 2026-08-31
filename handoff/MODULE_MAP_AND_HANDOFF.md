@@ -20,6 +20,8 @@
 
 Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_RING.md`](../creator-docs/plugin-and-architecture/EVENT_RING.md)；本文只登记它与模块的关系。
 
+`RuntimeEventTrace` 是默认关闭的基础设施观察器：它只在成功 Ring dispatch 后非阻塞记录脱敏事实头，不是六槽、Event 模块、Event 决策模块或 Runtime Event Stream，也不向 Prompt/记忆/主动回合提供输入。完整状态见 [`RFC_RUNTIME_EVENT_STREAM`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) 与 `K-EVENT-STREAM-01`。
+
 **稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；新增宿主入口必须委托同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。
 
 ---

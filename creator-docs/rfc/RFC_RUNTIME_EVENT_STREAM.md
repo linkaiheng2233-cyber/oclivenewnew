@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-01。
-**状态**：**草案 v0.1 · 边界已确认 · wire 与实现未冻结 · 当前未实现**。
+**状态**：**草案 v0.2 · 边界已确认 · B0 Trace-only 第一切片已实现 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 本文是设计草案，不代表持久 Stream、游标、重放、多 IO 调度或产品化主动 Bot 已交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -133,6 +133,19 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - **Trace-only**：旁路记录输入、决策、提交和输出结果；可独立关闭，关闭后角色行为必须相同。
 - **Production Stream**：消费者确实依赖其游标和恢复语义；不可用时必须显式降级或阻塞该消费者，不能静默改成直接写状态。
 - 两者可以共享事件身份和底层存储实现，但启停、读取权限、保留期和故障语义必须独立。
+
+#### 当前 B0 Trace-only 第一切片（已实现）
+
+`d2320596` 只落地了可独立回滚的影子观察器，不是 Production Stream：
+
+- `OcliveKernelConfig` 默认不配置 Trace，也不创建 Trace 文件；显式开启时使用独立 SQLite，拒绝与内核主库同址；
+- Ring 仅在一次 dispatch 全部成功并写入有界内存历史后，把最终信封头交给内部观察口；失败 dispatch 不记录；
+- 热路径只执行有界队列 `try_send`，SQLite 打开、schema、队列或写入失败只累计脱敏诊断/丢弃计数，不改变 `EventDispatchResult`；
+- 记录有存储自增 `position`，并保存 `event_id`、kind、source、注册权重、correlation、causation、Ring `sequence`/depth 与发生/接收时间；`position` 不冒充 Session 消费游标，Ring `sequence` 也不冒充持久游标；
+- 表禁止原地 update/delete，不保存 payload、metadata 或 `stream_key`；当前没有读取 API、消费者、checkpoint、Replay、保留期执行器，也不观察 Rust 状态提交或输出投递；
+- `runtime_event_trace_diagnostics()` 只暴露配置/工作状态、队列与写入计数、最后位置和错误种类，不暴露路径或事件正文。
+
+所以 B0 只证明“成功 Ring 事实可被行为中性地旁路持久化”。它不证明 Session Runtime Event Stream、语义事件分型、至少一次消费或恢复闭环已经完成。
 
 ---
 
@@ -302,6 +315,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 ### 10.1 Trace/Replay
 
 - Trace 默认是行为中性的旁路消费者；关闭 Trace 后，同一输入的角色决策和回复路径应保持一致。
+- 当前 B0 只记录成功 Ring dispatch 的脱敏信封头；它不提供 Replay，也不把 Trace 表作为事件权威库或行为输入。
 - Replay 默认运行在隔离 Session / dry-run 中，输出端口关闭，状态提交替换为只读比较；不得重发 QQ 消息、直播动作或硬件指令。
 - 生产恢复通过消费者 checkpoint 和幂等处理完成，不把“从头重放所有 Output”当恢复策略。
 - 重放事件保留原事件引用，但新的派生结果使用新身份，并明确 `replay_of`/causation 关系；具体字段以后冻结。
@@ -337,7 +351,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
 | **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
-| **B · Trace-only** | 可关闭的持久记录器，只观察 Ring/提交/输出摘要 | disabled parity、重启、脱敏、保留期测试 | 不驱动决策或主动回复 |
+| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
 | **E · 主动与多通道** | 一个真实非用户输入适配器 + 调度状态机 + 输出端口 | TTL/冷却/抢占/取消/投递恢复与人工体验验收 | 不以单通道 demo 宣称通用 Bot 已完成 |
@@ -348,9 +362,9 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 ## 13. 实施前仍需冻结的决策
 
-- 首个生产存储采用现有 SQLite、独立 SQLite 还是可替换后端；何时需要外部 broker。
+- B0 Trace 已选独立 SQLite；Production Stream 的首个存储、可替换后端边界及何时需要外部 broker 仍未冻结。
 - Session 与 `srid`、用户身份、角色包版本及多个通道端点的精确映射。
-- 哪些现有 Event Ring 事件进入 Trace，哪些进入生产 Stream；payload 最小化规则。
+- B0 当前记录所有成功 dispatch 的最终脱敏信封头；哪些提交/输出摘要及哪些事件进入 Production Stream、payload 最小化和访问规则仍未冻结。
 - source-bound idempotency key、transactional outbox/inbox 与 checkpoint 的具体 schema。
 - 多宿主同时运行同一 Session 时的租约、leader 或冲突策略。
 - 首个低风险真实消费者和首个主动输入适配器。
@@ -361,6 +375,16 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 ---
 
 ## 14. 验收清单
+
+### 14.1 B0 Trace-only 已有证据
+
+- [x] 默认关闭且不创建数据库；开启后使用独立 SQLite，并拒绝主库同址。
+- [x] 只有成功 dispatch 进入观察口；失败 dispatch 与 Trace 故障都不改变 Ring 返回结果。
+- [x] 热路径为有界非阻塞入队；重启后从存储自增位置继续追加。
+- [x] schema 不含 payload、metadata、`stream_key`，并拒绝 update/delete。
+- [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
+
+### 14.2 Production Stream 总体验收（未完成）
 
 - [ ] 没有第二套 `process_message`、复制 pipeline 或 Session 内核。
 - [ ] Stream Consumer Registry 没有影响权重、提案采纳或状态提交字段。
