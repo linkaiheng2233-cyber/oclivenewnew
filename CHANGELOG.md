@@ -4,7 +4,14 @@
 
 ## [Unreleased]
 
-当前没有未发布变更。
+### Added
+
+- **稳定角色内核进程内接口**：`oclive_kernel_host` 新增 `OcliveKernelConfig`、`OcliveKernelBuilder` 与 `OcliveKernel`，为可信 Rust 宿主提供角色 load/list/info、完整与流式回合、可信 `TurnOrigin`、Event Ring 注册/主动回合/诊断、文件 SQLite 持久化和显式关闭；HTTP、Tauri 与 library 继续复用同一 `AppState` / `process_message` 编排。
+- **可运行的 library 脚手架**：`oclive-cli init --project-type library --kernel-source` 现在链接 host/contracts/runtime/types 并直接重导出稳定角色内核门面；生成说明包含最小完整回合示例，真实生成工程已纳入独立 `cargo check` 回归。
+
+### Compatibility
+
+- **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
 
 ## [0.5.2] - 2026-08-24
 

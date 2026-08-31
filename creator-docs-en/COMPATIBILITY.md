@@ -8,11 +8,12 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 
 **Snapshot (aligned with release review)**:
 
-- **oclivenewnew** (desktop / Tauri host): **`0.5.1`** (root `package.json` and `distros/desktop-tauri/Cargo.toml` must match)
+- **oclivenewnew** (desktop / Tauri host): **`0.5.2`** (root `package.json` and `distros/desktop-tauri/Cargo.toml` must match)
 - **oclive_kernel_runtime** (shared contract crate): **`0.2.0`** (`kernel/crates/oclive_kernel_runtime/Cargo.toml`; DTO / `API_VERSION` live in that crate)
+- **oclive_kernel_host** (complete host and in-process facade crate): **`0.2.0`**. `OcliveKernel` is the supported Rust integration entry; internal `AppState` is not a compatibility contract.
 - **oclive-cli** (scaffold CLI): **`0.1.0`** (`kernel/crates/oclive-cli/Cargo.toml`; **independent semver**, not required to match the desktop host; when scaffolding with `init --kernel-source`, path deps align contracts). **Default build** depends on `oclive_kernel_runtime` + `oclive_validation` only (`cargo tree -p oclive-cli --no-default-features` has **no** `libsqlite3-sys` / `axum`). **`doctor config-resolve`** defaults to runtime pure resolution; **`--via-host`** (feature **`diagnostics-host`**) optionally runs in-memory `AppState` deep diagnosis.
 - **oclive-pack-editor** (sister repo): **`0.5.1`** (`ui.json` parity with host **0.5.x**)
-- **oclive-vscode** (VS Code extension, sister repo): **`0.4.1`** (independent semver; spawn/attach contract needs host **≥0.4.0**, **0.5.1** recommended)
+- **oclive-vscode** (VS Code extension, sister repo): **`0.4.1`** (independent semver; spawn/attach contract needs host **≥0.4.0**, **0.5.2** recommended)
 
 ---
 
@@ -53,6 +54,7 @@ pack/plugin assets → kernel contract and orchestration → Tauri/Bridge → di
 | Boundary | Current mechanism | Constraint |
 |----------|-------------------|------------|
 | Pack ↔ kernel | `schema_version`, `min_runtime_version`, `oclive_validation` | Prefer optional fields with defaults; Breaking changes keep read compatibility for at least one release cycle |
+| Rust host ↔ kernel | `oclive_kernel_host::OcliveKernel` + `KernelErrorBody` codes | Stability means a Rust source-level facade, not a C ABI. Add APIs compatibly; breaking signatures follow host semver / CHANGELOG. Internal `AppState` is not public contract |
 | Kernel ↔ frontend | `api_version`, Rust DTOs, `distros/shared/src/api` mirrors, error-code drift gate | DTO/command changes must update consumers and contract tests; Rust compilation alone is insufficient |
 | Tauri ↔ directory plugin | manifest `schema_version: 1`, slot names, `bridge.invoke`, events, and `rpcMethods` allowlists | Plugin `version` identifies the plugin only; it is **not a host compatibility range**. Unexpressed host requirements need a fallback or the Breaking/RFC process |
 | Chat Pro ↔ plugin UI | iframe `entry` plus optional `vueComponent`, shared `PluginSlotEmbed` | When both entries exist, they must expose the same capability; updating Vue alone is incomplete |
@@ -68,11 +70,12 @@ Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for a
 
 | Component | Version source | Relation to host | Notes |
 |-----------|----------------|------------------|-------|
-| **oclivenewnew (host)** | root `package.json` / `distros/desktop-tauri/Cargo.toml` | — | snapshot **0.5.1** |
+| **oclivenewnew (host)** | root `package.json` / `distros/desktop-tauri/Cargo.toml` | — | snapshot **0.5.2** |
 | **oclive_kernel_runtime** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` | path dep for host and headless HTTP; `SendMessageResponse.api_version` (`API_VERSION` **u32**, currently **1**), `RUNTIME_API_VERSION` (string **0.2.0**) | OOCP / black-box scripts: `creator-docs/testing/OOCP_TEST_SUITE.md` |
-| **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | scaffolds `kernel_server` / `library`; default features **no** desktop `AppState` / SQLite; optional `diagnostics-host` for `--via-host` | [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
+| **oclive_kernel_host** | `kernel/crates/oclive_kernel_host/Cargo.toml` | HTTP, Tauri, and `OcliveKernel` share complete `process_message` / SQLite / plugin / Event Ring orchestration | **0.2.0** today; integrate through `OcliveKernel`, not direct `AppState` assembly |
+| **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | without `--kernel-source`, emits a serde stub; a linked `library` gets complete `OcliveKernel` path dependencies/facade | [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
 | **oclive-pack-editor** | sister `package.json` | writes `distros/chat-pro/roles/{id}/`; **`ui.json`** matrix above | `HOST_RUNTIME_VERSION` must match host `version` |
-| **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.4.1** today; host **0.5.1** recommended |
+| **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.4.1** today; host **0.5.2** recommended |
 | **oclive-launcher** | sister `package.json` | sets **`OCLIVE_ROLES_DIR`**, optional model name, zip install; **does not** replace host contract | [launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **role packs** | `manifest.json` (`schema_version`, `min_runtime_version`) | older hosts may refuse load or degrade | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) |
 | **host SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | ships only with **host** releases; do not downgrade DB after a forward migration unless `CHANGELOG` says so | breaking migrations need bilingual `CHANGELOG` + this table |

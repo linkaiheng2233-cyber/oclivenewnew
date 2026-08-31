@@ -18,6 +18,7 @@
 | **`oclive_kernel_types`** | `kernel/crates/oclive_kernel_types/` | DTO、`AppError`、纯数据结构 |
 | **`oclive_kernel_contracts`** | `kernel/crates/oclive_kernel_contracts/` | `LlmClient`、`PluginHostPort`、`EventEstimator`、`AgentProvider` 等 trait |
 | **`oclive_kernel_runtime`** | `kernel/crates/oclive_kernel_runtime/` | 策略、Prompt、kernel discovery；**编排实现**在 `oclive_kernel_host` |
+| **`oclive_kernel_host`** | `kernel/crates/oclive_kernel_host/` | 唯一完整编排、SQLite/插件基础设施，以及受支持的进程内 `OcliveKernel` 门面；HTTP/Tauri 共用它 |
 | **`oclive_validation`** | `kernel/crates/oclive_validation/` | manifest / **`pipeline.ocblueprint` v2/v3/v4** 分派与校验 |
 | **`oclive-cli`** | `kernel/crates/oclive-cli/` | 脚手架、`bench` / `test` / `doctor` / `ci init` |
 
@@ -47,7 +48,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| **对外入口** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs` 再导出 `process_message`；实现主体在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**。 |
+| **对外入口** | 可信 Rust 宿主用 **`kernel/crates/oclive_kernel_host/src/role_kernel.rs` 的 `OcliveKernel`**；内部 `domain/chat_engine/mod.rs` 再导出 `process_message`，实现主体在 **`domain/chat_engine/process_message.rs`**。HTTP/Tauri 适配与门面都委托这一份实现。 |
 | **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体与回复 DTO 以 `oclive_kernel_types` 为准；`oclive_kernel_runtime` 只承载运行时策略/Prompt 类型。 |
 | **主语义** | `process_message::run` 完成 preflight 与用户回合 Agent 短路，再由 `dispatch_turn` 选择 remote stub / `TurnMode::RemoteLife` / `TurnMode::CoPresent`；Stable 回合统一进入 `turn_pipeline::execute_turn`。 |
 | **阶段标注** | `ProcessMessageError` / `pm!` 宏带 `stage` 字符串（如 `ensure_role_loaded`、`startup_health`），日志检索用 `target: "oclive_chat"`。 |

@@ -140,14 +140,14 @@
 
 即：**一份权威 loader/validator，谁用谁链接（原生或 WASM），格式不每发行版重写**。此为可硬气对外/写入专利的真实差异点。
 
-**诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**——之前误判"不存在"为搜索假象（目录名 `oclive_kernel_server`，非 `kernel_server`），已更正。`oclive_kernel_server` 仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**（`Cargo.toml`，**不**再依赖 `oclivenewnew-tauri`），编排经 `oclive_kernel_host::run_api_server`。**真正的窄缺口**：编排（`process_message`）仍内嵌在 `oclive_kernel_host`，与该 crate 的 `infrastructure` 模块耦合；**host-independent 的纯内核 `library` API 才是被推迟项**（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验，已被桌面 / 无头服务 / CLI / 编写器（WASM）四端共用；无头发行版已存在（链接 `oclive_kernel_host` 编排，非 Tauri host），**完全解耦的纯内核 library 是下一步**；启动器消费为未来。"
+**诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**，仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**，不依赖 Tauri。2026-08-31 起，`oclive_kernel_host::OcliveKernel` 又提供了无需启动 HTTP/Tauri 的稳定 Rust 进程内门面，角色、完整/流式回合、SQLite、插件、Event Ring 与生命周期都复用唯一编排；`oclive-cli --project-type library --kernel-source` 可生成并编译真实调用库。**真正剩余的窄缺口**：这仍是 Rust 源码级门面而非 C ABI；host crate 仍含 HTTP 实现/依赖，且没有 Linux/ARM/真实网关资源预算与长时 soak 证据（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验 + 一份角色回合编排，已被桌面、无头服务和进程内 Rust 宿主共用；真实硬件交付与进一步瘦身仍待验证。"
 
 #### 2026-07-18 愿景实现对标
 
 | 愿景 | 当前可证明的部分 | 尚不能宣称的部分 | 台账 |
 |------|------------------|------------------|------|
 | **上限取决于模块上限** | 六槽已有 builtin / remote / directory / none 契约与真实解析链，第三方实现可替换主链组件 | 缺跨实现的质量/行为评测台；“能插”尚未充分证明“容易比较并选出更好模块” | `V-MODULE-QUALITY-01` |
-| **跨平台 / 硬件通用** | 无头 HTTP、CLI 脚手架、ARM64 cross 与 HostProfile 已存在 | macOS / Linux 产品实机、完整 host-independent library、真实硬件资源预算未闭环 | `V-EMBED-01` · `K-CROSS-01` · `K-DIST-01` |
+| **跨平台 / 硬件通用** | 无头 HTTP、CLI 脚手架、ARM64 cross、HostProfile 与完整 `OcliveKernel` 进程内门面已存在 | macOS / Linux / ARM 产品实机、host crate 依赖瘦身、真实硬件资源预算与长时 soak 未闭环 | `V-EMBED-01` · `K-CROSS-01` · `K-DIST-01` |
 | **角色包跨发行版通用** | 同一 `mumu` 包已在 desktop / vscode / theater profile 下完成 load + mock chat 黑盒测试 | UI、语音、视觉与插件能力受宿主 profile/表面限制，尚无 Full capability-conformance | `V-PORTABLE-01` |
 
 契约边界与测试说明只在 [`CROSS_HOST_MEMORY.md`](../creator-docs/role-pack/CROSS_HOST_MEMORY.md) 维护；实现状态只在 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 维护，本表仅保留产品结论。

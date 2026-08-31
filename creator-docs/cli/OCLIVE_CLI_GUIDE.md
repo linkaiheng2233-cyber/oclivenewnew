@@ -636,11 +636,11 @@ cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 
 ## 生成物说明
 
-- **占位 `Cargo.toml`**：当前仅依赖 **`serde` / `serde_json`**，不假设本机已存在 `oclive_kernel_runtime` 拆分 crate。接入真实内核时，请改为 `path` / 版本依赖并替换 `main.rs` / `lib.rs` 入口。
+- **未传 `--kernel-source` 的占位 `Cargo.toml`**：仅依赖 **`serde` / `serde_json`**，用于验证目录/配置形状。传入 `--kernel-source <主仓根>` 后，`kernel_server` 链接真实无头入口，`library` 则链接 host/contracts/runtime/types 并直接重导出稳定 **`OcliveKernel`** 完整进程内门面。
 - **`distros/chat-pro/roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
 - **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
-- **README（生成）**：根据插件勾选，写入接入 `oclive_kernel_server`、OOCP、目录插件的**文字指引**。
+- **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 还包含 `OcliveKernel::start → load_role → process_message → shutdown` 示例。
 
 ---
 

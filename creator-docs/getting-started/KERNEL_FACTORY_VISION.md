@@ -198,7 +198,7 @@ cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:or
 
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
 2. **覆盖细节**（可选）：显式 `--preset` / `--monolith` / `--monolith-preset` / `--with-role-pack` / `--with-example-plugin` **优先于**模板默认值。
-3. **接真内核**：`--kernel-source` 写入 path 依赖；在生成工程内 `cargo build` / `cargo run -- --api`。
+3. **接真内核**：`--kernel-source` 写入 path 依赖；`kernel_server` 在生成工程内 `cargo run -- --api`，`library-embed` 则 `cargo check` 并通过 `OcliveKernel` 接入自有 `main`。
 4. **换灵魂**：编辑 `distros/chat-pro/roles/<id>/` 或 `oclive pack create`；`oclive dev` 监听 manifest/settings。
 5. **换实现**：改 `plugin_backends`、安装 `distros/chat-pro/plugins/<id>/`、或起 Remote 侧车（见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)）。
 6. **要性能**：`robot-soul` 模板默认启用 Monolith；改 `monolith.toml` 后 `oclive build`。
@@ -210,7 +210,7 @@ cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:or
 - **蓝图**：历史上用于描述**运行时**「原子步骤」的编排（DSL）；与 **Monolith 焊接范围正交**，焊接只写在 **`monolith.toml`**（见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)）。
 - **桌面主应用**：入口蓝图**已从主路径移除**；主编排以 **`process_message`** 为准（见 [AGENTS.md](../../AGENTS.md)）。
 - **工厂定位（蓝图校验，C 级 / experimental）**：`oclive blueprint validate <path>` 仅校验 JSON 形状。**不**改变桌面宿主 `process_message`；新工程优先 **`init --pipeline`**。生成工程仍含 **`docs/BLUEPRINT_REFERENCE.md`** 供参考。
-- **开发者定制编排**：短期 = 阅读 **`docs/ORCHESTRATION_REFERENCE.md`**（中英）+ 改 `monolith.toml` / fork `process_message`；中期 = 受控蓝图解释器（runtime 侧，非本次 `init` 范围）。
+- **开发者定制编排**：默认通过 `OcliveKernel`、槽位 trait 与 Event Ring 扩展，不 fork `process_message`；`monolith.toml` 只改变焊接实现。若确需改变阶段顺序，应按 Breaking/RFC 建立明确变体，而不是把私有分叉冒充稳定内核接口。
 
 ---
 

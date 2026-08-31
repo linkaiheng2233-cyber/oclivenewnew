@@ -35,13 +35,15 @@
 | **OOCP / HTTP 与内核对话** | [OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md) · 示例 [`examples/oocp-test-suite/`](../../examples/oocp-test-suite/) · 无头最小示例 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 | **Monolith 使用场景** | 需要 **编译期七焊接键焊接**、减少动态解析时选用；[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · `oclive-cli init --monolith` + `build` / `bench` |
 | **`--kernel-source`** | [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)（将脚手架依赖切到 path 的 `oclive_kernel_runtime` / `oclive_kernel_server`） |
+| **进程内稳定门面** | `oclive_kernel_host::OcliveKernel`；生成 library 后按 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5 完成角色加载、回合与关闭 |
 | **平台单线文档** | [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) |
 
-**验收**：能在目标设备上跑 **`--api` 健康检查** 或等价探针，并用 OOCP 或 HTTP 完成一轮最小对话（可开 mock LLM 环境变量，见 CI 与 OOCP 文档）。
+**验收**：能在目标设备上跑 **`--api` 健康检查**，或在自有进程中 `OcliveKernel::start → load_role → process_message → shutdown`；并完成一轮最小对话（可注入 mock `LlmClient`，或为 HTTP 开 mock LLM 环境变量）。
 
 ---
 
 ## 与主应用仓库的关系
 
 - **契约**（DTO、`KernelErrorBody`）以 **`oclive_kernel_runtime`** 与 [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) 为准。  
-- **完整宿主编排**以 `kernel/crates/oclive_kernel_host` 为参考实现，桌面薄壳位于 `distros/desktop-tauri`；嵌入式可裁剪但应保持 **错误 JSON 形状** 一致，便于共用 FAQ 与编写器。仅链接 `oclive_kernel_runtime` 还不等于获得完整 `process_message`。
+- **完整宿主编排**只在 `kernel/crates/oclive_kernel_host` 维护一份，桌面薄壳位于 `distros/desktop-tauri`。可信 Rust 宿主应通过 **`OcliveKernel`** 使用它；`oclive-cli ... --project-type library --kernel-source` 已链接完整门面，而仅手工依赖 `oclive_kernel_runtime` 仍只有纯契约/策略。
+- 嵌入式可裁剪外围，但应保持 **错误 JSON 形状** 与 Event Ring 权威边界一致，便于共用 FAQ、编写器和诊断工具；不要直接依赖内部 `AppState` 拼第二条编排。

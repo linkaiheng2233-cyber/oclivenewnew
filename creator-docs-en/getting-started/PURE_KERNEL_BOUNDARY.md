@@ -14,12 +14,14 @@ The **pure kernel** is the runtime layer that is **independent of UI**, **indepe
 |----------------|---------------------|
 | **Turn orchestration** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **Slot resolution** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → six-slot fold** |
-| **Contracts & persistence shape** | `oclive_kernel_runtime` (DTOs / pure domain) · `migrations/001_init.sql` · `oclive_validation` |
+| **Stable in-process entry** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs`; reuses the same `AppState` / turn pipeline instead of copying orchestration |
+| **Contracts & persistence shape** | `oclive_kernel_types` / `oclive_kernel_contracts` / `oclive_kernel_runtime` · `migrations/001_init.sql` · `oclive_validation` |
 | **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
 ```text
 User/device boundary   →  Vue / hardware drivers / sidecar processes (not “kernel”)
 Pure kernel            →  process_message + PluginHost + Repository contracts
+Supported Rust entry   →  OcliveKernel (roles, turns, Event Ring, explicit shutdown)
 Slot implementations   →  builtin / remote / directory / local / ollama …
 Soul data (customizable)→  role pack pipeline.ocblueprint (v2) + personality/knowledge files
 ```
@@ -74,10 +76,12 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 |-------|-----|----------|-------|
 | **Desktop host** | Players / creators | Optional (separate project) | Tauri + Vue + same domain |
 | **Headless HTTP** | Gateway, robot brain, CI | **Monolith only** for **kernel_server** projects from `oclive-cli` | Workspace **`oclive-kernel-server`** and **`oclivenewnew-tauri --api`** are equivalent (`http_api`); default port **8420** (`OCLIVE_API_PORT`) |
-| **Embedded `library`** | In-process embed | **Not supported** | Link **`kernel/crates/oclive_kernel_runtime`**; `oclive-cli init --project-type library --kernel-source`; full orchestration stays in **`oclivenewnew-tauri`** ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
+| **Embedded `library`** | In-process embed with your own `main` | **Not applicable** | Link host + contracts/runtime/types. **`OcliveKernel`** exposes role loading, complete and streaming turns, Event Ring, and persistence; generate it with `oclive-cli init --project-type library --kernel-source` ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
 | **HTTP `--api`** | Dev, CI, editor try-chat | N/A | Transition — [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **Detachable or welded**: dev-time swappable slots; production optional Monolith weld into one binary—orthogonal to `settings.json`.
+
+“Stable” here means the supported **Rust source-level facade**, not a stable C ABI. `AppState`, HTTP routes, and Tauri commands remain composition/transport details; integrators should not assemble a second turn pipeline around them. The facade currently lives in `oclive_kernel_host`: consumers do not start HTTP or Tauri, though that crate still contains the HTTP implementation and its dependencies and can be slimmed further.
 
 ---
 
@@ -88,6 +92,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 - Linux user space, devices/gateways with **hundreds of MB RAM** and up.
 - **Rust async**, HTTP/JSON-RPC, directory plugin subprocesses, SQLite persistence.
 - **Same role packs** and `plugin_backends` shape as desktop.
+- On the current desktop development target, an in-process integration test covers file SQLite, role loading, ordinary/streaming turns, Event Ring registration, and an authorized proactive turn.
 - Sidecar LLM (`remote`), local Ollama (`ollama`), hardware via directory plugins.
 
 ### Explicitly out of scope (do not over-promise)
@@ -95,6 +100,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 - **Hard real-time**, **MCU / KB-scale RAM**, bare-metal without OS.
 - **Built-in A/V codec stack** in kernel (use plugins or device services).
 - Multi-tenant cloud **isolation and billing** as first-class kernel features (phase B2 if needed).
+- This code-level proof is not yet Linux/ARM hardware validation, a long hardware soak, or a measured resource-budget proof; see `V-EMBED-01`.
 
 ---
 

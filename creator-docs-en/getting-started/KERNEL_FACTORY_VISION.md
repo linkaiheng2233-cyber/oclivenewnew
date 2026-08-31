@@ -164,7 +164,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
 2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
-3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; `cargo build` / `cargo run -- --api` in the generated tree.
+3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; run `cargo run -- --api` for `kernel_server`, or `cargo check` and call `OcliveKernel` from your own `main` for `library-embed`.
 4. **Swap soul**: edit `distros/chat-pro/roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
 5. **Swap implementations**: `plugin_backends`, `distros/chat-pro/plugins/<id>/`, or Remote sidecars ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)).
 6. **Need speed**: `robot-soul` / `robot-gateway` enable Monolith by default; edit `monolith.toml` then `oclive build`.
@@ -176,7 +176,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 - **Blueprints** describe **runtime** orchestration of atomic steps; **orthogonal** to Monolith (`monolith.toml` only).
 - **Desktop host**: entry blueprint **removed** from the hot path; use **`process_message`** ([AGENTS.md](../../AGENTS.md)).
 - **Factory (validation)**: `oclive blueprint validate <path>` checks JSON shape, known step types, and `next` references. Does **not** change the desktop host. Generated projects include **`docs/BLUEPRINT_REFERENCE.md`**.
-- **Custom orchestration (short term)**: read **`docs/ORCHESTRATION_REFERENCE.md`** (and `.en.md`) + edit `monolith.toml` / fork `process_message`.
+- **Custom orchestration**: extend the default through `OcliveKernel`, slot traits, and Event Ring instead of forking `process_message`; `monolith.toml` changes welded implementations only. A real stage-order change needs an explicit Breaking/RFC variant and is not the stable kernel interface.
 
 ---
 

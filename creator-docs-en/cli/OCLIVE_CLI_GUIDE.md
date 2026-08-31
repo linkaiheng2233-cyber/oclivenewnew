@@ -199,11 +199,11 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 
 ## Generated artifacts
 
-- **Stub `Cargo.toml`**: currently depends only on **`serde` / `serde_json`**, not assuming `oclive_kernel_runtime` split crates exist. When wiring a real kernel, switch to `path` / version deps and replace `main.rs` / `lib.rs` entrypoints.
+- **Stub `Cargo.toml` without `--kernel-source`**: depends only on **`serde` / `serde_json`** to validate directory/config shape. With `--kernel-source <repo root>`, `kernel_server` links the real headless entry and `library` links host/contracts/runtime/types while re-exporting the complete stable in-process **`OcliveKernel`** facade.
 - **`distros/chat-pro/roles/default/settings.json`**: includes **`_comment_*`** and full **`plugin_backends`** (including seventh key `complex_emotion`); trim invalid keys per [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) when matching the full host (e.g. strings `none` the host rejects).
 - **`CONFIG_REFERENCE.md` (project root)**: preset matrix and one-liner per slot; **developer compile options (Monolith)** and RFC link.
 - **End of `init --help`**: preset matrix, **`--monolith`**, pointer to [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md).
-- **Generated README**: textual pointers to `oclive_kernel_server`, OOCP, directory plugins based on toggles.
+- **Generated README**: pointers to `oclive_kernel_server`, OOCP, and directory plugins based on project shape/toggles; a linked `library` also gets an `OcliveKernel::start → load_role → process_message → shutdown` example.
 
 ---
 

@@ -1,6 +1,6 @@
 # 纯净内核 / 平台目标 — 实施计划（内核优先）
 
-**当前状态（2026-08-02）**：本文保留 K0–K5 的实施留痕；K0–K3、K5 与 K4 的 library 契约基础已完成，**完整进程内编排对称仍未完成**。当前状态与后续排期只以 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 **V-EMBED-01** / **V-PORTABLE-01** 为准，不再由本计划重复维护。
+**当前状态（2026-08-31）**：本文保留 K0–K5 的实施留痕；K0–K5 的代码路径已收口，K4 已通过 **`OcliveKernel`** 对称暴露完整进程内编排。**V-EMBED-01 仍为 Partial**：尚缺 Linux/ARM 或真实硬件靶、资源预算与长时 soak；当前状态与后续排期只以 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
 **权威契约**：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 
@@ -14,7 +14,7 @@
 |------|------------|
 | **机器人自定义灵魂** | 仅更换角色包 + `settings.plugin_backends`（在 `min_runtime_version` 内）即可改变陪伴人格与后端策略，**无需改编排代码** |
 | **情感陪伴协作** | 单轮 `process_message` 内 memory / emotion / event / prompt / llm / agent 按契约顺序执行；可替换槽实现 |
-| **嵌入式与无头** | 硬件方可在 **无 Vue** 条件下联调、部署；`--api` / `kernel_server` 已具备完整宿主编排，`library` 当前只具备 runtime/DTO 契约基础，完整进程内编排见 V-EMBED-01 |
+| **嵌入式与无头** | 硬件方可在 **无 Vue** 条件下联调、部署；`--api` / `kernel_server` 与 `library` 的 **`OcliveKernel`** 共用完整宿主编排；真实硬件证明见 V-EMBED-01 |
 | **AI 软硬件平台基座** | 第三方按 **单线文档** 完成：脚手架 → 角色包 → 插件/侧车 → 校验 → 部署 |
 
 ---
@@ -26,7 +26,7 @@ flowchart LR
   K0[K0 边界] --> K1[K1 无头闭环]
   K1 --> K2[K2 runtime lib]
   K2 --> K3[K3 灵魂包]
-  K2 --> K4[K4 library基础]
+  K2 --> K4[K4 稳定library门面]
   K3 --> K5[K5 平台路径]
   K4 --> K5
 ```
@@ -37,7 +37,7 @@ flowchart LR
 | **K1** | 无头可联调 | `examples/headless-kernel-minimal/`、`--api` | B3 过渡 |
 | **K2** | 真内核接榫 | `oclive_kernel_runtime` + `oclive_kernel_host` + `oclive-cli --kernel-source` | B3 |
 | **K3** | 灵魂交付单元 | RobotSoulPack profile + 示例包 | B1 |
-| **K4** | 嵌入式基础 | `library` 契约策略 + 示例；完整编排仍 Partial | B3 |
+| **K4** | 嵌入式门面 | `OcliveKernel` + 完整 library 生成/编译示例 | B3 |
 | **K5** | 平台一条路径 | `KERNEL_PLATFORM_DEVELOPER_PATH.md` | B4、B5 |
 
 ---
@@ -51,7 +51,7 @@ flowchart LR
 
 ## K1 — 无头联调闭环 ✅
 
-**现状**：`oclivenewnew-tauri --api`（默认端口 **8420**）、`http_api`、OOCP 套件已存在；无头最小闭环见 [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)。**量产/集成形态**：过渡期与 CI 仍以 **`--api`** 为主；独立进程见 **`oclive-kernel-server`**（K2）；进程内嵌见 **`library` + oclive_kernel_runtime**（K4），单线见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)。`oclive-cli init` **未带** `--kernel-source` 时仍为 **serde 占位骨架**；**带 `--kernel-source`** 则写入 path 依赖并指向真实工作区。
+**现状**：`oclivenewnew-tauri --api`（默认端口 **8420**）、`http_api`、OOCP 套件已存在；无头最小闭环见 [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-minimal/README.md)。**量产/集成形态**：过渡期与 CI 仍以 **`--api`** 为主；独立进程见 **`oclive-kernel-server`**（K2）；进程内嵌见 **`library` + `oclive_kernel_host::OcliveKernel`**（K4），单线见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)。`oclive-cli init` **未带** `--kernel-source` 时仍为 **serde 占位骨架**；**带 `--kernel-source`** 则写入完整 host/contracts/runtime/types path 依赖。
 
 **完成标准**
 
@@ -90,7 +90,7 @@ cd examples/oocp-test-suite && node run.mjs
 ### K2.2 `oclive-cli` 接榫
 
 - [x] `init --kernel-source <path-to-oclivenewnew>` 写入 `Cargo.toml` path 依赖与示例 `main.rs`
-- [x] 生成 README 区分：**占位 init** vs **已接 runtime** 两种模式
+- [x] 生成 README 区分：**占位 init** vs **已接完整内核** 两种模式
 - [x] `bench` / `build` 对真实 runtime 工程可跑（Monolith 仍仅 `kernel_server`）
 - [x] **内核工厂（配方层）**：`init --template`（`robot-soul` / `headless-api` / `library-embed`）、`--with-role-pack`、`distros/chat-pro/plugins/README.md` — 见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)
 
@@ -115,17 +115,20 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K4 — `kernel_server` vs `library`（基础完成，Full Partial）
+## K4 — `kernel_server` vs `library`（进程内接口完成，靶机证明 Partial）
 
 | 形态 | Monolith | 推荐用法 |
 |------|----------|----------|
 | `kernel_server` | ✅ | 网关、独立进程、机器人中控 |
-| `library` | ❌ | 进程内嵌基础；链接 `oclive_kernel_runtime`，自有 `main`，当前不含完整 `process_message` |
+| `library` | ❌ | 自有 `main` 的进程内嵌；通过 `OcliveKernel` 使用角色、完整/流式回合、持久化、插件、Event Ring 与显式关闭 |
 
 - [x] [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) §5 与实现一致
-- [x] `oclive-cli init --project-type library --kernel-source` 示例调用 `oclive_kernel_runtime` API（`lib.rs` 模板含 `runtime_api_version` / 可选 `resolve_api_port` 演示）
+- [x] `oclive-cli init --project-type library --kernel-source` 直接重导出 `OcliveKernel` 与四个内核 crate；真实生成工程独立 `cargo check` 通过
 - [x] 与 **oclive doll core** README 互链
-- [ ] 将 `process_message`、持久化与 `PluginHost` 以宿主无关 library API 对称暴露；继续归 **V-EMBED-01 Full**，不得因已有模板而宣称完成
+- [x] `OcliveKernelConfig / Builder / OcliveKernel` 对称暴露 `process_message`、持久化、PluginHost、可信 origin、流式回复、Event Ring 与生命周期；复用唯一编排
+- [x] 公共 API 集成测试覆盖文件 SQLite、角色 load/list/info、普通/流式回合、Event 模块注册/主动 permit/诊断、关闭后重开
+- [ ] 在至少一个 Linux/ARM 或真实硬件网关验证角色包、持久化、插件与资源预算，并补长时 soak；继续归 **V-EMBED-01 Full**
+- [ ] 视设备预算将 `oclive_kernel_host` 的 HTTP 实现/依赖进一步拆薄；这不阻塞当前无需启动 HTTP 的 Rust 门面
 
 ---
 
@@ -145,7 +148,7 @@ cd examples/oocp-test-suite && node run.mjs
 |----------|------|
 | K0 | 对外叙事一致 |
 | K1 | 无 UI 联调 |
-| K2–K4 | 独立进程可 ship；library 已有契约骨架，完整编排仍待 V-EMBED-01 Full |
+| K2–K4 | 独立进程与完整进程内 Rust 门面可集成；V-EMBED-01 Full 仍需真实靶与资源证据 |
 | K5 | 第三方按单线接入 |
 
 **产品级 P0** 建议在 **K1 绿灯 + K2 收口**（已达成）后，按 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md) 的硬骨头顺序集中收口。
@@ -162,6 +165,20 @@ cd examples/oocp-test-suite && node run.mjs
 
 **CI**：`oocp-test-suite` job（Ubuntu）与 [AGENTS.md](../../AGENTS.md) 描述一致，作为 K1 持续验收。
 
+### K4 进程内接口增量（本地 / 2026-08-31）
+
+| 命令 / 证据 | 结果 |
+|-------------|------|
+| `cargo test -p oclive_kernel_host --test role_kernel_public_api -j 1` | 通过；完整角色门面、Event Ring、持久化与关闭/重开 |
+| `cargo test -p oclive_kernel_host --lib -j 1` | 通过；**545 / 545** |
+| `cargo test -p oclive-cli -j 1`（registry TLS 波动后离线重跑） | 通过；含生成器、真实生成工程构建与 Monolith e2e |
+| 对真实临时生成的 linked-library 工程执行 `cargo check` | 通过；不是只检查模板字符串 |
+| `cargo test -p oclivenewnew-tauri --test proactive_event_ring --test turn_origin_sensor -j 1` | 通过；**2 / 2**，主动回合与可信 origin 语义未漂移 |
+| `cargo test --workspace --doc -j 1` | 通过 |
+| `cargo clippy --workspace --all-targets --all-features -- -D warnings` | 通过 |
+| `check-doc-mirror` / `check-markdown-links` | 通过 |
+| `node scripts/dimension5-acceptance.mjs --ci`（显式指定 Python 3.12） | 通过；**28 / 28** |
+
 ---
 
 ## 近期动作（建议顺序）
@@ -169,5 +186,5 @@ cd examples/oocp-test-suite && node run.mjs
 1. ~~本地跑通 K1 验收命令~~（已留痕；日常保持 CI 绿）  
 2. ~~K2.1 crate 拆分 / K2.2 CLI 接榫~~（已完成）  
 3. ~~K3 RobotSoulPack~~（已完成）  
-4. K4 的基础文档与 doll core 互链已完成；完整 library 编排继续按 **V-EMBED-01 Full** 验收
+4. ~~K4 完整 library 编排门面与真实生成工程编译~~（已完成）；按 **V-EMBED-01 Full** 补 Linux/ARM/硬件与资源预算证据
 5. **P2**：OTA / 远程日志（不阻塞内核里程碑）

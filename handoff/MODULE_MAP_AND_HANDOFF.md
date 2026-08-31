@@ -20,6 +20,8 @@
 
 Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_RING.md`](../creator-docs/plugin-and-architecture/EVENT_RING.md)；本文只登记它与模块的关系。
 
+**稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；新增宿主入口必须委托同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。
+
 ---
 
 ## 1. 术语对照（防「三层」混淆）

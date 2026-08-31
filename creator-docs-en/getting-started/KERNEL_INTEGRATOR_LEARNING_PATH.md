@@ -37,13 +37,15 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 | **OOCP / HTTP** | [OOCP_TEST_SUITE.md](../testing/OOCP_TEST_SUITE.md) · [`examples/oocp-test-suite/`](../../examples/oocp-test-suite/) · [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 | **Monolith** | [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) · `oclive-cli init --monolith` + `build` / `bench` |
 | **`--kernel-source`** | [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) |
+| **Stable in-process facade** | `oclive_kernel_host::OcliveKernel`; after generating a library, follow [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5 for role load, turn, and shutdown |
 | **Single-track platform doc** | [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) |
 
-**Done when:** **`GET /health`** (or equivalent) passes on device and you complete one minimal chat round (CI-style mock LLM env vars per OOCP doc).
+**Done when:** either **`GET /health`** passes on device, or your process completes `OcliveKernel::start → load_role → process_message → shutdown`; then complete one minimal chat round with an injected mock `LlmClient` or the HTTP mock-LLM environment.
 
 ---
 
 ## Relation to this repo
 
 - **Contracts** (`KernelErrorBody`, DTOs) live in **`oclive_kernel_runtime`** + [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md).  
-- **`kernel/crates/oclive_kernel_host`** is the complete orchestration reference, with the thin desktop shell under `distros/desktop-tauri`. Embedded hosts may trim it, but should keep the **error JSON shape** compatible with shared docs/tools. Linking only `oclive_kernel_runtime` does not provide the full `process_message`.
+- Complete orchestration is maintained once in **`kernel/crates/oclive_kernel_host`**, with the thin desktop shell under `distros/desktop-tauri`. Trusted Rust hosts use it through **`OcliveKernel`**. `oclive-cli ... --project-type library --kernel-source` links that full facade; manually linking only `oclive_kernel_runtime` still provides pure contracts/policy only.
+- Embedded hosts may trim peripheral pieces, but should preserve the **error JSON shape** and Event Ring authority boundary. Do not build a second pipeline around internal `AppState`.

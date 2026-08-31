@@ -4,7 +4,14 @@
 
 ## [Unreleased]
 
-There are currently no unreleased changes.
+### Added
+
+- **Stable in-process role-kernel API**: `oclive_kernel_host` now provides `OcliveKernelConfig`, `OcliveKernelBuilder`, and `OcliveKernel` for trusted Rust hosts, covering role load/list/info, complete and streaming turns, trusted `TurnOrigin`, Event Ring registration/proactive turns/diagnostics, file-backed SQLite persistence, and explicit shutdown. HTTP, Tauri, and libraries continue to share one `AppState` / `process_message` orchestration path.
+- **Runnable library scaffolds**: `oclive-cli init --project-type library --kernel-source` now links host/contracts/runtime/types and directly re-exports the stable role-kernel facade. Generated guidance includes a minimal complete turn, and a real generated project is covered by standalone `cargo check` regression.
+
+### Compatibility
+
+- **Additive Rust source-level facade**: role-pack schemas, HTTP/Tauri wire shapes, database migrations, and Event Ring authority semantics are unchanged. This is not a stable C ABI; Linux/ARM hardware, resource-budget, and long-soak proof remain tracked by `V-EMBED-01`.
 
 ## [0.5.2] - 2026-08-24
 

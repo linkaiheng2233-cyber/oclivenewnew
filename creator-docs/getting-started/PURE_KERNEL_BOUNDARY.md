@@ -14,12 +14,14 @@
 |------|------------------|
 | **回合编排** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
 | **槽位解析** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → 六槽折叠** |
-| **契约与持久化形状** | `oclive_kernel_runtime`（DTO / 纯 domain）· `migrations/001_init.sql` · `oclive_validation` |
+| **稳定进程内入口** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs`；复用同一 `AppState` / turn pipeline，不复制编排 |
+| **契约与持久化形状** | `oclive_kernel_types` / `oclive_kernel_contracts` / `oclive_kernel_runtime` · `migrations/001_init.sql` · `oclive_validation` |
 | **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
 
 ```text
 用户/设备边界          →  Vue / 硬件驱动 / 侧车进程（不在「内核」内）
 纯净内核               →  process_message + PluginHost + Repository 契约
+受支持的 Rust 集成入口 →  OcliveKernel（角色、回合、Event Ring、显式 shutdown）
 槽位实现（可替换）     →  builtin / remote / directory / local / ollama …
 灵魂数据（可定制）     →  角色包 pipeline.ocblueprint（v2）+ 知识/人格文件
 ```
@@ -76,10 +78,12 @@
 |------|------|----------|------|
 | **桌面宿主** | 玩家 / 创作者 | 可选（独立工程） | Tauri + Vue + 同一 domain |
 | **无头 HTTP** | 网关、机器人中控、CI 联调 | **Monolith 仅** `oclive-cli` 生成的 **kernel_server** 工程可选 | 主仓 **`oclive-kernel-server`** 与 **`oclivenewnew-tauri --api`** 等价（`http_api`）；默认端口 **8420**（`OCLIVE_API_PORT`） |
-| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 **`kernel/crates/oclive_kernel_runtime`**；`oclive-cli init --project-type library --kernel-source`；编排仍在 **`oclivenewnew-tauri`**（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
+| **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 `oclive_kernel_host` + contracts/runtime/types，由 **`OcliveKernel`** 提供角色加载、完整回合、流式回复、Event Ring 与持久化；`oclive-cli init --project-type library --kernel-source` 可直接生成（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
 | **HTTP `--api`** | 联调、CI、编写器试聊 | N/A | 当前主仓过渡方案，见 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
 **可拆可焊**：开发期槽位可替换（松耦合）；量产可选 Monolith 将选定 builtin 焊进单一二进制（紧耦合）。二者与 `settings.json` **正交**。
+
+这里的“稳定接口”指当前 Rust crate 的**受支持源码级门面**，不是稳定 C ABI。`AppState`、HTTP 路由和 Tauri command 都是内部装配/传输细节，集成方不应绕过 `OcliveKernel` 直接拼装第二条回合链。门面目前位于 `oclive_kernel_host`；调用时不需要启动 HTTP 或 Tauri，但该 crate 仍包含 HTTP 实现与相关依赖，后续可继续做依赖瘦身。
 
 ---
 
@@ -90,6 +94,7 @@
 - Linux 用户态、**数百 MB 级 RAM** 以上的设备或网关。
 - **Rust 异步**、HTTP/JSON-RPC、子进程目录插件、SQLite 持久化。
 - 与桌面**共用角色包**与 `plugin_backends` 形状。
+- 当前桌面开发机已用真实文件 SQLite、角色加载、普通/流式回合、Event Ring 注册与主动回合完成进程内集成测试。
 - 侧车 LLM（`remote`）、本机 Ollama（`ollama`）、目录插件扩展硬件。
 
 ### 明确不在范围内（勿过度承诺）
@@ -97,6 +102,7 @@
 - **硬实时**、**MCU / KB 级 RAM**、无 OS 裸机。
 - 内核内建**音视频编解码栈**（应走插件或设备侧服务）。
 - 多租户云端**隔离与计费**（未作为内核一等公民；B2 可单独立项）。
+- 尚不能把当前代码级验证等同于 Linux/ARM 真机、长期硬件 soak 或明确资源预算证明；状态见 `V-EMBED-01`。
 
 ---
 

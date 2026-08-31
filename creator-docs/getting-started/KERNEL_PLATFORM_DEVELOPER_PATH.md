@@ -23,7 +23,7 @@
 | 3 | 放入或编辑 **`distros/chat-pro/roles/<id>/`**（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | 4 | 目录插件 / 侧车（可选） | 见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)、[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <角色根> [--profile robot-soul]` | 契约与 RobotSoulPack 规则 |
-| 6 | 无头运行 | **`cargo run -p oclive_kernel_server -- --api`** 或生成工程内 **`cargo run`**（与 `--api` 等价）；或 **`oclivenewnew-tauri --api`** |
+| 6 | 运行 | 跨进程：**`cargo run -p oclive_kernel_server -- --api`** 或 **`oclivenewnew-tauri --api`**；进程内：由生成的 `library` 调用 **`OcliveKernel`** |
 | 7 | 部署 | 二进制 + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等 |
 
 ---
@@ -50,8 +50,46 @@
 
 ## 5. 嵌入式 `library` 形态
 
-- **`oclive-cli init --project-type library --kernel-source <oclivenewnew根>`** 生成 **`lib`**，依赖 **`oclive_kernel_runtime`**（无 Tauri）。
-- 在自有进程中使用 **`oclive_kernel_runtime::`** 的 DTO、纯解析逻辑与校验；**完整对话编排**（`process_message`、持久化与 `PluginHost`）位于 **`oclive_kernel_host`**，由 `oclive_kernel_server` 与 `distros/desktop-tauri` 复用。纯 library 形态尚未对称暴露这套完整宿主 API。
+- **`oclive-cli init --project-type library --kernel-source <oclivenewnew根>`** 生成可独立 `cargo check` 的 **`lib`**，直接重导出 `OcliveKernel` 以及 host/contracts/runtime/types；不依赖 Tauri，也不需要启动 HTTP。
+- `OcliveKernel` 是可信 Rust 宿主的受支持集成门面。它与桌面和无头服务复用同一 `AppState`、`process_message`、Repository、PluginHost、Event Ring 与资源协调路径，不建立第二套编排。
+
+### 最小进程内回合
+
+```rust,no_run
+use my_oclive_kernel::{types, KernelResult, OcliveKernel, OcliveKernelConfig};
+
+async fn one_turn() -> KernelResult<()> {
+    let config = OcliveKernelConfig::new("./data", "./roles");
+    let kernel = OcliveKernel::start(config).await?;
+    kernel.load_role("my-role").await?;
+
+    let response = kernel
+        .process_message(&types::SendMessageRequest {
+            role_id: "my-role".into(),
+            user_message: "你好".into(),
+            ..Default::default()
+        })
+        .await?;
+
+    println!("{}", response.reply);
+    kernel.shutdown().await;
+    Ok(())
+}
+```
+
+### 稳定门面包含什么
+
+| 类别 | 入口 |
+|------|------|
+| 生命周期 | `OcliveKernelConfig` → `OcliveKernel::start` / `builder` → 消费式 `shutdown(self)` |
+| 角色 | `list_roles` · `load_role` · `role_info` |
+| 回合 | `process_message` · `process_message_stream`；可信宿主另有 `*_with_origin` 的 `sensor` / `system` 边界 |
+| Event Ring | 实现 `contracts::EventModuleRegistrar`；`propose_proactive_turn` → 一次性 permit → `process_proactive_turn`；`event_ring_diagnostics` |
+| 宿主适配 | builder 可注入 `contracts::LlmClient` 与显式 `HostProfile`；错误保留 `KernelErrorBody` 稳定 code |
+
+`shutdown(self)` 会停止受管目录插件/模型运行时并等待 SQLite pool 关闭。若要跨任务共享，可由宿主把句柄放入 `Arc`，但结束时仍应恢复唯一所有权并显式关闭。
+
+**边界**：这是 Rust 源码级门面，不是 C ABI。内部 `AppState` 与 HTTP/Tauri 适配器不是集成合同。当前代码级闭环已验证；Linux/ARM 真机、资源预算和长时硬件 soak 仍属于 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 `V-EMBED-01`，不能因本接口存在而宣称硬件交付完成。
 
 ---
 

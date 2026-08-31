@@ -23,7 +23,7 @@ One minimal path for **integrators / hardware / gateways**, aligned with [PURE_K
 | 3 | Author **`distros/chat-pro/roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | 4 | Directory plugins / sidecars (optional) | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md), [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <role root> [--profile robot-soul]` | Contract + RobotSoulPack |
-| 6 | Headless | **`cargo run -p oclive_kernel_server -- --api`** or generated project **`cargo run`**; or **`oclivenewnew-tauri --api`** |
+| 6 | Run | Cross-process: **`cargo run -p oclive_kernel_server -- --api`** or **`oclivenewnew-tauri --api`**; in-process: call **`OcliveKernel`** from the generated `library` |
 | 7 | Ship | Binary + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), … |
 
 ---
@@ -50,8 +50,46 @@ Set `plugin_backends.llm = "remote"` and `OCLIVE_REMOTE_LLM_URL` ([SETTINGS_REFE
 
 ## 5. Embedded `library` shape
 
-- **`oclive-cli init --project-type library --kernel-source <repo root>`** → **`lib`** depending on **`oclive_kernel_runtime`** (no Tauri).
-- Use **`oclive_kernel_runtime::`** DTOs, pure resolution, and validation in your process. **Full turn orchestration** (`process_message`, persistence, and `PluginHost`) lives in **`oclive_kernel_host`**, shared by `oclive_kernel_server` and `distros/desktop-tauri`; the pure-library shape does not expose that complete host API yet.
+- **`oclive-cli init --project-type library --kernel-source <repo root>`** generates a standalone-`cargo check` **`lib`** that re-exports `OcliveKernel` and host/contracts/runtime/types. It needs neither Tauri nor an HTTP server.
+- `OcliveKernel` is the supported facade for trusted Rust hosts. It reuses the same `AppState`, `process_message`, repositories, PluginHost, Event Ring, and resource-coordination path as desktop and headless transports; it does not create another orchestration path.
+
+### Minimal in-process turn
+
+```rust,no_run
+use my_oclive_kernel::{types, KernelResult, OcliveKernel, OcliveKernelConfig};
+
+async fn one_turn() -> KernelResult<()> {
+    let config = OcliveKernelConfig::new("./data", "./roles");
+    let kernel = OcliveKernel::start(config).await?;
+    kernel.load_role("my-role").await?;
+
+    let response = kernel
+        .process_message(&types::SendMessageRequest {
+            role_id: "my-role".into(),
+            user_message: "Hello".into(),
+            ..Default::default()
+        })
+        .await?;
+
+    println!("{}", response.reply);
+    kernel.shutdown().await;
+    Ok(())
+}
+```
+
+### Stable facade surface
+
+| Category | Entry |
+|----------|-------|
+| Lifecycle | `OcliveKernelConfig` → `OcliveKernel::start` / `builder` → consuming `shutdown(self)` |
+| Roles | `list_roles` · `load_role` · `role_info` |
+| Turns | `process_message` · `process_message_stream`; trusted hosts also get `*_with_origin` for `sensor` / `system` |
+| Event Ring | Implements `contracts::EventModuleRegistrar`; `propose_proactive_turn` → one-use permit → `process_proactive_turn`; `event_ring_diagnostics` |
+| Host adapters | Builder injection for `contracts::LlmClient` and explicit `HostProfile`; errors retain stable `KernelErrorBody` codes |
+
+`shutdown(self)` stops managed directory-plugin/model runtimes and waits for the SQLite pool to close. Hosts may share the handle in an `Arc`, but should recover unique ownership and shut it down explicitly at process teardown.
+
+**Boundary**: this is a Rust source-level facade, not a C ABI. Internal `AppState` and HTTP/Tauri adapters are not integration contracts. The code-level loop is verified; Linux/ARM hardware, resource-budget, and long-soak proof remain under `V-EMBED-01` in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 ---
 

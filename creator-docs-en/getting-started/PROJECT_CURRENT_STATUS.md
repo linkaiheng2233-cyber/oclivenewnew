@@ -4,7 +4,7 @@
 
 [中文](../../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**Snapshot date**: 2026-08-22 (update this page’s opening paragraph and date on major milestones or version bumps)
+**Snapshot date**: 2026-08-31 (update this page’s opening paragraph and date on major milestones or version bumps)
 
 ---
 
@@ -12,7 +12,7 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.5.1** (align `package.json`, `distros/desktop-tauri/tauri.conf.json`, `distros/desktop-tauri/Cargo.toml`) |
+| Desktop app semver | **0.5.2** (align `package.json`, `distros/desktop-tauri/tauri.conf.json`, `distros/desktop-tauri/Cargo.toml`) |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
 
@@ -20,8 +20,8 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **Runtime**: Tauri desktop, role-pack import, `process_message`, six slots, directory / Remote plugins, and local HTTP `--api`; see [architecture overview](OCLIVE_ARCHITECTURE_OVERVIEW.md).
-- **Kernel programme**: milestones **K0–K5** are closed in plan except **P2 (OTA / remote logs, etc.)**; verification and CI: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).
+- **Runtime**: Tauri desktop, role-pack import, `process_message`, six slots, directory / Remote plugins, local HTTP `--api`, and the stable Rust in-process facade **`oclive_kernel_host::OcliveKernel`** that starts neither Tauri nor HTTP; see [architecture overview](OCLIVE_ARCHITECTURE_OVERVIEW.md).
+- **Kernel programme**: the **K0–K5** code paths are closed and complete in-process turns are verified. **P2 (OTA / remote logs, etc.)** and **V-EMBED-01 Linux/ARM/hardware, resource-budget, and long-soak proof** remain open; evidence: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).
 - **Release gates**: [CONTRIBUTING](../../CONTRIBUTING.en.md), CI, and the active [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 ---

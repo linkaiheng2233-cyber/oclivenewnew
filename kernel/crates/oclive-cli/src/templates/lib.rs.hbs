@@ -15,7 +15,7 @@ pub fn runtime_api_version() -> &'static str {
     oclive_kernel_runtime::RUNTIME_API_VERSION
 }
 {{#if library_kernel_demo}}
-// 该库直接导出完整、无 Tauri/HTTP 依赖的角色内核 facade。
+// 该库直接导出完整角色内核 facade；调用方无需启动 Tauri 或 HTTP 服务。
 // 使用 `OcliveKernel::builder` 注入自定义 LLM/HostProfile，或用
 // `OcliveKernel::start` 采用环境配置。
 {{/if}}

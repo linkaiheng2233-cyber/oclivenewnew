@@ -4,7 +4,7 @@
 
 [English](../../creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**快照日期**：2026-08-22（随大里程碑或版本号 bump 时应更新本页首段与日期）
+**快照日期**：2026-08-31（随大里程碑或版本号 bump 时应更新本页首段与日期）
 
 ---
 
@@ -12,7 +12,7 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.5.1**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
+| 桌面应用语义化版本 | **0.5.2**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
 
@@ -20,8 +20,8 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
-- **运行时**：Tauri 桌面端、角色包导入、`process_message` 主链、六槽模块、目录 / Remote 插件与本地 HTTP `--api`；架构见 [OCLIVE_ARCHITECTURE_OVERVIEW](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
-- **内核工程**：里程碑 **K0–K5** 在计划中除 **P2（OTA / 远程日志等）** 外已收口；验收留痕与 CI 见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
+- **运行时**：Tauri 桌面端、角色包导入、`process_message` 主链、六槽模块、目录 / Remote 插件、本地 HTTP `--api`，以及不启动 Tauri/HTTP 的稳定 Rust 进程内门面 **`oclive_kernel_host::OcliveKernel`**；架构见 [OCLIVE_ARCHITECTURE_OVERVIEW](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
+- **内核工程**：里程碑 **K0–K5** 的代码路径已收口；进程内完整回合已验证。**P2（OTA / 远程日志等）** 与 **V-EMBED-01 的 Linux/ARM/真机、资源预算和长时 soak** 仍未完成；验收留痕见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
 - **产品级「首发」门槛**：以 [CONTRIBUTING](../../CONTRIBUTING.md)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
 ---
