@@ -38,6 +38,7 @@ pub mod models;
 pub mod policy;
 pub mod proactive_event;
 pub mod prompt;
+pub mod runtime_event_trace;
 pub mod slot_extension;
 
 pub use agent::{
@@ -71,6 +72,10 @@ pub use proactive_event::{
     PROACTIVE_TURN_AUTHORIZED_EVENT_KIND, PROACTIVE_TURN_PROPOSED_EVENT_KIND,
 };
 pub use prompt::{PromptExtraSection, PromptInput};
+pub use runtime_event_trace::{
+    RuntimeEventTraceDiagnostics, RuntimeEventTraceErrorKind,
+    RUNTIME_EVENT_TRACE_DIAGNOSTICS_SCHEMA_VERSION,
+};
 pub use slot_extension::SlotExtension;
 
 pub use oclive_validation::{

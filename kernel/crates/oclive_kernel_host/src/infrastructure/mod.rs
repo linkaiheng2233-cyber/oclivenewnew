@@ -61,6 +61,7 @@ pub mod repositories;
 pub mod resource_adapters;
 pub mod resource_snapshot;
 pub mod role_pack;
+pub(crate) mod runtime_event_trace;
 pub mod slot_resolver_port;
 pub mod sql_migrate;
 pub mod sqlite_pool;

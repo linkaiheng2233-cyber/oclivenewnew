@@ -15,7 +15,7 @@ use oclive_kernel_types::models::dto::{
 };
 use oclive_kernel_types::{
     EventModuleDeclaration, EventModuleRegistryEntry, EventModuleRegistryPolicy,
-    EventRingDiagnostics, ProactiveTurnProposal,
+    EventRingDiagnostics, ProactiveTurnProposal, RuntimeEventTraceDiagnostics,
 };
 
 use crate::command_error::CommandError;
@@ -44,6 +44,7 @@ pub struct OcliveKernelConfig {
     app_data_dir: PathBuf,
     roles_dir: PathBuf,
     database_path: PathBuf,
+    runtime_event_trace_path: Option<PathBuf>,
 }
 
 impl OcliveKernelConfig {
@@ -56,6 +57,7 @@ impl OcliveKernelConfig {
             app_data_dir,
             roles_dir: roles_dir.as_ref().to_path_buf(),
             database_path,
+            runtime_event_trace_path: None,
         }
     }
 
@@ -63,6 +65,20 @@ impl OcliveKernelConfig {
     #[must_use]
     pub fn with_database_path(mut self, database_path: impl AsRef<Path>) -> Self {
         self.database_path = database_path.as_ref().to_path_buf();
+        self
+    }
+
+    /// Enable the trace-only Runtime Event shadow at an independent default SQLite path.
+    #[must_use]
+    pub fn with_runtime_event_trace(mut self) -> Self {
+        self.runtime_event_trace_path = Some(self.app_data_dir.join("runtime-event-trace.sqlite3"));
+        self
+    }
+
+    /// Enable the trace-only Runtime Event shadow at an explicit independent SQLite path.
+    #[must_use]
+    pub fn with_runtime_event_trace_path(mut self, path: impl AsRef<Path>) -> Self {
+        self.runtime_event_trace_path = Some(path.as_ref().to_path_buf());
         self
     }
 
@@ -79,6 +95,12 @@ impl OcliveKernelConfig {
     #[must_use]
     pub fn database_path(&self) -> &Path {
         self.database_path.as_path()
+    }
+
+    /// `None` means the shadow recorder is fully disabled.
+    #[must_use]
+    pub fn runtime_event_trace_path(&self) -> Option<&Path> {
+        self.runtime_event_trace_path.as_deref()
     }
 }
 
@@ -125,6 +147,9 @@ impl OcliveKernelBuilder {
             self.config.roles_dir().to_path_buf(),
             self.config.app_data_dir(),
         );
+        if let Some(trace_path) = self.config.runtime_event_trace_path() {
+            state_builder = state_builder.with_runtime_event_trace_path(trace_path);
+        }
         if let Some(host_profile) = self.host_profile {
             state_builder = state_builder.with_host_profile(host_profile);
         }
@@ -314,6 +339,12 @@ impl OcliveKernel {
         self.state.event_ring.diagnostics_snapshot(recent_limit)
     }
 
+    /// Return privacy-minimized health counters for the trace-only Runtime Event shadow.
+    #[must_use]
+    pub fn runtime_event_trace_diagnostics(&self) -> RuntimeEventTraceDiagnostics {
+        self.state.runtime_event_trace.diagnostics()
+    }
+
     /// Stop managed child processes and wait for the SQLite pool to close.
     ///
     /// Consuming the handle prevents the owner from issuing additional turns. Dropping a handle
@@ -323,6 +354,7 @@ impl OcliveKernel {
         if let Some(performance) = self.state.performance_llm.as_ref() {
             performance.suspend_managed_runtime("role kernel shutdown");
         }
+        self.state.runtime_event_trace.shutdown().await;
         self.state.db_manager.pool.close().await;
     }
 }

@@ -47,6 +47,7 @@ pub struct AppStateBuilder {
     high_risk_strict: bool,
     use_test_policy_default: bool,
     host_profile: Option<HostProfile>,
+    runtime_event_trace_path: Option<PathBuf>,
 }
 
 impl AppStateBuilder {
@@ -65,6 +66,7 @@ impl AppStateBuilder {
             high_risk_strict: true,
             use_test_policy_default: false,
             host_profile: None,
+            runtime_event_trace_path: None,
         }
     }
 
@@ -85,6 +87,7 @@ impl AppStateBuilder {
             high_risk_strict: false,
             use_test_policy_default: policy_file.is_none(),
             host_profile: None,
+            runtime_event_trace_path: None,
         }
     }
 
@@ -111,6 +114,12 @@ impl AppStateBuilder {
         self
     }
 
+    #[must_use]
+    pub(crate) fn with_runtime_event_trace_path(mut self, path: impl AsRef<Path>) -> Self {
+        self.runtime_event_trace_path = Some(path.as_ref().to_path_buf());
+        self
+    }
+
     #[cfg(test)]
     #[must_use]
     pub fn with_test_db_path(mut self, path: impl AsRef<Path>) -> Self {
@@ -122,6 +131,8 @@ impl AppStateBuilder {
     ///
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
     pub async fn build(self) -> Result<AppState> {
+        let runtime_event_trace_path = self.runtime_event_trace_path.clone();
+        let main_database_path = self.db_path.clone();
         let db = connect_db(&self.db_path).await?;
         let migrations_dir = crate::infrastructure::sql_migrate::find_migrations_dir()
             .map_err(|e| crate::error::AppError::DbMigrationFailed(e.to_string()))?;
@@ -374,7 +385,19 @@ impl AppStateBuilder {
         let user_llm_secrets: Arc<dyn oclive_kernel_contracts::UserLlmSecretsPort> =
             Arc::new(crate::infrastructure::user_llm_secrets::BuiltinUserLlmSecrets);
 
-        let event_ring = Arc::new(crate::domain::event_ring::EventRing::new());
+        let runtime_event_trace =
+            crate::infrastructure::runtime_event_trace::RuntimeEventTrace::start(
+                runtime_event_trace_path.as_deref(),
+                &main_database_path,
+            )
+            .await;
+        let event_ring = if runtime_event_trace.is_recording() {
+            Arc::new(crate::domain::event_ring::EventRing::with_trace_sink(
+                runtime_event_trace.clone(),
+            ))
+        } else {
+            Arc::new(crate::domain::event_ring::EventRing::new())
+        };
         let event_impact_emitter =
             crate::domain::event_ring::register_legacy_event_impact_source(event_ring.as_ref())
                 .map_err(AppError::InvalidParameter)?;
@@ -399,6 +422,7 @@ impl AppStateBuilder {
             ollama,
             performance_llm,
             resource_coordinator,
+            runtime_event_trace,
             event_ring,
             event_impact_emitter,
             memory_recollection_emitter,

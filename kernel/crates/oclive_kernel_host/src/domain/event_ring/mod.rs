@@ -62,6 +62,14 @@ struct EventModuleRuntimeState {
     failure_count: AtomicU64,
 }
 
+/// Internal, observation-only boundary invoked after a dispatch has committed to Ring history.
+///
+/// The sink cannot return an error or mutate Ring state. Implementations must keep this call
+/// non-blocking and move any fallible persistence work off the dispatch path.
+pub(crate) trait EventDispatchTraceSink: Send + Sync {
+    fn record_successful_dispatch(&self, events: &[EventEnvelope]);
+}
+
 /// Per-kernel Event Ring with a bounded ephemeral history and module registry.
 ///
 /// The ring owns no database writer and does not expose a distribution-specific protocol. A
@@ -73,6 +81,7 @@ pub struct EventRing {
     modules: Arc<RwLock<BTreeMap<String, RegisteredModule>>>,
     history: Arc<Mutex<VecDeque<EventEnvelope>>>,
     sequence: Arc<AtomicU64>,
+    trace_sink: Option<Arc<dyn EventDispatchTraceSink>>,
 }
 
 struct BoundEventEmitter {
@@ -86,6 +95,7 @@ impl Default for EventRing {
             modules: Arc::new(RwLock::new(BTreeMap::new())),
             history: Arc::new(Mutex::new(VecDeque::with_capacity(EVENT_HISTORY_CAPACITY))),
             sequence: Arc::new(AtomicU64::new(0)),
+            trace_sink: None,
         }
     }
 }
@@ -94,6 +104,13 @@ impl EventRing {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn with_trace_sink(trace_sink: Arc<dyn EventDispatchTraceSink>) -> Self {
+        Self {
+            trace_sink: Some(trace_sink),
+            ..Self::default()
+        }
     }
 
     async fn emit_from_registered(
@@ -220,6 +237,9 @@ impl EventRing {
             return Err(event_ring_error("dispatch produced no primary event"));
         };
         self.record_history(&processed);
+        if let Some(trace_sink) = self.trace_sink.as_ref() {
+            trace_sink.record_successful_dispatch(&processed);
+        }
         let emitted = processed.into_iter().skip(1).collect();
         Ok(EventDispatchResult { primary, emitted })
     }

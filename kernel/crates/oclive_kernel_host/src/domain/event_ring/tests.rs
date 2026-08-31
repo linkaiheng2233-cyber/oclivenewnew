@@ -10,6 +10,17 @@ struct StepModule {
 struct LoopModule;
 struct SourceModule;
 
+#[derive(Default)]
+struct RecordingTraceSink {
+    dispatches: Mutex<Vec<Vec<EventEnvelope>>>,
+}
+
+impl EventDispatchTraceSink for RecordingTraceSink {
+    fn record_successful_dispatch(&self, events: &[EventEnvelope]) {
+        self.dispatches.lock().push(events.to_vec());
+    }
+}
+
 struct InvalidIsolatedModule {
     calls: Arc<AtomicU64>,
 }
@@ -480,4 +491,68 @@ async fn recursive_emission_stops_without_committing_partial_history() {
 
     assert!(result.is_err());
     assert!(ring.recent_events(10).is_empty());
+}
+
+#[tokio::test]
+async fn trace_sink_observes_success_without_changing_dispatch_result() -> Result<()> {
+    let trace_sink = Arc::new(RecordingTraceSink::default());
+    let ring = EventRing::with_trace_sink(trace_sink.clone());
+    let emitter = source_emitter(&ring)?;
+    ring.register_event_module(step_module(
+        "test.trace_child",
+        "kernel.test.primary",
+        100,
+        "trace-child",
+        true,
+    ))
+    .map_err(AppError::InvalidParameter)?;
+
+    let result = emitter
+        .emit(
+            "trace-stream",
+            Some("trace-correlation"),
+            EventDraft {
+                kind: "kernel.test.primary".into(),
+                payload: serde_json::json!({"steps": []}),
+                metadata: BTreeMap::new(),
+            },
+        )
+        .await?;
+
+    let dispatches = trace_sink.dispatches.lock();
+    assert_eq!(dispatches.len(), 1);
+    let expected = std::iter::once(result.primary.clone())
+        .chain(result.emitted.iter().cloned())
+        .collect::<Vec<_>>();
+    assert_eq!(dispatches[0], expected);
+    assert_eq!(
+        result.primary.payload,
+        serde_json::json!({"steps": ["trace-child"]})
+    );
+    assert_eq!(result.emitted.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn trace_sink_does_not_observe_failed_dispatch() {
+    let trace_sink = Arc::new(RecordingTraceSink::default());
+    let ring = EventRing::with_trace_sink(trace_sink.clone());
+    let emitter = ring
+        .register_event_module(Arc::new(LoopModule))
+        .expect("loop module registration");
+
+    let result = emitter
+        .emit(
+            "trace-stream",
+            None,
+            EventDraft {
+                kind: "kernel.test.loop".into(),
+                payload: Value::Null,
+                metadata: BTreeMap::new(),
+            },
+        )
+        .await;
+
+    assert!(result.is_err());
+    assert!(trace_sink.dispatches.lock().is_empty());
 }
