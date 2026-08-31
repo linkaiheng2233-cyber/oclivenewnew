@@ -6,6 +6,8 @@
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
 > **下一篇**：[03 术语表](03_GLOSSARY.md) · 逐槽细节 → [MODULE_MAP §4–§12](../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
+配套学习图：[OCLive 架构学习长图（SVG，可无限放大）](assets/oclive-architecture-learning-map.svg) · [PNG](assets/oclive-architecture-learning-map.png)。图是学习摘要，模块定义仍以 MODULE_MAP 与源码为准。
+
 ---
 
 ## 一轮对话（主路径）

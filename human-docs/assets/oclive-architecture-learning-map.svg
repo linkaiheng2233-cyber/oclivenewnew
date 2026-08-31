@@ -1,0 +1,547 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="10200" viewBox="0 0 2400 10200" role="img" aria-labelledby="title desc">
+  <title id="title">OCLive 架构学习长图</title>
+  <desc id="desc">展示 OCLive 的 crate 依赖、process_message 路由、turn_pipeline 内部流程、六槽 Hook、Event Ring、插件解析、持久化与独立通道。</desc>
+  <defs>
+    <marker id="arrow-blue" markerWidth="14" markerHeight="14" refX="11" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 z" fill="#2463a8"/></marker>
+    <marker id="arrow-green" markerWidth="14" markerHeight="14" refX="11" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 z" fill="#27856f"/></marker>
+    <marker id="arrow-orange" markerWidth="14" markerHeight="14" refX="11" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 z" fill="#c66a18"/></marker>
+    <marker id="arrow-gray" markerWidth="14" markerHeight="14" refX="11" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,5 L0,10 z" fill="#68788b"/></marker>
+    <style>
+      text { font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif; fill: #172231; }
+      .title { font-size: 58px; font-weight: 700; letter-spacing: 2px; }
+      .subtitle { font-size: 25px; fill: #506175; }
+      .section-title { font-size: 38px; font-weight: 700; fill: #173b67; }
+      .section-note { font-size: 20px; fill: #647488; }
+      .node-title { font-size: 25px; font-weight: 700; }
+      .node-text { font-size: 20px; fill: #34475b; }
+      .small { font-size: 18px; fill: #5d6d7f; }
+      .tiny { font-size: 16px; fill: #617084; }
+      .code { font-family: Consolas, "Noto Sans SC", monospace; font-size: 18px; }
+      .section { fill: #ffffff; stroke: #cfd9e5; stroke-width: 2.5; rx: 26; }
+      .node { fill: #ffffff; stroke: #8ea2b8; stroke-width: 2.4; rx: 16; }
+      .node-core { fill: #eef6ff; stroke: #3c78b6; stroke-width: 2.6; rx: 16; }
+      .node-hook { fill: #eefaf6; stroke: #3b927c; stroke-width: 2.5; rx: 16; }
+      .node-event { fill: #fff6e9; stroke: #d37a28; stroke-width: 2.5; rx: 16; }
+      .node-data { fill: #f6f1ff; stroke: #8566b5; stroke-width: 2.5; rx: 16; }
+      .node-muted { fill: #f6f8fb; stroke: #9aa9b8; stroke-width: 2; rx: 16; }
+      .node-danger { fill: #fff1f1; stroke: #c85a5a; stroke-width: 2.4; rx: 16; }
+      .main { fill: none; stroke: #2463a8; stroke-width: 4; marker-end: url(#arrow-blue); }
+      .hook { fill: none; stroke: #27856f; stroke-width: 3.2; stroke-dasharray: 11 8; marker-end: url(#arrow-green); }
+      .event { fill: none; stroke: #c66a18; stroke-width: 3.5; marker-end: url(#arrow-orange); }
+      .dep { fill: none; stroke: #68788b; stroke-width: 2.8; marker-end: url(#arrow-gray); }
+      .dep-dash { fill: none; stroke: #7b8998; stroke-width: 2.4; stroke-dasharray: 9 7; marker-end: url(#arrow-gray); }
+      .lane { fill: none; stroke: #d6dee8; stroke-width: 2; }
+      .label-blue { font-size: 17px; font-weight: 700; fill: #2463a8; }
+      .label-green { font-size: 17px; font-weight: 700; fill: #27856f; }
+      .label-orange { font-size: 17px; font-weight: 700; fill: #b95d10; }
+      .label-red { font-size: 17px; font-weight: 700; fill: #b74b4b; }
+      .number { font-size: 25px; font-weight: 700; fill: #ffffff; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <rect width="2400" height="10200" fill="#ffffff"/>
+
+  <!-- Header -->
+  <text x="120" y="105" class="title">OCLive 架构学习长图</text>
+  <text x="120" y="160" class="subtitle">依赖层级 · process_message · turn_pipeline · 六槽 Hook · Event Ring · 持久化 · 独立通道</text>
+  <rect x="120" y="205" width="355" height="48" rx="24" fill="#eef6ff" stroke="#a7c7e8"/>
+  <text x="298" y="237" text-anchor="middle" class="small">现行源码快照 · 2026-08-31</text>
+  <rect x="495" y="205" width="270" height="48" rx="24" fill="#eefaf6" stroke="#a5d8c9"/>
+  <text x="630" y="237" text-anchor="middle" class="small">白底 · 可编辑矢量母版</text>
+  <rect x="785" y="205" width="360" height="48" rx="24" fill="#fff6e9" stroke="#edc497"/>
+  <text x="965" y="237" text-anchor="middle" class="small">学习摘要 · 不替代源码与 SSOT</text>
+  <line x1="1330" y1="226" x2="1410" y2="226" class="main"/><text x="1430" y="234" class="small">主运行流</text>
+  <line x1="1620" y1="226" x2="1700" y2="226" class="hook"/><text x="1720" y="234" class="small">Hook / 扩展点</text>
+  <line x1="1990" y1="226" x2="2070" y2="226" class="event"/><text x="2090" y="234" class="small">事件流</text>
+  <line x1="120" y1="292" x2="2280" y2="292" stroke="#dbe3ec" stroke-width="2"/>
+
+  <!-- Section 1 -->
+  <rect x="80" y="340" width="2240" height="1120" class="section"/>
+  <text x="125" y="410" class="section-title">01 · 全局依赖方向：谁调用谁，谁定义契约</text>
+  <text x="125" y="448" class="section-note">灰色箭头指向“被依赖层”。运行时流向在后续章节用蓝色表示；不要把两者混为一谈。</text>
+
+  <!-- dependency arrows behind nodes -->
+  <path d="M330 610 V700 H500 V755" class="dep"/>
+  <path d="M720 610 V700 H500 V755" class="dep"/>
+  <path d="M1110 610 V700 H1040 V755" class="dep"/>
+  <path d="M1500 610 V700 H1040 V755" class="dep"/>
+  <path d="M1940 610 V700 H1705 V755" class="dep"/>
+  <path d="M500 875 V935 H1130 V980" class="dep"/>
+  <path d="M1040 875 V935 H1130 V980" class="dep"/>
+  <path d="M1705 875 V935 H1130 V980" class="dep"/>
+  <path d="M1130 1100 V1150 H620 V1210" class="dep"/>
+  <path d="M1130 1100 V1150 H1060 V1210" class="dep"/>
+  <path d="M1130 1100 V1150 H1500 V1210" class="dep"/>
+  <path d="M620 1325 V1360 H1500 V1325" class="dep-dash"/>
+  <path d="M1060 1325 V1360 H1500 V1325" class="dep-dash"/>
+  <path d="M1900 1325 H1770" class="dep"/>
+
+  <rect x="150" y="500" width="360" height="110" class="node"/>
+  <text x="330" y="540" text-anchor="middle" class="node-title">Chat Pro / shared</text>
+  <text x="330" y="575" text-anchor="middle" class="node-text">Vue UI · Store · Tauri invoke</text>
+  <rect x="540" y="500" width="360" height="110" class="node"/>
+  <text x="720" y="540" text-anchor="middle" class="node-title">VS Code / 其他发行版</text>
+  <text x="720" y="575" text-anchor="middle" class="node-text">宿主 UI · HostProfile 差异</text>
+  <rect x="930" y="500" width="360" height="110" class="node"/>
+  <text x="1110" y="540" text-anchor="middle" class="node-title">HTTP / 无头宿主</text>
+  <text x="1110" y="575" text-anchor="middle" class="node-text">Kernel Server · OOCP</text>
+  <rect x="1320" y="500" width="360" height="110" class="node"/>
+  <text x="1500" y="540" text-anchor="middle" class="node-title">可信嵌入宿主</text>
+  <text x="1500" y="575" text-anchor="middle" class="node-text">Sensor / System / 机器人</text>
+  <rect x="1710" y="500" width="460" height="110" class="node-muted"/>
+  <text x="1940" y="540" text-anchor="middle" class="node-title">工具与测试</text>
+  <text x="1940" y="575" text-anchor="middle" class="node-text">CLI · fuzz · scaffold · ci_plan</text>
+
+  <rect x="280" y="755" width="440" height="120" class="node-core"/>
+  <text x="500" y="800" text-anchor="middle" class="node-title">oclivenewnew-tauri</text>
+  <text x="500" y="837" text-anchor="middle" class="node-text">桌面 IPC 薄壳 · api/*.rs</text>
+  <rect x="820" y="755" width="440" height="120" class="node-core"/>
+  <text x="1040" y="800" text-anchor="middle" class="node-title">oclive_kernel_server</text>
+  <text x="1040" y="837" text-anchor="middle" class="node-text">HTTP / SSE 薄入口</text>
+  <rect x="1475" y="755" width="460" height="120" class="node-muted"/>
+  <text x="1705" y="800" text-anchor="middle" class="node-title">oclive-cli / test harness</text>
+  <text x="1705" y="837" text-anchor="middle" class="node-text">诊断、脚手架、验证、基准</text>
+
+  <rect x="780" y="980" width="700" height="120" class="node-core"/>
+  <text x="1130" y="1025" text-anchor="middle" class="node-title">oclive_kernel_host</text>
+  <text x="1130" y="1062" text-anchor="middle" class="node-text">编排 + 状态 + DB 端口 + 插件装配 · process_message</text>
+
+  <rect x="390" y="1210" width="460" height="115" class="node-core"/>
+  <text x="620" y="1252" text-anchor="middle" class="node-title">oclive_kernel_runtime</text>
+  <text x="620" y="1287" text-anchor="middle" class="node-text">Prompt / 纯策略 / 解析公式</text>
+  <rect x="830" y="1210" width="460" height="115" class="node-hook"/>
+  <text x="1060" y="1252" text-anchor="middle" class="node-title">oclive_kernel_contracts</text>
+  <text x="1060" y="1287" text-anchor="middle" class="node-text">trait · Port · Hook 契约</text>
+  <rect x="1270" y="1210" width="460" height="115" class="node-data"/>
+  <text x="1500" y="1252" text-anchor="middle" class="node-title">oclive_kernel_types</text>
+  <text x="1500" y="1287" text-anchor="middle" class="node-text">DTO · AppError · EventEnvelope</text>
+  <rect x="1770" y="1210" width="350" height="115" class="node-muted"/>
+  <text x="1945" y="1252" text-anchor="middle" class="node-title">validation / sqlx</text>
+  <text x="1945" y="1287" text-anchor="middle" class="node-text">格式校验 / 持久化设施</text>
+  <text x="125" y="1400" class="small">口诀：Types 定义形状 · Contracts 定义接口 · Runtime 提供纯公式 · Host 负责编排 · Tauri/HTTP 只做入口。</text>
+
+  <!-- Section 2 -->
+  <rect x="80" y="1500" width="2240" height="1250" class="section"/>
+  <text x="125" y="1570" class="section-title">02 · 一轮消息如何进入内核：process_message 与显式分支</text>
+  <text x="125" y="1608" class="section-note">主编排顺序由 Rust 代码固定；pipeline.ocblueprint 的 steps[] 不负责首轮调度。</text>
+
+  <path d="M340 1810 H610" class="main"/>
+  <path d="M340 1980 H610" class="main"/>
+  <path d="M340 2150 H610" class="event"/>
+  <path d="M940 1810 H1110" class="main"/>
+  <path d="M940 1980 H1110" class="main"/>
+  <path d="M940 2150 H1110" class="event"/>
+  <path d="M1390 1980 H1530" class="main"/>
+  <path d="M1810 1980 H1950" class="main"/>
+  <path d="M1670 2050 V2210 H500 V2280" class="main"/>
+  <path d="M1670 2050 V2210 H970 V2280" class="main"/>
+  <path d="M1670 2050 V2210 H1440 V2280" class="main"/>
+  <path d="M1670 2050 V2210 H1910 V2280" class="main"/>
+  <path d="M500 2400 V2580 H970 V2630" class="main"/>
+  <path d="M970 2400 V2580 H970 V2630" class="main"/>
+  <path d="M1440 2400 V2580 H970 V2630" class="main"/>
+  <path d="M1910 2400 V2580 H970 V2630" class="main"/>
+
+  <rect x="130" y="1745" width="420" height="130" class="node"/>
+  <text x="340" y="1790" text-anchor="middle" class="node-title">用户输入</text>
+  <text x="340" y="1826" text-anchor="middle" class="node-text">Chat Pro / VS Code / HTTP</text>
+  <text x="340" y="1855" text-anchor="middle" class="small">TurnOrigin::User</text>
+  <rect x="130" y="1915" width="420" height="130" class="node-hook"/>
+  <text x="340" y="1960" text-anchor="middle" class="node-title">可信 Sensor / System</text>
+  <text x="340" y="1996" text-anchor="middle" class="node-text">process_message_with_origin</text>
+  <text x="340" y="2025" text-anchor="middle" class="small">读上下文，不持久化用户状态</text>
+  <rect x="130" y="2085" width="420" height="130" class="node-event"/>
+  <text x="340" y="2130" text-anchor="middle" class="node-title">Event 授权主动输入</text>
+  <text x="340" y="2166" text-anchor="middle" class="node-text">ProactiveTurnPermit</text>
+  <text x="340" y="2195" text-anchor="middle" class="small">详见第 04 节</text>
+
+  <rect x="610" y="1745" width="330" height="130" class="node-core"/>
+  <text x="775" y="1790" text-anchor="middle" class="node-title">Tauri / HTTP API</text>
+  <text x="775" y="1826" text-anchor="middle" class="node-text">固定 User 来源</text>
+  <text x="775" y="1855" text-anchor="middle" class="small">外部请求不能选低持久化 origin</text>
+  <rect x="610" y="1915" width="330" height="130" class="node-core"/>
+  <text x="775" y="1960" text-anchor="middle" class="node-title">嵌入式入口</text>
+  <text x="775" y="1996" text-anchor="middle" class="node-text">显式 origin</text>
+  <text x="775" y="2025" text-anchor="middle" class="small">ExternalObservation</text>
+  <rect x="610" y="2085" width="330" height="130" class="node-event"/>
+  <text x="775" y="2130" text-anchor="middle" class="node-title">process_proactive_turn</text>
+  <text x="775" y="2166" text-anchor="middle" class="node-text">消费一次性 Permit</text>
+  <text x="775" y="2195" text-anchor="middle" class="small">user_message 始终为空</text>
+
+  <rect x="1110" y="1740" width="280" height="480" class="node-core"/>
+  <text x="1250" y="1790" text-anchor="middle" class="node-title">process_message::run</text>
+  <text x="1140" y="1840" class="node-text">① role/session/scene</text>
+  <text x="1140" y="1880" class="node-text">② preflight_turn</text>
+  <text x="1140" y="1920" class="node-text">③ TurnContext</text>
+  <text x="1140" y="1960" class="node-text">④ correlation_id</text>
+  <text x="1140" y="2000" class="node-text">⑤ dispatch_turn</text>
+  <line x1="1140" y1="2030" x2="1360" y2="2030" stroke="#b8c8d8"/>
+  <text x="1140" y="2070" class="small">流式版本共享同一结构，</text>
+  <text x="1140" y="2102" class="small">仅 LLM token 通过 sink 输出。</text>
+  <text x="1140" y="2160" class="label-red">不读取 steps[] 作为 DSL</text>
+
+  <rect x="1530" y="1705" width="280" height="345" class="node-muted"/>
+  <text x="1670" y="1750" text-anchor="middle" class="node-title">preflight_turn</text>
+  <text x="1560" y="1795" class="small">• ensure runtime / role</text>
+  <text x="1560" y="1830" class="small">• per-session turn lock</text>
+  <text x="1560" y="1865" class="small">• EffectiveSessionConfig</text>
+  <text x="1560" y="1900" class="small">• startup health</text>
+  <text x="1560" y="1935" class="small">• resolve plugins</text>
+  <text x="1560" y="1970" class="small">• prefetch + runtime snapshot</text>
+  <text x="1560" y="2005" class="small">• virtual time / presence</text>
+  <rect x="1950" y="1890" width="230" height="180" class="node-hook"/>
+  <text x="2065" y="1935" text-anchor="middle" class="node-title">Agent Hook</text>
+  <text x="2065" y="1972" text-anchor="middle" class="node-text">agent.process</text>
+  <text x="2065" y="2008" text-anchor="middle" class="small">handled=true</text>
+  <text x="2065" y="2038" text-anchor="middle" class="small">→ 短路主链</text>
+
+  <rect x="290" y="2280" width="420" height="120" class="node-muted"/>
+  <text x="500" y="2325" text-anchor="middle" class="node-title">Remote Stub</text>
+  <text x="500" y="2362" text-anchor="middle" class="node-text">异地但 remote_life 未启用</text>
+  <rect x="760" y="2280" width="420" height="120" class="node-muted"/>
+  <text x="970" y="2325" text-anchor="middle" class="node-title">Remote Life</text>
+  <text x="970" y="2362" text-anchor="middle" class="node-text">用户异地生活分支</text>
+  <rect x="1230" y="2280" width="420" height="120" class="node-muted"/>
+  <text x="1440" y="2325" text-anchor="middle" class="node-title">Dual Core（可选）</text>
+  <text x="1440" y="2362" text-anchor="middle" class="node-text">Experimental → Stable fallback</text>
+  <rect x="1700" y="2280" width="420" height="120" class="node-core"/>
+  <text x="1910" y="2325" text-anchor="middle" class="node-title">Co-present Stable</text>
+  <text x="1910" y="2362" text-anchor="middle" class="node-text">默认共景 turn_pipeline</text>
+
+  <rect x="710" y="2630" width="520" height="70" class="node-core"/>
+  <text x="970" y="2675" text-anchor="middle" class="node-title">SendMessageResponse.reply</text>
+  <text x="1270" y="2675" class="small">所有路径统一回到同一 DTO</text>
+
+  <!-- Section 3 -->
+  <rect x="80" y="2790" width="2240" height="2860" class="section"/>
+  <text x="125" y="2860" class="section-title">03 · Stable 共景 Pipeline：内部运行流程与 Hook 位置</text>
+  <text x="125" y="2898" class="section-note">蓝色竖线是主流程；绿色虚线是槽位/设施 Hook。Hook 更换实现，不改变主编排顺序。</text>
+
+  <!-- central pipeline arrows -->
+  <path d="M1030 3025 V3075" class="main"/>
+  <path d="M1030 3495 V3545" class="main"/>
+  <path d="M1030 4295 V4345" class="main"/>
+  <path d="M1030 4695 V4745" class="main"/>
+  <path d="M1030 5045 V5095" class="main"/>
+  <path d="M1030 5515 V5560" class="main"/>
+
+  <!-- hook connectors -->
+  <path d="M1600 3170 H1680" class="hook"/>
+  <path d="M1600 3290 H1680" class="hook"/>
+  <path d="M1600 3410 H1680" class="hook"/>
+  <path d="M1600 3660 H1680" class="hook"/>
+  <path d="M1600 3805 H1680" class="hook"/>
+  <path d="M1600 3960 H1680" class="hook"/>
+  <path d="M1600 4435 H1680" class="hook"/>
+  <path d="M1600 4835 H1680" class="hook"/>
+  <path d="M1600 5220 H1680" class="hook"/>
+  <path d="M1600 5370 H1680" class="hook"/>
+
+  <circle cx="180" cy="2985" r="34" fill="#2463a8"/><text x="180" y="2988" class="number">0</text>
+  <text x="235" y="2995" class="node-title">execute_turn(ctx, CoPresent)</text>
+  <rect x="420" y="2940" width="1180" height="85" class="node-core"/>
+  <text x="1010" y="2992" text-anchor="middle" class="node-text">pre_llm → run_middle → run_main_llm / stream → post_llm</text>
+
+  <circle cx="180" cy="3130" r="34" fill="#2463a8"/><text x="180" y="3133" class="number">1</text>
+  <rect x="420" y="3075" width="1180" height="420" class="node-core"/>
+  <text x="470" y="3125" class="node-title">pre_llm · 上下文准备（第一波并行）</text>
+  <line x1="470" y1="3150" x2="1550" y2="3150" stroke="#b5c8dc"/>
+  <text x="470" y="3195" class="node-text">A. personality / recent turns / recent events / event runtime</text>
+  <text x="470" y="3240" class="node-text">B. emotion.analyze（仅用户来源）→ EmotionResult → Auto 路由证据</text>
+  <text x="470" y="3285" class="node-text">C. effective LLM model + 上一轮 complex_emotion narrative_hint</text>
+  <text x="470" y="3330" class="node-text">D. memory load + user_identity / relation key</text>
+  <line x1="470" y1="3360" x2="1550" y2="3360" stroke="#d0d9e3"/>
+  <text x="470" y="3405" class="node-text">串行收口：时间演化 → 记忆强化 → memory.rank → relation snapshot / transition</text>
+  <text x="470" y="3450" class="small">输出 PreLlmOutput：memory · relation · hints（三组只读上下文）</text>
+
+  <rect x="1680" y="3100" width="510" height="120" class="node-hook"/>
+  <text x="1935" y="3142" text-anchor="middle" class="node-title">② emotion 槽 Hook</text>
+  <text x="1935" y="3178" text-anchor="middle" class="node-text">UserEmotionAnalyzer</text>
+  <text x="1935" y="3206" text-anchor="middle" class="small">builtin / remote / directory / none</text>
+  <rect x="1680" y="3240" width="510" height="120" class="node-hook"/>
+  <text x="1935" y="3282" text-anchor="middle" class="node-title">① memory 槽 Hook</text>
+  <text x="1935" y="3318" text-anchor="middle" class="node-text">MemoryRetrieval · 去重合并</text>
+  <text x="1935" y="3346" text-anchor="middle" class="small">读取 STM / LTM，聊天日志不是真源</text>
+  <rect x="1680" y="3380" width="510" height="100" class="node-hook"/>
+  <text x="1935" y="3420" text-anchor="middle" class="node-title">独立 Hook · user_identity</text>
+  <text x="1935" y="3455" text-anchor="middle" class="node-text">身份模板 + relation 映射</text>
+
+  <circle cx="180" cy="3600" r="34" fill="#2463a8"/><text x="180" y="3603" class="number">2</text>
+  <rect x="420" y="3545" width="1180" height="750" class="node-core"/>
+  <text x="470" y="3595" class="node-title">co_present::run_middle · 决策、事件、PromptInput</text>
+  <line x1="470" y1="3620" x2="1550" y2="3620" stroke="#b5c8dc"/>
+  <text x="470" y="3665" class="node-text">① rules-only event estimate → TurnThinkingRouter（Fast / Deep / Auto）</text>
+  <text x="470" y="3710" class="node-text">② complex_emotion 快路径或延迟到 post 的 [EMO] 标记解析</text>
+  <text x="470" y="3755" class="node-text">③ KnowledgeIndex 检索 · life schedule · scene / continuity / adult context</text>
+  <text x="470" y="3800" class="node-text">④ event 槽估计 → publish_legacy_event_impact → Event Ring</text>
+  <text x="470" y="3845" class="node-text">⑤ memory.recall.candidate → Ring 决策 → recollection.activated</text>
+  <text x="470" y="3890" class="node-text">⑥ personality / favor / relation 只做本轮预览（是否写入由后段策略决定）</text>
+  <line x1="470" y1="3920" x2="1550" y2="3920" stroke="#d0d9e3"/>
+  <text x="470" y="3965" class="node-text">PromptExtraSection：外部观察 · 被唤起回忆 · 输出格式 · 连续性 · 扩展段</text>
+  <text x="470" y="4010" class="node-text">ModelTier：Small / Large → PersonaSource：Capsule / FullCore</text>
+  <text x="470" y="4055" class="node-text">PromptInput 汇总：角色、人设、记忆、身份、关系、情绪、事件、场景、知识</text>
+  <text x="470" y="4115" class="small">Turn Thinking 是编排行策略，不是第七槽；Fast 可跳过昂贵步骤，但不改变六槽定义。</text>
+  <rect x="470" y="4160" width="1030" height="85" class="node-event"/>
+  <text x="985" y="4213" text-anchor="middle" class="node-text">Event Ring 在 middle 内参与 legacy event 与记忆激活；主动事件链在第 04 节。</text>
+
+  <rect x="1680" y="3560" width="510" height="120" class="node-hook"/>
+  <text x="1935" y="3602" text-anchor="middle" class="node-title">③ event 槽 Hook</text>
+  <text x="1935" y="3638" text-anchor="middle" class="node-text">EventEstimator</text>
+  <text x="1935" y="3666" text-anchor="middle" class="small">legacy event.impact 子槽</text>
+  <rect x="1680" y="3700" width="510" height="140" class="node-hook"/>
+  <text x="1935" y="3742" text-anchor="middle" class="node-title">设施① complex_emotion</text>
+  <text x="1935" y="3778" text-anchor="middle" class="node-text">emotion + context → hint</text>
+  <text x="1935" y="3810" text-anchor="middle" class="small">不是六槽；本轮标记在 post 解析</text>
+  <rect x="1680" y="3860" width="510" height="140" class="node-hook"/>
+  <text x="1935" y="3902" text-anchor="middle" class="node-title">编排行设施</text>
+  <text x="1935" y="3938" text-anchor="middle" class="node-text">Turn Thinking / Continuity</text>
+  <text x="1935" y="3970" text-anchor="middle" class="small">HostProfile + 角色包策略</text>
+
+  <circle cx="180" cy="4400" r="34" fill="#2463a8"/><text x="180" y="4403" class="number">3</text>
+  <rect x="420" y="4345" width="1180" height="350" class="node-core"/>
+  <text x="470" y="4395" class="node-title">BuildPrompt · ④ prompt 槽</text>
+  <text x="470" y="4445" class="node-text">PromptAssembler / PromptBuilder::build_prompt 或 build_prompt_segments</text>
+  <text x="470" y="4490" class="node-text">稳定前缀 + 动态后缀 → prefix cache key / hash / expected hit</text>
+  <text x="470" y="4535" class="node-text">Tier0：系统纪律 + 角色人格 + 用户/外部观察；页脚 guardrails 恒追加</text>
+  <text x="470" y="4580" class="node-text">包级 reply_quality_anchor 可替；KERNEL_DIALOGUE_GUARDRAILS 不可替</text>
+  <text x="470" y="4630" class="small">输出：最终 prompt String + prefix cache 元数据</text>
+  <rect x="1680" y="4355" width="510" height="150" class="node-hook"/>
+  <text x="1935" y="4397" text-anchor="middle" class="node-title">④ prompt 槽 Hook</text>
+  <text x="1935" y="4433" text-anchor="middle" class="node-text">PromptAssembler</text>
+  <text x="1935" y="4465" text-anchor="middle" class="small">共景禁止 none</text>
+  <text x="1935" y="4493" text-anchor="middle" class="small">可提供稳定分段能力</text>
+
+  <circle cx="180" cy="4800" r="34" fill="#2463a8"/><text x="180" y="4803" class="number">4</text>
+  <rect x="420" y="4745" width="1180" height="300" class="node-core"/>
+  <text x="470" y="4795" class="node-title">run_main_llm / run_main_llm_stream · ⑤ llm 槽</text>
+  <text x="470" y="4845" class="node-text">选择主 LLM（多实例 last-wins）· 可选专家 LoRA / dual pipeline</text>
+  <text x="470" y="4890" class="node-text">非流式 generate 或流式 token sink；首 token 前失败才允许 fallback</text>
+  <text x="470" y="4935" class="node-text">回复契约检查 → 必要时 repair → 安全 fallback；已出 token 后不重跑</text>
+  <text x="470" y="4990" class="small">输出 MainLlmOutput：reply · raw/fallback · timing</text>
+  <rect x="1680" y="4755" width="510" height="130" class="node-hook"/>
+  <text x="1935" y="4797" text-anchor="middle" class="node-title">⑤ llm 槽 Hook</text>
+  <text x="1935" y="4833" text-anchor="middle" class="node-text">LlmClient · stream</text>
+  <text x="1935" y="4863" text-anchor="middle" class="small">GGUF / Ollama / remote / directory</text>
+  <rect x="1680" y="4910" width="510" height="100" class="node-hook"/>
+  <text x="1935" y="4950" text-anchor="middle" class="node-title">设施② 专家路由（可选）</text>
+  <text x="1935" y="4985" text-anchor="middle" class="small">预声明 adapter；默认关</text>
+
+  <circle cx="180" cy="5150" r="34" fill="#2463a8"/><text x="180" y="5153" class="number">5</text>
+  <rect x="420" y="5095" width="1180" height="420" class="node-core"/>
+  <text x="470" y="5145" class="node-title">post_llm · 语义清理、展示处理、持久化与响应装配</text>
+  <text x="470" y="5195" class="node-text">① parse [EMO] / adult envelope → semantic reply</text>
+  <text x="470" y="5240" class="node-text">② reply_mode 去除协议标记 → bot emotion / policy 分析</text>
+  <text x="470" y="5285" class="node-text">③ 非用户来源：reply_post_process → 直接装配响应（effects_persisted=false）</text>
+  <text x="470" y="5330" class="node-text">④ 用户来源：profile evolution + atomic movement/portrait/memory/relation</text>
+  <text x="470" y="5375" class="node-text">⑤ reply_post_process → reply_mode 分段 → chat append → continuity / runtime state</text>
+  <text x="470" y="5420" class="node-text">⑥ assemble SendMessageResponse：reply / emotion / visual / timing / diagnostics</text>
+  <text x="470" y="5475" class="small">聊天日志写入与 AI 记忆写入是两套责任；失败/回退信息通过结构化字段返回。</text>
+
+  <rect x="1680" y="5105" width="510" height="150" class="node-hook"/>
+  <text x="1935" y="5147" text-anchor="middle" class="node-title">独立 Hook · reply_post_process</text>
+  <text x="1935" y="5183" text-anchor="middle" class="node-text">raw reply → 显示回复</text>
+  <text x="1935" y="5215" text-anchor="middle" class="small">失败回退 raw；不改主 LLM</text>
+  <rect x="1680" y="5280" width="510" height="160" class="node-hook"/>
+  <text x="1935" y="5322" text-anchor="middle" class="node-title">展示与设施 Hook</text>
+  <text x="1935" y="5358" text-anchor="middle" class="node-text">reply_mode · portrait</text>
+  <text x="1935" y="5390" text-anchor="middle" class="node-text">visual presentation directive</text>
+  <text x="1935" y="5422" text-anchor="middle" class="small">立绘是设施③，不是 LLM 槽</text>
+
+  <rect x="700" y="5560" width="660" height="60" class="node-core"/>
+  <text x="1030" y="5600" text-anchor="middle" class="node-title">SendMessageResponse.reply → 宿主 / UI</text>
+
+  <!-- Section 4 -->
+  <rect x="80" y="5690" width="2240" height="1740" class="section"/>
+  <text x="125" y="5760" class="section-title">04 · Event Ring：围绕模块的事件权威外环</text>
+  <text x="125" y="5798" class="section-note">模块可以提案，但 Ring 签发来源、权重、序号、correlation 与 causation；权重是采纳影响力，不是执行顺序。</text>
+
+  <!-- ring -->
+  <ellipse cx="1180" cy="6280" rx="720" ry="390" fill="#fffaf2" stroke="#d37a28" stroke-width="8" stroke-dasharray="18 10"/>
+  <path d="M1180 5890 C1530 5890 1800 6030 1880 6230" class="event"/>
+  <path d="M1880 6330 C1800 6520 1530 6670 1200 6670" class="event"/>
+  <path d="M1160 6670 C820 6670 550 6520 480 6330" class="event"/>
+  <path d="M480 6230 C560 6030 820 5890 1160 5890" class="event"/>
+
+  <rect x="900" y="6100" width="560" height="350" class="node-event"/>
+  <text x="1180" y="6150" text-anchor="middle" class="node-title">Event Ring Authority</text>
+  <text x="940" y="6200" class="node-text">• EventDraft → EventEnvelope</text>
+  <text x="940" y="6240" class="node-text">• source-bound EventEmitter</text>
+  <text x="940" y="6280" class="node-text">• priority + module_id 路由</text>
+  <text x="940" y="6320" class="node-text">• fail_fast / isolate</text>
+  <text x="940" y="6360" class="node-text">• 有界内存历史 + 隐私诊断</text>
+  <text x="940" y="6400" class="small">每个 AppState 独立；本身不写 DB</text>
+
+  <rect x="235" y="6080" width="430" height="170" class="node-hook"/>
+  <text x="450" y="6125" text-anchor="middle" class="node-title">Memory Recollection</text>
+  <text x="450" y="6162" text-anchor="middle" class="node-text">recall.candidate</text>
+  <text x="450" y="6198" text-anchor="middle" class="node-text">→ activated → Prompt</text>
+  <text x="450" y="6230" text-anchor="middle" class="small">事件不携带记忆正文</text>
+  <path d="M665 6165 H900" class="event"/>
+
+  <rect x="860" y="5835" width="640" height="150" class="node-hook"/>
+  <text x="1180" y="5880" text-anchor="middle" class="node-title">Registry + Policy</text>
+  <text x="1180" y="5917" text-anchor="middle" class="node-text">声明 subscriptions / emissions / priority</text>
+  <text x="1180" y="5952" text-anchor="middle" class="small">宿主分配 base influence weight 与 failure mode</text>
+  <path d="M1180 5985 V6100" class="event"/>
+
+  <rect x="1695" y="6080" width="430" height="170" class="node-hook"/>
+  <text x="1910" y="6125" text-anchor="middle" class="node-title">Proactive Decision</text>
+  <text x="1910" y="6162" text-anchor="middle" class="node-text">proposed → authorized</text>
+  <text x="1910" y="6198" text-anchor="middle" class="node-text">→ one-shot Permit</text>
+  <text x="1910" y="6230" text-anchor="middle" class="small">仅可信来源可提根事件</text>
+  <path d="M1695 6165 H1460" class="event"/>
+
+  <rect x="820" y="6540" width="720" height="150" class="node-muted"/>
+  <text x="1180" y="6585" text-anchor="middle" class="node-title">Directory Event Module Bridge</text>
+  <text x="1180" y="6622" text-anchor="middle" class="node-text">eventRing manifest + event_ring.handle RPC</text>
+  <text x="1180" y="6657" text-anchor="middle" class="small">仅安全精确订阅 + plugin.&lt;id&gt;.* 子事件；错误隔离</text>
+  <path d="M1180 6540 V6450" class="event"/>
+
+  <!-- three tracks -->
+  <text x="145" y="6805" class="label-orange">A · legacy 对话事件</text>
+  <rect x="370" y="6755" width="330" height="95" class="node-event"/><text x="535" y="6794" text-anchor="middle" class="node-title">③ event.impact</text><text x="535" y="6828" text-anchor="middle" class="small">规则 / LLM 估计</text>
+  <rect x="820" y="6755" width="330" height="95" class="node-event"/><text x="985" y="6794" text-anchor="middle" class="node-title">Event Ring</text><text x="985" y="6828" text-anchor="middle" class="small">权威信封</text>
+  <rect x="1270" y="6755" width="420" height="95" class="node-core"/><text x="1480" y="6794" text-anchor="middle" class="node-title">Personality / Favor</text><text x="1480" y="6828" text-anchor="middle" class="small">受 Turn Thinking 持久化策略约束</text>
+  <path d="M700 6803 H820" class="event"/><path d="M1150 6803 H1270" class="event"/>
+
+  <text x="145" y="6940" class="label-orange">B · 回忆激活</text>
+  <rect x="370" y="6890" width="330" height="95" class="node-event"/><text x="535" y="6929" text-anchor="middle" class="node-title">recall.candidate</text><text x="535" y="6963" text-anchor="middle" class="small">ID + relevance/confidence</text>
+  <rect x="820" y="6890" width="330" height="95" class="node-event"/><text x="985" y="6929" text-anchor="middle" class="node-title">event_decision</text><text x="985" y="6963" text-anchor="middle" class="small">weight + evidence</text>
+  <rect x="1270" y="6890" width="420" height="95" class="node-core"/><text x="1480" y="6929" text-anchor="middle" class="node-title">recollection.activated</text><text x="1480" y="6963" text-anchor="middle" class="small">weave / latent / explicit → Prompt</text>
+  <path d="M700 6938 H820" class="event"/><path d="M1150 6938 H1270" class="event"/>
+
+  <text x="145" y="7075" class="label-orange">C · 主动回合</text>
+  <rect x="370" y="7025" width="280" height="95" class="node-event"/><text x="510" y="7064" text-anchor="middle" class="node-title">turn.proposed</text><text x="510" y="7098" text-anchor="middle" class="small">confidence + urgency</text>
+  <rect x="740" y="7025" width="280" height="95" class="node-event"/><text x="880" y="7064" text-anchor="middle" class="node-title">turn.authorized</text><text x="880" y="7098" text-anchor="middle" class="small">因果链匹配</text>
+  <rect x="1110" y="7025" width="280" height="95" class="node-event"/><text x="1250" y="7064" text-anchor="middle" class="node-title">Permit</text><text x="1250" y="7098" text-anchor="middle" class="small">不可构造/克隆 · 一次性</text>
+  <rect x="1480" y="7025" width="390" height="95" class="node-core"/><text x="1675" y="7064" text-anchor="middle" class="node-title">process_proactive_turn</text><text x="1675" y="7098" text-anchor="middle" class="small">ExternalObservation → CoPresent</text>
+  <path d="M650 7073 H740" class="event"/><path d="M1020 7073 H1110" class="event"/><path d="M1390 7073 H1480" class="event"/>
+
+  <rect x="1900" y="6755" width="260" height="395" class="node-danger"/>
+  <text x="2030" y="6800" text-anchor="middle" class="node-title">主动回合边界</text>
+  <text x="1930" y="6845" class="small">不伪造 User</text>
+  <text x="1930" y="6880" class="small">不写聊天记录</text>
+  <text x="1930" y="6915" class="small">不写 STM / LTM</text>
+  <text x="1930" y="6950" class="small">不写关系 / 人格</text>
+  <text x="1930" y="6985" class="small">不写虚拟时间</text>
+  <text x="1930" y="7020" class="small">不递归进 Turn Engine</text>
+  <text x="1930" y="7060" class="label-red">尚缺 scheduler：</text>
+  <text x="1930" y="7093" class="tiny">去重 / TTL / 冷却 /</text>
+  <text x="1930" y="7121" class="tiny">频率 / 抢占 / 合并</text>
+  <text x="125" y="7368" class="small">EventRingDiagnostics 只给注册、状态、占用与因果摘要；默认排除 payload、metadata 值和 stream key。</text>
+
+  <!-- Section 5 -->
+  <rect x="80" y="7470" width="2240" height="900" class="section"/>
+  <text x="125" y="7540" class="section-title">05 · 六槽如何解析到具体实现：配置 → PluginHost → SlotRunner → Hook</text>
+  <text x="125" y="7578" class="section-note">这是配置解析链，不是执行顺序；最终执行位置仍由第 03 节 Pipeline 固定。</text>
+
+  <path d="M310 7750 H440" class="dep"/><path d="M700 7750 H830" class="dep"/><path d="M1090 7750 H1220" class="dep"/><path d="M1480 7750 H1610" class="dep"/><path d="M1870 7750 H2000" class="dep"/>
+  <rect x="130" y="7685" width="180" height="130" class="node-muted"/><text x="220" y="7730" text-anchor="middle" class="node-title">角色蓝图</text><text x="220" y="7766" text-anchor="middle" class="small">slot_registry</text><text x="220" y="7798" text-anchor="middle" class="tiny">legacy plugin_backends</text>
+  <rect x="440" y="7685" width="260" height="130" class="node-muted"/><text x="570" y="7730" text-anchor="middle" class="node-title">用户 / env</text><text x="570" y="7766" text-anchor="middle" class="small">LLM 设置</text><text x="570" y="7798" text-anchor="middle" class="tiny">应用级覆盖</text>
+  <rect x="830" y="7685" width="260" height="130" class="node-muted"/><text x="960" y="7730" text-anchor="middle" class="node-title">HostProfile</text><text x="960" y="7766" text-anchor="middle" class="small">发行版 ceiling</text><text x="960" y="7798" text-anchor="middle" class="tiny">host_flags</text>
+  <rect x="1220" y="7685" width="260" height="130" class="node-muted"/><text x="1350" y="7730" text-anchor="middle" class="node-title">SessionCache</text><text x="1350" y="7766" text-anchor="middle" class="small">会话 override</text><text x="1350" y="7798" text-anchor="middle" class="tiny">只在内存，不写盘</text>
+  <rect x="1610" y="7685" width="260" height="130" class="node-muted"/><text x="1740" y="7730" text-anchor="middle" class="node-title">startup_health</text><text x="1740" y="7766" text-anchor="middle" class="small">探测 / 降级</text><text x="1740" y="7798" text-anchor="middle" class="tiny">startup_warnings</text>
+  <rect x="2000" y="7685" width="260" height="130" class="node-core"/><text x="2130" y="7730" text-anchor="middle" class="node-title">PluginHost</text><text x="2130" y="7766" text-anchor="middle" class="small">resolve_for_role</text><text x="2130" y="7798" text-anchor="middle" class="tiny">ResolvedRolePlugins</text>
+
+  <path d="M430 8040 H720" class="dep"/><path d="M1130 8040 H1420" class="dep"/><path d="M1830 8040 H2050" class="dep"/>
+  <rect x="130" y="7965" width="300" height="150" class="node-hook"/>
+  <text x="280" y="8007" text-anchor="middle" class="node-title">四类实现</text>
+  <text x="280" y="8043" text-anchor="middle" class="node-text">builtin / remote</text>
+  <text x="280" y="8078" text-anchor="middle" class="node-text">directory / none</text>
+  <rect x="720" y="7965" width="410" height="150" class="node-hook"/>
+  <text x="925" y="8007" text-anchor="middle" class="node-title">Contracts traits</text>
+  <text x="925" y="8043" text-anchor="middle" class="small">MemoryRetrieval · Emotion</text>
+  <text x="925" y="8075" text-anchor="middle" class="small">Event · Prompt · LLM · Agent</text>
+  <rect x="1420" y="7965" width="410" height="150" class="node-core"/>
+  <text x="1625" y="8007" text-anchor="middle" class="node-title">SlotRunner</text>
+  <text x="1625" y="8043" text-anchor="middle" class="small">memory 去重合并</text>
+  <text x="1625" y="8075" text-anchor="middle" class="small">llm last-wins · agent 工具并集</text>
+  <rect x="2050" y="7965" width="210" height="150" class="node-core"/>
+  <text x="2155" y="8007" text-anchor="middle" class="node-title">Pipeline</text>
+  <text x="2155" y="8043" text-anchor="middle" class="small">固定 Hook</text>
+  <text x="2155" y="8075" text-anchor="middle" class="small">位置调用</text>
+  <text x="130" y="8285" class="small">配置四层权威：角色包内容 → 蓝图能力 → 发行版策略 → 会话状态。角色创作者不应直接改六槽编排。</text>
+
+  <!-- Section 6 -->
+  <rect x="80" y="8410" width="2240" height="1360" class="section"/>
+  <text x="125" y="8480" class="section-title">06 · 状态、持久化与圈外 IO：什么会写，什么只经过</text>
+  <text x="125" y="8518" class="section-note">紫色是持久化/状态；独立通道不占六槽。Event Ring 是内存外环，不是数据库事件总线。</text>
+
+  <text x="145" y="8595" class="node-title">三套最容易混淆的存储</text>
+  <rect x="130" y="8630" width="520" height="190" class="node-data"/>
+  <text x="390" y="8675" text-anchor="middle" class="node-title">① 聊天日志</text>
+  <text x="390" y="8712" text-anchor="middle" class="node-text">chat_sessions / chat_messages</text>
+  <text x="390" y="8748" text-anchor="middle" class="small">UI 历史、导出、回放数据源</text>
+  <text x="390" y="8780" text-anchor="middle" class="label-red">不直接进入 Prompt</text>
+  <rect x="720" y="8630" width="520" height="190" class="node-data"/>
+  <text x="980" y="8675" text-anchor="middle" class="node-title">② 短期记忆 STM</text>
+  <text x="980" y="8712" text-anchor="middle" class="node-text">short_term_memory</text>
+  <text x="980" y="8748" text-anchor="middle" class="small">近轮缓冲 · memory 槽检索</text>
+  <text x="980" y="8780" text-anchor="middle" class="label-green">可进入 Prompt</text>
+  <rect x="1310" y="8630" width="520" height="190" class="node-data"/>
+  <text x="1570" y="8675" text-anchor="middle" class="node-title">③ 长期记忆 LTM</text>
+  <text x="1570" y="8712" text-anchor="middle" class="node-text">long_term_memory</text>
+  <text x="1570" y="8748" text-anchor="middle" class="small">归档 / 权重 / 衰减 · memory 检索</text>
+  <text x="1570" y="8780" text-anchor="middle" class="label-green">可进入 Prompt</text>
+  <rect x="1900" y="8630" width="360" height="190" class="node-data"/>
+  <text x="2080" y="8675" text-anchor="middle" class="node-title">运行时状态</text>
+  <text x="2080" y="8712" text-anchor="middle" class="small">role_runtime</text>
+  <text x="2080" y="8744" text-anchor="middle" class="small">relation / virtual time</text>
+  <text x="2080" y="8776" text-anchor="middle" class="small">continuity / latch</text>
+
+  <path d="M980 8820 V8890" class="main"/>
+  <path d="M1570 8820 V8855 H1400 V8890" class="main"/>
+  <path d="M2080 8820 V8855 H1470 V8890" class="main"/>
+  <text x="390" y="8860" text-anchor="middle" class="tiny">不走热路径；仅回放命令可显式合并到 LTM</text>
+  <rect x="760" y="8890" width="740" height="160" class="node-core"/>
+  <text x="1130" y="8935" text-anchor="middle" class="node-title">pre_llm 读取 / post_llm 写入</text>
+  <text x="1130" y="8972" text-anchor="middle" class="node-text">TurnPolicies 决定 memory / relation / profile 是否落盘</text>
+  <text x="1130" y="9006" text-anchor="middle" class="small">Fast strong_only 与非用户来源可关闭部分或全部副作用</text>
+
+  <text x="145" y="9125" class="node-title">独立通道与资源控制面</text>
+  <path d="M480 9320 H720" class="main"/>
+  <path d="M1060 9320 H1300" class="main"/>
+  <path d="M1880 9360 H1640" class="dep-dash"/>
+  <text x="1760" y="9338" text-anchor="middle" class="tiny">资源准入 / 租约（不是回复流）</text>
+  <rect x="130" y="9190" width="350" height="260" class="node-hook"/>
+  <text x="305" y="9235" text-anchor="middle" class="node-title">voice.asr</text>
+  <text x="305" y="9272" text-anchor="middle" class="node-text">麦克风 → 文本</text>
+  <text x="305" y="9307" text-anchor="middle" class="small">发生在 send_message 之前</text>
+  <text x="305" y="9342" text-anchor="middle" class="small">不进六槽 / 不占 Pipeline Hook</text>
+  <text x="305" y="9390" text-anchor="middle" class="label-green">输入侧通道</text>
+  <rect x="720" y="9190" width="340" height="260" class="node-core"/>
+  <text x="890" y="9235" text-anchor="middle" class="node-title">统一对话入口</text>
+  <text x="890" y="9272" text-anchor="middle" class="node-text">process_message</text>
+  <text x="890" y="9307" text-anchor="middle" class="small">返回 reply / visual state</text>
+  <text x="890" y="9342" text-anchor="middle" class="small">流式首句可发宿主事件</text>
+  <text x="890" y="9390" text-anchor="middle" class="label-blue">主链</text>
+  <rect x="1300" y="9190" width="340" height="260" class="node-hook"/>
+  <text x="1470" y="9235" text-anchor="middle" class="node-title">voice.director / synth</text>
+  <text x="1470" y="9272" text-anchor="middle" class="node-text">reply → directive → 音频</text>
+  <text x="1470" y="9307" text-anchor="middle" class="small">voice.speak 独立 RPC</text>
+  <text x="1470" y="9342" text-anchor="middle" class="small">扩展开关关闭时不执行</text>
+  <text x="1470" y="9390" text-anchor="middle" class="label-green">输出侧通道</text>
+  <rect x="1880" y="9190" width="340" height="260" class="node-muted"/>
+  <text x="2050" y="9235" text-anchor="middle" class="node-title">Resource Coordinator</text>
+  <text x="2050" y="9272" text-anchor="middle" class="node-text">GPU / RAM / CPU</text>
+  <text x="2050" y="9307" text-anchor="middle" class="small">admission / lease / pressure</text>
+  <text x="2050" y="9342" text-anchor="middle" class="small">LLM · Voice · Render adapter</text>
+  <text x="2050" y="9390" text-anchor="middle" class="small">控制面设施，不是第七槽</text>
+
+  <rect x="130" y="9500" width="1010" height="180" class="node-muted"/>
+  <text x="635" y="9545" text-anchor="middle" class="node-title">theater_director · 圈外 API</text>
+  <text x="635" y="9582" text-anchor="middle" class="node-text">POST /theater/scene → 场景生成；不进入 process_message stage</text>
+  <text x="635" y="9618" text-anchor="middle" class="small">它与 Stable 对话链并列，不是六槽或设施 Hook。</text>
+  <rect x="1210" y="9500" width="1010" height="180" class="node-event"/>
+  <text x="1715" y="9545" text-anchor="middle" class="node-title">Event Ring · 内存外环</text>
+  <text x="1715" y="9582" text-anchor="middle" class="node-text">历史有界；诊断脱敏；没有数据库 writer</text>
+  <text x="1715" y="9618" text-anchor="middle" class="small">需要持久化的业务结果必须回到对应模块/Turn Policy。</text>
+
+  <!-- Footer -->
+  <line x1="120" y1="9830" x2="2280" y2="9830" stroke="#dbe3ec" stroke-width="2"/>
+  <text x="120" y="9895" class="section-title">推荐学习顺序</text>
+  <text x="120" y="9940" class="node-text">① 先背 crate 五层 → ② 跟 process_message 路由 → ③ 逐段读 turn_pipeline → ④ 对照六槽 Hook → ⑤ 最后学 Event Ring 与侧通道。</text>
+  <text x="120" y="9995" class="small">源码锚点：chat_engine/process_message.rs · turn_pipeline/mod.rs / pre.rs / co_present/run_middle.rs / post/post_llm.rs · event_ring/ · slot_runner.rs</text>
+  <text x="120" y="10040" class="small">定义 SSOT：handoff/MODULE_MAP_AND_HANDOFF.md · 分层：handoff/ARCHITECTURE_LAYERING.md · 关键路径：handoff/BUS_FACTOR_NOTES.md</text>
+  <text x="120" y="10090" class="tiny">图例提醒：实线蓝＝运行主链；虚线绿＝Hook；橙＝Event；灰＝依赖/配置。蓝图 steps[] 不调度首轮，module_relations 只读派生。</text>
+</svg>
