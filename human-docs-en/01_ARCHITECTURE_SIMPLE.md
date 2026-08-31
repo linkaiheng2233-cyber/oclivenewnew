@@ -44,6 +44,8 @@ Per-slot definitions: [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.m
 
 Registered modules submit `EventDraft` proposals. Event Ring assigns trusted source, registry influence, order, correlation, and causation in an `EventEnvelope`. Influence is a proposal's base input to a decision module, not execution priority or automatic admission.
 
+The “ring” is the routing boundary of one dispatch, not a permanent loop that polls modules in turn. A future cross-turn, cross-channel Runtime Event Stream must not replace Event decisions, Rust state-commit authority, or the Stable turn pipeline.
+
 Two current chains are: legacy event impact → Ring → personality/relation preview; and memory candidate → Event decision → optional one-turn recollection context. A trusted sensor/system proposal may produce a one-shot `ProactiveTurnPermit`, but external observations do not impersonate user messages or gain user-persistence semantics. Contract: [EVENT_RING](../creator-docs-en/plugin-and-architecture/EVENT_RING.md).
 
 ## Turn Thinking (orchestration, not a slot)

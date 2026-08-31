@@ -14,6 +14,8 @@
 
 Event Ring is a bounded, in-process, non-persistent event perimeter owned by each `AppState`. Registered modules may propose, enrich, and transform events. The ring assigns trusted identity, source, base influence, ordering, correlation, and causation.
 
+“Perimeter” means the routing boundary of one dispatch, and “authority” covers envelope identity and registry policy only. Event Ring is not a scheduler that continuously polls modules, does not determine whether an external claim is absolutely true, and does not own proposal admission or character-state commits.
+
 Event Ring is not:
 
 - a seventh backend slot;
@@ -49,6 +51,8 @@ The design and implementation gap is tracked as `K-EVENT-STREAM-01` in the Chine
 | Event Ring | Assigns identity, source, registry weight, order, correlation, and causation; performs bounded routing | Does not decide what the character says and does not treat weight as execution order |
 | Event decision module | Admits, rejects, or derives events for proposals it subscribes to | Cannot forge sources, raise its registry weight, or issue a host Permit |
 | Capability module/slot | Produces domain evidence or proposals, such as event-impact estimates or memory candidates | Cannot declare its proposal admitted or bypass turn orchestration to commit final state |
+
+An “authoritative event” in this document means that source, identity, causation, and the applicable decision passed their current boundary checks. It **does not mean that character state has already been committed**. A state change exists only after Rust orchestration applies it successfully; any future `State` event must describe a completed commit rather than act as the command that causes one.
 
 Influence uses fixed-point basis points: `10_000 == 1.0`. It is the proposal's base influence for downstream decision modules, not module priority, invocation frequency, or a final admission result. Execution order is `(priority, module_id)`.
 
