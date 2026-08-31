@@ -1,10 +1,14 @@
 ﻿# PLUGIN_V1 — Orchestration contract & backend enums (v2 blueprint · legacy six slots)
 
+**SSOT scope:** six-slot DTOs, backend enums, resolution, and slot invocation order in the Stable turn. Event Ring wire has a separate contract.
+
+**Last updated:** 2026-08-31.
+
 **Plugin author learning path:** [PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
 **Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English page is **condensed** (not a quiet 1:1 of ZH). It covers host orchestration contracts, facade traits, and **v2 instance resolution**; **legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese SSOT):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
 
-**Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
+**Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Event Ring:** [EVENT_RING.md](EVENT_RING.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
 
 | ZH section (normative) | EN coverage |
 |------------------------|-------------|
@@ -55,18 +59,16 @@ Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emot
 
 ## `send_message` order (co-present path)
 
-Entry: **`chat_engine::process_message`** → **`process_co_present`** ([`turn_pipeline.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs)). Remote / stub branches differ; this list is the **PLUGIN_V1-relevant** sequence:
+Stable entry: [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) → [`dispatch_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/dispatch.rs) → remote stub, remote-life, or [`turn_pipeline::execute_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs). Co-present middle lives in [`co_present/run_middle.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present/run_middle.rs). The actual six-slot sequence is:
 
 1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
-2. **User emotion (backend module):** `emotion.analyze` → `EmotionDto` in the response.
-3. **Personality nudge (facility):** `PersonalityEngine::adjust_by_user_emotion`.
-4. **Complex-emotion facility submodule** (no. 1): `BuiltinKeywordComplexEmotionProvider` in `co_present` (future Remote); `narrative_hint` → later Prompt (**not** via `PluginHost`).
-5. **Knowledge blocks** (optional · facility): pack `knowledge_index` retrieval; may merge with event augment.
-6. **Event impact (backend module):** `event.estimate` → `PersonalityEngine::evolve_by_event` (facility).
-7. **Memory (backend module):** repository candidates → scene weighting → `memory.rank_memories`.
-8. **Favor & relation stage** (facility): `compute_favor_and_relation`.
-9. **Prompt (backend module):** `prompt.top_topic_hint` + `prompt.build_prompt` (`PromptInput`, incl. `previous_complex_emotion_narrative_hint`).
-10. **Main LLM (backend module):** `llm.generate` (plus bot emotion, portrait, short-term memory, movement intent, etc. — see the same file).
+2. **Agent (module 6):** attempted only for a normal user, non-staged turn; `handled=true` returns a minimal response and short-circuits Stable chat.
+3. **Pre:** module 2 `emotion.analyze` for user input and module 1 `memory.rank_memories`, plus personality, relation, identity, and recent-context loading.
+4. **First half of middle:** Turn Thinking, complex-emotion facility, and knowledge retrieval; module 3 `event.estimate` produces `EventImpactEstimate`.
+5. **Event Ring:** the dialogue estimate crosses `kernel.chat.event_impact.estimated`; memory may propose `kernel.memory.recall.candidate`, with one-turn `kernel.memory.recollection.activated` on admission. See [EVENT_RING.md](EVENT_RING.md).
+6. **Prompt (module 4):** `top_topic_hint` + `build_prompt` / `build_prompt_segments` consume resolved character, affect, event, relation, memory, and external-observation context.
+7. **Main LLM (module 5):** `generate` / `generate_stream` produces the raw reply.
+8. **Post:** reply-emotion analysis, policy and persistence, reply post-processing, chat write, and `SendMessageResponse` assembly. Post-processing is a side channel, not a seventh slot.
 
 ---
 

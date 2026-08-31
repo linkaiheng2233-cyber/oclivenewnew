@@ -2,7 +2,7 @@
 
 **用途**：统一项目内核心概念的**权威名称**、crate 职责边界、canonical import 路径，以及禁止使用的别名。  
 **读者**：Rust / 前端贡献者、Cursor / Agent、姊妹仓集成方。  
-**状态**：2026-06-06 首版；与 [AGENTS.md](../AGENTS.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) 对齐。  
+**状态**：2026-06-06 首版；2026-08-31 补充 Event Ring 权威术语；与 [AGENTS.md](../AGENTS.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) 对齐。
 **范围**：文档与术语；**不**触发 crate 重命名或运行时代码变更。
 
 [English summary in §0](#0-english-summary)
@@ -38,7 +38,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **单写者内核** | **single-writer kernel** | 同一时刻一个 `:8420` 进程写 `app.db` | [DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
 | **角色包** | **role pack** | 身份、人格、关系、`prompts/` 等内容 | `distros/chat-pro/roles/{id}/` |
 | **蓝图** | **blueprint** | 槽位实例、后端路由、模型、交互/记忆策略、双核开关等系统配置 | `pipeline.ocblueprint` 内 `slot_registry`、`runtime_config` 等 |
-| **契约型薄核** | **contract-type thin kernel** | 内核只做编排 + 跨宿主错误语义；能力经槽位接入 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **契约型薄核** | **contract-type thin kernel** | 内核拥有编排、状态、Event Ring 权威字段与跨宿主错误语义；领域能力经槽位/模块接入 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 
 > **消歧**：中文「宿主」在口语中可能指「发行版进程」或 `oclive_kernel_host` crate。文档中应写全：**发行版宿主进程** vs **内核宿主 crate（`oclive_kernel_host`）**。
 
@@ -68,7 +68,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 |------|---------------------------------------------------|----------|----------|
 | 第 1 模块 | `memory` | 记忆模块 | `mem_backend`、`memory_backend` |
 | 第 2 模块 | `emotion` | 情感模块 | `affect`、`affect_backend`、`emotion_backend` |
-| 第 3 模块 | `event` | 事件模块 | — |
+| 第 3 模块 | `event` | 对话事件影响模块（legacy `event.impact` 子槽） | `Event Ring`、事件系统（作槽位名时） |
 | 第 4 模块 | `prompt` | Prompt 模块 | — |
 | 第 5 模块 | `llm` | LLM 模块 | `model_backend`（作槽位名时） |
 | 第 6 模块 | `agent` | Agent 模块 | `tool`、`skills`（作槽位名时） |
@@ -83,6 +83,20 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **Experimental 核（实验核）** | 运行时 | `pipeline.experimental` DAG；`DualPipelineRunner` |
 
 **禁止**把 Monolith 称为「双核」；**禁止**把 `dual_pipeline` 模块称为「蓝图 pipeline 文件」。
+
+### 1.5 Event Ring 权威术语
+
+| 权威名 | Authoritative English | 含义 | 禁止混用 |
+|--------|-----------------------|------|----------|
+| **事件外环** | **Event Ring** | 内核进程内有界事件路由与权威信封；不是第七槽 | `event` 槽、数据库事件总线、固定 pipeline |
+| **事件草案** | **EventDraft** | 模块提交的不可信 kind/payload/metadata | EventEnvelope |
+| **权威事件信封** | **EventEnvelope** | Ring 签发身份、来源、权重、顺序与因果后的事件 | 模块自造事件 |
+| **来源绑定发射器** | **source-bound EventEmitter** | 注册成功后返回，只能以已登记来源和发射范围提交草案 | 通用 event bus emitter |
+| **基础影响权重** | **base influence weight** | 决策模块评估提案时的基础影响力 | 优先级、频率、最终决定 |
+| **事件决策模块** | **Event decision module** | 对特定提案作采纳/拒绝并可派生事件 | legacy `event` 槽、Rust 总编排 |
+| **主动回合许可** | **ProactiveTurnPermit** | 权威授权事件换取的一次性、不可构造执行许可 | wire DTO、插件自行签发 token |
+
+完整契约：[EVENT_RING.md](plugin-and-architecture/EVENT_RING.md)。
 
 ---
 

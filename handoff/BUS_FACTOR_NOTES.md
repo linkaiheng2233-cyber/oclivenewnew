@@ -1,5 +1,7 @@
 # Bus Factor：关键路径交接笔记
 
+**SSOT 范围**：主编排、数据库、错误码与高风险源码锚点；模块定义见 MODULE_MAP，公开 wire 见 creator-docs。
+**最后更新**：2026-08-31。
 **读者**：有经验的 Rust / Vue 工程师。  
 **目标**：在 **约半天** 内能定位任意主路径模块的 **入口文件**、**核心类型/函数**，并理解 **为何这样设计**（意图级，非逐行教程）。
 
@@ -47,7 +49,7 @@
 |------|------|
 | **对外入口** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs` 再导出 `process_message`；实现主体在 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`**。 |
 | **HTTP / Tauri** | 与 OOCP / `invoke` 对齐的请求体与回复 DTO 以 `oclive_kernel_types` 为准；`oclive_kernel_runtime` 只承载运行时策略/Prompt 类型。 |
-| **主语义（概念六段）** | 文件头注释：**分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化**；实际执行会根据 **Agent 短路**、**异地 / 远程人生** 分支到 `process_remote_stub` / `process_remote_life`，否则进入 **`co_present::process_co_present`**。 |
+| **主语义** | `process_message::run` 完成 preflight 与用户回合 Agent 短路，再由 `dispatch_turn` 选择 remote stub / `TurnMode::RemoteLife` / `TurnMode::CoPresent`；Stable 回合统一进入 `turn_pipeline::execute_turn`。 |
 | **阶段标注** | `ProcessMessageError` / `pm!` 宏带 `stage` 字符串（如 `ensure_role_loaded`、`startup_health`），日志检索用 `target: "oclive_chat"`。 |
 | **回合来源** | 通用类型`oclive_kernel_types::models::dto::TurnOrigin`。HTTP/Tauri继续调用`process_message`并隐式固定为`user`；可信嵌入宿主可调用`process_message_with_origin`/stream变体。`sensor/system`可读取角色上下文并生成回复/视觉状态，但不提交用户聊天、记忆、事件、好感、关系、人格、连续性或虚拟时间，也不调用用户情绪插件。来源不放入`SendMessageRequest`，避免外部客户端自行选择低持久化策略。 |
 
@@ -56,14 +58,16 @@
 1. **API 层**：Tauri `generate_handler` 注册的命令或 `kernel/crates/oclive_kernel_host/src/http_api/*.rs` 路由 → 调用 `domain::process_message`（同一代码路径意图）。
 2. **`process_message::run`**：校验场景、`ensure_role_runtime`、加载 `Role`、`effective_plugin_backends_for_session`、`startup_health::ensure_once`。
 3. **Agent 分支**：若 `pl.agent.process` 返回 `handled`，则走短路径组装 `SendMessageResponse` 并返回。
-4. **异地**：`user_is_remote_from_character` + `remote_life_enabled` → `process_remote_stub` 或 `process_remote_life`。
-5. **共景主路径**：**`co_present::process_co_present`**（见下一节关联）。
+4. **分派**：`dispatch.rs` 根据 presence 选择 `process_remote_stub`、`process_remote_life`，或 `execute_turn(TurnMode::CoPresent)`。
+5. **Stable 回合**：`turn_pipeline::execute_turn` 固定执行 `pre_llm` → 模式对应 `run_middle` → 主 LLM → `post_llm`；共景 middle 在 `turn_pipeline/co_present/run_middle.rs`。
 
 **设计意图**：单入口便于审计与测试；分支显式化避免「隐式 pipeline DSL」与运行时不一致（历史上去除 `pipeline.ocblueprint` 主路径的原因，见 `AGENTS.md` 内核架构小节）。
 
 `TurnOrigin`边界回归位于`distros/desktop-tauri/tests/turn_origin_sensor.rs`：同一会话先执行sensor回合并断言角色运行时与聊天/记忆/事件零变化，再执行普通user回合证明原持久化路径仍生效。枪械、IoT等宿主专用DeviceContext格式不属于本仓标准DTO，由各自composition root转换为中性消息体并传入类型化origin。
 
 主动输入目前再增加一层 Event 权威边界：可信适配器先取得注册时返回的来源绑定 `EventEmitter`，通过 `propose_proactive_turn` 提交 `ProactiveTurnProposal`；提案不能携带来源或权重，且 `origin=user`、越界分数、空目标或超长观察会失败。只有 `builtin.proactive_turn_decision` 生成且保持正确因果链的授权事件可换取不可构造、不可克隆的一次性 `ProactiveTurnPermit`。宿主可显式调用 `process_proactive_turn` 消耗 Permit；执行发生在 Ring dispatch 返回之后，沿用原 correlation ID，不在 handler 内递归进入 Turn Engine。此时 `SendMessageRequest.user_message` 固定为空，观察内容通过 `TurnInput::ExternalObservation` 仅参与相关性检索，并以 JSON 字符串进入“外部观察证据（非用户发言）”段；非用户回合暂走共景 Prompt，禁止退回 remote-life 的用户消息模板。当前执行器没有调度状态机，调用方仍不得绕过后续去重、冷却和用户输入抢占设计直接做无限循环。
+
+Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creator-docs/plugin-and-architecture/EVENT_RING.md)；本页只保留源码锚点。
 
 ---
 
@@ -171,7 +175,7 @@
 | 多实例合并 | `kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
 | 插件装配 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
 | 蓝图解析 | `kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
-| 蓝图加载 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
+| 蓝图加载 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage/blueprint.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |
 | 端口 trait | `kernel/crates/oclive_kernel_contracts/src/` | `LlmClient`、`MemoryRetrieval`… | 插件作者实现 trait，见各文件 **When to implement** |
 | 纯类型 | `kernel/crates/oclive_kernel_types/` | DTO、`AppError` | 无 I/O；契约变更同步 validation |
 | 蓝图校验 | `kernel/crates/oclive_validation/` | v2/v3/v4 分派、`slot_registry`、`runtime_config`、v4 `extensions` | 改 JSON 形状必跑 `pack validate` + 单测 |

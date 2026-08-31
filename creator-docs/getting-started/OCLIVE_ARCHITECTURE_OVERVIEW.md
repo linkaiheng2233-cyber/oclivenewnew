@@ -1,5 +1,8 @@
 # Oclive 架构总览（单核双态构建架构）
 
+**SSOT 范围**：对外架构叙述、模块编号与分层术语；模块定义见 MODULE_MAP，wire 契约见专题文档。
+**最后更新**：2026-08-31。
+
 本文是 **对外架构叙述** 与 **模块编号与分层术语** 的权威页：单核双态构建、**后端模块（第 1–6 模块）**、**设施模块（统称）** 与 **第 N 设施子模块（`{专名}设施子模块`）**、**独立通道能力增强模块**，以及 **后端模块插件模块**（不归入第几模块序列）。
 
 **模块定义 · 六槽/设施关系 · 改动约束（维护 SSOT）**：[`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md) — 本文侧重对外叙述与编号脚注，**不**与注册表双写长表。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 与源码为准。
@@ -10,13 +13,15 @@
 
 ## 架构简述
 
-**Oclive** 采用 **契约型薄核** 架构：内核仅负责回合编排（`process_message`）、会话状态与跨宿主错误语义；记忆、情感、事件、Prompt、LLM、Agent 等能力以 **PLUGIN_V1 六宿主后端模块** 形式接入（内置 / Remote / 目录插件）；**复杂情感设施子模块**、**专家模型设施子模块** 等 **编排行内设施模块** 消费后端产出并服务 Prompt，**不是** 第七个宿主槽。
+**Oclive** 采用 **契约型薄核** 架构：内核负责回合编排（`process_message`）、会话状态、Event Ring 权威信封/路由与跨宿主错误语义；记忆、情感、事件、Prompt、LLM、Agent 等能力以 **PLUGIN_V1 六宿主后端模块** 形式接入（内置 / Remote / 目录插件）；**复杂情感设施子模块**、**专家模型设施子模块** 等 **编排行内设施模块** 消费后端产出并服务 Prompt，**不是** 第七个宿主槽。
+
+**Event Ring** 是围绕模块的进程内有界事件外环，不占六槽位置，也不替代 Stable 回合管线。legacy `event` 槽只估计对话事件影响；memory、传感器等来源可提出事件，由注册的决策模块采纳或拒绝，最终仍由 Rust 编排决定如何进入 Prompt、回复与持久化。公开契约见 [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md)。
 
 在 **交付** 上借鉴 **发行版纪律**：通过稳定 HTTP / **OOCP** 黑盒契约、**角色包** 规范与 **`oclive-cli` 内核工厂**，产出可独立部署的 **无头内核**（`--api` / `kernel_server`）或 **桌面宿主**（Tauri + Vue），角色内容以 `distros/chat-pro/roles/{角色id}/` 为唯一对接面。
 
 在 **构建** 上采用 **单核双态构建架构**：**同一套**编排语义与 DTO 契约（单核），构建期两档——**外核态**（低耦合、`PluginHost`）与 **宏核态**（Monolith 焊接）。二者经 `oclive init` 生成双 `[[bin]]`，**按构建产物选择**，非两套内核产品。
 
-**运行时双核双态（Opt-in · 默认关）**：在**同一蓝图**内划分 **Stable 核**（固定六槽编排）与 **Experimental 核**（自定义 `pipeline.experimental`）。**机制已预埋，默认关闭**（`dual_core` Cargo feature；`dual_pipeline*` 默认不参与编译）。解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定。RFC：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)。
+**运行时双核双态（Opt-in · 默认关）**：在**同一蓝图**内划分 **Stable 核**（固定六槽编排）与 **Experimental 核**（自定义 `pipeline.experimental`）。**机制已预埋，默认关闭**（`dual_core` Cargo feature；`dual_pipeline*` 默认不参与编译）。解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定；现行设计见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)，历史对齐记录不作为 truth。
 
 **开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
@@ -232,8 +237,9 @@ Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_
 | **预取** | `turn_prefetch.rs` | 用户身份、近期上下文 |
 | **0 · Agent 短路**（可选） | `process_message.rs` | **LLM 之前** 可选短路（第 6 模块） |
 | **pre_llm** | `turn_pipeline/pre.rs` | 第 2 模块 `emotion.analyze` → 设施 `PersonalityEngine`（用户情绪）→ **第 1 模块** memory 加载/衰减/`rank_memories` → 设施 好感/关系 |
-| **co_present** | `turn_pipeline/co_present.rs` | 第 1 设施子模块 **复杂情感** → `narrative_hint` → 设施 `knowledge_index`（可选）→ 第 3 模块 `event.estimate` → 设施 `PersonalityEngine`（事件）→ 第 4 模块 `prompt.build` → 第 5 模块 `llm.generate` |
-| **post_llm** | `turn_pipeline/post.rs` | 内置持久化、记忆抽取等 |
+| **co_present middle** | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking → 复杂情感/知识 → 第 3 模块 `event.estimate` → Event Ring 兼容桥与记忆提案 → 人格/关系预览 → 第 4 模块 `prompt.build` |
+| **主 LLM** | `turn_pipeline/post.rs` | 第 5 模块 `llm.generate` / stream → 原始 `reply` |
+| **post_llm** | `turn_pipeline/post/post_llm.rs` | 角色回复情绪、持久化策略、立绘/视觉状态、回复后处理、聊天写入与 DTO 组装 |
 
 **复杂情感锚点**：在 **pre_llm 情绪分析之后**、**`build_prompt` 之前**（`co_present` 内）；上一轮 `narrative_hint` 经 `SessionCache` / DB 注入 `PromptInput.previous_complex_emotion_narrative_hint`。
 

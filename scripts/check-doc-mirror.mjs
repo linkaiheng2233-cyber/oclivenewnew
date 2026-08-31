@@ -34,6 +34,7 @@ const HIGH_TRAFFIC_DRIFT_ZH = new Set([
   'creator-docs/COMPATIBILITY.md',
   'creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md',
   'creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md',
+  'creator-docs/plugin-and-architecture/EVENT_RING.md',
   'creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md',
 ]);
 

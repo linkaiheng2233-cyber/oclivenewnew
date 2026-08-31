@@ -1,5 +1,9 @@
 # Oclive architecture overview (single-kernel, dual-mode build)
 
+**SSOT scope:** public architecture narrative, module numbering, and layering terminology. Module definitions remain in MODULE_MAP; wire contracts remain in their focused contract pages.
+
+**Last updated:** 2026-08-31.
+
 This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)**, **facility modules (umbrella term)**, **`{Name} facility submodule`** entries (**facility submodule 1, 2, …**), **side-channel capability enhancement modules**, plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md), and source.
 
 [中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
@@ -8,7 +12,9 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 ## Architecture in brief
 
-**Oclive** uses a **contract-first thin kernel**: turn orchestration (`process_message`), session state, and cross-host errors; memory, emotion, event, prompt, LLM, and agent attach as **six PLUGIN_V1 host backend modules** (builtin / Remote / directory). The **complex-emotion facility submodule**, **expert-model facility submodule**, and other **in-orchestration facility modules** are **not** a seventh host slot.
+**Oclive** uses a **contract-first thin kernel**: turn orchestration (`process_message`), session state, authoritative Event Ring envelopes/routing, and cross-host errors; memory, emotion, event, prompt, LLM, and agent attach as **six PLUGIN_V1 host backend modules** (builtin / Remote / directory). The **complex-emotion facility submodule**, **expert-model facility submodule**, and other **in-orchestration facility modules** are **not** a seventh host slot.
+
+**Event Ring** is a bounded in-process event perimeter around modules. It occupies no backend slot and does not replace the Stable turn pipeline. The legacy `event` slot estimates dialogue event impact; memory, sensors, and other registered sources may propose events, decision modules admit or reject them, and Rust orchestration remains authoritative over Prompt, reply, and persistence. See [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md).
 
 **Delivery** follows distribution-style discipline: HTTP / **OOCP**, role packs, and **`oclive-cli` kernel factory** for headless or desktop hosts; `distros/chat-pro/roles/{roleId}/` is the integration surface.
 
@@ -160,16 +166,14 @@ See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTR
 
 ## Co-present main chain (numbered)
 
-1. **Facility module:** `PluginHost` resolves **modules 1–6**
-2. **Module 2:** `emotion.analyze`
-3. **Facility module:** `PersonalityEngine` (user emotion)
-4. **Facility module:** `knowledge_index` (optional)
-5. **Facility submodule 1:** **complex-emotion facility submodule** → `narrative_hint`
-6. **Module 3:** `event.estimate` → **facility module:** `PersonalityEngine` (event)
-7. **Module 1:** `memory.rank_memories`
-8. **Facility module:** favor/relation
-9. **Module 4:** `prompt.build` → **Module 5:** `llm.generate`
-10. **Module 6:** **agent**
+1. **Facility module:** `PluginHost` resolves **modules 1–6**.
+2. **Module 6:** **agent** may short-circuit a normal, non-staged user turn.
+3. **Pre:** **module 2** `emotion.analyze`, **module 1** `memory.rank_memories`, then personality/relation/context loading.
+4. **Middle:** Turn Thinking, **facility submodule 1** complex emotion, optional knowledge, then **module 3** `event.estimate`.
+5. **Event Ring:** legacy-event compatibility and optional memory-recollection proposal/admission.
+6. **Module 4:** `prompt.build` consumes the resolved context.
+7. **Module 5:** `llm.generate` produces the raw reply.
+8. **Post:** reply emotion, policy/persistence, visual state, reply post-processing, chat write, and response assembly.
 
 **Experimental (optional):** when triggers match, **facility submodule 2** (**expert-model facility submodule** / expert routing) runs via `slot.expert.invoke`.
 
