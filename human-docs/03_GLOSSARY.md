@@ -30,6 +30,8 @@
 | **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
 | **`co_present`** | Stable 核共景主路径实现模块 |
 | **Event Ring / 事件外环** | 内核进程内的有界事件路由与权威信封；不是第七槽，也不是数据库总线 |
+| **Runtime Event Stream / 角色运行事件流（规划）** | 跨回合、跨通道延续角色事实与派生事件的“河流”模型；当前未实现，不得与 Event Ring 的有界历史混称 |
+| **Session（事件语境）** | 角色运行实例与隔离边界；可承载/投递属于该实例的事件，但不因此取得 Event 采纳或状态提交权 |
 | **legacy `event` 槽** | 第 3 后端模块，只估计对话事件类型/影响；不是整个 Event Ring |
 | **EventDraft** | 模块提出的事件草案；不含可信来源、注册权重和顺序 |
 | **EventEnvelope** | Ring 签发身份、来源、权重、顺序和因果后的权威事件信封 |
@@ -74,6 +76,7 @@
 - [ ] 能解释 `srid` 与 `mrid` 何时相同、何时不同
 - [ ] 能区分 `slot_registry`（v2 磁盘）与 `PluginBackends`（运行时折叠）
 - [ ] 能区分 `event` 槽、Event Ring、Event 决策模块与 Rust 编排
+- [ ] 能说明当前 Event Ring 为什么不等于持久化 Runtime Event Stream
 
 ---
 

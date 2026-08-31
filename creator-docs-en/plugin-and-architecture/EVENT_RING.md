@@ -24,6 +24,21 @@ Event Ring is not:
 
 The legacy `event` slot remains backend module 3 and estimates dialogue `event.impact` only. A compatibility bridge submits that estimate to Event Ring. Module classification is maintained only in [MODULE_MAP §6](../../handoff/MODULE_MAP_AND_HANDOFF.md#6-第-3-模块--event).
 
+### Boundary with a future Runtime Event Stream
+
+The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents, but it has no implemented contract today.
+
+Any future design must preserve these boundaries:
+
+- Runtime Event Stream does not replace Event Ring. The stream may own a durable timeline and consumer progress; the Ring keeps authority over trusted envelopes, registration policy, and bounded routing.
+- Runtime Event Stream does not replace the Stable turn pipeline or create a second `process_message`.
+- A Session is a role-runtime instance and isolation boundary. Dispatch responsibility does not grant admission, persona mutation, or state-commit authority.
+- Consumers may observe, query, propose, and derive events, while state changes still pass through Event decisions and Rust orchestration.
+- A large model may receive broader observation, query, and proposal rights, but cannot forge facts or commit authoritative state. Small models continue to consume bounded context selected by modules and compiled by the Prompt layer.
+- Durable traces, replay, consumer cursors, backpressure, idempotency, and privacy belong to a future Stream/Trace contract. The current bounded diagnostics history must not be presented as those capabilities.
+
+The design and implementation gap is tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). Until that item produces an RFC, the “river” remains a discussion model rather than a shipped capability.
+
 ---
 
 ## 2. Four authority levels

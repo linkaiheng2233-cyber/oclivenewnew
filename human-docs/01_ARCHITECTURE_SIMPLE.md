@@ -1,6 +1,6 @@
 # 01 · 简架构
 
-> **最后更新**：2026-08-31
+> **最后更新**：2026-09-01
 > **读者**：已跑通主仓、要理解「一条消息怎么走」的工程师。  
 > **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和四层权力边界。
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
@@ -143,6 +143,8 @@ memory 找到候选 → recall.candidate → event decision
 ```
 
 权重只表示提案被判断时的基础影响力，不代表执行优先级，也不保证被采纳。完整契约见 [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)。
+
+> **不要把当前 Ring 画成永久事件河流**：它是进程内、有界、非持久化的 dispatch 外环。跨回合/跨通道/跨重启的 Session Runtime Event Stream、消费游标与回放仍是 `K-EVENT-STREAM-01` 的未来设计；即使以后实现，也不能替代 Event 权威和 Stable 回合管线。
 
 ### 没有用户消息时如何主动开口
 
