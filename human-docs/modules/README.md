@@ -4,7 +4,7 @@
 > **读完能做什么**：按 MODULE_MAP 四大类选对开工包，避免默认误读 L5 内核路径。  
 > **耗时**：本页约 **30 秒**；单包约 **30–60 min**。  
 > **SSOT 范围**：人类开工路由；**模块定义**仍只维护于 [MODULE_MAP §2–§12](../../handoff/MODULE_MAP_AND_HANDOFF.md)。  
-> **最后更新**：2026-06-26  
+> **最后更新**：2026-08-31
 > **下一篇**：下表对应目录中的一份 `.md`。
 
 ---
@@ -31,6 +31,7 @@
 | **全景索引** | — | [ARCHITECTURE_DECOUPLING_PANORAMA.md](../team/ARCHITECTURE_DECOUPLING_PANORAMA.md)（**§1 六槽/独立通道/正交** + 插件清单 + 正交轴） | **Done** |
 | **编排行** | [`orchestration/`](orchestration/) | turn-thinking · model-tier（摘要链） | **Done** |
 | **宿主面** | [`surfaces/`](surfaces/) | frontend-chat-pro · tauri-invoke · distro-hostprofile | **Done** |
+| **跨模块事件外环** | — | [EVENT_RING](../../creator-docs/plugin-and-architecture/EVENT_RING.md)（非第七槽；涉及 memory/event/主动输入时读） | **Done** |
 
 ---
 
@@ -46,4 +47,4 @@
 
 ---
 
-*进度跟踪：[human-docs/README §H-DOC-04](../README.md#文档包进度与-ai-包同步--2026-06-26)*
+*学习入口与阅读顺序：[human-docs/README](../README.md)。*

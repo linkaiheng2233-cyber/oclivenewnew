@@ -29,6 +29,16 @@
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
 | **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
 | **`co_present`** | Stable 核共景主路径实现模块 |
+| **Event Ring / 事件外环** | 内核进程内的有界事件路由与权威信封；不是第七槽，也不是数据库总线 |
+| **legacy `event` 槽** | 第 3 后端模块，只估计对话事件类型/影响；不是整个 Event Ring |
+| **EventDraft** | 模块提出的事件草案；不含可信来源、注册权重和顺序 |
+| **EventEnvelope** | Ring 签发身份、来源、权重、顺序和因果后的权威事件信封 |
+| **EventEmitter** | 模块注册后取得的来源绑定发射器；只能提交声明范围内的草案 |
+| **基础影响权重** | 决策模块评估提案时的基础影响力；不是优先级、频率或最终决定 |
+| **Event 决策模块** | 对特定事件提案作采纳/拒绝并可派生事件；不是 Rust 总编排 |
+| **TurnOrigin** | 回合来源：`user` / `sensor` / `system`；外部客户端不能自行选择低持久化来源 |
+| **TurnInput** | 当前输入的类型化边界：`UserMessage` 或 `ExternalObservation` |
+| **ProactiveTurnPermit** | Event 授权后由宿主签发的一次性主动回合许可；不能由插件构造 |
 | **Turn Thinking** | 编排行 Fast/Deep（**非第七槽**）；Wave E 持久化分流 · Wave F 包级路由 / latch / ephemeral |
 | **Fast / Deep** | 本回合思考档位：Fast 跳过部分 LLM 与（在 `strong_only` 下）长时巩固；Deep 全量 |
 | **ephemeral_archive** | 规则写的临时局面摘要（TTL），Prompt 段 `【局面摘要】`；与 `mutable_personality` 独立 |
@@ -63,6 +73,7 @@
 
 - [ ] 能解释 `srid` 与 `mrid` 何时相同、何时不同
 - [ ] 能区分 `slot_registry`（v2 磁盘）与 `PluginBackends`（运行时折叠）
+- [ ] 能区分 `event` 槽、Event Ring、Event 决策模块与 Rust 编排
 
 ---
 
@@ -71,3 +82,4 @@
 - [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md)
 - [RFC_TURN_THINKING_PERSISTENCE](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) — Fast/Deep · 持久化 · 包级路由
 - [SETTINGS_REFERENCE](../creator-docs/cli/SETTINGS_REFERENCE.md)
+- [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)

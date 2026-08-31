@@ -1,6 +1,6 @@
 # 06 · 内核学习路径（Day 1–5）
 
-> **最后更新**：2026-06-26  
+> **最后更新**：2026-08-31
 > **读者**：准备改 `process_message` / 持久化 / 插件 wiring 的内核贡献者。  
 > **读完能做什么**：按时间盒读完主链；完成第一个 domain 单测 PR 草稿。  
 > **耗时**：约 3–5 个工作日（维护者带教可 1–2 天）。  
@@ -35,13 +35,17 @@
 
 | 顺序 | 文件 | 关注点 |
 |------|------|--------|
-| 1 | `process_message.rs` | `run()`：`srid`、健康检查、分支 |
-| 2 | `turn_pipeline/mod.rs` | `execute_turn` 四阶段 |
-| 3 | `turn_pipeline/pre.rs` | Prompt 输入、复杂情感、**memory 检索** |
-| 4 | [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md) + `plugin_host/mod.rs` | **逐槽**对照源码 |
-| 5 | `prompt_builder/mod.rs` | 段落顺序、guardrails |
+| 1 | `process_message.rs` | preflight、普通用户 Agent 短路、`TurnOrigin` / `TurnInput` |
+| 2 | `dispatch.rs` + `turn_pipeline/mod.rs` | remote stub / remote-life / co-present 分派；`execute_turn` 四阶段 |
+| 3 | `turn_pipeline/pre.rs` | 人格、身份、情绪、关系与 **memory 检索** |
+| 4 | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking、event、Event Ring、回想提案与 Prompt |
+| 5 | `turn_pipeline/post.rs` + `post/post_llm.rs` + `persistence.rs` | LLM、状态落地、回复后处理与返回 |
+| 6 | [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md) + `plugin_host/mod.rs` | **逐槽**对照源码 |
+| 7 | `prompt_builder/mod.rs` | 段落顺序、guardrails |
 
 **验收**：能手绘 Tauri → `process_message` → `turn_pipeline` → `PluginHost`（见 [01 简架构](01_ARCHITECTURE_SIMPLE.md)）。
+
+主动回合另读 [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)：提案 → 授权 → Permit → `process_proactive_turn`。外部观察不能为了复用旧链而冒充用户消息。
 
 ---
 

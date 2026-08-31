@@ -1,8 +1,8 @@
 # 01 · 简架构
 
-> **最后更新**：2026-06-26  
+> **最后更新**：2026-08-31
 > **读者**：已跑通主仓、要理解「一条消息怎么走」的工程师。  
-> **读完能做什么**：画出 UI → `process_message` → 六槽 主路径；说清 **记忆三套存储** 与 **六槽/设施/独立通道** 的区别。  
+> **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和四层权力边界。
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
 > **下一篇**：[03 术语表](03_GLOSSARY.md) · 逐槽细节 → [MODULE_MAP §4–§12](../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
@@ -17,10 +17,15 @@ flowchart TB
   UI[Vue 前端\ninvoke 或 HTTP]
   API[desktop-tauri/api/*.rs\n或 http_api]
   PM[process_message.rs\n主编排]
-  CO[co_present\n共景主链]
-  TP[turn_pipeline\npre → Event → Prompt → LLM → post]
+  AG[agent\n可选短路]
+  TP[turn_pipeline\npre → middle → LLM → post]
+  ER[Event Ring\nevent.impact · 记忆提案]
   PH[PluginHost\n六槽]
-  UI --> API --> PM --> CO --> TP --> PH
+  UI --> API --> PM
+  PM --> AG
+  AG -->|未处理| TP
+  TP <--> ER
+  PH --> TP
 ```
 
 **实现文件**：[`process_message.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)（经 `chat_engine/mod.rs` re-export）。
@@ -33,7 +38,7 @@ flowchart TB
 | **异地 / remote_life** | 用户与角色不在同场景 |
 | **共景 co_present** | 默认 Chat Pro 主路径（本文以下默认此路径） |
 
-**概念六段**（文件头）：分析情绪 → 检测事件 → 演化性格 → 构建 Prompt → 调用 LLM → 持久化。顺序由 **Rust 代码** 保证；蓝图 **`steps[]` 不参与首轮调度**。
+**概念口诀**：预检 → Agent 短路 → 情绪与记忆 → 事件与思考 → Prompt → LLM → 持久化与展示。顺序由 **Rust 代码**保证；蓝图 **`steps[]` 不参与首轮调度**。
 
 ---
 
@@ -41,13 +46,36 @@ flowchart TB
 
 | 阶段 | 文件 | 做什么 |
 |------|------|--------|
-| **TurnThinking** | `turn_thinking.rs` | Auto/Fast/Deep（发行版可配；**不是**第七槽） |
-| **pre** | `turn_pipeline/pre.rs` | 情绪、记忆检索、复杂情感、用户身份 |
-| **middle** | `co_present.rs` | 事件估计、Prompt 输入、好感预览 |
-| **LLM** | `slot_runner` + `llm` 槽 | 生成 `reply` |
-| **post** | `turn_pipeline/post.rs` · `persistence.rs` | 写记忆、**聊天日志**、立绘、后处理 |
+| **pre** | `turn_pipeline/pre.rs` | 人格/关系/身份、用户情绪、STM/LTM 检索 |
+| **middle** | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking、复杂情感、知识、event 估计、Event Ring、关系预览、Prompt |
+| **LLM** | `turn_pipeline/post.rs` + `llm` 槽 | 生成原始 `reply` |
+| **post** | `turn_pipeline/post/post_llm.rs` · `persistence.rs` | 角色回复情绪、策略与状态落地、立绘、回复后处理、聊天写入 |
 
 入口：[`turn_pipeline/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `execute_turn`。
+
+### 上下文从哪里来
+
+| 来源 | 例子 | 谁处理 |
+|------|------|--------|
+| 当前输入 | 用户消息或外部观察 | `TurnInput` 保持来源边界 |
+| 角色包静态内容 | 核心人格、世界观、场景、Prompt 扩展 | loader + prompt 槽 |
+| 运行时状态 | 当前人格、关系、好感、情绪、位置、时间 | host 编排/Repository |
+| 检索证据 | STM、LTM、近期对话、知识块 | memory/knowledge |
+| 本轮派生结果 | 用户情绪、事件影响、复杂情感、激活回想 | emotion/event/设施/Event Ring |
+
+第 4 模块 `prompt` 负责把**已经确定有效**的上下文组装成模型输入；第 5 模块 `llm` 消费它。回复后处理面对的是模型输出，不负责倒推或重做上下文决策。
+
+### 谁能决定什么
+
+| 组件 | 一句话权力 |
+|------|------------|
+| Rust 编排 | 决定阶段、分支、结果何时应用和持久化 |
+| Event Ring | 签发事件身份、来源、注册权重、顺序和因果链 |
+| Event 决策模块 | 决定自己负责的一类提案是否采纳 |
+| 六槽/设施 | 提供检索、分析、估计、组装或生成能力 |
+| 后处理 | 修改最终展示文本，不重做事件与记忆决策 |
+
+口诀：**六槽提供能力，Ring 管事件可信流通，决策模块管采纳，Rust 编排管最终应用。**
 
 ### Turn Thinking（Fast / Deep · 编排行）
 
@@ -88,7 +116,7 @@ flowchart TB
 |---|-----|--------------|
 | 1 | `memory` | 检索 ②③ 注入 Prompt |
 | 2 | `emotion` | 分析用户句情绪 |
-| 3 | `event` | 本回合事件类型 / 影响（可规则或 LLM） |
+| 3 | `event` | legacy 对话事件类型/影响估计；结果进入 Event Ring |
 | 4 | `prompt` | 组装完整 prompt 字符串 |
 | 5 | `llm` | 调用模型生成 **reply** |
 | 6 | `agent` | 工具 / MCP；可短路主链 |
@@ -98,6 +126,36 @@ flowchart TB
 - **backend 真值表**（24 格）：[`SLOT_BACKEND_REALITY_MATRIX`](../handoff/SLOT_BACKEND_REALITY_MATRIX.md)  
 
 **逐槽定义、trait、禁止项** → [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md)。
+
+---
+
+## Event Ring：外环，不是第七槽
+
+Event Ring 不按固定顺序强制所有模块运行。模块先注册自己订阅/允许发射的事件；可信宿主另行分配基础影响权重和失败策略。模块只能提交草案，Ring 负责签发真实来源、权重、顺序和因果链。
+
+当前两条最重要的链：
+
+```text
+event 槽估计 → chat.event_impact.estimated → Ring → 人格/关系预览
+
+memory 找到候选 → recall.candidate → event decision
+  → recollection.activated（可能没有）→ 本轮回想 Prompt
+```
+
+权重只表示提案被判断时的基础影响力，不代表执行优先级，也不保证被采纳。完整契约见 [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)。
+
+### 没有用户消息时如何主动开口
+
+```text
+可信传感器/系统适配器提出事件
+  → proactive_turn_decision
+  → 权威授权事件
+  → 一次性 Permit
+  → process_proactive_turn
+  → 以 ExternalObservation 进入共景回复管线
+```
+
+外部观察不会冒充用户消息；当前也不写用户聊天、STM/LTM、关系或人格。它仍缺去重、冷却、频率限制、用户输入抢占和通用输出端口，因此是可用地基，不是无限自动运行的 Bot。
 
 ---
 
@@ -147,6 +205,8 @@ flowchart BT
 - [ ] 能指出 `process_message.rs` 与 `co_present` 的关系  
 - [ ] 能区分 **聊天日志 / STM / LTM** 三者  
 - [ ] 能列出六槽名称，并说出「复杂情感 **不是** 第七槽」  
+- [ ] 能区分 legacy `event` 槽、Event Ring、Event 决策模块和 Rust 编排
+- [ ] 能说出用户消息与 `ExternalObservation` 为什么必须分开
 - [ ] 知道主编排 **不读** 蓝图 `steps[]` 当 DSL  
 
 ---

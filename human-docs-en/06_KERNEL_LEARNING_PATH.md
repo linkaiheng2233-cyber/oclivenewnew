@@ -1,6 +1,6 @@
 # 06 · Kernel learning path (Day 1–5 summary)
 
-> **Last updated:** 2026-06-26  
+> **Last updated:** 2026-08-31
 > **Audience:** Contributors touching `process_message`, persistence, or plugin wiring.  
 > **Full human edition (CN):** [human-docs/06](../human-docs/06_KERNEL_LEARNING_PATH.md) · **Module registry SSOT:** [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
@@ -31,13 +31,14 @@
 
 | Order | File | Focus |
 |-------|------|--------|
-| 1 | `process_message.rs` | `run()`: `srid`, health check, branches |
-| 2 | `turn_pipeline/mod.rs` | `execute_turn` four phases |
-| 3 | `turn_pipeline/pre.rs` | Prompt input, complex emotion, **memory retrieval** |
-| 4 | [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md) + `plugin_host/mod.rs` | Per-slot wiring |
-| 5 | `prompt_builder/mod.rs` | Section order, guardrails |
+| 1 | `process_message.rs` + `dispatch.rs` | preflight, Agent shortcut, remote/co-present selection |
+| 2 | `turn_pipeline/mod.rs` | stable `execute_turn` entry |
+| 3 | `turn_pipeline/pre.rs` | affect, **memory retrieval**, identity, runtime context |
+| 4 | `turn_pipeline/co_present/run_middle.rs` | thinking, event, Event Ring, prompt input |
+| 5 | `turn_pipeline/post.rs` + `post/post_llm.rs` | main LLM, persistence policy, final response |
+| 6 | [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md) + [EVENT_RING](../creator-docs-en/plugin-and-architecture/EVENT_RING.md) | slot wiring and event authority |
 
-**Checkpoint:** sketch Tauri → `process_message` → `turn_pipeline` → `PluginHost`.
+**Checkpoint:** sketch Tauri → `process_message` → Agent/dispatch → pre/middle/LLM/post, and explain why Event Ring is not a seventh slot.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **读者**：准备修改 OCLive 主仓代码的 Rust / Vue 开发者。
 **目标**：30 分钟跑起来，1 小时找到所属模块，随后只读与任务有关的文档。
-**最后更新**：2026-07-19。
+**最后更新**：2026-08-31。
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
 
@@ -29,7 +29,7 @@
 | 层 | 文档 | 解决的问题 | 何时读 |
 |----|------|------------|--------|
 | L0 | [00 愿景](00_VISION_AND_POSITIONING.md) | 为什么做、边界是什么 | 第一天 |
-| L1 | [01 简架构](01_ARCHITECTURE_SIMPLE.md) | 一轮对话、六槽、三套记忆 | 第一天 |
+| L1 | [01 简架构](01_ARCHITECTURE_SIMPLE.md) | 用户/主动回合、六槽、Event Ring、上下文、三套记忆 | 第一天 |
 | L2 | [02 跑通](02_THIRTY_MINUTE_START.md) | 构建与本地验证 | 必读 |
 | L3 | [03 术语](03_GLOSSARY.md) · [04 规则](04_ENGINEERING_RULES.md) | 代码语言与贡献纪律 | 必读 |
 | L4 | [05 调试](05_DEBUGGING.md) | 如何定位常见故障 | 遇到问题时 |

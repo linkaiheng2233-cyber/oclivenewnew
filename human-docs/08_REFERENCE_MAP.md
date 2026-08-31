@@ -23,6 +23,7 @@
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | 取舍记录 |
 | [ARCHITECTURE_LAYERING](../handoff/ARCHITECTURE_LAYERING.md) | 分层 ratchet |
 | [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md) | 角色 vs 蓝图 |
+| [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md) | 事件信封、注册权威、记忆提案与主动回合 |
 
 ---
 
@@ -117,7 +118,7 @@
 | [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | 聊天 vs 记忆 |
 | [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 全量契约索引 |
 
-**人类文档包进度**：[human-docs/README §文档包进度](README.md#文档包进度与-ai-包同步--2026-06-25)
+**人类文档入口与学习阶梯**：[human-docs/README](README.md)
 
 ---
 

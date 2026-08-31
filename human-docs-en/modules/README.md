@@ -3,7 +3,7 @@
 > **Readers**: Engineers who finished L0–L3 and work on **one module**, not the full `process_message` chain.  
 > **SSOT**: Chinese full packs → [`human-docs/modules/README.md`](../../human-docs/modules/README.md) · definitions → [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md).  
 > **Coverage**: **≥80%** — all 20 module packs mirrored (EN summary + ZH checklist link).  
-> **Last updated**: 2026-08-16
+> **Last updated**: 2026-08-31
 
 ---
 
@@ -13,6 +13,8 @@
 2. Pick **one** pack from the table below.
 3. §3 in each ZH pack links to creator-docs / handoff SSOT — **do not** copy six-slot tables or PLUGIN_V1 full text into PRs.
 4. Changing `process_message` order → [06 kernel learning path](../06_KERNEL_LEARNING_PATH.md) (**main-chain maintainers only**).
+
+**Event Ring** is a cross-module contract outside the picker, not a seventh slot. Start with [01 Architecture](../01_ARCHITECTURE_SIMPLE.md); use [EVENT_RING](../../creator-docs-en/plugin-and-architecture/EVENT_RING.md) only when changing its wire or authority boundary.
 
 ---
 

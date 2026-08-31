@@ -26,7 +26,7 @@ Aligned with [human-docs/README.md §学习阶梯](../human-docs/README.md#学�
 | Level | English | Chinese | Core question | ~Time |
 |-------|---------|---------|---------------|-------|
 | **L0** | [00_VISION_AND_POSITIONING.md](00_VISION_AND_POSITIONING.md) | [00](../human-docs/00_VISION_AND_POSITIONING.md) | What this is / is not | 15 min |
-| **L1** | [01_ARCHITECTURE_SIMPLE.md](01_ARCHITECTURE_SIMPLE.md) | [01](../human-docs/01_ARCHITECTURE_SIMPLE.md) | One-turn flow · three memory stores · six slots | 45 min |
+| **L1** | [01_ARCHITECTURE_SIMPLE.md](01_ARCHITECTURE_SIMPLE.md) | [01](../human-docs/01_ARCHITECTURE_SIMPLE.md) | User/proactive turn · context · six slots · Event Ring | 45 min |
 | **L2** | [02_THIRTY_MINUTE_START.md](02_THIRTY_MINUTE_START.md) | [02](../human-docs/02_THIRTY_MINUTE_START.md) | Clone, run, verify | 30 min |
 | **L3** | [03_GLOSSARY.md](03_GLOSSARY.md) + [04_ENGINEERING_RULES_SUMMARY.md](04_ENGINEERING_RULES_SUMMARY.md) | [03](../human-docs/03_GLOSSARY.md) + [04](../human-docs/04_ENGINEERING_RULES.md) | Terms · PR rules · doc discipline | 45 min |
 | **L4** | [05_DEBUGGING.md](05_DEBUGGING.md) | [05](../human-docs/05_DEBUGGING.md) | Debug without AI | 30 min |
@@ -45,7 +45,7 @@ Aligned with [human-docs/README.md §学习阶梯](../human-docs/README.md#学�
 
 ## Mirror status (human-docs-en)
 
-Last reviewed: **2026-07-10**.
+Last reviewed: **2026-08-31**.
 
 | Block | Status | Notes |
 |-------|--------|-------|
