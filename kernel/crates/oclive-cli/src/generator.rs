@@ -59,13 +59,20 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
     });
     if let Some(ref root) = cfg.kernel_source {
         let path_tauri = relativize_path(out, &root.join("distros/desktop-tauri"));
+        let path_host = relativize_path(out, &root.join("kernel/crates/oclive_kernel_host"));
+        let path_contracts =
+            relativize_path(out, &root.join("kernel/crates/oclive_kernel_contracts"));
         let path_runtime = relativize_path(out, &root.join("kernel/crates/oclive_kernel_runtime"));
+        let path_types = relativize_path(out, &root.join("kernel/crates/oclive_kernel_types"));
         let lib_demo = cfg.project_type == ProjectType::Library;
         let http_entry = cfg.project_type == ProjectType::KernelServer;
         if let Some(obj) = ctx.as_object_mut() {
             obj.insert("kernel_linked".into(), json!(true));
             obj.insert("path_tauri".into(), json!(path_tauri));
+            obj.insert("path_host".into(), json!(path_host));
+            obj.insert("path_contracts".into(), json!(path_contracts));
             obj.insert("path_runtime".into(), json!(path_runtime));
+            obj.insert("path_types".into(), json!(path_types));
             obj.insert("library_kernel_demo".into(), json!(lib_demo));
             obj.insert("kernel_server_http_entry".into(), json!(http_entry));
         }
@@ -76,13 +83,19 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
 /// `--kernel-source` must point to the oclivenewnew repository root.
 pub fn validate_kernel_source(root: &Path) -> Result<()> {
     let tauri = root.join("distros/desktop-tauri").join("Cargo.toml");
-    let runtime = root
-        .join("kernel/crates")
-        .join("oclive_kernel_runtime")
-        .join("Cargo.toml");
-    if !tauri.is_file() || !runtime.is_file() {
+    let kernel_crates = root.join("kernel/crates");
+    let required_crates = [
+        "oclive_kernel_contracts",
+        "oclive_kernel_host",
+        "oclive_kernel_runtime",
+        "oclive_kernel_types",
+    ];
+    let crates_present = required_crates
+        .iter()
+        .all(|name| kernel_crates.join(name).join("Cargo.toml").is_file());
+    if !tauri.is_file() || !crates_present {
         anyhow::bail!(
-            "--kernel-source must point to the oclivenewnew repo root (needs distros/desktop-tauri/ and kernel/crates/oclive_kernel_runtime/)"
+            "--kernel-source must point to the oclivenewnew repo root (needs distros/desktop-tauri/ and kernel/crates/oclive_kernel_{{contracts,host,runtime,types}}/)"
         );
     }
     Ok(())
@@ -722,5 +735,41 @@ mod tests {
         assert!(main_rs.contains("run_api_server"));
         assert!(main_rs.contains("parse_api_port_arg"));
         assert!(main_rs.contains("OCLIVE_CLI_INVALID_ARGUMENT"));
+    }
+
+    #[test]
+    fn library_linked_project_exposes_complete_role_kernel_facade() {
+        use crate::init::{preset_config, ProjectType};
+        use std::path::PathBuf;
+        use tempfile::tempdir;
+
+        let mut cfg = preset_config("linked-library", "minimal");
+        cfg.project_type = ProjectType::Library;
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        validate_kernel_source(&repo_root).unwrap();
+        cfg.kernel_source = Some(repo_root);
+        let out = tempdir().unwrap();
+        write_project(&cfg, out.path()).unwrap();
+
+        let cargo = std::fs::read_to_string(out.path().join("Cargo.toml")).unwrap();
+        for dependency in [
+            "oclive_kernel_contracts",
+            "oclive_kernel_host",
+            "oclive_kernel_runtime",
+            "oclive_kernel_types",
+        ] {
+            assert!(cargo.contains(dependency), "missing {dependency}");
+        }
+        assert!(!cargo.contains("oclivenewnew-tauri"));
+
+        let lib = std::fs::read_to_string(out.path().join("src/lib.rs")).unwrap();
+        assert!(lib.contains("OcliveKernel"));
+        assert!(lib.contains("OcliveKernelConfig"));
+        assert!(lib.contains("KernelResult"));
+        assert!(!lib.contains("demo_resolve_api_port"));
+
+        let readme = std::fs::read_to_string(out.path().join("README.md")).unwrap();
+        assert!(readme.contains("process_message"));
+        assert!(!readme.contains("完整对话编排仍在"));
     }
 }

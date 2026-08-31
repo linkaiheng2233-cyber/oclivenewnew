@@ -108,7 +108,7 @@ pub struct InitArgs {
     #[arg(long)]
     pub with_example_plugin: bool,
 
-    /// Path to oclivenewnew repo root: generated project uses path deps on oclivenewnew-tauri / oclive_kernel_runtime
+    /// Path to the oclivenewnew root: server projects link the HTTP host; library projects link the stable in-process role kernel
     #[arg(long)]
     pub kernel_source: Option<PathBuf>,
 
