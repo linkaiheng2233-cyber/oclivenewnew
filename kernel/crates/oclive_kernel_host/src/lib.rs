@@ -16,9 +16,14 @@ pub mod error {
 pub mod http_api;
 pub mod infrastructure;
 pub mod models;
+pub mod role_kernel;
 pub mod service;
 pub mod state;
 pub mod utils;
+
+pub use role_kernel::{
+    KernelError, KernelResult, OcliveKernel, OcliveKernelBuilder, OcliveKernelConfig,
+};
 
 use std::path::Path;
 use std::path::PathBuf;

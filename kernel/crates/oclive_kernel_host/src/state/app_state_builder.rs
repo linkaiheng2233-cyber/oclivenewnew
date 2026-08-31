@@ -13,7 +13,7 @@ use crate::infrastructure::coordinated_llm::CoordinatedExternalLlm;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::{LlmClient, SharedOllamaClient};
+use crate::infrastructure::llm::SharedOllamaClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::performance_llm::PerformanceLlmClient;
 use crate::infrastructure::policy_registry::{
@@ -28,6 +28,7 @@ use crate::infrastructure::sqlite_pool;
 use crate::infrastructure::storage::RoleStorage;
 use arc_swap::ArcSwap;
 use dashmap::DashMap;
+use oclive_kernel_contracts::LlmClient;
 use parking_lot::RwLock;
 use sqlx::SqlitePool;
 use std::fs;
@@ -85,6 +86,17 @@ impl AppStateBuilder {
             use_test_policy_default: policy_file.is_none(),
             host_profile: None,
         }
+    }
+
+    /// Use a caller-provided LLM implementation while retaining the production database,
+    /// role-storage, plugin, Event Ring, and persistence wiring.
+    ///
+    /// This is the transport-independent injection point for embedded hosts. The supplied client
+    /// owns model I/O only; the kernel remains authoritative for orchestration and side effects.
+    #[must_use]
+    pub fn with_llm_client(mut self, llm: Arc<dyn LlmClient>) -> Self {
+        self.llm = Some(llm);
+        self
     }
 
     #[must_use]
