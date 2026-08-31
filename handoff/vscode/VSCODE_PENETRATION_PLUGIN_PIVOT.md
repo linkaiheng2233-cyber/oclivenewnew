@@ -1,7 +1,7 @@
 # VS Code 渗透插件化 · 交接索引
 
 **锁定日期**：2026-06-11  
-**战略 SSOT**：姊妹仓 [`oclive-vscode/docs/PENETRATION_PLUGIN_MODEL.md`](../../oclive-vscode/docs/PENETRATION_PLUGIN_MODEL.md)
+**战略 SSOT**：姊妹仓 [`oclive-vscode/docs/PENETRATION_PLUGIN_MODEL.md`](../../../oclive-vscode/docs/PENETRATION_PLUGIN_MODEL.md)
 
 ---
 
@@ -14,7 +14,7 @@
 | **D3** | **A** | 官方渗透扩展姊妹仓 **`oclive-vscode-penetration`** |
 | **D4** | **仅新名** | 命令前缀 **`oclive-penetration.*`**；0.4 起 Breaking，**无** shim |
 
-详见 [`oclive-vscode/docs/GATE_DECISIONS.md`](../../oclive-vscode/docs/GATE_DECISIONS.md)。
+详见 [`oclive-vscode/docs/GATE_DECISIONS.md`](../../../oclive-vscode/docs/GATE_DECISIONS.md)。
 
 ---
 
@@ -71,4 +71,4 @@
 | `oclive-vscode` | **0.4.1** |
 | `oclive-vscode-penetration` | 0.1.1 |
 
-**GA 状态**（2026-06-11）：F5/VSIX 自动化签核绿 · Release 可下载 · README 两步安装路径明确。见 [`oclive-vscode/docs/F5_ACCEPTANCE.md`](../../oclive-vscode/docs/F5_ACCEPTANCE.md)。
+**GA 状态**（2026-06-11）：F5/VSIX 自动化签核绿 · Release 可下载 · README 两步安装路径明确。见 [`oclive-vscode/docs/F5_ACCEPTANCE.md`](../../../oclive-vscode/docs/F5_ACCEPTANCE.md)。

@@ -2,13 +2,13 @@
 
 **状态**：**P2–P5 已实现**（2026-05）— `DualPipelineRunner`、宿主门控、`init --dual-core`、OOCP S13、Monolith 模板已落地；**默认仍关闭**，不开双核零 diff。  
 **权威 RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
-**术语对照**：[DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)
+**历史术语对照**：[DUAL_CORE_ALIGNMENT.md](archive/DUAL_CORE_ALIGNMENT.md)
 
 **与仓库其它计划的关系**：
 
 | 计划 | 关系 |
 |------|------|
-| [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) | **已闭环（P0–P8）** — 今日交付基线；双核在其上**扩展**蓝图，不推翻 v2 |
+| [BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md) | **已闭环（P0–P8）** — 历史交付基线；双核在其上**扩展**蓝图，不推翻 v2 |
 | [RFC_OCLIVE_MONOLITH_MODE.md](../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) | **构建态**宏核态；与双核 **正交**（见 §六） |
 | 插件极简 UI（`SimplePluginManager` + CLI） | **已落地** — 双核 **不进**默认 GUI |
 | `handoff/PERF_PHASES.md` 等性能阶段 | 双核 **P5** 与 Monolith 焊接衔接；**不**替代性能专项 |
@@ -302,7 +302,7 @@ flowchart TD
 
 ## 十三、开放问题（已关闭）
 
-Q1–Q20 已决。**P2–P5 已实现**：宿主加载 `runtime_config`、`DualPipelineRunner` + `process_message` 门控、`oclive init --dual-core`、OOCP S13（可选）、Monolith `--dual-core` 模板。进度与验收见 [DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)、[PRODUCT_SELF_CHECK.md](PRODUCT_SELF_CHECK.md) §四。
+Q1–Q20 已决。**P2–P5 已实现**：宿主加载 `runtime_config`、`DualPipelineRunner` + `process_message` 门控、`oclive init --dual-core`、OOCP S13（可选）、Monolith `--dual-core` 模板。历史进度与验收见 [DUAL_CORE_ALIGNMENT.md](archive/DUAL_CORE_ALIGNMENT.md)、[PRODUCT_SELF_CHECK.md](archive/PRODUCT_SELF_CHECK.md) §四；当前状态以源码和测试为准。
 
 ---
 

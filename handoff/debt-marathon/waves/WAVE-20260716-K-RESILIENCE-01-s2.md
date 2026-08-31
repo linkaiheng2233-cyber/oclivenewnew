@@ -10,7 +10,7 @@
 | **Stage** | 2 · One representative wiring |
 | **分支** | `debt/fix-marathon-stop-hook` |
 | **日期** | 2026-07-16 |
-| **执行面** | [oclive-debt-stage](48619809-2353-4e65-bdbb-c548f85f3be6) |
+| **执行面** | [oclive-debt-stage](codex://threads/48619809-2353-4e65-bdbb-c548f85f3be6) |
 | **状态三态** | Locally verified |
 | **Claim** | `d1efb9e0-8b59-4364-b317-04d9d2c72997` · attempt 1 |
 

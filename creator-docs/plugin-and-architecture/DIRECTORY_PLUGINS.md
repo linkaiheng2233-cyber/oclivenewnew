@@ -55,7 +55,7 @@
 
 用户可在 **设置 → 插件与后端 → Agent 调试** 中查看/授予/撤销（调用 `list_high_risk_grants`、`grant_high_risk_capability`、`revoke_high_risk_capability`）。自动化或 CI 可设 **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** 跳过检查（勿用于面向用户的生产场景）。
 
-**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 **`mcp:http`** / **`mcp:stdio`** 授权项。**Remote 侧车**（`OCLIVE_REMOTE_*`）出站前需要 **`network:*`**（grant id **`remote:plugin`** / **`remote:llm`**）。详见 [`handoff/A4_CLOSURE_SUMMARY.md`](../../handoff/A4_CLOSURE_SUMMARY.md)。
+**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 **`mcp:http`** / **`mcp:stdio`** 授权项。**Remote 侧车**（`OCLIVE_REMOTE_*`）出站前需要 **`network:*`**（grant id **`remote:plugin`** / **`remote:llm`**）。历史验收证据见 [`A4_CLOSURE_SUMMARY.md`](../../handoff/archive/A4_CLOSURE_SUMMARY.md)。
 
 ---
 

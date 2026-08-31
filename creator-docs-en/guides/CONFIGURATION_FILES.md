@@ -12,7 +12,7 @@ Common **read/write** paths for the **oclivenewnew** desktop host: locations, pu
 | Last active role id | `{app_data}/oclive_last_role_id.txt` |
 | User plugin scan root | `{app_data}/distros/chat-pro/plugins/` |
 
-**Code**: `kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`, `directory_plugins/runtime.rs`, `lib.rs` (`app_data_dir`).
+**Code**: `kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`, `directory_plugins/runtime/mod.rs`, `lib.rs` (`app_data_dir`).
 
 [中文](../../creator-docs/guides/CONFIGURATION_FILES.md)
 
@@ -46,7 +46,7 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 - **Path**: pack root next to **`pipeline.ocblueprint`** (see [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)).
 - **Purpose**: author **recommended front‑end layout**: whole‑shell plugin, per official slot order/visibility, theme/layout, …
-- **Format**: JSON; machine schema **[role-pack/ui.json.schema.json](../role-pack/ui.json.schema.json)**.
+- **Format**: JSON; machine schema **[role-pack/ui.json.schema.json](../../creator-docs/role-pack/ui.json.schema.json)**.
 
 **Areas**
 

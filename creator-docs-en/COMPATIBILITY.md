@@ -23,7 +23,7 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 | **0.2.x** | **0.2.0** | `shell`, `slots` (`chat_toolbar`, `settings_panel`, `role_detail`, etc.), base `theme` / `layout` (see schema) | historical baseline |
 | **0.3.x** | **0.3.0** | extended theme/layout fields per release notes | lower hosts usually **ignore unknown fields** |
 | **0.4.x** | **0.4.0** | full **`sidebar`**, **`chat.header`**, etc. need host **directory bootstrap** for those slots ([DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)) | slot names must match host `pluginStore` constants |
-| **0.5.x** | **0.5.0** | portrait catalog / `visual_presentation` export aligned with host `display_metrics` and voice side-channel `ui.json` slot seeds | see [CHANGELOG.en.md](../../CHANGELOG.en.md) `[0.5.0]` |
+| **0.5.x** | **0.5.0** | portrait catalog / `visual_presentation` export aligned with host `display_metrics` and voice side-channel `ui.json` slot seeds | see [CHANGELOG.en.md](../CHANGELOG.en.md) `[0.5.0]` |
 | **dev** | **same dev** | schema and host `UiConfig` on the same branch | local pairing only |
 
 ---
@@ -35,10 +35,10 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
    - Declared but unimplemented slots: may **not render** or **do nothing** until the host is upgraded.
 
 2. **Editor older than host**  
-   - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](role-pack/ui.json.schema.json).
+   - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json).
 
 3. **Pack `settings.json` and `plugin_backends`**
-   - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../../CHANGELOG.en.md).
+   - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../CHANGELOG.en.md).
 
 ---
 
@@ -60,7 +60,7 @@ pack/plugin assets → kernel contract and orchestration → Tauri/Bridge → di
 
 **Structural gate**: `npm run check:module-compat` compares kernel/frontend slot registries, bundled manifests, Vue/iframe files, RPC timeout declarations, and plugin-index versions. It does not prove sidecar, device, or real-WebView behavior; those still require targeted integration/smoke tests.
 
-Follow [`AI_CHANGE_BOUNDARIES.md`](../../handoff/AI_CHANGE_BOUNDARIES.md) G17 for associated changes and completion claims, and [`BREAKING_CHANGE_PROCESS.md`](../../handoff/BREAKING_CHANGE_PROCESS.md) for incompatible changes.
+Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for associated changes and completion claims, and [`BREAKING_CHANGE_PROCESS.md`](../handoff/BREAKING_CHANGE_PROCESS.md) for incompatible changes.
 
 ---
 
@@ -100,12 +100,12 @@ Headless HTTP authentication is part of the host launch contract: `--api` requir
 
 ## Remote LLM env (pointer)
 
-Env matrix for Remote LLM (`OCLIVE_LLM_BACKEND`, `OCLIVE_REMOTE_LLM_*`, `OCLIVE_LLM_CLOUD_API_STYLE`, OpenAI aliases) lives in the Chinese SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md); EN protocol page links there.
+Env matrix for Remote LLM (`OCLIVE_LLM_BACKEND`, `OCLIVE_REMOTE_LLM_*`, `OCLIVE_LLM_CLOUD_API_STYLE`, OpenAI aliases) lives in the Chinese SSOT [REMOTE_PLUGIN_PROTOCOL.md §2.0](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md); EN protocol page links there.
 
 ## Related
 
-- [A5_CLOSURE_SUMMARY.md](../../handoff/A5_CLOSURE_SUMMARY.md)
-- [ui.json.schema.json](role-pack/ui.json.schema.json)
+- [Historical acceptance evidence: A5_CLOSURE_SUMMARY.md](../handoff/archive/A5_CLOSURE_SUMMARY.md)
+- [ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json)
 - [DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
-- [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 — Remote LLM env matrix
-- [CHANGELOG.en.md](../../CHANGELOG.en.md)
+- [REMOTE_PLUGIN_PROTOCOL.md](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 — Remote LLM env matrix
+- [CHANGELOG.en.md](../CHANGELOG.en.md)

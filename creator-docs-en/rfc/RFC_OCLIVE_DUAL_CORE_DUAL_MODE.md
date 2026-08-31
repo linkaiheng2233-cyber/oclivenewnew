@@ -8,7 +8,7 @@
 | Entry | **`oclive init --dual-core`** (opt-in; **off by default**) |
 | vs Monolith | **Orthogonal**: Monolith = compile-time weld; dual-core = runtime dual pipelines + rollback |
 
-[中文全文](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [Cursor handoff (progress)](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [Alignment quick ref](../../handoff/DUAL_CORE_ALIGNMENT.md)
+[中文全文](../../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [Cursor handoff (historical progress)](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [Archived alignment quick ref](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)
 
 ---
 

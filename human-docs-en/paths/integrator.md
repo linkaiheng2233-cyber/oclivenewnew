@@ -9,8 +9,8 @@
 
 ## Suggested order
 
-1. [02 thirty-minute start](02_THIRTY_MINUTE_START.md)
-2. [01 simple architecture](01_ARCHITECTURE_SIMPLE.md) — `process_message` main chain (overview)
+1. [02 thirty-minute start](../02_THIRTY_MINUTE_START.md)
+2. [01 simple architecture](../01_ARCHITECTURE_SIMPLE.md) — `process_message` main chain (overview)
 3. **Surface pack** → [modules/surfaces/distro-hostprofile.md](../modules/surfaces/distro-hostprofile.md)
 4. [KERNEL_INTEGRATOR_LEARNING_PATH](../../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) (SSOT)
 5. `cargo run -p oclive-cli -- init` — minimal skeleton

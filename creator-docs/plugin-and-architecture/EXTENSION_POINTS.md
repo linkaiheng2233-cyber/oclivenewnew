@@ -8,7 +8,7 @@
 
 ## 宿主聚合
 
-- **`PluginHost`**：持有各后端一套 `Arc<dyn Trait>`，按枚举分发；[`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)。**Remote** 槽位在设置 `OCLIVE_REMOTE_*` 时为 HTTP 客户端 [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`](../../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/)。**Directory** 槽位在 [`DirectoryPluginRuntime::ensure_rpc_url`](../../kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime.rs) 懒启动子进程后，复用同一套 HTTP 客户端与 URL。
+- **`PluginHost`**：持有各后端一套 `Arc<dyn Trait>`，按枚举分发；[`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)。**Remote** 槽位在设置 `OCLIVE_REMOTE_*` 时为 HTTP 客户端 [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`](../../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/)。**Directory** 槽位在 [`DirectoryPluginRuntime::ensure_rpc_url`](../../kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime/mod.rs) 懒启动子进程后，复用同一套 HTTP 客户端与 URL。
 - **`ResolvedRolePlugins`**：`PluginHost::resolve_for_role(role)` 一次解析 **memory / emotion / event / prompt / llm / agent** 六条子系统线，**单次 `send_message` / `RoleManager` 回合内复用**，避免重复匹配枚举。
 
 ## Rust trait 与源文件

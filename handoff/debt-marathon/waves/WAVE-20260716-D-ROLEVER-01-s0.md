@@ -10,7 +10,7 @@
 | **执行 Stage** | Stage 0 · Locate canonical migration wording |
 | **分支** | `debt/t-doc-02-theater-status`（马拉松脚手架尚未合 main；后续 Stage 1 开 stack 分支） |
 | **日期** | 2026-07-16 |
-| **执行面** | [oclive-debt-stage](ce9e1824-c4f8-4fe9-8215-e9650840133f) |
+| **执行面** | [oclive-debt-stage](codex://threads/ce9e1824-c4f8-4fe9-8215-e9650840133f) |
 | **状态三态** | Implemented（只读） |
 
 ## 证据

@@ -183,7 +183,7 @@
 | 项 | 落点 | 状态 |
 |----|------|------|
 | Profile 接入 | `examples/distro-profiles/theater.oclive.toml` · `distros/desktop-tauri/resources/distro-profiles/` | **Done** |
-| 双角色 + 四场景 | `distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts` · mumu × 枫侵月 | **Done** |
+| 双角色 + 四场景 | `distros/theater/src/composables/theater/theaterSceneCatalog.ts` · mumu × 枫侵月 | **Done** |
 | 本地启动 / 打包 | `npm run tauri:dev:theater` · `npm run tauri:build:theater` | **Done** |
 | 场景导演插件 | `distros/chat-pro/plugins/com.oclive.theater_director_official/` · `resolve_theater_director` | **Done** |
 | TheaterShell 前端 | `distros/theater/src/shells/theater/` · `TheaterShell` | **Done** |

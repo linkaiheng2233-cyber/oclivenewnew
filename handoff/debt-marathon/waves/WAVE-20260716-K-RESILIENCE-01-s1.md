@@ -10,7 +10,7 @@
 | **Stage** | 1 · Document the inventory |
 | **分支** | `debt/fix-marathon-stop-hook` |
 | **日期** | 2026-07-16 |
-| **执行面** | [oclive-debt-stage](88697f4b-e15f-4415-95f4-a7fbc782ef41) |
+| **执行面** | [oclive-debt-stage](codex://threads/88697f4b-e15f-4415-95f4-a7fbc782ef41) |
 | **状态三态** | Locally verified（未 commit） |
 | **Claim** | `627a2539-fabd-4c8e-8ee8-9ea2a49c2dcb` · attempt 1 |
 

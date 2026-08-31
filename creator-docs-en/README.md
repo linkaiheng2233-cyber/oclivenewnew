@@ -2,7 +2,7 @@
 
 [中文总索引](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
-This tree mirrors **`creator-docs/`** with hand-maintained English pages. **Normative contracts remain Chinese SSOT** — English pages link back with **`[中文](…)`** on every mirrored topic.
+This tree mirrors **`creator-docs/`** with hand-maintained English pages. **Normative contracts remain Chinese SSOT** — every mirrored topic contains a visible `中文` back-link.
 
 ## Mirror policy
 

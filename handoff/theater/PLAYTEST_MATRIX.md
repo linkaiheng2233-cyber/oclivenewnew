@@ -95,7 +95,7 @@
 
 ## 反馈回流
 
-- **seed 文案**：[`theaterSceneCatalog.ts`](../../distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts) `dramaSeed` / `sceneBrief`
+- **seed 文案**：[`theaterSceneCatalog.ts`](../../distros/theater/src/composables/theater/theaterSceneCatalog.ts) `dramaSeed` / `sceneBrief`
 - **纪律与 mode 模板**：官方插件 [`prompts/drama_guardrails.mjs`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/drama_guardrails.mjs) 与各 `prompts/modes/*`
 - **Rust fallback**（仅 RPC 失败）：[`drama_guardrails.rs`](../../kernel/crates/oclive_kernel_host/src/domain/theater/drama_guardrails.rs) — 改插件后按需同步，见插件 README sync 清单
 

@@ -73,13 +73,13 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
   → process_message → SlotRunner
 ```
 
-详见：[`kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs) 模块注释。
+详见：[`kernel/crates/oclive_kernel_host/src/infrastructure/storage/mod.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage/mod.rs) 模块注释。
 
 ---
 
 ## 相关文档
 
 - [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
-- [KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](../../handoff/KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md)
+- [历史 trait 审计：KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](../../handoff/archive/KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md)
 
 [English](../architecture-en/DESIGN_DECISIONS.md)

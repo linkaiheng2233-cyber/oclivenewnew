@@ -9,7 +9,7 @@
 | 受众 | **仅开发者**；普通用户只使用开发者构建的发行版，不接触终端 |
 | 本质 | **编译期**优化路径：以模块可替换性换取极限性能（可选、默认关闭），用于打破 **第 1–6 模块** 抽象在 **高频热路径** 上的性能天花板 |
 
-**相关文档**：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（模块编号）、[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（第 1–6 模块与 `PluginHost`）、[`PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)（蓝图运行时 Schema）、[`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)（脚手架用法）。
+**相关文档**：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)（模块编号）、[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)（第 1–6 模块与 `PluginHost`）、[`pipeline.ocblueprint.v4.schema.json`](../../kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v4.schema.json)（当前 Stable 蓝图 Schema）、[`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)（脚手架用法）。
 
 **与实现一致（仓库主分支）**：`cargo run -p oclive-cli -- --experimental init … --monolith`（非交互，且项目类型为 **kernel_server**）或交互选择 **高耦合** 时，生成 **`monolith.toml`**、`vendor/oclive_monolith_builtin/`、`src/process_message_monolith.rs`，并在 `Cargo.toml` 中声明 **`[features] monolith`** 与第二 **`[[bin]]`**。修改 `monolith.toml` 后执行 **`cargo run -p oclive-cli -- --experimental build -o <项目根>`** 可再生成焊接源码并默认连续执行两次 `cargo build`（若 `enabled = true` 则第二次带 **`monolith`** feature）。**`cargo run -p oclive-cli -- --experimental bench`** 输出 JSON 延迟报告（Schema：`kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`）。嵌入式 **library** 忽略 `--monolith` 且不生成 `monolith.toml`。
 
@@ -217,7 +217,7 @@ my-fast-npc/
 
 - 脚手架：[`creator-docs/cli/OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)
 - 第 1–6 模块契约：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) · 编号总览：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
-- 蓝图 Schema（运行时）：[`creator-docs/kernel/PIPELINE_SCHEMA.md`](../kernel/PIPELINE_SCHEMA.md)
+- 蓝图 Schema（当前 Stable）：[`pipeline.ocblueprint.v4.schema.json`](../../kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v4.schema.json)
 
 讨论请链接本文：`creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md`。
 

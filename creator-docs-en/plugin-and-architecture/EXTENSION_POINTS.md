@@ -12,7 +12,7 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 
 ## Host aggregation
 
-- **`PluginHost`**: holds `Arc<dyn Trait>` per backend and dispatches by enum — [`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs). **Remote** slots use the HTTP client under [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`](../../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/) when `OCLIVE_REMOTE_*` URLs are set. **Directory** slots call [`DirectoryPluginRuntime::ensure_rpc_url`](../../kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime.rs) to lazily spawn a child, then reuse the same HTTP client stack.
+- **`PluginHost`**: holds `Arc<dyn Trait>` per backend and dispatches by enum — [`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs). **Remote** slots use the HTTP client under [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`](../../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/) when `OCLIVE_REMOTE_*` URLs are set. **Directory** slots call [`DirectoryPluginRuntime::ensure_rpc_url`](../../kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime/mod.rs) to lazily spawn a child, then reuse the same HTTP client stack.
 - **`ResolvedRolePlugins`**: `PluginHost::resolve_for_role(role)` resolves **memory / emotion / event / prompt / llm / agent** once per role and is **reused for a whole `send_message` / `RoleManager` turn** to avoid repeated matching.
 
 ## Rust traits and source files

@@ -91,7 +91,7 @@
 | 深化：七槽 experimental method + 快照回滚 + Method 注册表 + 架构图 + 开发者指南 | **已完成** |
 | 精修：`oclive_dual_core` 分级日志 + 性能结果解读文档 | **已完成** |
 
-文档：[DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [DUAL_CORE_ALIGNMENT.md](DUAL_CORE_ALIGNMENT.md)
+文档：[DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [历史对齐记录](archive/DUAL_CORE_ALIGNMENT.md)
 
 ## 最终精修（2026-05-22）
 
@@ -138,7 +138,7 @@
 | 项 | 状态 |
 |----|------|
 | `EventEstimator` / `AgentProvider` 编排审计：`co_present` / `process_message` 无具体类型引用；热路径经 `Arc<dyn …>`（`slot_runner` / `plugin_host` / `AppState::*_for`） | 已落实 |
-| `kernel_contracts` trait 方法审计 | 见 [KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md) |
+| `kernel_contracts` trait 方法审计 | 历史验收证据见 [KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](archive/KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md)；当前契约以源码为准 |
 | `oclive doctor` 内核 trait 实现检查（`plugin_host_port_impl` 等 5 项） | 已落实 |
 | `useless_format` 修复（`f2e44bf`） | 已在历史中；`lint_cmd` → `commands/lint.rs` |
 | 依赖重复项 `cargo tree -d` | 见 [LIGHTWEIGHT_PROFILE.md](../creator-docs/development/LIGHTWEIGHT_PROFILE.md) §6（不可统一项已记录） |

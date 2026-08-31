@@ -47,5 +47,5 @@
 
 ## 相关
 
-- [`VS4_AGENT.md`](../../oclive-vscode/docs/VS4_AGENT.md)
+- [`VS4_AGENT.md`](../../../oclive-vscode/docs/VS4_AGENT.md)
 - 主仓 `distros/desktop-tauri/src/api/agent.rs`（Tauri 同源实现）

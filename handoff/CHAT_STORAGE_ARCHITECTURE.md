@@ -44,7 +44,7 @@ Integration smoke: `distros/desktop-tauri/tests/memory_lifecycle_integration.rs`
 
 ## Pluggable storage (SQLite + optional JSON mirror)
 
-Runtime always constructs **`HybridConversationStore`** (SQLite authoritative). Legacy `chat_storage.backend` values (`hybrid` / `file` / `sqlite`) and env `OCLIVE_CHAT_STORAGE_BACKEND` map to an internal **`mirror: bool`** via [`resolve_mirror_enabled`](../../kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/factory.rs); explicit `chat_storage.mirror` in role `config.json` wins.
+Runtime always constructs **`HybridConversationStore`** (SQLite authoritative). Legacy `chat_storage.backend` values (`hybrid` / `file` / `sqlite`) and env `OCLIVE_CHAT_STORAGE_BACKEND` map to an internal **`mirror: bool`** via [`resolve_mirror_enabled`](../kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/factory.rs); explicit `chat_storage.mirror` in role `config.json` wins.
 
 Selection order:
 

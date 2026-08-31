@@ -9,9 +9,9 @@
 
 ## Suggested order
 
-1. [00 vision](00_VISION_AND_POSITIONING.md) — six slots · `builtin` / `remote` / `directory`
-2. [02 thirty-minute start](02_THIRTY_MINUTE_START.md) — run main repo
-3. [03 glossary](03_GLOSSARY.md) + [04 engineering rules summary](04_ENGINEERING_RULES_SUMMARY.md) — L3 discipline
+1. [00 vision](../00_VISION_AND_POSITIONING.md) — six slots · `builtin` / `remote` / `directory`
+2. [02 thirty-minute start](../02_THIRTY_MINUTE_START.md) — run main repo
+3. [03 glossary](../03_GLOSSARY.md) + [04 engineering rules summary](../04_ENGINEERING_RULES_SUMMARY.md) — L3 discipline
 4. **Slot packs** (~30–60 min each; skip L5 if slot-only work):
    - LLM backend → [modules/slots/llm.md](../modules/slots/llm.md)
    - Agent / MCP → [modules/slots/agent.md](../modules/slots/agent.md)
@@ -36,7 +36,7 @@
 ## Debugging
 
 - Directory plugins: `{app_data}/distros/chat-pro/plugins/`, `high_risk_grants.json`
-- Log target: `oclive_plugin` (see [05 debugging](05_DEBUGGING.md))
+- Log target: `oclive_plugin` (see [05 debugging](../05_DEBUGGING.md))
 - Pack editor: sister repo **oclive-pack-editor**
 
 ---

@@ -33,7 +33,7 @@
 
 | 主清单锚点 | 内容 | 复杂度说明 |
 |------------|------|----------------|
-| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[`A5_CLOSURE_SUMMARY.md`](./A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
+| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[历史验收证据](./archive/A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
 | **A1.3（强化）** | **CI 与本地一致**：核对 `.github/workflows` 与 `npm run check:release` 覆盖差；缺则在 CI 或文档补一句「发版前本地补跑」 | CONTRIBUTING 已有 `check:release`，多为 **对齐与文档** |
 | **A6.1（切片）** | **界面无残留中文**：按 **一个垂直域** 扫（如仅设置页 / 仅插件管理），`rg Han` + i18n 键 | 全应用一次扫完工作量大，**按切片收口** |
 | **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 `handoff/archive/A3_CLOSURE_SUMMARY.md` |
@@ -61,7 +61,7 @@
 
 | 顺序建议 | 主清单锚点 | 为何硬 | 建议的第一锤 |
 |----------|------------|--------|----------------|
-| 1 | **A1.1** | **核心路径自动化**（装→启→切角→发消息→重启）稳定、防 flake、进 CI | **可 CI 子集已入库**：HTTP 重启（[`e2e-core-api-restart.mjs`](../../scripts/e2e-core-api-restart.mjs)）+ **`vite preview` Playwright**（[`distros/chat-pro/e2e/preview-shell.spec.ts`](../../distros/chat-pro/e2e/preview-shell.spec.ts)）；**A1.1c 原生壳 / 安装器** 仍单独立项 |
+| 1 | **A1.1** | **核心路径自动化**（装→启→切角→发消息→重启）稳定、防 flake、进 CI | **可 CI 子集已入库**：HTTP 重启（[`e2e-core-api-restart.mjs`](../scripts/e2e-core-api-restart.mjs)）+ **`vite preview` Playwright**（[`distros/chat-pro/e2e/preview-shell.spec.ts`](../distros/chat-pro/e2e/preview-shell.spec.ts)）；**A1.1c 原生壳 / 安装器** 仍单独立项 |
 | 2 | **A1.2** | **`invoke` 全矩阵**或契约对照数据集，覆盖面大 | **宿主热路径已收口**：[`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md) + `invoke_hotpath_matrix.rs`（**9** 条 `*_impl`）；**golden / 余下命令** 按需加行，不挡本条 |
 | 3 | **A2.3** | **离线/弱网** 全产品面（索引、Remote、市场相关） | 先画 **状态机 + 用户可见文案** 表，再按模块实现 |
 | 4 | **A2.1（全集）** | 首装失败 **全路径** i18n + 引导 | A2.1 子集在「二」做完后再开「全集」里程碑 |

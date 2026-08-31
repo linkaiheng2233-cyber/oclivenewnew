@@ -124,7 +124,7 @@ flowchart TB
 | **`host_flags`** | `skip_agent` · `skip_complex_emotion` |
 | **`prompt.profile`** | `concise` + 包级 `reply_quality_anchor` 锁场景 |
 | **默认卡司** | **mumu × 枫侵月**（四场景：早饭 / 超市 / 回家 / 睡前） |
-| **前端热路径** | [`useTheaterBeatPatch.ts`](../../distros/theater/distros/shared/src/composables/theater/theaterLogic.ts) patch 路径 **不经过**六槽；`theater_director` 经圈外 API |
+| **前端热路径** | [`theaterLogic.ts`](../../distros/theater/src/composables/theater/theaterLogic.ts) 的 beat patch 路径 **不经过**六槽；`theater_director` 经圈外 API |
 
 **Theater 有效六槽（profile + 蓝图对齐）**：
 
@@ -137,7 +137,7 @@ flowchart TB
 | llm | `ollama` | 本地 `qwen2.5:7b`（与 patch 默认一致） |
 | agent | `none` | 无工具链；`skip_agent` 双保险 |
 
-**蓝图改动**：官方剧场角色 [`distros/chat-pro/roles/theater-breakfast-*/pipeline.ocblueprint`](../../distros/chat-pro/roles/theater-breakfast-a/pipeline.ocblueprint) 的 `slot_registry` 与上表一致；`meta.ollama_model` / `reply_quality_anchor` 保留场景约束。
+**蓝图改动**：旧版 `theater-breakfast-*` 示例包已移出当前树；现行剧场角色包仍须使 `slot_registry` 与上表一致，并在 `meta.ollama_model` / `reply_quality_anchor` 保留场景约束。
 
 **独立通道（已交付）**：[`resolve_theater_director`](../../kernel/crates/oclive_kernel_host/src/domain/theater_director.rs) + 官方目录插件 `com.oclive.theater_director_official`（RPC `theater.build_prompt`）；不占六槽键，与 `reply_post_process` 同类 Resolver 模式。Fork 示例：[`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)。
 

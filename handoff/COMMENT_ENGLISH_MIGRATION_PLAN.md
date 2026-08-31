@@ -28,7 +28,7 @@
    - 根 `README.md` / `CHANGELOG.md` / `CONTRIBUTING.md`（中文版，已有 `.en` 镜像）
    - `dev-notes/roadshow/项目说明.md`、`通知.markdown`、`handoff/archive/ARCHIVE_PROJECT_HISTORY.md`
    - 任何 `roles/**` 内的角色包内容文件（人设文本等）
-4. **doc 注释里的代码链接不要破坏**：如 `[`SlotResolver`](../slot_resolver.rs)`、`[`crate::xxx`]` 这类 intra-doc link 的**路径与符号保持原样**，只翻译周围的中文描述。
+4. **doc 注释里的代码链接不要破坏**：例如 `SlotResolver` 的示例目标 `../slot_resolver.rs`、`crate::xxx` 这类 intra-doc link，其**路径与符号保持原样**，只翻译周围的中文描述。
 5. **保留 Markdown/格式**：注释里的 `**加粗**`、反引号代码、列表、代码块原样保留，只替换中文文字。
 6. **不确定就跳过并记录**：若某条注释含义不清、或涉及可能改变行为的内容，**保留原中文**并在最终报告里列出待人工确认，**不要瞎译**。
 7. **每个阶段结束必须验证**（见第 6 节），验证不过不得进入下一阶段。

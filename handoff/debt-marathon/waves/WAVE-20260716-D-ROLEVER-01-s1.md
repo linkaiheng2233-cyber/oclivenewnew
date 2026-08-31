@@ -9,7 +9,7 @@
 | **债 ID** | D-ROLEVER-01 |
 | **执行 Stage** | Stage 1 · Write version migration contract |
 | **日期** | 2026-07-16 |
-| **执行面** | [oclive-debt-stage](6a2adf0f-cdae-4d82-9ba2-06ec6baefa66) |
+| **执行面** | [oclive-debt-stage](codex://threads/6a2adf0f-cdae-4d82-9ba2-06ec6baefa66) |
 | **状态三态** | Locally verified（未 commit） |
 
 ## 证据

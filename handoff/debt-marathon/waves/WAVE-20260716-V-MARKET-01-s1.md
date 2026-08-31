@@ -12,7 +12,7 @@
 | **日期** | 2026-07-16 |
 | **Claim** | `c0f1cd00-e00e-4bb4-bec0-b24f6d1a489b` · attempt 1 |
 | **Base / HEAD** | `d826736f8666c07326c2dc2d39ff5427c48ed9f7` |
-| **执行面** | [oclive-debt-stage](ff4142f7-db66-4163-a088-1cc233b69ea3) |
+| **执行面** | [oclive-debt-stage](codex://threads/ff4142f7-db66-4163-a088-1cc233b69ea3) |
 | **状态三态** | Locally verified（未 commit） |
 
 ## 证据

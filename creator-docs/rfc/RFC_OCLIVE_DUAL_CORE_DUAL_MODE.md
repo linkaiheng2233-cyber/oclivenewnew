@@ -8,7 +8,7 @@
 | 与 v2 蓝图 | **扩展**同一蓝图文件 **`pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）；新增 `zone` + `pipeline` 段（见 §4） |
 | 受众 | 创作者 / 集成方 / 内核开发者；**普通终端用户无感**（未开启 `--dual-core` 时行为与今日一致） |
 
-**相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[RFC_ROLE_BLUEPRINT_V2.md](../../handoff/RFC_ROLE_BLUEPRINT_V2.md)（已落地的 v2 蓝图）、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（**给 Cursor：设计总结与对齐进度**）、[handoff/DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)（术语速查）。
+**相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[历史 v2 蓝图 RFC](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史设计总结）、[历史术语对齐记录](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)。
 
 [English](../../creator-docs-en/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
 
@@ -174,7 +174,7 @@ Monolith **不** 替代双核；双核 **不** 替代 Monolith。二者正交。
 | 目录插件 | `manifest` + `provides` / `slot_attachment` | 不变；实例 `zone` 由蓝图或 CLI 写入 |
 | CI / OOCP | 黑盒测 Stable 路径 | 增量：双核开启时的降级用例 |
 
-详见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（对齐进度）与 [handoff/DUAL_CORE_ALIGNMENT.md](../../handoff/DUAL_CORE_ALIGNMENT.md)。
+详见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史对齐进度）与 [归档术语记录](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)。
 
 ---
 

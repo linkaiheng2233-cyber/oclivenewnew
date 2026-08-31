@@ -12,7 +12,7 @@
 | 上次切换的角色 ID | `{app_data}/oclive_last_role_id.txt` |
 | 用户级插件包目录（扫描根之一） | `{app_data}/distros/chat-pro/plugins/` |
 
-**实现参考**：`kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime.rs`、`distros/desktop-tauri/src/lib.rs`（`app_data_dir` 解析）。
+**实现参考**：`kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime/mod.rs`、`distros/desktop-tauri/src/lib.rs`（`app_data_dir` 解析）。
 
 ---
 

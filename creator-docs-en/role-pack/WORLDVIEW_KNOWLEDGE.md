@@ -2,7 +2,7 @@
 
 [中文](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md)
 
-How **co-present main dialogue** loads Markdown under `distros/chat-pro/roles/{role_id}/knowledge/`, injects into the prompt, and how **`event_hints`** augment [`EventDetector`](../../kernel/crates/oclive_kernel_host/src/domain/event_detector.rs) keywords (unrelated to Remote plugin `plugin_backends`).
+How **co-present main dialogue** loads Markdown under `distros/chat-pro/roles/{role_id}/knowledge/`, injects into the prompt, and how **`event_hints`** augment [`EventDetector`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) keywords (unrelated to Remote plugin `plugin_backends`).
 
 ## Directory and enable rules
 
@@ -53,9 +53,9 @@ Body: lore text for retrieval and prompt assembly.
 
 ## Runtime behavior (summary)
 
-1. **Load:** [`RoleStorage::load_role_from_dir`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs) parses knowledge after validation into **`Role::knowledge_index`** (`Arc`, in-memory only).
-2. **Retrieval:** lightweight overlap scoring + `scenes` filter, Top-K → **【世界观设定】** section. **Co-present:** [`PromptBuilder::build_prompt`](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs) (after schedule inference, before long-term memory). **Remote life** (`remote_life`): [`build_remote_life_prompt`](../../kernel/crates/oclive_kernel_host/src/domain/remote_life_prompt.rs) filters by **character scene** `character_scene_id` (symmetric to co-present `scene_id`).
-3. **Events:** retrieved blocks merge into [`KnowledgeEventAugment`](../../kernel/crates/oclive_kernel_types/src/models/knowledge.rs) → [`EventDetector::detect_with_augment`](../../kernel/crates/oclive_kernel_host/src/domain/event_detector.rs) and rule fallback in `estimate_event_impact` (B1: supplemental keywords, not replacing built-in emotion gates). Remote life path fixes event estimate to `Ignore`; knowledge does not re-run full event pipeline.
+1. **Load:** [`RoleStorage::load_role_from_dir`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage/role.rs) parses knowledge after validation into **`Role::knowledge_index`** (`Arc`, in-memory only).
+2. **Retrieval:** lightweight overlap scoring + `scenes` filter, Top-K → **【世界观设定】** section. **Co-present:** [`PromptBuilder::build_prompt`](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/mod.rs) (after schedule inference, before long-term memory). **Remote life** (`remote_life`): [`build_remote_life_prompt`](../../kernel/crates/oclive_kernel_runtime/src/domain/remote_life_prompt.rs) filters by **character scene** `character_scene_id` (symmetric to co-present `scene_id`).
+3. **Events:** retrieved blocks merge into [`KnowledgeEventAugment`](../../kernel/crates/oclive_kernel_types/src/models/knowledge.rs) → [`EventDetector::detect_with_augment`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) and rule fallback in `estimate_event_impact` (B1: supplemental keywords, not replacing built-in emotion gates). Remote life path fixes event estimate to `Ignore`; knowledge does not re-run full event pipeline.
 
 ## Debugging tips
 

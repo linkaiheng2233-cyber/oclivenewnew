@@ -11,7 +11,7 @@
 | **日期** | 2026-07-16 |
 | **Claim** | `96c09b16-f3f1-43a9-bfd8-7b4f8feab2af` |
 | **Base** | `6a95fae7f5d7b2e8d2a1a70cb1b0b38f578909eb` |
-| **执行面** | [oclive-debt-stage](6df9c992-1218-4df6-996e-f7e54c8c19bf) |
+| **执行面** | [oclive-debt-stage](codex://threads/6df9c992-1218-4df6-996e-f7e54c8c19bf) |
 
 ## 证据
 

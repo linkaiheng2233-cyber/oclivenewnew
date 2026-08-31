@@ -102,7 +102,7 @@ Remote LLM 的 **`OCLIVE_LLM_BACKEND` / `OCLIVE_REMOTE_LLM_*` / `OCLIVE_LLM_CLOU
 
 ## 相关文档
 
-- [handoff/A5_CLOSURE_SUMMARY.md](../handoff/A5_CLOSURE_SUMMARY.md)
+- [历史验收证据：A5_CLOSURE_SUMMARY.md](../handoff/archive/A5_CLOSURE_SUMMARY.md)
 - [role-pack/ui.json.schema.json](role-pack/ui.json.schema.json)
 - [plugin-and-architecture/DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
 - [plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md](plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 — Remote LLM env 矩阵

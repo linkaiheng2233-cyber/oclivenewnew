@@ -6,7 +6,7 @@ The pack editor (separate repo, e.g. sibling `oclive-pack-editor`) **does not sh
 
 ## Short term (current)
 
-- **Authority:** runtime **`load_role`**: top-level JSON key allowlist (`oclive_validation::json_keys`), merged **`validate_disk_manifest`**, **`validate_min_runtime_version`** (vs `CARGO_PKG_VERSION`) — see `kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs`.
+- **Authority:** runtime **`load_role`**: top-level JSON key allowlist (`oclive_validation::json_keys`), merged **`validate_disk_manifest`**, **`validate_min_runtime_version`** (vs `CARGO_PKG_VERSION`) — see `kernel/crates/oclive_kernel_host/src/infrastructure/storage/role.rs`.
 - **Editor:** before export, run **top-level key checks** on `manifest.json` / `settings.json` (same allowlist as Rust — `oclive-pack-editor/src/lib/jsonKeys.ts`); if wasm is built (`npm run wasm:build`), **`validateManifestWasm`** matches **`validate_disk_manifest` + `validate_min_runtime_version`**; else TypeScript light checks + **`validateMinRuntimeVersion`** (`HOST_RUNTIME_VERSION` must align with oclivenewnew `Cargo.toml`).
 - **Acceptance:** export pack → set **`OCLIVE_ROLES_DIR`** to roles root → load and chat in oclive.
 

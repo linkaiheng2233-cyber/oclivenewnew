@@ -63,7 +63,7 @@ See [`slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_ru
 pipeline.ocblueprint → validate → Role.slot_registry → PluginHost → SlotResolver → SlotRunner
 ```
 
-See [`storage.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage.rs) module docs.
+See the [`storage` module](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage/mod.rs) docs.
 
 ---
 

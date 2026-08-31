@@ -215,7 +215,7 @@ examples/distro-profiles/theater.oclive.toml        # 复制自 handoff/theater/
 distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml
 distros/desktop-tauri/resources/theater/scenes/*.skeleton.json   # 四场景预生成骨架（强模型离线产出）
 distros/theater/public/theater/scenes/*.skeleton.json                # Vite dev 镜像
-distros/theater/distros/shared/src/composables/theater/theaterSceneCatalog.ts       # 场景目录 SSOT（preset id / pokeEnabled / prompt hints）
+distros/theater/src/composables/theater/theaterSceneCatalog.ts       # 场景目录 SSOT（preset id / pokeEnabled / prompt hints）
 distros/chat-pro/roles/theater-breakfast-a/  distros/chat-pro/roles/theater-breakfast-b/  # 两个反差角色 v2 包
 ```
 

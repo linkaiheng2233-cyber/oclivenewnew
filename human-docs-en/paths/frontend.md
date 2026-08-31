@@ -3,15 +3,15 @@
 > **Audience**: Engineers changing Vue / Pinia / Tauri `invoke`.  
 > **Time**: ~1 day to onboard.  
 > **Chinese SSOT**: [`human-docs/paths/frontend.md`](../../human-docs/paths/frontend.md)
-> **Next**: [modules/surfaces/](../modules/surfaces/) · [05 debugging](05_DEBUGGING.md)
+> **Next**: [modules/surfaces/](../modules/surfaces/) · [05 debugging](../05_DEBUGGING.md)
 
 ---
 
 ## Suggested order
 
-1. [02 thirty-minute start](02_THIRTY_MINUTE_START.md) — `npm run tauri:dev` + `npm run check`
-2. [03 glossary](03_GLOSSARY.md) — **`reply`** not `response`; invoke **camelCase**
-3. [04 engineering rules summary](04_ENGINEERING_RULES_SUMMARY.md) — §3, §4, §7 (full ZH: [04](../../human-docs/04_ENGINEERING_RULES.md))
+1. [02 thirty-minute start](../02_THIRTY_MINUTE_START.md) — `npm run tauri:dev` + `npm run check`
+2. [03 glossary](../03_GLOSSARY.md) — **`reply`** not `response`; invoke **camelCase**
+3. [04 engineering rules summary](../04_ENGINEERING_RULES_SUMMARY.md) — §3, §4, §7 (full ZH: [04](../../human-docs/04_ENGINEERING_RULES.md))
 4. **Surface packs** (~30–45 min):
    - Chat Pro UI → [modules/surfaces/frontend-chat-pro.md](../modules/surfaces/frontend-chat-pro.md)
    - New invoke → [modules/surfaces/tauri-invoke.md](../modules/surfaces/tauri-invoke.md)

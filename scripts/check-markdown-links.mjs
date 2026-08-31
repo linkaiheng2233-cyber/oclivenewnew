@@ -28,9 +28,10 @@ const DEFAULT_TARGETS = [
   'handoff/BUS_FACTOR_NOTES.md',
   'handoff/README.md',
   'creator-docs/NAMING_CONVENTIONS.md',
+  'creator-docs/plugin-and-architecture/EVENT_RING.md',
   'creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md',
 ];
-const SKIPPED_SCHEMES = /^(?:https?:|mailto:|data:|app:|vscode:|file:)/i;
+const SKIPPED_SCHEMES = /^(?:https?:|mailto:|data:|app:|codex:|vscode:|file:)/i;
 
 function listMarkdownFiles(targets, root = repoRoot) {
   const files = [];
@@ -118,7 +119,7 @@ function selfTest() {
     fs.writeFileSync(path.join(tmp, 'target.md'), '# target\n');
     fs.writeFileSync(
       path.join(tmp, 'docs', 'ok.md'),
-      '[relative](../target.md#section)\n[external](https://example.com)\n',
+      '[relative](../target.md#section)\n[external](https://example.com)\n[task](codex://threads/example)\n',
     );
     let result = checkTargets(['docs'], tmp);
     if (result.errors.length !== 0) {

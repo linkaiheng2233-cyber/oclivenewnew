@@ -9,7 +9,7 @@
 | Audience | **Developers only**; end users only run developer-built releases and do not touch the terminal |
 | Essence | **Compile-time** optimization path: trade module swappability for peak performance (optional, off by default), to break the **hot-path ceiling** of the **modules 1–6** abstraction |
 
-**Related**: [`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) (numbering), [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) (modules 1–6 + `PluginHost`), [`PIPELINE_SCHEMA.md`](../../creator-docs/kernel/PIPELINE_SCHEMA.md) (blueprint runtime schema), [`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md) (scaffold usage).
+**Related**: [`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) (numbering), [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) (modules 1–6 + `PluginHost`), [`pipeline.ocblueprint.v4.schema.json`](../../kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v4.schema.json) (current Stable blueprint schema), [`OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md) (scaffold usage).
 
 **Matches `main`**: `cargo run -p oclive-cli -- --experimental init … --monolith` (non-interactive, **kernel_server** project type) or interactive “high coupling” generates **`monolith.toml`**, `vendor/oclive_monolith_builtin/`, `src/process_message_monolith.rs`, and declares **`[features] monolith`** plus second **`[[bin]]`**. After editing `monolith.toml`, **`cargo run -p oclive-cli -- --experimental build -o <project root>`** regenerates weld sources and by default runs `cargo build` twice (second with **`monolith`** feature when `enabled = true`). **`cargo run -p oclive-cli -- --experimental bench`** emits JSON latency reports (schema: `kernel/crates/oclive-cli/schemas/oclive_bench_report.schema.json`). **library** projects ignore `--monolith` and do not emit `monolith.toml`.
 
@@ -217,7 +217,7 @@ Concrete numbers come from **`oclive bench`** (section 9); this RFC **makes no p
 
 - Scaffold: [`creator-docs/cli/OCLIVE_CLI_GUIDE.md`](../cli/OCLIVE_CLI_GUIDE.md)
 - Seven-slot contract: [`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
-- Blueprint schema (runtime): [`creator-docs/kernel/PIPELINE_SCHEMA.md`](../../creator-docs/kernel/PIPELINE_SCHEMA.md)
+- Blueprint schema (current Stable): [`pipeline.ocblueprint.v4.schema.json`](../../kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v4.schema.json)
 
 Link discussions to: `creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md`.
 
