@@ -3,7 +3,7 @@
 [中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 **Scope**: routing only. Architecture, contracts, status, and test facts stay in their topic SSOTs.
-**Last updated**: 2026-08-01.
+**Last updated**: 2026-09-01.
 
 ## Choose your role
 
@@ -24,6 +24,7 @@
 | Chat Pro adult role extension | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-adult-role-extension-adult_extensionjson-optional) |
 | Pack / blueprint boundary | [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) |
 | Module map and six slots | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
+| Runtime Event Stream (planned, not implemented) | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) |
 | Plugin contract | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | Directory plugins | [DIRECTORY_PLUGINS](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Remote protocol | [REMOTE_PLUGIN_PROTOCOL](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |

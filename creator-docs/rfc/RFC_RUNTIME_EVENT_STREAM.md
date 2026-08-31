@@ -1,0 +1,386 @@
+# RFC：Runtime Event Stream（角色运行事件流）
+
+**SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
+**最后更新**：2026-09-01。
+**状态**：**草案 v0.1 · 边界已确认 · wire 与实现未冻结 · 当前未实现**。
+**读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
+
+---
+
+## 0. 决策摘要
+
+“角色运行河流”正式使用工作名 **Runtime Event Stream**。它是未来位于 Event Ring 之外、跨回合与跨重启保存角色运行事件及消费进度的持久时间线，**不是当前 Event Ring 改名，也不是让模块按圆圈顺序轮询运行的调度器**。
+
+本 RFC 固定以下不可越过的边界：
+
+| 决策 | 约束 |
+|------|------|
+| 唯一回合编排 | 用户回合继续进入现有 `process_message`；非用户回合继续先经 Event 决策与一次性 Permit，再进入 `process_proactive_turn`。不得复制 pipeline 或建立第二套内核 |
+| Event Ring 保留 | Ring 继续负责来源绑定、信封身份、注册基础影响权重和单次 dispatch 的有界路由；Stream 不接管这些权力 |
+| 状态单写者 | Session、Stream、消费者、插件和 LLM 都不能直接提交人格、关系、记忆或其它权威状态；Rust 编排仍是应用与提交边界 |
+| 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
+| 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
+| 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
+| 当前能力声明 | 本文是设计草案，不代表持久 Stream、游标、重放、多 IO 调度或产品化主动 Bot 已交付 |
+
+---
+
+## 1. 问题、目标与非目标
+
+### 1.1 当前缺口
+
+当前 Event Ring 是每个 `AppState` 内的有界内存外环：一次 dispatch 结束后只保留有限诊断历史，不负责跨回合、跨 QQ/直播/游戏/传感器通道或跨重启延续事件，也没有通用消费者游标、确认、重试、幂等、背压、保留期与恢复契约。
+
+### 1.2 目标
+
+- 为一个角色运行 Session 建立可恢复的事件时间线与明确的来源/因果关系。
+- 让记忆、环境感知、Agent、主动回合调度和输出适配器按声明观察或派生事件。
+- 保留现有 Event Ring、六槽与 Stable 回合管线，不为新能力复制权威边界。
+- 让消费者崩溃、重复投递、宿主重启和部分通道故障具有可测试的恢复语义。
+- 让 Trace/Replay 可独立启停，并在只读模式下不改变角色行为。
+
+### 1.3 非目标
+
+- 不把 token、音频 PCM、视频帧、Live2D 参数等高吞吐数据塞进通用事件流。
+- 不让所有模块每轮固定执行，也不把 Stream 变成新的蓝图 `steps[]` 调度器。
+- 不新增第七槽，不改变 legacy `event` 只负责 `event.impact` 的事实。
+- 不允许 LLM、Session 或目录插件构造“已提交状态”。
+- 不在本 RFC 冻结 Rust trait、数据库表、外部 broker 或公开网络协议。
+- 不以“有持久日志”为理由自动启用主动回复或扩大当前非用户回合的持久化副作用。
+
+---
+
+## 2. 五层边界与辅助参与者
+
+| 层 | 唯一职责 | 可以做 | 不能做 |
+|----|----------|--------|--------|
+| **Session** | 一个角色运行实例的身份、隔离与生命周期边界 | 绑定角色、通道、访问主体和 Stream 分区 | 采纳提案、修改人格、直接提交状态或把用户输入改成系统来源 |
+| **Runtime Event Stream** | 持久追加、分区顺序、消费者进度、保留与恢复 | 保存已获准事件记录；按读取策略投递；记录 checkpoint | 判断角色该说什么、给提案分配影响权重、执行回合或写角色状态 |
+| **Event Ring** | 可信信封、来源绑定、注册策略与单次 dispatch 的有界路由 | 将注册模块的 `EventDraft` 签成 `EventEnvelope`；运行获准处理器 | 充当持久队列、最终采纳所有领域提案或提交状态 |
+| **Event 决策模块** | 在自己的事件族内采纳、拒绝或派生提案 | 依据证据、注册权重和当前只读状态形成 `Decision` | 伪造来源/权重、直接写数据库、签发未经宿主校验的能力 |
+| **Rust 编排** | 调度、权限复核、状态应用与唯一提交边界 | 调用现有回合入口；CAS/事务提交；提交成功后发布 `State`/`Output` 事实 | 将业务判断全部塞进 Session/Stream，或接受 LLM 直接写状态 |
+
+辅助参与者的权力：
+
+- **输入适配器**只把外部输入规范化为提案/观察，并通过来源绑定入口提交；不能自报可信来源或基础影响权重。
+- **消费者模块**可以观察、查询、提出或派生新事件；不能把读取到的历史信封重新冒充为新事实。
+- **Prompt 层**只组装已经通过模块筛选和决策的上下文，不直接遍历整条 Stream。
+- **LLM**是推理工具；输出默认属于候选内容或 `Proposal`，不能直接成为 `Fact`、`Decision` 或 `State`。
+- **输出适配器**负责真实投递及结果回报；“生成了回复”不等于“已发送到 QQ/直播/设备”。
+
+术语必须保持：本文的 **Event 决策模块**不是第 3 个 legacy `event` 槽。后者只估计对话 `event.impact`；领域提案的采纳权属于对应决策模块，最终状态提交权属于 Rust 编排。
+
+---
+
+## 3. 与现有主链和 Event Ring 的关系
+
+### 3.1 当前主链保持不变
+
+```text
+用户输入
+  → process_message（唯一用户回合入口）
+  → turn_pipeline
+  → memory / legacy event.impact 等产生证据或提案
+  → Event Ring 单次 dispatch
+  → Event 决策结果
+  → Prompt → LLM → post
+  → Rust 编排提交状态
+```
+
+主动链继续保持：
+
+```text
+可信非用户来源
+  → source-bound EventEmitter
+  → kernel.proactive.turn.proposed
+  → Event 决策
+  → kernel.proactive.turn.authorized
+  → one-shot ProactiveTurnPermit
+  → process_proactive_turn
+```
+
+Runtime Event Stream 的加入不得改变上述权威顺序。
+
+### 3.2 未来持久流通关系
+
+```text
+外部输入 / 内核结果
+        ↓
+来源绑定入口 → Event Ring dispatch → 已签发 EventEnvelope
+                                      ↓ append
+                           Runtime Event Stream
+                                      ↓ read
+                           声明式消费者 / 调度器
+                                      ↓ 新 EventDraft（带因果引用）
+                              Event Ring 再次裁决
+                                      ↓
+                  现有 process_message / process_proactive_turn
+                                      ↓
+                      Rust 提交成功 → host-bound emitter → Ring
+                                      └→ State / Output 事实 → Stream
+```
+
+关键规则：
+
+1. 外部生产者不能绕过来源绑定入口直接向 Stream 写任意 `EventEnvelope`。
+2. Stream 保存的是已经过入口校验的记录；持久化本身不增加采纳权或状态权。
+3. 消费者读取旧事件后如需产生影响，必须提交一个**新的** `EventDraft`，并以旧事件作为 causation；不得重用旧 `event_id` 冒充新发生。
+4. Event handler 内不得递归启动回合。只有 dispatch 返回后，Rust 调度边界才能消费 Permit 或其它类型化结果。
+5. 用户消息的低延迟路径仍可直接进入 `process_message`；Trace-only 记录不得成为用户主链的必经依赖。未来若启用 Stream-first 多通道 ingress，也只能把合格用户输入路由到同一个 `process_message`。
+
+### 3.3 Trace 与生产 Stream 分离
+
+- **Trace-only**：旁路记录输入、决策、提交和输出结果；可独立关闭，关闭后角色行为必须相同。
+- **Production Stream**：消费者确实依赖其游标和恢复语义；不可用时必须显式降级或阻塞该消费者，不能静默改成直接写状态。
+- 两者可以共享事件身份和底层存储实现，但启停、读取权限、保留期和故障语义必须独立。
+
+---
+
+## 4. 事件分型
+
+每种事件必须声明一种语义类型。类型描述的是**权力与生命周期**，事件的 dotted `kind` 仍描述具体领域。
+
+| 类型 | 含义 | 允许生产者 | 对角色的影响 | 禁止 |
+|------|------|------------|--------------|------|
+| **Fact** | 某个可信来源对已发生/已知事项的签名陈述 | Rust 宿主、获准适配器、提交后的领域组件 | 可作为决策证据 | 把“来源可信”写成“内容绝对正确”；由普通 LLM直接生成 |
+| **Observation** | 原始或规范化输入，例如传感器读数、直播弹幕、游戏状态变化 | 来源绑定输入适配器 | 可触发查询或提案 | 自动触发回复、直接修改人格/记忆 |
+| **Proposal** | 模块建议采纳的上下文、动作或状态变化 | 注册模块、受约束 Agent/LLM 包装器 | 进入 Event 决策 | 自称已采纳、携带伪造权重或最终状态 |
+| **Decision** | 决策模块对特定 Proposal 的接受、拒绝或派生结果 | 对应事件族的可信 Event 决策模块 | 允许 Rust 编排进入下一步 | 冒充数据库已提交；越过预期 revision |
+| **State** | Rust 编排成功提交后的状态事实或可验证引用 | 宿主提交边界 / transactional outbox | 供消费者更新只读视图、索引或后续推理 | 用作“请修改状态”的命令；在提交前发布 |
+| **Output** | 回复/动作已经生成、尝试投递或投递完成的结果事实 | Rust 输出边界、获准输出适配器 | 驱动 UI、审计、重试或通道状态 | 把生成成功等同投递成功；让模型自报外部发送结果 |
+
+补充约束：
+
+- 语义类型不能由普通 payload/metadata 自报；实施时必须由宿主维护的 event-kind registry 或类型化外层字段分配，并与模块允许发射范围一起校验。
+- `Fact` 是**来源可追责的陈述**，不是全知真理；冲突 Fact 必须保留各自来源并交由决策策略处理。
+- `Decision` 与 `State` 必须分开。决策可以因 revision 过期、权限变化或事务失败而未被应用。
+- `Output` 至少区分 prepared / delivery attempted / delivered / failed 的语义，具体 wire 留待实施 RFC 冻结。
+- Stream checkpoint、租约、背压等控制面记录不默认进入角色语义上下文，也不冒充上述六类领域事件。
+
+---
+
+## 5. 身份、顺序与持久记录
+
+### 5.1 复用 `EventEnvelope`，不篡改当前字段语义
+
+现有 `EventEnvelope` 继续承载 `event_id`、`source`、`source_weight_bps`、`stream_key`、`correlation_id`、`causation_id`、`sequence`、`depth`、`occurred_at`、payload 与 metadata。未来持久层应使用一个外层记录保存 Session 分区和持久位置，而不是把所有 Stream 语义硬塞进现有信封。
+
+概念结构如下，**不是已冻结的 Rust DTO**：
+
+```text
+RuntimeEventRecord
+├─ session_partition       # 宿主决定的隔离分区
+├─ stream_position         # 存储分配、分区内单调
+├─ ingested_at             # 宿主接收时间
+└─ envelope: EventEnvelope # 现有可信事件信封
+
+ConsumerCheckpoint
+├─ consumer_id
+├─ session_partition
+├─ next_position
+└─ lease_epoch / revision
+```
+
+必须区分：
+
+| 字段/概念 | 权威语义 |
+|-----------|----------|
+| `event_id` | 事件身份与幂等关联；同 ID 不得对应不同内容 |
+| `correlation_id` | 一轮任务/交互的关联，不代表存储顺序 |
+| `causation_id` | 直接原因；派生事件必须形成可追踪链 |
+| `EventEnvelope.sequence` | 当前 `AppState` 的 Ring 分配顺序，重启后不能当持久游标 |
+| `stream_position` | 未来 Stream 在一个 Session 分区内的持久位置 |
+| `occurred_at` | 来源事件时间，可能受设备时钟漂移影响 |
+| `ingested_at` | 宿主接收时间；恢复与游标不能只依赖 `occurred_at` |
+| `stream_key` | 当前 Ring 的路由/关联键；不能自动等同 Session 身份或访问控制凭证 |
+
+### 5.2 Session 隔离
+
+- Session 标识由宿主建立并绑定角色、授权主体和通道；外部 payload 不能自行切换到其它 Session。
+- 当前 `srid = conversation_state_role_id(mrid, session_id)` 是既有持久化命名空间；未来 Stream 可以建立明确映射，但本 RFC 不把两者默认为同一字段。
+- 一个 Session 可以绑定多个通道端点；端点离线不等于 Session 销毁。
+- 跨 Session 查询、记忆共享或角色合并必须经过独立授权和显式策略，不能靠相同 `role_id` 自动开放。
+
+### 5.3 持久化前必须补齐变换来源
+
+当前 Ring 允许已注册处理器在一次 dispatch 内替换当前 payload 或合并 metadata，但主事件的 `source` 仍属于最初 emitter。这适合有界兼容链，却不足以证明一条持久 Fact 的每次语义变换来自谁。
+
+因此生产 Stream 必须遵守：
+
+- 改变事实/提案语义的模块应发射带自身来源和 `causation_id` 的子事件，不把语义变化永久写在原来源名下。
+- 原地 payload/metadata 变换只可作为 dispatch-local 兼容行为；若 Trace 记录最终快照，必须同时保留处理器路由摘要，且不能把该快照提升为来源无歧义的持久 Fact。
+- 实施前须明确“追加 dispatch 前快照、dispatch 后快照还是派生事件”的规则；同一事件不能在 Stream 中被覆盖更新。
+- Stream 记录一经追加即不可原地改写；更正和撤销使用新事件及因果引用。
+
+---
+
+## 6. 注册、订阅与权重
+
+不得把“事件流消费者登记”发展成第二套 Event 权威注册表。
+
+| 注册面 | 管理内容 | 不管理内容 |
+|--------|----------|------------|
+| `EventModuleRegistryPolicy`（现有） | 模块可信身份、基础影响权重、`fail_fast` / `isolate` | Stream cursor、保留期、消费并发 |
+| Stream Consumer Registry（未来） | `consumer_id`、允许读取的事件族、Session 范围、checkpoint、最大并发/在途量、失败退避与隐私级别 | 提案基础影响权重、采纳权、状态提交权 |
+
+消费者派生 `Proposal` 时，必须通过自己的来源绑定 Event emitter 回到 Ring；其基础影响力由现有可信注册策略分配。消费者不能因为“读到了更多历史”而提高自己的权重，也不能在 manifest 中自报最终权威。
+
+---
+
+## 7. 投递、幂等、顺序、冲突与背压
+
+### 7.1 默认投递语义
+
+- 首个实现以**至少一次（at-least-once）**为默认，不宣称端到端 exactly-once。
+- 消费者只在副作用成功或安全持久化后推进 checkpoint；崩溃恢复可能再次收到同一事件。
+- 每个消费者必须以 `event_id`、领域 idempotency key 或“原因事件 + 动作类型”实现幂等。
+- 生产者重试需要来源绑定 idempotency key；同一 key 对应不同内容必须拒绝并记录诊断。
+- 若派生事件和 checkpoint 必须原子一致，实施时应使用 transactional inbox/outbox 或等价机制，不能靠“先写一个再写另一个”冒充原子性。
+
+### 7.2 顺序与冲突
+
+- 只保证单个 Session 分区内的 `stream_position` 顺序，不提供全局总序。
+- 多来源并发不能依靠墙钟时间做 last-write-wins；`occurred_at` 只作证据。
+- 状态变更由 Rust 编排携带 expected revision/CAS 或事务条件；过期 `Decision` 必须拒绝、重算或显式标记 superseded。
+- 相互冲突的 Fact/Observation 保留来源与因果，不由 Stream 自行选择“真相”。
+
+### 7.3 背压与丢弃
+
+| 情况 | 最低要求 |
+|------|----------|
+| 消费者变慢 | 有界 in-flight、指数退避和可观察 lag；不能无限占用内存 |
+| 高频 Observation | 只有来源策略明确允许时才能采样/合并，并记录丢弃计数与窗口 |
+| 过期 Proposal | 可按 TTL 丢弃，但必须产生可诊断的 expired 结果，不能继续换取 Permit |
+| Decision / State | 不得静默丢弃；存储失败须走 outbox/reconcile 或显式 degraded 状态 |
+| 输出投递失败 | 记录 failed Output 结果并交给输出策略重试；不得重新生成假用户回合 |
+
+---
+
+## 8. 记忆、上下文与模型档位
+
+Runtime Event Stream 可以让记忆模块观察更多时间线，但不会把“整条河流”直接塞进本轮 Prompt。
+
+```text
+Stream Observation / State
+  → 记忆消费者更新索引或提出 recall/archive Proposal
+  → Event 决策
+  → Rust 编排按 ID 获取获准正文/摘要
+  → Prompt 编译为本轮有限上下文
+  → LLM
+```
+
+边界：
+
+- 通用事件只携带最小 ID、分数、摘要引用和因果信息；长期记忆正文继续由记忆存储按权限读取。
+- 记忆消费者可以提出“回想某条记忆”或“建议归档”，不能直接宣布已经回想、已经写入 LTM 或已经改变人格。
+- 当前 `memory.recall.candidate → recollection.activated → one-turn weave` 链继续有效；未来 Stream 只扩展可观察来源与恢复，不绕开该采纳链。
+- 大模型可以获得更宽的检索窗口和多步查询工具；小模型继续使用编译后的短上下文。档位只改变**能力预算**，不改变权力边界。
+- Prompt 层不得把未经筛选的跨用户、跨 Session 或隐私敏感事件直接注入模型。
+
+---
+
+## 9. 主动调度与输出端口
+
+Stream 中出现 Observation 或高权重 Proposal **不等于角色必须开口**。产品化主动能力仍依赖 `K-PROACTIVE-01` 的状态机：
+
+1. 去重与 TTL；
+2. Session/角色冷却和频率预算；
+3. 用户输入抢占与在途回合互斥；
+4. Event 决策与一次性 Permit；
+5. dispatch 返回后的 `process_proactive_turn`；
+6. 明确输出端口和 delivered/failed 回报；
+7. 取消、超时、重试与恢复。
+
+最低抢占原则：新用户输入优先于尚未执行的主动提案；已经消耗 Permit 的回合如何取消必须由回合状态机定义，不能由事件 handler 递归启动/终止另一个回合。
+
+Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊天、STM/LTM、关系、人格等写入只有在独立产品决策、状态契约和测试完成后才能解冻。
+
+---
+
+## 10. Trace、Replay、隐私与保留期
+
+### 10.1 Trace/Replay
+
+- Trace 默认是行为中性的旁路消费者；关闭 Trace 后，同一输入的角色决策和回复路径应保持一致。
+- Replay 默认运行在隔离 Session / dry-run 中，输出端口关闭，状态提交替换为只读比较；不得重发 QQ 消息、直播动作或硬件指令。
+- 生产恢复通过消费者 checkpoint 和幂等处理完成，不把“从头重放所有 Output”当恢复策略。
+- 重放事件保留原事件引用，但新的派生结果使用新身份，并明确 `replay_of`/causation 关系；具体字段以后冻结。
+
+### 10.2 隐私与保留
+
+- 每类事件在进入生产 Stream 前必须声明 payload 分级、可读取消费者、默认保留期和删除策略。
+- 凭据、完整系统 Prompt、原始长期记忆正文、未经同意的音视频和目录插件秘密不得进入通用 payload。
+- 诊断默认只显示事件 kind、来源、因果、位置、状态与计数；payload/metadata 值继续最小披露。
+- 用户删除 Session 数据时，事件记录、消费者索引、checkpoint 和派生缓存必须有一致的删除/墓碑策略。
+- 观察/训练用途必须与运行用途分权；“可用于角色运行”不自动等于“可用于模型训练”。
+
+---
+
+## 11. 故障与降级语义
+
+| 故障 | 必须行为 |
+|------|----------|
+| Trace-only 存储不可用 | 记录诊断并停用 Trace；不得改变当前用户回合结果 |
+| Production Stream 不可用 | Stream 依赖消费者进入明确 degraded/blocked；用户 Stable 主链按未来宿主故障策略决定是否继续，不能静默绕过权威边界 |
+| 消费者崩溃 | 不推进 checkpoint；隔离重试，不阻塞无关消费者 |
+| 重复投递 | 幂等返回既有结果或安全跳过；不能重复提交状态/发送输出 |
+| 过期 Decision | Rust revision 检查拒绝并记录 superseded/conflict |
+| 状态提交成功但事件发布失败 | 由 transactional outbox/reconcile 补发；不得发布一个假的失败状态覆盖真实提交 |
+| Event 模块越权/失败 | 继续遵守现有 `fail_fast` / `isolate`，Stream 不改变 Ring 原子拒绝语义 |
+
+---
+
+## 12. 分阶段实施准入
+
+在写生产代码前，必须先用真实多 IO 消费方与参考项目核对 consumer、恢复和冲突语义；外部项目只作为证据输入，不能替代本 RFC 的权力边界。
+
+| 阶段 | 范围 | 完成证据 | 明确不做 |
+|------|------|----------|----------|
+| **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
+| **B · Trace-only** | 可关闭的持久记录器，只观察 Ring/提交/输出摘要 | disabled parity、重启、脱敏、保留期测试 | 不驱动决策或主动回复 |
+| **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
+| **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
+| **E · 主动与多通道** | 一个真实非用户输入适配器 + 调度状态机 + 输出端口 | TTL/冷却/抢占/取消/投递恢复与人工体验验收 | 不以单通道 demo 宣称通用 Bot 已完成 |
+
+任一阶段都不能仅凭“表已建”“事件能写入”将 `K-EVENT-STREAM-01` 标记 Done。
+
+---
+
+## 13. 实施前仍需冻结的决策
+
+- 首个生产存储采用现有 SQLite、独立 SQLite 还是可替换后端；何时需要外部 broker。
+- Session 与 `srid`、用户身份、角色包版本及多个通道端点的精确映射。
+- 哪些现有 Event Ring 事件进入 Trace，哪些进入生产 Stream；payload 最小化规则。
+- source-bound idempotency key、transactional outbox/inbox 与 checkpoint 的具体 schema。
+- 多宿主同时运行同一 Session 时的租约、leader 或冲突策略。
+- 首个低风险真实消费者和首个主动输入适配器。
+- Replay 的隔离数据库、模型调用策略和隐私删除传播。
+
+这些问题不阻塞本文作为边界草案，但在相应阶段编码前必须转成可测试的 accepted contract。
+
+---
+
+## 14. 验收清单
+
+- [ ] 没有第二套 `process_message`、复制 pipeline 或 Session 内核。
+- [ ] Stream Consumer Registry 没有影响权重、提案采纳或状态提交字段。
+- [ ] `EventEnvelope.sequence` 未被误用为持久消费游标。
+- [ ] 持久语义变换使用带自身来源的派生事件；没有把修改后的 payload 永久归因给原始 emitter。
+- [ ] Fact / Observation / Proposal / Decision / State / Output 权力边界有类型或校验门禁。
+- [ ] LLM 输出只能通过受约束包装器形成 Proposal，不能直接形成 Fact/State。
+- [ ] 状态提交与 State 发布具备 outbox/reconcile 语义；重复投递不会重复写状态。
+- [ ] Trace 关闭时行为等价，Replay 默认不写生产状态、不发送真实输出。
+- [ ] 记忆正文、凭据和敏感 payload 没有进入通用事件记录。
+- [ ] 主动链继续要求 Event 决策、一次性 Permit、用户输入抢占与输出结果回报。
+- [ ] 技术债仍保持 OPEN/Partial，直到代码、恢复测试和目标 HEAD 证据满足仓库门禁。
+
+---
+
+## 相关文档
+
+- [Event Ring 与主动回合契约](../plugin-and-architecture/EVENT_RING.md)
+- [模块注册表](../../handoff/MODULE_MAP_AND_HANDOFF.md)
+- [简架构](../../human-docs/01_ARCHITECTURE_SIMPLE.md)
+- [技术债 `K-PROACTIVE-01` / `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)
+- [聊天与记忆存储边界](../../handoff/CHAT_STORAGE_ARCHITECTURE.md)
+- [AI 改动边界](../../handoff/AI_CHANGE_BOUNDARIES.md)

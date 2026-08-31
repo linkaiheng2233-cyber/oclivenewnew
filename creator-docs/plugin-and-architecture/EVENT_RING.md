@@ -24,7 +24,7 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 
 ### 1.1 与未来 Runtime Event Stream 的边界
 
-当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件，但当前尚未形成实现契约。
+当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件；边界已进入 Draft RFC，但 wire、存储和消费者接口尚未冻结或实现。
 
 未来设计必须保持以下边界：
 
@@ -35,7 +35,7 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 - 大模型可以获得更广的观察权、查询权和提案权，但不能伪造事实或直接提交权威状态；小模型继续消费经模块筛选和 Prompt 编译的有限上下文；
 - 持久轨迹、重放、消费游标、背压、幂等与隐私策略属于未来 Stream/Trace 契约，不能由当前有界诊断历史冒充。
 
-设计与实施缺口统一登记为 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)，在该项形成 RFC 前，“河流”只作为讨论模型，不是已交付能力。
+边界草案见 [`RFC_RUNTIME_EVENT_STREAM`](../rfc/RFC_RUNTIME_EVENT_STREAM.md)，设计与实施状态只在 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。在实现与恢复测试完成前，“河流”仍不是已交付能力。
 
 ---
 

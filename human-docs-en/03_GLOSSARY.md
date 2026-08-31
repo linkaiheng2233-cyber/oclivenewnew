@@ -11,6 +11,7 @@
 | **reply** | API response field (**not** `response`) |
 | **OOCP** | OCLive Open Chat Protocol — HTTP black-box tests |
 | **Event Ring** | Bounded in-process authoritative event routing; not a seventh slot or database bus |
+| **[Runtime Event Stream (planned)](../creator-docs-en/rfc/RFC_RUNTIME_EVENT_STREAM.md)** | Future durable cross-turn, cross-channel timeline; not the current Ring and not implemented |
 | **legacy `event` slot** | Backend module 3; dialogue event-impact estimation only |
 | **EventDraft / EventEnvelope** | Untrusted proposal content / Ring-issued event with trusted source, weight, order, and causation |
 | **EventEmitter** | Source-bound handle obtained through registration; emission scope is declared |

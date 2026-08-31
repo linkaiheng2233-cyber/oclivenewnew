@@ -1,7 +1,7 @@
 # A.I.Live 文档索引
 
 **SSOT 范围**：本文只负责“去哪里读”，不复制架构、契约、进度或测试表。
-**最后更新**：2026-08-31。
+**最后更新**：2026-09-01。
 **原则**：先按身份选择一条入口；遇到具体问题再查专题文档。
 
 ## 先选择你的身份
@@ -34,6 +34,7 @@
 | 一轮对话主链 | [内核学习路径](../../human-docs/06_KERNEL_LEARNING_PATH.md) · [关键文件锚点](../../handoff/BUS_FACTOR_NOTES.md) |
 | 模块定义与六槽关系 | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | Event Ring、记忆提案与主动回合授权 | [EVENT_RING](../plugin-and-architecture/EVENT_RING.md) |
+| Runtime Event Stream（规划，当前未实现） | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) |
 | DTO 与编排契约 | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | canonical import 与术语 | [NAMING_CONVENTIONS](../NAMING_CONVENTIONS.md) |
 | 聊天、短期与长期记忆 | [CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) |

@@ -4,7 +4,7 @@
 
 **SSOT scope:** Event envelopes, registry policy, authority boundaries, integrated event kinds, and proactive-turn authorization. See [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for module classification and [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) for implementation status and open gaps.
 
-**Last updated:** 2026-08-31.
+**Last updated:** 2026-09-01.
 
 **Audience:** kernel integrators, Event module authors, directory-plugin authors, and maintainers.
 
@@ -28,7 +28,7 @@ The legacy `event` slot remains backend module 3 and estimates dialogue `event.i
 
 ### Boundary with a future Runtime Event Stream
 
-The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents, but it has no implemented contract today.
+The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Its boundaries now have a Draft RFC, but wire, storage, and consumer interfaces are not frozen or implemented.
 
 Any future design must preserve these boundaries:
 
@@ -39,7 +39,7 @@ Any future design must preserve these boundaries:
 - A large model may receive broader observation, query, and proposal rights, but cannot forge facts or commit authoritative state. Small models continue to consume bounded context selected by modules and compiled by the Prompt layer.
 - Durable traces, replay, consumer cursors, backpressure, idempotency, and privacy belong to a future Stream/Trace contract. The current bounded diagnostics history must not be presented as those capabilities.
 
-The design and implementation gap is tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). Until that item produces an RFC, the “river” remains a discussion model rather than a shipped capability.
+See the [`RFC_RUNTIME_EVENT_STREAM` summary](../rfc/RFC_RUNTIME_EVENT_STREAM.md). Design and implementation status remains tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). Until implementation and recovery tests exist, the “river” is not a shipped capability.
 
 ---
 
