@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-01。
-**状态**：**草案 v0.5 · 边界已确认 · B0 Trace-only、S0、S1.1 与 S1.2 合成样本已实现 · Production Stream 未实现**。
+**状态**：**草案 v0.6 · 边界已确认 · B0 Trace-only、S0、S1.1、S1.2 与 S1.3 合成样本已实现 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0/S1.1/S1.2 命令只生成合成、忽略提交的结构、故障与有界负载证据；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0/S1.1/S1.2/S1.3 命令只生成合成、忽略提交的结构、故障、有界负载与 recorder 重复计数证据；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -162,7 +162,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 | 等级 | 范围 | 准入边界 | 当前状态 |
 |------|------|----------|----------|
 | **S0 · 固定合成结构样本** | 仓库内版本化合同；成功/派生/决策/重启结构 | 显式本地命令；只写忽略目录；不驱动行为、不进入训练 | **已实现** |
-| **S1 · 扩展合成故障矩阵** | 队列满、写入失败、重复事件、并发和长时运行等可复现场景 | 仍不使用真实用户、角色记忆或模型正文；每个新场景先冻结预期与隐私字段 | **部分实现：S1.1 队列满/写失败 + S1.2 并发/短时 soak** |
+| **S1 · 扩展合成故障矩阵** | 队列满、写入失败、重复事件、并发和长时运行等可复现场景 | 仍不使用真实用户、角色记忆或模型正文；每个新场景先冻结预期与隐私字段 | **部分实现：S1.1 队列满/写失败 + S1.2 并发/短时 soak + S1.3 recorder 重复头幂等/计数** |
 | **S2 · 明示同意的本地运行聚合** | 计数、延迟、丢弃率、事件种类分布等最小聚合 | 必须先完成开关、告知/同意、保留期、删除、脱敏、预算和导出审查；默认不采正文，不自动上传 | 未获准实现 |
 
 `d03655b5` 实现 S1.1 命令 `npm run event:trace-shadow-fault-samples`，但没有修改生产 Trace、Ring 或公开 API：
@@ -178,7 +178,14 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - `bounded_short_soak_fail_open` 以 4 个 worker、24 轮、每 worker 每轮 8 次 dispatch 和轮间 50 ms 停顿形成 768 次有界短时运行；完整场景受 60 秒上限保护，验证 worker/轮次完整、主库健康和 Trace 排空；
 - 重复本地样本中，并发突发的精确入队/丢弃分割会随调度变化，而短时 soak 可完整排空；耗时与精确比例只保存在忽略提交的本机证据中，不是性能 SLA 或产品合同；
 - JSON/Markdown 只写 `target/oclive-event/trace-shadow-load-samples/`；共用校验器拒绝正文、身份、事件/关联 ID、路径和事件时间字段，并拒绝目录中出现 SQLite 或其它额外文件；
-- 本切片没有添加 Replay、重复注入、消费者、checkpoint 或行为反馈入口。重复投递与生产时长 soak 仍待后续评审和证据。
+- 本切片没有添加 Replay、重复注入、消费者、checkpoint 或行为反馈入口。消费者重复投递与生产时长 soak 仍待后续评审和证据。
+
+`20f44f47` 实现 S1.3 命令 `npm run event:trace-shadow-duplicate-samples`；它只编译并运行 B0 recorder 的内部测试，不增加生产 Trace、Ring 或公开 API：
+
+- 版本化合同只包含 `duplicate_header_idempotency`：测试在 `#[cfg(test)]` 内把同一个合成 Trace 头交给私有 recorder 两次，不建立生产 Replay 或重复注入入口；
+- 验收固定为 2 次内部记录批次均入队并处理、SQLite 只保留 1 行、`duplicate_events = 1`、零丢弃、零 Trace 故障，且 worker 在显式 shutdown 后停止；这不是两次真实 Ring dispatch 的生产链路测试；
+- Rust 测试只打印规范化计数与布尔标记；采集器再递归拒绝正文、metadata、`stream_key`、事件/关联 ID、路径和事件时间字段，并只把 JSON/Markdown 写入 `target/oclive-event/trace-shadow-duplicate-samples/`，不导出 SQLite；
+- 这只证明 B0 recorder 对同一事件身份的幂等落库与诊断计数。它**不证明**消费者重复投递、至少一次消费、端到端幂等、checkpoint 恢复或 Production Stream；这些仍属于阶段 C 及后续工作。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -386,7 +393,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
 | **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
-| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open；S0 固定 5 场景/7 记录，S1.1 覆盖队列满与启动后写失败，S1.2 覆盖并发突发与有界短时 soak；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
+| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open；S0 固定 5 场景/7 记录，S1.1 覆盖队列满与启动后写失败，S1.2 覆盖并发突发与有界短时 soak，S1.3 覆盖 recorder 重复头幂等落库/计数；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
 | **E · 主动与多通道** | 一个真实非用户输入适配器 + 调度状态机 + 输出端口 | TTL/冷却/抢占/取消/投递恢复与人工体验验收 | 不以单通道 demo 宣称通用 Bot 已完成 |
@@ -420,6 +427,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S0 合成采集合同可复现单根、派生因果、主动采纳/拒绝与重启边界；证据只写 Git 忽略的 `target/`，并拒绝敏感字段。
 - [x] S1.1 合成故障合同证明队列饱和与启动后写失败均不改变 Ring dispatch；只导出脱敏计数和布尔不变量，不导出故障数据库。
 - [x] S1.2 合成负载合同证明 8 路并发突发与 24 轮短时 soak 不改变 Ring dispatch；验证计数守恒、排空、历史有界、主库健康和执行时限，不导出负载数据库。
+- [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
