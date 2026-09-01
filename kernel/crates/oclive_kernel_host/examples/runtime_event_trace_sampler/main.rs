@@ -6,6 +6,7 @@
 mod contract;
 mod events;
 mod evidence;
+mod faults;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -19,6 +20,7 @@ use contract::{parse_and_validate, AFTER_RESTART, BEFORE_RESTART};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let mode = argument_value_or("--mode", "structural")?;
     let contract_path = PathBuf::from(argument_value("--contract")?);
     let output_dir = resolve_output_dir(&argument_value("--output-dir")?)?;
     let source_commit = argument_value("--source-commit")?;
@@ -28,16 +30,45 @@ async fn main() -> anyhow::Result<()> {
 
     let contract_text = std::fs::read_to_string(&contract_path)
         .with_context(|| format!("read sample contract {}", contract_path.display()))?;
-    let contract = parse_and_validate(&contract_text)?;
     let scenario_contract = repository_relative_path(&contract_path)?;
+
+    match mode.as_str() {
+        "structural" => {
+            run_structural(
+                &contract_text,
+                scenario_contract,
+                &output_dir,
+                source_commit,
+                source_worktree_dirty,
+            )
+            .await
+        }
+        "fault" => {
+            faults::run(
+                &contract_text,
+                scenario_contract,
+                &output_dir,
+                source_commit,
+                source_worktree_dirty,
+            )
+            .await
+        }
+        other => bail!("unsupported sampler mode {other}"),
+    }
+}
+
+async fn run_structural(
+    contract_text: &str,
+    scenario_contract: String,
+    output_dir: &Path,
+    source_commit: String,
+    source_worktree_dirty: bool,
+) -> anyhow::Result<()> {
+    let contract = parse_and_validate(contract_text)?;
 
     let temp = tempfile::tempdir().context("create sample kernel directory")?;
     let trace_path = temp.path().join("runtime-event-trace.sqlite3");
-    let roles_dir =
-        oclive_kernel_runtime::chat_pro_roles_dir(&[PathBuf::from(env!("CARGO_MANIFEST_DIR"))])
-            .context("locate Chat Pro role fixtures")?;
-    let config =
-        OcliveKernelConfig::new(temp.path(), roles_dir).with_runtime_event_trace_path(&trace_path);
+    let config = sample_config(temp.path(), &trace_path)?;
 
     let first_kernel = build_kernel(config.clone()).await?;
     events::execute_phase(&first_kernel, &contract, BEFORE_RESTART).await?;
@@ -50,9 +81,9 @@ async fn main() -> anyhow::Result<()> {
     let counts = evidence::collect_and_write(
         &contract,
         scenario_contract,
-        &contract_text,
+        contract_text,
         &trace_path,
-        &output_dir,
+        output_dir,
         source_commit,
         source_worktree_dirty,
     )
@@ -64,7 +95,17 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn build_kernel(config: OcliveKernelConfig) -> anyhow::Result<OcliveKernel> {
+pub(crate) fn sample_config(
+    app_data_dir: &Path,
+    trace_path: &Path,
+) -> anyhow::Result<OcliveKernelConfig> {
+    let roles_dir =
+        oclive_kernel_runtime::chat_pro_roles_dir(&[PathBuf::from(env!("CARGO_MANIFEST_DIR"))])
+            .context("locate Chat Pro role fixtures")?;
+    Ok(OcliveKernelConfig::new(app_data_dir, roles_dir).with_runtime_event_trace_path(trace_path))
+}
+
+pub(crate) async fn build_kernel(config: OcliveKernelConfig) -> anyhow::Result<OcliveKernel> {
     OcliveKernel::builder(config)
         .with_host_profile(HostProfile::default())
         .with_llm_client(Arc::new(MockLlmClient {
@@ -73,6 +114,18 @@ async fn build_kernel(config: OcliveKernelConfig) -> anyhow::Result<OcliveKernel
         .build()
         .await
         .map_err(|error| anyhow::anyhow!(error.to_string()))
+}
+
+fn argument_value_or(name: &str, fallback: &str) -> anyhow::Result<String> {
+    let arguments = std::env::args().collect::<Vec<_>>();
+    let Some(index) = arguments.iter().position(|argument| argument == name) else {
+        return Ok(fallback.into());
+    };
+    arguments
+        .get(index + 1)
+        .filter(|value| !value.starts_with("--"))
+        .cloned()
+        .with_context(|| format!("{name} requires a value"))
 }
 
 fn argument_value(name: &str) -> anyhow::Result<String> {

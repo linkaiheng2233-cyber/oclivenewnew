@@ -45,6 +45,7 @@
     "audit:dependencies": "npm audit --omit=dev --audit-level=high && npm audit --audit-level=high",
     "ci:shadow-samples": "node scripts/collect-ci-shadow-samples.mjs",
     "event:trace-shadow-samples": "node scripts/collect-runtime-event-trace-samples.mjs",
+    "event:trace-shadow-fault-samples": "node scripts/collect-runtime-event-trace-fault-samples.mjs",
     "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",

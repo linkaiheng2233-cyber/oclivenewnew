@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_trace_shadow_synthetic_fault_samples",
+  "authoritative_runtime_stream": false,
+  "behavior_driver": false,
+  "synthetic_only": true,
+  "exports_raw_database": false,
+  "scenarios": [
+    {
+      "id": "queue_saturation_fail_open",
+      "action": "queue_saturation",
+      "attempted_dispatches": 640,
+      "expected_error_kind": "queue_full",
+      "expected_invariants": [
+        "all_ring_dispatches_succeeded",
+        "dispatch_accounting_balanced",
+        "all_enqueued_dispatches_drained",
+        "dropped_dispatches_observed",
+        "main_database_healthy",
+        "privacy_flags_false"
+      ]
+    },
+    {
+      "id": "post_start_write_failure_fail_open",
+      "action": "post_start_write_failure",
+      "attempted_dispatches": 1,
+      "expected_error_kind": "write_failed",
+      "expected_invariants": [
+        "all_ring_dispatches_succeeded",
+        "dispatch_accounting_balanced",
+        "write_failure_observed",
+        "no_dispatch_dropped",
+        "main_database_healthy",
+        "privacy_flags_false"
+      ]
+    }
+  ]
+}
