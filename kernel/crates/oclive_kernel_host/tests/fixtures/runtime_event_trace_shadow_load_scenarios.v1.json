@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_trace_shadow_synthetic_load_samples",
+  "authoritative_runtime_stream": false,
+  "behavior_driver": false,
+  "synthetic_only": true,
+  "exports_raw_database": false,
+  "bounded_execution": true,
+  "scenarios": [
+    {
+      "id": "concurrent_burst_fail_open",
+      "action": "concurrent_burst",
+      "workers": 8,
+      "rounds": 1,
+      "dispatches_per_worker": 64,
+      "pause_between_rounds_ms": 0,
+      "minimum_elapsed_ms": 0,
+      "maximum_elapsed_ms": 60000,
+      "expected_invariants": [
+        "all_rounds_completed",
+        "all_workers_completed",
+        "all_ring_dispatches_succeeded",
+        "dispatch_accounting_balanced",
+        "all_enqueued_dispatches_drained",
+        "no_duplicate_events",
+        "only_expected_trace_errors",
+        "trace_worker_remained_active",
+        "bounded_ring_history_preserved",
+        "main_database_healthy",
+        "privacy_flags_false",
+        "execution_time_within_contract"
+      ]
+    },
+    {
+      "id": "bounded_short_soak_fail_open",
+      "action": "bounded_short_soak",
+      "workers": 4,
+      "rounds": 24,
+      "dispatches_per_worker": 8,
+      "pause_between_rounds_ms": 50,
+      "minimum_elapsed_ms": 1000,
+      "maximum_elapsed_ms": 60000,
+      "expected_invariants": [
+        "all_rounds_completed",
+        "all_workers_completed",
+        "all_ring_dispatches_succeeded",
+        "dispatch_accounting_balanced",
+        "all_enqueued_dispatches_drained",
+        "no_duplicate_events",
+        "only_expected_trace_errors",
+        "trace_worker_remained_active",
+        "bounded_ring_history_preserved",
+        "main_database_healthy",
+        "privacy_flags_false",
+        "execution_time_within_contract"
+      ]
+    }
+  ]
+}
