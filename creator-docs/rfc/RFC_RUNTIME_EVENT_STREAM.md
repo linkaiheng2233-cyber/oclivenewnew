@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-02。
-**状态**：**草案 v0.7 · 边界已确认 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
+**状态**：**草案 v0.8 · Stage A.1 纯类型/状态机契约原型已落地 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0/S1 命令只生成合成、忽略提交的结构、故障、并发、recorder 重复计数与固定十分钟耐久证据；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与版本化状态机测试模型；S0/S1 命令只生成合成、忽略提交的 Trace 证据。持久 Stream、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -206,7 +206,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 
 S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：S0、S1.1、S1.2、S1.3 与 S1.4 的版本化合同通过；B0 生命周期、故障计数和 shutdown 测试通过；全部生成物留在忽略目录；生产代码仍没有读取/消费/Replay/Prompt/主动回复入口。这个“收口”只关闭合成样本缺口，不关闭阶段 B 的保留期、提交/输出覆盖，也不关闭 `K-EVENT-STREAM-01`。
 
-下一项获准工作回到阶段 A 的 **Production Stream 契约原型**：先冻结类型化外层记录、Session 分区映射、consumer/checkpoint 状态机与失败/恢复测试表。完成设计评审前，不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口；阶段 C 也不得与阶段 A 偷跑合并。
+下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机，A.2 需要对照真实多 IO 消费方评审字段、选定首个存储与 transactional outbox/inbox 边界，并把隐私/删除策略变成可测试合同。完成评审前，不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口；阶段 C 也不得与阶段 A 偷跑合并。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -241,21 +241,37 @@ S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：
 
 现有 `EventEnvelope` 继续承载 `event_id`、`source`、`source_weight_bps`、`stream_key`、`correlation_id`、`causation_id`、`sequence`、`depth`、`occurred_at`、payload 与 metadata。未来持久层应使用一个外层记录保存 Session 分区和持久位置，而不是把所有 Stream 语义硬塞进现有信封。
 
-概念结构如下，**不是已冻结的 Rust DTO**：
+Stage A.1 已由提交 `3ee559a6` 在 [`runtime_event_stream.rs`](../../kernel/crates/oclive_kernel_types/src/runtime_event_stream.rs) 冻结以下 **v1 纯数据契约**。这些类型可编译、可序列化，但没有存储实现、读取 API、consumer loop、Replay 或回合接线：
 
 ```text
 RuntimeEventRecord
-├─ session_partition       # 宿主决定的隔离分区
-├─ stream_position         # 存储分配、分区内单调
-├─ ingested_at             # 宿主接收时间
-└─ envelope: EventEnvelope # 现有可信事件信封
+├─ schema_version
+├─ session_partition / session_binding_revision
+├─ stream_position                  # 存储分配、分区内单调
+├─ semantic_type                    # Fact / Observation / Proposal / Decision / State / Output
+├─ payload_schema / privacy_class / retention_policy_id
+├─ source_idempotency_key?          # 宿主批准、来源作用域、非秘密的 opaque key
+├─ ingested_at                      # 宿主接收时间
+└─ envelope: EventEnvelope          # 现有可信事件信封
 
-ConsumerCheckpoint
+RuntimeEventConsumerCheckpoint
 ├─ consumer_id
 ├─ session_partition
 ├─ next_position
-└─ lease_epoch / revision
+├─ revision / lease_epoch
+└─ state: ready | leased | retry_scheduled | blocked | disabled
 ```
+
+`RuntimeEventRecord` 的外层治理字段由宿主 event-kind registry 分配，普通 payload、metadata、插件或 LLM 不能自报。`source_idempotency_key` 的唯一性作用域固定为 `(session_partition, source, key)`；同一作用域/键对应不同事件内容时必须拒绝，而不是覆盖旧记录。
+
+### 5.1.1 追加快照规则
+
+Production Stream 未来只允许追加以下两类不可变快照：
+
+1. 完整 Ring dispatch 成功后，由宿主保留并追加的 **Ring 初始签发信封**；
+2. dispatch 内显式发射、拥有自身来源与 `causation_id` 的子事件初始信封。
+
+Ring handler 对原事件 payload/metadata 的原地替换仍只是 dispatch-local 兼容行为，不能被提升为来源无歧义的持久事实。若变换结果需要跨回合保留，处理器必须发射新事件。失败 dispatch 不进入 Production Stream；实施时需要让 Ring 返回或旁路保留初始信封，但本切片没有修改现有 `EventDispatchResult`。
 
 必须区分：
 
@@ -266,6 +282,9 @@ ConsumerCheckpoint
 | `causation_id` | 直接原因；派生事件必须形成可追踪链 |
 | `EventEnvelope.sequence` | 当前 `AppState` 的 Ring 分配顺序，重启后不能当持久游标 |
 | `stream_position` | 未来 Stream 在一个 Session 分区内的持久位置 |
+| `session_binding_revision` | 追加时的 Session 映射 CAS 快照；防止端点/角色版本换绑后误归档 |
+| `semantic_type` | 宿主按 event kind 分配的权力/生命周期类型，不来自 payload |
+| `payload_schema` / `privacy_class` / `retention_policy_id` | 追加时冻结的治理策略引用；不表示保留期执行器已实现 |
 | `occurred_at` | 来源事件时间，可能受设备时钟漂移影响 |
 | `ingested_at` | 宿主接收时间；恢复与游标不能只依赖 `occurred_at` |
 | `stream_key` | 当前 Ring 的路由/关联键；不能自动等同 Session 身份或访问控制凭证 |
@@ -273,7 +292,11 @@ ConsumerCheckpoint
 ### 5.2 Session 隔离
 
 - Session 标识由宿主建立并绑定角色、授权主体和通道；外部 payload 不能自行切换到其它 Session。
-- 当前 `srid = conversation_state_role_id(mrid, session_id)` 是既有持久化命名空间；未来 Stream 可以建立明确映射，但本 RFC 不把两者默认为同一字段。
+- v1 使用 `RuntimeSessionPartitionBinding` 显式保存 `partition_id`、`runtime_session_id`、`role_id`、宿主计算的 `role_pack_revision`、`access_subject_id`、`legacy_srid`、`binding_revision` 与多个 `endpoint_id + adapter_id`。
+- `partition_id` 与 `runtime_session_id` 都由宿主签发且 v1 一对一，但不要求字符串相等；现有请求 `session_id` 只作为可信 Session registry 的兼容查询输入，不能直接拼接或复制成分区 ID。
+- 当前 `srid = conversation_state_role_id(mrid, session_id)` 是既有持久化命名空间；`legacy_srid` 只负责显式兼容映射，不升级为 Stream 身份或访问凭证。
+- `access_subject_id` 表示授权/数据所有者，不等于角色扮演中的 `user_identity_id`；后者可随场景变化，不能因此切分或合并 Stream。
+- `role_pack_revision` 只提供事件来源版本证据。角色包升级以 `binding_revision` CAS 更新并产生新事实，不自动创建或合并 Session。
 - 一个 Session 可以绑定多个通道端点；端点离线不等于 Session 销毁。
 - 跨 Session 查询、记忆共享或角色合并必须经过独立授权和显式策略，不能靠相同 `role_id` 自动开放。
 
@@ -299,6 +322,8 @@ ConsumerCheckpoint
 | `EventModuleRegistryPolicy`（现有） | 模块可信身份、基础影响权重、`fail_fast` / `isolate` | Stream cursor、保留期、消费并发 |
 | Stream Consumer Registry（未来） | `consumer_id`、允许读取的事件族、Session 范围、checkpoint、最大并发/在途量、失败退避与隐私级别 | 提案基础影响权重、采纳权、状态提交权 |
 
+Stage A.1 的 `RuntimeEventStreamConsumerRegistration` 固定保存：`consumer_id`、kind 订阅、允许语义类型、宿主 `session_scope_id`、隐私读取上限、跨 Session 分区最大并发、租约时长、最大尝试次数与退避上下限。v1 **同一消费者在单个 Session 分区内固定串行**，只允许跨分区并发，因此不会用并发完成顺序冒充连续 checkpoint。登记结构没有影响权重、提案采纳或状态提交字段。
+
 消费者派生 `Proposal` 时，必须通过自己的来源绑定 Event emitter 回到 Ring；其基础影响力由现有可信注册策略分配。消费者不能因为“读到了更多历史”而提高自己的权重，也不能在 manifest 中自报最终权威。
 
 ---
@@ -312,6 +337,24 @@ ConsumerCheckpoint
 - 每个消费者必须以 `event_id`、领域 idempotency key 或“原因事件 + 动作类型”实现幂等。
 - 生产者重试需要来源绑定 idempotency key；同一 key 对应不同内容必须拒绝并记录诊断。
 - 若派生事件和 checkpoint 必须原子一致，实施时应使用 transactional inbox/outbox 或等价机制，不能靠“先写一个再写另一个”冒充原子性。
+
+### 7.1.1 v1 consumer/checkpoint 状态机
+
+`next_position` 初始为 1。任何阶段都不能仅凭“处理函数返回了”推进它；必须先确认副作用已持久化，或通过幂等键确认该副作用此前已经完成。
+
+| 当前状态 | 允许输入 | 下一状态 | checkpoint / lease 规则 |
+|----------|----------|----------|-------------------------|
+| `ready` | claim 精确的 `next_position` | `leased` | `next_position` 不变；`revision + 1`、`lease_epoch + 1` |
+| `leased` | `applied` / `already_applied`，且 revision/epoch/position 全匹配 | `ready` | `next_position = delivered_position + 1`；`revision + 1` |
+| `leased` | `retryable_failure` | `retry_scheduled` | 位置不变；`revision + 1`，按登记策略退避 |
+| `leased` | lease 到期或宿主重启恢复到期 lease | `retry_scheduled` | 位置不变；旧 worker 的完成回报因 epoch 过期而拒绝 |
+| `retry_scheduled` | 到达重试时间 | `leased` | 位置不变；`revision + 1`、`lease_epoch + 1` |
+| `leased` | `terminal_failure` 或超过尝试上限 | `blocked` | 位置不变；不得自动跳过 |
+| `blocked` | 宿主/运维显式 retry | `retry_scheduled` | 仍处理同一位置；不得伪造成功 |
+| `ready` | 检测到保留期缺口 | `blocked` | 不自动越过缺失记录；须由删除/墓碑策略显式解决 |
+| 非 `disabled` | consumer 登记撤销/禁用 | `disabled` | 保留 `next_position`，停止签发新 lease |
+
+所有 checkpoint 改动使用 `revision` CAS。delivery 回报同时携带领取时的 `checkpoint_revision` 与 `lease_epoch`；任一不匹配都原样拒绝，不得“尽量合并”。`applied` 与 `already_applied` 都只对当前 lease 推进一次，后者用于至少一次投递中的幂等重复确认，不是 exactly-once 声明。
 
 ### 7.2 顺序与冲突
 
@@ -405,6 +448,12 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 | 状态提交成功但事件发布失败 | 由 transactional outbox/reconcile 补发；不得发布一个假的失败状态覆盖真实提交 |
 | Event 模块越权/失败 | 继续遵守现有 `fail_fast` / `isolate`，Stream 不改变 Ring 原子拒绝语义 |
 
+### 11.1 Stage A.1 失败/恢复测试模型
+
+版本化夹具 [`runtime_event_stream_consumer_transitions.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_consumer_transitions.v1.json) 与纯测试参考模型目前固定 14 个场景：精确位置 claim、禁止越位、durable success、幂等重复成功、可重试失败、到期重试、重启恢复过期 lease、旧 worker 回报、checkpoint CAS 冲突、终止失败阻塞、显式解阻、保留期缺口、登记禁用与禁用后拒绝 claim。
+
+这份模型只冻结状态转移与“不推进”的条件，不实现数据库、定时器、lease worker 或消费者副作用。阶段 C 实现必须用真实持久化 crash/restart 测试重新证明同一矩阵，不能把 Stage A 的内存参考模型当作生产恢复证据。
+
 ---
 
 ## 12. 分阶段实施准入
@@ -413,7 +462,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
-| **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
+| **A · 契约原型（A.1 已落纯类型）** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | A.1 已有可编译 DTO + 14 场景版本化状态表；仍需设计评审 | 不接生产 IO，不改回复 |
 | **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open 与确定性 shutdown；S0/S1 合成证据已收口，含固定十分钟耐久和重启续位；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
@@ -426,9 +475,9 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 ## 13. 实施前仍需冻结的决策
 
 - B0 Trace 已选独立 SQLite；Production Stream 的首个存储、可替换后端边界及何时需要外部 broker 仍未冻结。
-- Session 与 `srid`、用户身份、角色包版本及多个通道端点的精确映射。
+- A.1 已冻结 Session 映射字段及 v1 一 Session/一分区关系；宿主如何签发/轮换 opaque ID、映射存储位置、端点 ACL 与删除传播仍未冻结。
 - B0 当前记录所有成功 dispatch 的最终脱敏信封头；哪些提交/输出摘要及哪些事件进入 Production Stream、payload 最小化和访问规则仍未冻结。
-- source-bound idempotency key、transactional outbox/inbox 与 checkpoint 的具体 schema。
+- A.1 已固定来源作用域 idempotency key 与 checkpoint wire；键的规范化/摘要算法、transactional outbox/inbox schema 和持久化事务边界仍未冻结。
 - 多宿主同时运行同一 Session 时的租约、leader 或冲突策略。
 - 首个低风险真实消费者和首个主动输入适配器。
 - Replay 的隔离数据库、模型调用策略和隐私删除传播。
@@ -451,14 +500,17 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
 - [x] 生命周期测试区分队列丢弃与入队后写失败，覆盖冲突重复头、终端失败停机和并发幂等 shutdown，并保持 v1 诊断反序列化兼容。
 - [x] S1.4 固定十分钟合同完成 2,400 次低速来源绑定 dispatch、20 次主库健康检查、RSS/有界历史检查、shutdown 排空与重启后第 2,401 位追加；只形成本机开发者证据，不冒充生产时长或硬件 soak。
-- [x] S1 合成证据阶段已收口；S2 未获准，下一实现入口仍须先完成阶段 A 的外层记录、Session 映射与 consumer/checkpoint 状态机设计评审。
+- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐外层记录、Session 映射与 consumer/checkpoint 纯契约，A.2 设计评审仍未完成。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
 
-- [ ] 没有第二套 `process_message`、复制 pipeline 或 Session 内核。
-- [ ] Stream Consumer Registry 没有影响权重、提案采纳或状态提交字段。
-- [ ] `EventEnvelope.sequence` 未被误用为持久消费游标。
+- [x] Stage A.1 纯类型契约没有第二套 `process_message`、复制 pipeline、Session 内核或任何 I/O 端口。
+- [x] `RuntimeEventStreamConsumerRegistration` 没有影响权重、提案采纳或状态提交字段。
+- [x] `RuntimeEventRecord.stream_position` 与 `EventEnvelope.sequence` 是独立字段，类型/测试未将后者用作消费游标。
+- [x] Session v1 显式映射宿主分区、canonical Session、角色、角色包 revision、访问主体、legacy `srid` 和多个端点；角色扮演身份不参与分区。
+- [x] 14 场景参考模型固定至少一次消费中的成功、重复、重试、过期 lease、CAS 冲突、阻塞、禁用和保留期缺口语义。
+- [ ] Stage A 设计评审尚未完成；上述纯类型/参考模型不是 Production Stream、消费者恢复或持久 checkpoint 实现证据。
 - [ ] 持久语义变换使用带自身来源的派生事件；没有把修改后的 payload 永久归因给原始 emitter。
 - [ ] Fact / Observation / Proposal / Decision / State / Output 权力边界有类型或校验门禁。
 - [ ] LLM 输出只能通过受约束包装器形成 Proposal，不能直接形成 Fact/State。

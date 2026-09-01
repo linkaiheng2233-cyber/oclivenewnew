@@ -22,6 +22,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 `RuntimeEventTrace` 是默认关闭的基础设施观察器：它只在成功 Ring dispatch 后非阻塞记录脱敏事实头，不是六槽、Event 模块、Event 决策模块或 Runtime Event Stream，也不向 Prompt/记忆/主动回合提供输入。完整状态见 [`RFC_RUNTIME_EVENT_STREAM`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) 与 `K-EVENT-STREAM-01`。
 
+`oclive_kernel_types::runtime_event_stream` 目前只是 Stage A.1 纯契约层：定义外层记录、Session 分区绑定、consumer 登记、checkpoint 状态和 delivery 结果，并用版本化参考模型固定恢复语义。它没有存储/读取端口、consumer loop、Replay、Prompt 或回合接线，不能被列为已运行模块。
+
 **稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；新增宿主入口必须委托同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。
 
 ---

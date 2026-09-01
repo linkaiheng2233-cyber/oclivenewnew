@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-09-02.
 
-**Status:** **Draft v0.7 · boundaries agreed · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
+**Status:** **Draft v0.8 · Stage A.1 pure types and checkpoint reference model implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
 ---
 
@@ -139,9 +139,25 @@ Commit `b79c7912` implements the S1.4 command `npm run event:trace-shadow-soak-s
 
 S1 is closed only as the Trace-only synthetic-evidence stage: the versioned S0 and S1.1–S1.4 contracts pass, B0 lifecycle/failure/shutdown tests pass, artifacts stay ignored, and production code still has no read, consumer, Replay, Prompt, or proactive-reply path. This does not complete stage B retention or commit/output coverage, authorize S2, or close `K-EVENT-STREAM-01`.
 
-The next authorized implementation work returns to the stage A **Production Stream contract prototype**. Typed outer records, Session partition mapping, the consumer/checkpoint state machine, and failure/recovery tables must be frozen and reviewed before adding any production read API, checkpoint table, consumer loop, or second turn entry. Stage C must not be smuggled into the same slice.
+The next authorized work remains inside stage A. A.1 now freezes pure types and a reference transition model. A.2 must review the fields against real multi-I/O consumers, select the first storage and transactional outbox/inbox boundary, and turn privacy/deletion policy into testable contracts. No production read API, checkpoint table, consumer loop, or second turn entry may be added before that review. Stage C must not be smuggled into the same slice.
 
 No sample level is an authoritative event store, behavior input, or training authorization. Real runtime collection must not be wired before S2 admission; content-level data would require a separate privacy and data-governance design rather than expanding this command.
+
+---
+
+## Stage A.1 pure contract prototype
+
+Commit `3ee559a6` adds [`runtime_event_stream.rs`](../../kernel/crates/oclive_kernel_types/src/runtime_event_stream.rs) as serializable data contracts only. It adds no storage, read port, worker, replay, Prompt input, or turn wiring.
+
+- `RuntimeEventRecord` keeps host-owned `session_partition`, binding revision, durable per-partition position, semantic type, payload schema, privacy class, retention-policy reference, optional source-scoped idempotency key, ingestion time, and the existing `EventEnvelope`.
+- A Production Stream may persist the Ring-issued initial envelope only after the whole dispatch succeeds, plus explicit child envelopes with their own source and causation. Dispatch-local payload/metadata replacement is not promoted to durable provenance.
+- `RuntimeSessionPartitionBinding` maps an opaque host Session and partition to role, host-computed role-pack revision, authorization subject, legacy `srid`, CAS revision, and multiple host-approved endpoints. Request `session_id` and role-play user identity cannot select or merge partitions.
+- `RuntimeEventStreamConsumerRegistration` contains subscriptions, semantic types, a host Session scope, privacy ceiling, cross-partition concurrency, lease duration, attempt limit, and backoff. It has no influence, proposal-admission, or state-commit field. V1 delivery is serial within a partition and may be concurrent only across partitions.
+- `RuntimeEventConsumerCheckpoint` separates `next_position`, CAS revision, and lease epoch. Its tagged states are `ready`, `leased`, `retry_scheduled`, `blocked`, and `disabled`.
+
+The versioned [`runtime_event_stream_consumer_transitions.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_consumer_transitions.v1.json) fixture freezes 14 reference cases: exact claim, no position skip, durable and already-applied success, retry, lease expiry/restart, stale-worker acknowledgement, CAS conflict, terminal block, explicit retry, retention gap, disable, and claim rejection while disabled. Only `applied` or `already_applied` on the exact current revision/epoch may advance to `delivered_position + 1`. Retry, crash recovery, conflict, block, and disable preserve progress.
+
+This is a test model, not consumer recovery evidence. Stage C must prove the same matrix against real durable crash/restart behavior.
 
 ---
 
