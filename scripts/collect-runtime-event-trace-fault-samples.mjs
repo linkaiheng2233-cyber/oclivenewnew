@@ -56,11 +56,15 @@ assertPrivateEvidenceEnvelope({
 
 for (const expected of contract.scenarios) {
   const observed = evidence.scenarios.find(scenario => scenario.id === expected.id)
+  const expectedActive = expected.action === 'queue_saturation'
   if (!observed
     || observed.action !== expected.action
     || observed.outcome !== 'pass'
     || observed.attempted_dispatches !== expected.attempted_dispatches
     || observed.successful_ring_dispatches !== expected.attempted_dispatches
+    || observed.diagnostics?.schema_version !== 2
+    || observed.diagnostics?.accepting_dispatches !== expectedActive
+    || observed.diagnostics?.worker_active !== expectedActive
     || observed.diagnostics?.last_error_kind !== expected.expected_error_kind) {
     throw new Error(`runtime event trace fault scenario ${expected.id} drifted`)
   }

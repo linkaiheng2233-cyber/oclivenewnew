@@ -112,7 +112,13 @@ async fn post_start_write_failure(scenario: &FaultScenarioContract) -> anyhow::R
     let diagnostics = probe::wait_for_diagnostics(
         &kernel,
         Duration::from_secs(10),
-        |diagnostics| diagnostics.last_error_kind == Some(RuntimeEventTraceErrorKind::WriteFailed),
+        |diagnostics| {
+            diagnostics.last_error_kind == Some(RuntimeEventTraceErrorKind::WriteFailed)
+                && !diagnostics.accepting_dispatches
+                && !diagnostics.worker_active
+                && diagnostics.persisted_dispatches + diagnostics.failed_dispatches
+                    == diagnostics.enqueued_dispatches
+        },
         "synthetic trace write-failure diagnostics",
     )
     .await?;
@@ -146,7 +152,9 @@ fn queue_invariants(
         "all_enqueued_dispatches_drained".into(),
         diagnostics.persisted_dispatches == diagnostics.enqueued_dispatches
             && diagnostics.persisted_events == diagnostics.enqueued_events
-            && diagnostics.duplicate_events == 0,
+            && diagnostics.duplicate_events == 0
+            && diagnostics.failed_dispatches == 0
+            && diagnostics.failed_events == 0,
     );
     invariants.insert(
         "dropped_dispatches_observed".into(),
@@ -174,6 +182,15 @@ fn write_failure_invariants(
             && diagnostics.last_error_kind == Some(RuntimeEventTraceErrorKind::WriteFailed)
             && diagnostics.persisted_dispatches == 0
             && diagnostics.persisted_events == 0,
+    );
+    invariants.insert(
+        "write_failure_accounted".into(),
+        diagnostics.failed_dispatches == diagnostics.enqueued_dispatches
+            && diagnostics.failed_events == diagnostics.enqueued_events,
+    );
+    invariants.insert(
+        "recorder_stopped_after_write_failure".into(),
+        !diagnostics.accepting_dispatches && !diagnostics.worker_active,
     );
     invariants.insert(
         "no_dispatch_dropped".into(),

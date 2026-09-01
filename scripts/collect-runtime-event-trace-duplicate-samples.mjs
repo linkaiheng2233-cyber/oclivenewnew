@@ -65,11 +65,13 @@ assertNoPrivateEvidence(marker, markerText)
 const invariants = {
   both_dispatches_enqueued:
     marker.configured === true
+    && marker.accepting_dispatches_during_sample === true
     && marker.worker_active_during_sample === true
     && marker.enqueued_dispatches === expected.attempted_dispatches
     && marker.enqueued_events === expected.attempted_dispatches,
   both_dispatches_processed:
     marker.persisted_dispatches === expected.attempted_dispatches
+    && marker.accepting_dispatches_after_shutdown === false
     && marker.worker_stopped_after_shutdown === true,
   single_row_persisted:
     marker.persisted_events === expected.expected_inserted_events
@@ -79,7 +81,10 @@ const invariants = {
     marker.duplicate_events === expected.expected_duplicate_events,
   no_dispatch_dropped:
     marker.dropped_dispatches === 0 && marker.dropped_events === 0,
-  no_trace_failure: marker.failure_count === 0,
+  no_trace_failure:
+    marker.failed_dispatches === 0
+    && marker.failed_events === 0
+    && marker.failure_count === 0,
   privacy_flags_false:
     marker.captures_payloads === false
     && marker.captures_metadata === false
@@ -107,13 +112,17 @@ const observed = {
   persisted_rows: marker.persisted_rows,
   diagnostics: {
     configured: marker.configured,
+    accepting_dispatches_during_sample: marker.accepting_dispatches_during_sample,
     worker_active_during_sample: marker.worker_active_during_sample,
+    accepting_dispatches_after_shutdown: marker.accepting_dispatches_after_shutdown,
     worker_stopped_after_shutdown: marker.worker_stopped_after_shutdown,
     enqueued_dispatches: marker.enqueued_dispatches,
     enqueued_events: marker.enqueued_events,
     persisted_dispatches: marker.persisted_dispatches,
     persisted_events: marker.persisted_events,
     duplicate_events: marker.duplicate_events,
+    failed_dispatches: marker.failed_dispatches,
+    failed_events: marker.failed_events,
     dropped_dispatches: marker.dropped_dispatches,
     dropped_events: marker.dropped_events,
     failure_count: marker.failure_count,

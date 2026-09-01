@@ -88,8 +88,10 @@ async fn trace_is_default_off_and_creates_no_database() {
     assert_eq!(result.primary.kind, TRACE_EVENT_KIND);
     let diagnostics = kernel.runtime_event_trace_diagnostics();
     assert!(!diagnostics.configured);
+    assert!(!diagnostics.accepting_dispatches);
     assert!(!diagnostics.worker_active);
     assert_eq!(diagnostics.persisted_events, 0);
+    assert_eq!(diagnostics.failed_events, 0);
     assert!(!diagnostics.captures_payloads);
     assert!(!diagnostics.captures_metadata);
     assert!(!diagnostics.captures_stream_key);
@@ -114,6 +116,7 @@ async fn enabled_trace_is_append_only_redacted_and_recovers_position_after_resta
     assert!(first.emitted.is_empty());
     let first_diagnostics = first_kernel.runtime_event_trace_diagnostics();
     assert!(first_diagnostics.configured);
+    assert!(first_diagnostics.accepting_dispatches);
     assert!(first_diagnostics.worker_active);
     assert!(!first_diagnostics.captures_payloads);
     assert!(!first_diagnostics.captures_metadata);
@@ -194,6 +197,7 @@ async fn trace_refuses_to_share_the_main_kernel_database() {
     let kernel = build_kernel(config).await;
     let diagnostics = kernel.runtime_event_trace_diagnostics();
     assert!(diagnostics.configured);
+    assert!(!diagnostics.accepting_dispatches);
     assert!(!diagnostics.worker_active);
     assert!(diagnostics.failure_count >= 1);
     assert_eq!(
@@ -233,6 +237,7 @@ async fn malformed_trace_database_degrades_without_blocking_event_dispatch() {
     let kernel = build_kernel(config).await;
     let diagnostics = kernel.runtime_event_trace_diagnostics();
     assert!(diagnostics.configured);
+    assert!(!diagnostics.accepting_dispatches);
     assert!(!diagnostics.worker_active);
     assert!(diagnostics.failure_count >= 1);
     assert!(matches!(

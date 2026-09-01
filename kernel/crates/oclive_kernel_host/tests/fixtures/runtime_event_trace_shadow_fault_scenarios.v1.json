@@ -29,6 +29,8 @@
         "all_ring_dispatches_succeeded",
         "dispatch_accounting_balanced",
         "write_failure_observed",
+        "write_failure_accounted",
+        "recorder_stopped_after_write_failure",
         "no_dispatch_dropped",
         "main_database_healthy",
         "privacy_flags_false"

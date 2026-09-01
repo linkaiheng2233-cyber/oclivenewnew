@@ -114,10 +114,12 @@ pub(super) fn invariant_names(action: FaultAction) -> &'static [&'static str] {
         COMMON[2],
         COMMON[3],
     ];
-    const WRITE: [&str; 6] = [
+    const WRITE: [&str; 8] = [
         COMMON[0],
         COMMON[1],
         "write_failure_observed",
+        "write_failure_accounted",
+        "recorder_stopped_after_write_failure",
         "no_dispatch_dropped",
         COMMON[2],
         COMMON[3],

@@ -87,6 +87,7 @@ pub(crate) async fn run(
     for scenario in &contract.scenarios {
         let observed = scenarios::execute(scenario).await?;
         if !observed.diagnostics.configured
+            || !observed.diagnostics.accepting_dispatches
             || !observed.diagnostics.worker_active
             || !matches!(
                 observed.diagnostics.last_error_kind,
@@ -186,7 +187,7 @@ pub(crate) async fn run(
                 .into(),
             "This evidence validates concurrent fail-open accounting only, not Stream ordering, at-least-once delivery, consumers, checkpoints, or recovery."
                 .into(),
-            "Duplicate delivery remains outside S1.2 because no replay or source-binding bypass entry is introduced."
+            "Duplicate recorder input and sustained runtime use separate S1 contracts; no replay or source-binding bypass entry is introduced."
                 .into(),
         ],
         scenarios: scenario_evidence,

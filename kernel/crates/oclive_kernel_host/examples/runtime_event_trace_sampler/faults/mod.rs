@@ -41,6 +41,7 @@ struct FaultSummary {
     successful_ring_dispatches: u64,
     enqueued_dispatches: u64,
     persisted_dispatches: u64,
+    failed_dispatches: u64,
     dropped_dispatches: u64,
     observed_failures: u64,
 }
@@ -67,8 +68,10 @@ pub(crate) async fn run(
     let mut scenario_evidence = Vec::with_capacity(contract.scenarios.len());
     for scenario in &contract.scenarios {
         let observed = scenarios::execute(scenario).await?;
+        let expected_active = scenario.action == FaultAction::QueueSaturation;
         if !observed.diagnostics.configured
-            || !observed.diagnostics.worker_active
+            || observed.diagnostics.accepting_dispatches != expected_active
+            || observed.diagnostics.worker_active != expected_active
             || observed.diagnostics.last_error_kind != Some(scenario.expected_error_kind)
         {
             bail!(
@@ -114,6 +117,10 @@ pub(crate) async fn run(
             .iter()
             .map(|scenario| scenario.diagnostics.persisted_dispatches)
             .sum(),
+        failed_dispatches: scenario_evidence
+            .iter()
+            .map(|scenario| scenario.diagnostics.failed_dispatches)
+            .sum(),
         dropped_dispatches: scenario_evidence
             .iter()
             .map(|scenario| scenario.diagnostics.dropped_dispatches)
@@ -144,9 +151,9 @@ pub(crate) async fn run(
                 .into(),
             "Faults are induced with a temporary SQLite writer lock or table removal and never touch the kernel database."
                 .into(),
-            "This evidence validates fail-open accounting, not Production Stream delivery or recovery semantics."
+            "This evidence validates fail-open accounting and terminal recorder shutdown, not Production Stream delivery or recovery semantics."
                 .into(),
-            "Duplicate delivery, concurrency, and long-run soak remain outside this S1.1 slice."
+            "Duplicate recorder input, concurrency, and sustained runtime use separate S1 contracts."
                 .into(),
         ],
         scenarios: scenario_evidence,
@@ -179,19 +186,20 @@ fn render_markdown_summary(evidence: &FaultEvidence) -> String {
          - Scope: synthetic-only, behavior-neutral fail-open evidence\n\
          - Authority: not a Runtime Event Stream, behavior input, or raw database export\n\n\
          ## Scenarios\n\n\
-         | Scenario | Action | Ring success | Enqueued | Persisted | Dropped | Last error |\n\
-         | --- | --- | ---: | ---: | ---: | ---: | --- |\n",
+         | Scenario | Action | Ring success | Enqueued | Persisted | Failed | Dropped | Last error |\n\
+         | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |\n",
         evidence.source_commit, evidence.source_worktree_dirty
     );
     for scenario in &evidence.scenarios {
         output.push_str(&format!(
-            "| `{}` | `{}` | {}/{} | {} | {} | {} | `{:?}` |\n",
+            "| `{}` | `{}` | {}/{} | {} | {} | {} | {} | `{:?}` |\n",
             scenario.id,
             scenario.action.as_str(),
             scenario.successful_ring_dispatches,
             scenario.attempted_dispatches,
             scenario.diagnostics.enqueued_dispatches,
             scenario.diagnostics.persisted_dispatches,
+            scenario.diagnostics.failed_dispatches,
             scenario.diagnostics.dropped_dispatches,
             scenario.diagnostics.last_error_kind
         ));

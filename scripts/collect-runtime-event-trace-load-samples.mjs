@@ -73,6 +73,8 @@ for (const expected of contract.scenarios) {
       === attemptedDispatches
   const traceDrained
     = diagnostics?.persisted_dispatches === diagnostics?.enqueued_dispatches
+      && diagnostics?.failed_dispatches === 0
+      && diagnostics?.failed_events === 0
       && diagnostics?.persisted_events + diagnostics?.duplicate_events
       === diagnostics?.enqueued_events
   const boundedRingHistory
@@ -94,6 +96,7 @@ for (const expected of contract.scenarios) {
     || observed.elapsed_ms < expected.minimum_elapsed_ms
     || observed.elapsed_ms > expected.maximum_elapsed_ms
     || diagnostics?.configured !== true
+    || diagnostics?.accepting_dispatches !== true
     || diagnostics?.worker_active !== true
     || !dispatchAccountingBalanced
     || !traceDrained

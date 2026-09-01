@@ -15,7 +15,7 @@ use oclive_kernel_types::{
 };
 use parking_lot::RwLock;
 use sqlx::{Row, SqlitePool};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{mpsc, oneshot, Mutex};
 
 use crate::domain::event_ring::EventDispatchTraceSink;
 
@@ -23,7 +23,7 @@ const TRACE_QUEUE_CAPACITY: usize = 256;
 const TRACE_DATABASE_SCHEMA_VERSION: i64 = 1;
 const TRACE_DATABASE_APPLICATION_ID: i64 = 0x4f43_5254; // "OCRT"
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct TraceRecord {
     ring_schema_version: u16,
     event_id: String,
@@ -64,12 +64,15 @@ enum TraceCommand {
 #[derive(Default)]
 struct RuntimeEventTraceState {
     configured: bool,
+    accepting_dispatches: AtomicBool,
     worker_active: AtomicBool,
     enqueued_dispatches: AtomicU64,
     enqueued_events: AtomicU64,
     persisted_dispatches: AtomicU64,
     persisted_events: AtomicU64,
     duplicate_events: AtomicU64,
+    failed_dispatches: AtomicU64,
+    failed_events: AtomicU64,
     dropped_dispatches: AtomicU64,
     dropped_events: AtomicU64,
     failure_count: AtomicU64,
@@ -90,11 +93,18 @@ impl RuntimeEventTraceState {
         *self.last_error_kind.write() = Some(kind);
     }
 
+    fn record_failed_dispatch(&self, event_count: usize) {
+        self.failed_dispatches.fetch_add(1, Ordering::Relaxed);
+        self.failed_events
+            .fetch_add(event_count as u64, Ordering::Relaxed);
+    }
+
     fn diagnostics(&self) -> RuntimeEventTraceDiagnostics {
         let last_position = self.last_persisted_position.load(Ordering::Acquire);
         RuntimeEventTraceDiagnostics {
             schema_version: RUNTIME_EVENT_TRACE_DIAGNOSTICS_SCHEMA_VERSION,
             configured: self.configured,
+            accepting_dispatches: self.accepting_dispatches.load(Ordering::Acquire),
             worker_active: self.worker_active.load(Ordering::Acquire),
             queue_capacity: if self.configured {
                 TRACE_QUEUE_CAPACITY as u64
@@ -106,6 +116,8 @@ impl RuntimeEventTraceState {
             persisted_dispatches: self.persisted_dispatches.load(Ordering::Relaxed),
             persisted_events: self.persisted_events.load(Ordering::Relaxed),
             duplicate_events: self.duplicate_events.load(Ordering::Relaxed),
+            failed_dispatches: self.failed_dispatches.load(Ordering::Relaxed),
+            failed_events: self.failed_events.load(Ordering::Relaxed),
             dropped_dispatches: self.dropped_dispatches.load(Ordering::Relaxed),
             dropped_events: self.dropped_events.load(Ordering::Relaxed),
             failure_count: self.failure_count.load(Ordering::Relaxed),
@@ -122,15 +134,21 @@ impl RuntimeEventTraceState {
 pub(crate) struct RuntimeEventTrace {
     state: Arc<RuntimeEventTraceState>,
     sender: Option<mpsc::Sender<TraceCommand>>,
+    shutdown_lock: Mutex<()>,
 }
 
 impl RuntimeEventTrace {
+    fn inactive(state: Arc<RuntimeEventTraceState>) -> Arc<Self> {
+        Arc::new(Self {
+            state,
+            sender: None,
+            shutdown_lock: Mutex::new(()),
+        })
+    }
+
     pub(crate) async fn start(trace_path: Option<&Path>, main_database_path: &Path) -> Arc<Self> {
         let Some(trace_path) = trace_path else {
-            return Arc::new(Self {
-                state: Arc::new(RuntimeEventTraceState::new(false)),
-                sender: None,
-            });
+            return Self::inactive(Arc::new(RuntimeEventTraceState::new(false)));
         };
 
         let state = Arc::new(RuntimeEventTraceState::new(true));
@@ -140,10 +158,7 @@ impl RuntimeEventTrace {
                 target: "oclive_runtime_event_trace",
                 "runtime event trace path resolves to the main kernel database; shadow disabled"
             );
-            return Arc::new(Self {
-                state,
-                sender: None,
-            });
+            return Self::inactive(state);
         }
 
         if let Some(parent) = trace_path
@@ -157,10 +172,7 @@ impl RuntimeEventTrace {
                     error = %error,
                     "runtime event trace directory could not be created; shadow disabled"
                 );
-                return Arc::new(Self {
-                    state,
-                    sender: None,
-                });
+                return Self::inactive(state);
             }
         }
 
@@ -173,10 +185,7 @@ impl RuntimeEventTrace {
                     error = %error,
                     "runtime event trace database could not be opened; shadow disabled"
                 );
-                return Arc::new(Self {
-                    state,
-                    sender: None,
-                });
+                return Self::inactive(state);
             }
         };
 
@@ -190,10 +199,7 @@ impl RuntimeEventTrace {
                     "runtime event trace schema is unavailable; shadow disabled"
                 );
                 store.close().await;
-                return Arc::new(Self {
-                    state,
-                    sender: None,
-                });
+                return Self::inactive(state);
             }
         };
         state
@@ -201,11 +207,13 @@ impl RuntimeEventTrace {
             .store(initial_position, Ordering::Release);
 
         let (sender, receiver) = mpsc::channel(TRACE_QUEUE_CAPACITY);
+        state.accepting_dispatches.store(true, Ordering::Release);
         state.worker_active.store(true, Ordering::Release);
         tokio::spawn(run_trace_worker(store, receiver, state.clone()));
         Arc::new(Self {
             state,
             sender: Some(sender),
+            shutdown_lock: Mutex::new(()),
         })
     }
 
@@ -217,10 +225,19 @@ impl RuntimeEventTrace {
     #[must_use]
     pub(crate) fn is_recording(&self) -> bool {
         self.sender.is_some()
+            && self.state.accepting_dispatches.load(Ordering::Acquire)
+            && self.state.worker_active.load(Ordering::Acquire)
     }
 
     /// Drain all records queued before shutdown and close the independent SQLite pool.
     pub(crate) async fn shutdown(&self) {
+        let _guard = self.shutdown_lock.lock().await;
+        self.state
+            .accepting_dispatches
+            .store(false, Ordering::Release);
+        if !self.state.worker_active.load(Ordering::Acquire) {
+            return;
+        }
         let Some(sender) = self.sender.as_ref() else {
             return;
         };
@@ -230,11 +247,13 @@ impl RuntimeEventTrace {
             .await
             .is_err()
         {
-            self.state
-                .record_failure(RuntimeEventTraceErrorKind::WorkerClosed);
+            if self.state.worker_active.load(Ordering::Acquire) {
+                self.state
+                    .record_failure(RuntimeEventTraceErrorKind::WorkerClosed);
+            }
             return;
         }
-        if done_receiver.await.is_err() {
+        if done_receiver.await.is_err() && self.state.worker_active.load(Ordering::Acquire) {
             self.state
                 .record_failure(RuntimeEventTraceErrorKind::WorkerClosed);
         }
@@ -250,6 +269,15 @@ impl EventDispatchTraceSink for RuntimeEventTrace {
             return;
         }
         let event_count = events.len() as u64;
+        if !self.state.accepting_dispatches.load(Ordering::Acquire) {
+            self.state
+                .dropped_dispatches
+                .fetch_add(1, Ordering::Relaxed);
+            self.state
+                .dropped_events
+                .fetch_add(event_count, Ordering::Relaxed);
+            return;
+        }
         let records = events.iter().map(TraceRecord::from).collect();
         match sender.try_send(TraceCommand::Record(records)) {
             Ok(()) => {
@@ -272,6 +300,9 @@ impl EventDispatchTraceSink for RuntimeEventTrace {
             }
             Err(mpsc::error::TrySendError::Closed(_)) => {
                 self.state
+                    .accepting_dispatches
+                    .store(false, Ordering::Release);
+                self.state
                     .dropped_dispatches
                     .fetch_add(1, Ordering::Relaxed);
                 self.state
@@ -289,41 +320,55 @@ async fn run_trace_worker(
     mut receiver: mpsc::Receiver<TraceCommand>,
     state: Arc<RuntimeEventTraceState>,
 ) {
+    let mut store_available = true;
+    let mut shutdown_waiters = Vec::new();
     while let Some(command) = receiver.recv().await {
         match command {
-            TraceCommand::Record(records) => match store.append_dispatch(&records).await {
-                Ok(outcome) => {
-                    state.persisted_dispatches.fetch_add(1, Ordering::Relaxed);
-                    state
-                        .persisted_events
-                        .fetch_add(outcome.inserted_events, Ordering::Relaxed);
-                    state
-                        .duplicate_events
-                        .fetch_add(outcome.duplicate_events, Ordering::Relaxed);
-                    state
-                        .last_persisted_position
-                        .store(outcome.last_position, Ordering::Release);
+            TraceCommand::Record(records) if store_available => {
+                match store.append_dispatch(&records).await {
+                    Ok(outcome) => {
+                        state.persisted_dispatches.fetch_add(1, Ordering::Relaxed);
+                        state
+                            .persisted_events
+                            .fetch_add(outcome.inserted_events, Ordering::Relaxed);
+                        state
+                            .duplicate_events
+                            .fetch_add(outcome.duplicate_events, Ordering::Relaxed);
+                        state
+                            .last_persisted_position
+                            .store(outcome.last_position, Ordering::Release);
+                    }
+                    Err(error) => {
+                        state.record_failed_dispatch(records.len());
+                        state.record_failure(RuntimeEventTraceErrorKind::WriteFailed);
+                        state.accepting_dispatches.store(false, Ordering::Release);
+                        receiver.close();
+                        store_available = false;
+                        tracing::warn!(
+                            target: "oclive_runtime_event_trace",
+                            event_count = records.len(),
+                            error = %error,
+                            "runtime event trace write failed; recorder stopped and Event Ring result remains authoritative"
+                        );
+                    }
                 }
-                Err(error) => {
-                    state.record_failure(RuntimeEventTraceErrorKind::WriteFailed);
-                    tracing::warn!(
-                        target: "oclive_runtime_event_trace",
-                        event_count = records.len(),
-                        error = %error,
-                        "runtime event trace write failed; Event Ring result remains authoritative"
-                    );
-                }
-            },
+            }
+            TraceCommand::Record(records) => {
+                state.record_failed_dispatch(records.len());
+            }
             TraceCommand::Shutdown(done) => {
-                store.close().await;
-                state.worker_active.store(false, Ordering::Release);
-                let _ = done.send(());
-                return;
+                state.accepting_dispatches.store(false, Ordering::Release);
+                receiver.close();
+                shutdown_waiters.push(done);
             }
         }
     }
     store.close().await;
+    state.accepting_dispatches.store(false, Ordering::Release);
     state.worker_active.store(false, Ordering::Release);
+    for waiter in shutdown_waiters {
+        let _ = waiter.send(());
+    }
 }
 
 struct RuntimeEventTraceStore {
@@ -503,11 +548,12 @@ impl RuntimeEventTraceStore {
             let ring_sequence =
                 i64::try_from(record.ring_sequence).context("ring sequence exceeds SQLite i64")?;
             let result = sqlx::query(
-                "INSERT OR IGNORE INTO runtime_event_trace_records (
+                "INSERT INTO runtime_event_trace_records (
                     ring_schema_version, event_id, event_kind, source, source_weight_bps,
                     correlation_id, causation_id, ring_sequence, event_depth, occurred_at,
                     ingested_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON CONFLICT(event_id) DO NOTHING",
             )
             .bind(i64::from(record.ring_schema_version))
             .bind(&record.event_id)
@@ -524,6 +570,22 @@ impl RuntimeEventTraceStore {
             .await
             .context("append trace event")?;
             inserted_events = inserted_events.saturating_add(result.rows_affected());
+            if result.rows_affected() == 0 {
+                let existing = sqlx::query(
+                    "SELECT ring_schema_version, event_id, event_kind, source,
+                            source_weight_bps, correlation_id, causation_id, ring_sequence,
+                            event_depth, occurred_at
+                     FROM runtime_event_trace_records WHERE event_id = ?",
+                )
+                .bind(&record.event_id)
+                .fetch_one(&mut *transaction)
+                .await
+                .context("read duplicate trace event")?;
+                let existing = trace_record_from_row(&existing)?;
+                if existing != *record {
+                    bail!("runtime event trace event_id conflicts with an existing header");
+                }
+            }
         }
         transaction.commit().await.context("commit trace append")?;
 
@@ -546,6 +608,25 @@ impl RuntimeEventTraceStore {
     async fn close(self) {
         self.pool.close().await;
     }
+}
+
+fn trace_record_from_row(row: &sqlx::sqlite::SqliteRow) -> anyhow::Result<TraceRecord> {
+    Ok(TraceRecord {
+        ring_schema_version: u16::try_from(row.try_get::<i64, _>("ring_schema_version")?)
+            .context("stored ring schema version is out of range")?,
+        event_id: row.try_get("event_id")?,
+        event_kind: row.try_get("event_kind")?,
+        source: row.try_get("source")?,
+        source_weight_bps: u16::try_from(row.try_get::<i64, _>("source_weight_bps")?)
+            .context("stored source weight is out of range")?,
+        correlation_id: row.try_get("correlation_id")?,
+        causation_id: row.try_get("causation_id")?,
+        ring_sequence: u64::try_from(row.try_get::<i64, _>("ring_sequence")?)
+            .context("stored ring sequence is negative")?,
+        event_depth: u16::try_from(row.try_get::<i64, _>("event_depth")?)
+            .context("stored event depth is out of range")?,
+        occurred_at: row.try_get("occurred_at")?,
+    })
 }
 
 fn paths_refer_to_same_file(left: &Path, right: &Path) -> bool {
@@ -578,6 +659,26 @@ mod tests {
 
     use super::*;
 
+    fn synthetic_event(event_id: &str, sequence: u64) -> EventEnvelope {
+        EventEnvelope {
+            schema_version: EVENT_RING_SCHEMA_VERSION,
+            event_id: event_id.into(),
+            kind: "kernel.test.trace.duplicate_probe".into(),
+            source: "module.test.trace_duplicate_source".into(),
+            source_weight_bps: 10_000,
+            stream_key: "must-not-be-exported".into(),
+            correlation_id: format!("synthetic-trace-correlation-{sequence}"),
+            causation_id: None,
+            sequence,
+            depth: 0,
+            occurred_at: Utc::now(),
+            payload: json!({ "private": "must-not-be-exported" }),
+            metadata: [("private".into(), json!("must-not-be-exported"))]
+                .into_iter()
+                .collect(),
+        }
+    }
+
     #[tokio::test]
     async fn duplicate_headers_are_idempotent_and_counted_without_replay_entry() {
         let temp = tempfile::tempdir().expect("create duplicate trace test directory");
@@ -586,23 +687,7 @@ mod tests {
         let trace = RuntimeEventTrace::start(Some(&trace_path), &main_database_path).await;
         assert!(trace.is_recording());
 
-        let event = EventEnvelope {
-            schema_version: EVENT_RING_SCHEMA_VERSION,
-            event_id: "synthetic-duplicate-event".into(),
-            kind: "kernel.test.trace.duplicate_probe".into(),
-            source: "module.test.trace_duplicate_source".into(),
-            source_weight_bps: 10_000,
-            stream_key: "must-not-be-exported".into(),
-            correlation_id: "synthetic-duplicate-correlation".into(),
-            causation_id: None,
-            sequence: 1,
-            depth: 0,
-            occurred_at: Utc::now(),
-            payload: json!({ "private": "must-not-be-exported" }),
-            metadata: [("private".into(), json!("must-not-be-exported"))]
-                .into_iter()
-                .collect(),
-        };
+        let event = synthetic_event("synthetic-duplicate-event", 1);
         trace.record_successful_dispatch(std::slice::from_ref(&event));
         trace.record_successful_dispatch(std::slice::from_ref(&event));
 
@@ -620,12 +705,15 @@ mod tests {
         };
 
         assert!(diagnostics.configured);
+        assert!(diagnostics.accepting_dispatches);
         assert!(diagnostics.worker_active);
         assert_eq!(diagnostics.enqueued_dispatches, 2);
         assert_eq!(diagnostics.enqueued_events, 2);
         assert_eq!(diagnostics.persisted_dispatches, 2);
         assert_eq!(diagnostics.persisted_events, 1);
         assert_eq!(diagnostics.duplicate_events, 1);
+        assert_eq!(diagnostics.failed_dispatches, 0);
+        assert_eq!(diagnostics.failed_events, 0);
         assert_eq!(diagnostics.dropped_dispatches, 0);
         assert_eq!(diagnostics.dropped_events, 0);
         assert_eq!(diagnostics.failure_count, 0);
@@ -648,19 +736,24 @@ mod tests {
 
         trace.shutdown().await;
         let stopped_diagnostics = trace.diagnostics();
+        assert!(!stopped_diagnostics.accepting_dispatches);
         assert!(!stopped_diagnostics.worker_active);
 
         let marker = json!({
             "schema_version": 1,
             "attempted_dispatches": 2,
             "configured": diagnostics.configured,
+            "accepting_dispatches_during_sample": diagnostics.accepting_dispatches,
             "worker_active_during_sample": diagnostics.worker_active,
+            "accepting_dispatches_after_shutdown": stopped_diagnostics.accepting_dispatches,
             "worker_stopped_after_shutdown": !stopped_diagnostics.worker_active,
             "enqueued_dispatches": diagnostics.enqueued_dispatches,
             "enqueued_events": diagnostics.enqueued_events,
             "persisted_dispatches": diagnostics.persisted_dispatches,
             "persisted_events": diagnostics.persisted_events,
             "duplicate_events": diagnostics.duplicate_events,
+            "failed_dispatches": diagnostics.failed_dispatches,
+            "failed_events": diagnostics.failed_events,
             "persisted_rows": persisted_rows,
             "dropped_dispatches": diagnostics.dropped_dispatches,
             "dropped_events": diagnostics.dropped_events,
@@ -673,5 +766,94 @@ mod tests {
             "production_replay_entry": false,
         });
         println!("runtime-event-trace-duplicate-evidence:{marker}");
+    }
+
+    #[tokio::test]
+    async fn conflicting_duplicate_header_stops_recorder_without_overwriting_original() {
+        let temp = tempfile::tempdir().expect("create conflicting trace test directory");
+        let trace_path = temp.path().join("runtime-event-trace.sqlite3");
+        let main_database_path = temp.path().join("main-kernel.sqlite3");
+        let trace = RuntimeEventTrace::start(Some(&trace_path), &main_database_path).await;
+        let event = synthetic_event("synthetic-conflicting-event", 1);
+        trace.record_successful_dispatch(std::slice::from_ref(&event));
+
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        while trace.diagnostics().persisted_dispatches != 1 {
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "first trace header did not persist before the deadline"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+
+        let mut conflicting = event;
+        conflicting.kind = "kernel.test.trace.conflicting_header".into();
+        trace.record_successful_dispatch(std::slice::from_ref(&conflicting));
+        let diagnostics = loop {
+            let diagnostics = trace.diagnostics();
+            if !diagnostics.worker_active {
+                break diagnostics;
+            }
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "conflicting trace header did not stop the worker before the deadline"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        };
+
+        assert!(!diagnostics.accepting_dispatches);
+        assert_eq!(diagnostics.enqueued_dispatches, 2);
+        assert_eq!(diagnostics.enqueued_events, 2);
+        assert_eq!(diagnostics.persisted_dispatches, 1);
+        assert_eq!(diagnostics.persisted_events, 1);
+        assert_eq!(diagnostics.duplicate_events, 0);
+        assert_eq!(diagnostics.failed_dispatches, 1);
+        assert_eq!(diagnostics.failed_events, 1);
+        assert_eq!(diagnostics.failure_count, 1);
+        assert_eq!(
+            diagnostics.last_error_kind,
+            Some(RuntimeEventTraceErrorKind::WriteFailed)
+        );
+
+        let pool = super::super::sqlite_pool::connect_file(&trace_path)
+            .await
+            .expect("open conflicting trace test database");
+        let persisted_kind: String = sqlx::query_scalar(
+            "SELECT event_kind FROM runtime_event_trace_records WHERE event_id = ?",
+        )
+        .bind("synthetic-conflicting-event")
+        .fetch_one(&pool)
+        .await
+        .expect("read original trace header");
+        assert_eq!(persisted_kind, "kernel.test.trace.duplicate_probe");
+        pool.close().await;
+        trace.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn concurrent_shutdown_is_idempotent_and_drains_accepted_dispatches() {
+        let temp = tempfile::tempdir().expect("create shutdown trace test directory");
+        let trace_path = temp.path().join("runtime-event-trace.sqlite3");
+        let main_database_path = temp.path().join("main-kernel.sqlite3");
+        let trace = RuntimeEventTrace::start(Some(&trace_path), &main_database_path).await;
+        for sequence in 1..=64 {
+            let event = synthetic_event(&format!("synthetic-shutdown-event-{sequence}"), sequence);
+            trace.record_successful_dispatch(std::slice::from_ref(&event));
+        }
+
+        tokio::join!(trace.shutdown(), trace.shutdown());
+        let diagnostics = trace.diagnostics();
+        assert!(!diagnostics.accepting_dispatches);
+        assert!(!diagnostics.worker_active);
+        assert_eq!(diagnostics.enqueued_dispatches, 64);
+        assert_eq!(diagnostics.enqueued_events, 64);
+        assert_eq!(diagnostics.persisted_dispatches, 64);
+        assert_eq!(diagnostics.persisted_events, 64);
+        assert_eq!(diagnostics.duplicate_events, 0);
+        assert_eq!(diagnostics.failed_dispatches, 0);
+        assert_eq!(diagnostics.failed_events, 0);
+        assert_eq!(diagnostics.dropped_dispatches, 0);
+        assert_eq!(diagnostics.dropped_events, 0);
+        assert_eq!(diagnostics.failure_count, 0);
     }
 }

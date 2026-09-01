@@ -206,6 +206,7 @@ fn load_invariants(
     invariants.insert(
         "all_enqueued_dispatches_drained".into(),
         outcome.diagnostics.persisted_dispatches == outcome.diagnostics.enqueued_dispatches
+            && outcome.diagnostics.failed_dispatches == 0
             && outcome
                 .diagnostics
                 .persisted_events
@@ -222,6 +223,7 @@ fn load_invariants(
             None => {
                 outcome.diagnostics.failure_count == 0
                     && outcome.diagnostics.dropped_dispatches == 0
+                    && outcome.diagnostics.failed_events == 0
             }
             Some(RuntimeEventTraceErrorKind::QueueFull) => {
                 outcome.diagnostics.dropped_dispatches > 0
@@ -232,7 +234,9 @@ fn load_invariants(
     );
     invariants.insert(
         "trace_worker_remained_active".into(),
-        outcome.diagnostics.configured && outcome.diagnostics.worker_active,
+        outcome.diagnostics.configured
+            && outcome.diagnostics.accepting_dispatches
+            && outcome.diagnostics.worker_active,
     );
     invariants.insert(
         "bounded_ring_history_preserved".into(),
