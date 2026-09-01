@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "cases": [
+    {
+      "id": "ready_claims_exact_next_position",
+      "start": { "phase": "ready", "next_position": 7, "revision": 10, "lease_epoch": 3 },
+      "action": { "kind": "claim", "stream_position": 7 },
+      "expected": { "accepted": true, "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 }
+    },
+    {
+      "id": "claim_cannot_skip_a_position",
+      "start": { "phase": "ready", "next_position": 7, "revision": 10, "lease_epoch": 3 },
+      "action": { "kind": "claim", "stream_position": 8 },
+      "expected": { "accepted": false, "phase": "ready", "next_position": 7, "revision": 10, "lease_epoch": 3 }
+    },
+    {
+      "id": "durably_applied_advances_checkpoint",
+      "start": { "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 11, "lease_epoch": 4, "disposition": "applied" },
+      "expected": { "accepted": true, "phase": "ready", "next_position": 8, "revision": 12, "lease_epoch": 4 }
+    },
+    {
+      "id": "already_applied_duplicate_advances_once",
+      "start": { "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 11, "lease_epoch": 4, "disposition": "already_applied" },
+      "expected": { "accepted": true, "phase": "ready", "next_position": 8, "revision": 12, "lease_epoch": 4 }
+    },
+    {
+      "id": "retryable_failure_preserves_checkpoint",
+      "start": { "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 11, "lease_epoch": 4, "disposition": "retryable_failure" },
+      "expected": { "accepted": true, "phase": "retry_scheduled", "next_position": 7, "revision": 12, "lease_epoch": 4 }
+    },
+    {
+      "id": "retry_due_issues_new_lease_epoch",
+      "start": { "phase": "retry_scheduled", "next_position": 7, "revision": 12, "lease_epoch": 4 },
+      "action": { "kind": "retry_due" },
+      "expected": { "accepted": true, "phase": "leased", "next_position": 7, "revision": 13, "lease_epoch": 5 }
+    },
+    {
+      "id": "restart_recovers_expired_lease_without_advancing",
+      "start": { "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 },
+      "action": { "kind": "lease_expired", "checkpoint_revision": 11, "lease_epoch": 4 },
+      "expected": { "accepted": true, "phase": "retry_scheduled", "next_position": 7, "revision": 12, "lease_epoch": 4 }
+    },
+    {
+      "id": "stale_worker_ack_is_rejected",
+      "start": { "phase": "leased", "next_position": 7, "revision": 13, "lease_epoch": 5 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 11, "lease_epoch": 4, "disposition": "applied" },
+      "expected": { "accepted": false, "phase": "leased", "next_position": 7, "revision": 13, "lease_epoch": 5 }
+    },
+    {
+      "id": "checkpoint_cas_conflict_is_rejected",
+      "start": { "phase": "leased", "next_position": 7, "revision": 13, "lease_epoch": 5 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 12, "lease_epoch": 5, "disposition": "applied" },
+      "expected": { "accepted": false, "phase": "leased", "next_position": 7, "revision": 13, "lease_epoch": 5 }
+    },
+    {
+      "id": "terminal_failure_blocks_partition_without_skip",
+      "start": { "phase": "leased", "next_position": 7, "revision": 11, "lease_epoch": 4 },
+      "action": { "kind": "finish", "stream_position": 7, "checkpoint_revision": 11, "lease_epoch": 4, "disposition": "terminal_failure" },
+      "expected": { "accepted": true, "phase": "blocked", "next_position": 7, "revision": 12, "lease_epoch": 4 }
+    },
+    {
+      "id": "operator_retry_unblocks_same_position",
+      "start": { "phase": "blocked", "next_position": 7, "revision": 12, "lease_epoch": 4 },
+      "action": { "kind": "operator_retry" },
+      "expected": { "accepted": true, "phase": "retry_scheduled", "next_position": 7, "revision": 13, "lease_epoch": 4 }
+    },
+    {
+      "id": "retention_gap_blocks_instead_of_skipping",
+      "start": { "phase": "ready", "next_position": 7, "revision": 10, "lease_epoch": 3 },
+      "action": { "kind": "retention_gap" },
+      "expected": { "accepted": true, "phase": "blocked", "next_position": 7, "revision": 11, "lease_epoch": 3 }
+    },
+    {
+      "id": "registry_disable_preserves_progress",
+      "start": { "phase": "ready", "next_position": 7, "revision": 10, "lease_epoch": 3 },
+      "action": { "kind": "disable" },
+      "expected": { "accepted": true, "phase": "disabled", "next_position": 7, "revision": 11, "lease_epoch": 3 }
+    },
+    {
+      "id": "disabled_consumer_cannot_claim",
+      "start": { "phase": "disabled", "next_position": 7, "revision": 11, "lease_epoch": 3 },
+      "action": { "kind": "claim", "stream_position": 7 },
+      "expected": { "accepted": false, "phase": "disabled", "next_position": 7, "revision": 11, "lease_epoch": 3 }
+    }
+  ]
+}

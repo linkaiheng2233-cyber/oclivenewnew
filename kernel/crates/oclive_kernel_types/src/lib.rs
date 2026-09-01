@@ -38,6 +38,7 @@ pub mod models;
 pub mod policy;
 pub mod proactive_event;
 pub mod prompt;
+pub mod runtime_event_stream;
 pub mod runtime_event_trace;
 pub mod slot_extension;
 
@@ -72,6 +73,13 @@ pub use proactive_event::{
     PROACTIVE_TURN_AUTHORIZED_EVENT_KIND, PROACTIVE_TURN_PROPOSED_EVENT_KIND,
 };
 pub use prompt::{PromptExtraSection, PromptInput};
+pub use runtime_event_stream::{
+    RuntimeEventConsumerCheckpoint, RuntimeEventConsumerCheckpointState,
+    RuntimeEventDeliveryDisposition, RuntimeEventDeliveryResult, RuntimeEventPrivacyClass,
+    RuntimeEventRecord, RuntimeEventSemanticType, RuntimeEventStreamConsumerRegistration,
+    RuntimeSessionEndpointBinding, RuntimeSessionPartitionBinding,
+    RUNTIME_EVENT_STREAM_CONTRACT_SCHEMA_VERSION,
+};
 pub use runtime_event_trace::{
     RuntimeEventTraceDiagnostics, RuntimeEventTraceErrorKind,
     RUNTIME_EVENT_TRACE_DIAGNOSTICS_SCHEMA_VERSION,
