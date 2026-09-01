@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_trace_shadow_synthetic_samples",
+  "authoritative_runtime_stream": false,
+  "behavior_driver": false,
+  "synthetic_only": true,
+  "scenarios": [
+    {
+      "id": "single_root_before_restart",
+      "phase": "before_restart",
+      "action": "single_root",
+      "expected_events": [
+        {
+          "kind": "kernel.sample.trace.single",
+          "source": "module.sample.trace_source",
+          "source_weight_bps": 6400,
+          "causation_index": null,
+          "depth": 0
+        }
+      ]
+    },
+    {
+      "id": "derived_chain_before_restart",
+      "phase": "before_restart",
+      "action": "derived_chain",
+      "expected_events": [
+        {
+          "kind": "kernel.sample.trace.derive",
+          "source": "module.sample.trace_source",
+          "source_weight_bps": 6400,
+          "causation_index": null,
+          "depth": 0
+        },
+        {
+          "kind": "kernel.sample.trace.derived",
+          "source": "module.sample.trace_deriver",
+          "source_weight_bps": 8200,
+          "causation_index": 0,
+          "depth": 1
+        }
+      ]
+    },
+    {
+      "id": "proactive_admitted_before_restart",
+      "phase": "before_restart",
+      "action": "proactive_admitted",
+      "expected_events": [
+        {
+          "kind": "kernel.proactive.turn.proposed",
+          "source": "module.sample.proactive_high",
+          "source_weight_bps": 9000,
+          "causation_index": null,
+          "depth": 0
+        },
+        {
+          "kind": "kernel.proactive.turn.authorized",
+          "source": "module.builtin.proactive_turn_decision",
+          "source_weight_bps": 10000,
+          "causation_index": 0,
+          "depth": 1
+        }
+      ]
+    },
+    {
+      "id": "proactive_rejected_before_restart",
+      "phase": "before_restart",
+      "action": "proactive_rejected",
+      "expected_events": [
+        {
+          "kind": "kernel.proactive.turn.proposed",
+          "source": "module.sample.proactive_low",
+          "source_weight_bps": 1000,
+          "causation_index": null,
+          "depth": 0
+        }
+      ]
+    },
+    {
+      "id": "single_root_after_restart",
+      "phase": "after_restart",
+      "action": "single_root_after_restart",
+      "expected_events": [
+        {
+          "kind": "kernel.sample.trace.after_restart",
+          "source": "module.sample.trace_source",
+          "source_weight_bps": 6400,
+          "causation_index": null,
+          "depth": 0
+        }
+      ]
+    }
+  ]
+}
