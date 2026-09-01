@@ -4,7 +4,7 @@
 
 **SSOT scope:** Event envelopes, registry policy, authority boundaries, integrated event kinds, and proactive-turn authorization. See [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for module classification and [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) for implementation status and open gaps.
 
-**Last updated:** 2026-09-01.
+**Last updated:** 2026-09-02.
 
 **Audience:** kernel integrators, Event module authors, directory-plugin authors, and maintainers.
 
@@ -39,9 +39,9 @@ Any future design must preserve these boundaries:
 - A Session is a role-runtime instance and isolation boundary. Dispatch responsibility does not grant admission, persona mutation, or state-commit authority.
 - Consumers may observe, query, propose, and derive events, while state changes still pass through Event decisions and Rust orchestration.
 - A large model may receive broader observation, query, and proposal rights, but cannot forge facts or commit authoritative state. Small models continue to consume bounded context selected by modules and compiled by the Prompt layer.
-- B0 durable trace proves behavior-neutral append only. Replay, consumer cursors, Production backpressure/idempotency, retention, and the complete privacy contract remain future Stream/Trace work. Neither B0 nor bounded Ring diagnostics may be presented as those capabilities.
+- B0 durable trace proves behavior-neutral append only. Its S0/S1 synthetic evidence is now closed and includes a fixed ten-minute developer soak, but that is not a production-duration or target-hardware soak. Replay, consumer cursors, Production backpressure/idempotency, retention, and the complete privacy contract remain future Stream/Trace work. Neither B0 nor bounded Ring diagnostics may be presented as those capabilities.
 
-See the [`RFC_RUNTIME_EVENT_STREAM` summary](../rfc/RFC_RUNTIME_EVENT_STREAM.md). Design and implementation status remains tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). B0 has narrow trace evidence; until consumer and recovery contracts exist, the “river” is not a shipped capability.
+See the [`RFC_RUNTIME_EVENT_STREAM` summary](../rfc/RFC_RUNTIME_EVENT_STREAM.md). Design and implementation status remains tracked as `K-EVENT-STREAM-01` in the Chinese [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md). Closing B0 S1 adds no read or behavior authority; until the stage A contract plus consumer and recovery contracts exist, the “river” is not a shipped capability.
 
 ---
 

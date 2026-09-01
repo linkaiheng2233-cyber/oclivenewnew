@@ -1,8 +1,8 @@
 # RFC：Runtime Event Stream（角色运行事件流）
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
-**最后更新**：2026-09-01。
-**状态**：**草案 v0.6 · 边界已确认 · B0 Trace-only、S0、S1.1、S1.2 与 S1.3 合成样本已实现 · Production Stream 未实现**。
+**最后更新**：2026-09-02。
+**状态**：**草案 v0.7 · 边界已确认 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0/S1.1/S1.2/S1.3 命令只生成合成、忽略提交的结构、故障、有界负载与 recorder 重复计数证据；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0/S1 命令只生成合成、忽略提交的结构、故障、并发、recorder 重复计数与固定十分钟耐久证据；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -162,7 +162,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 | 等级 | 范围 | 准入边界 | 当前状态 |
 |------|------|----------|----------|
 | **S0 · 固定合成结构样本** | 仓库内版本化合同；成功/派生/决策/重启结构 | 显式本地命令；只写忽略目录；不驱动行为、不进入训练 | **已实现** |
-| **S1 · 扩展合成故障矩阵** | 队列满、写入失败、重复事件、并发和长时运行等可复现场景 | 仍不使用真实用户、角色记忆或模型正文；每个新场景先冻结预期与隐私字段 | **部分实现：S1.1 队列满/写失败 + S1.2 并发/短时 soak + S1.3 recorder 重复头幂等/计数** |
+| **S1 · 扩展合成故障矩阵** | 队列满、写入失败、重复事件、并发和持续运行等可复现场景 | 仍不使用真实用户、角色记忆或模型正文；每个新场景先冻结预期与隐私字段 | **已收口：S1.1 故障 + S1.2 并发/短时 soak + S1.3 recorder 重复头 + S1.4 固定十分钟耐久** |
 | **S2 · 明示同意的本地运行聚合** | 计数、延迟、丢弃率、事件种类分布等最小聚合 | 必须先完成开关、告知/同意、保留期、删除、脱敏、预算和导出审查；默认不采正文，不自动上传 | 未获准实现 |
 
 `d03655b5` 实现 S1.1 命令 `npm run event:trace-shadow-fault-samples`，但没有修改生产 Trace、Ring 或公开 API：
@@ -170,7 +170,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - `queue_saturation_fail_open` 在临时 Trace SQLite 上持有写锁，再提交合同固定的 640 次合成 Ring dispatch；验收只冻结“640 次 Ring 全成功、入队与丢弃计数守恒、至少出现一次 `queue_full`、已入队项最终排空、主库健康”，不把线程调度决定的入队/丢弃精确分割写成产品合同；
 - `post_start_write_failure_fail_open` 只破坏临时 Trace 表，再提交 1 次合成 dispatch；要求 Ring 成功、诊断出现 `write_failed`、无 dispatch 因 Trace 被拒、主库仍健康；
 - JSON/Markdown 只写 Git 忽略的 `target/oclive-event/trace-shadow-fault-samples/`，不导出故障 SQLite；校验器拒绝正文、身份、事件 ID、correlation、运行路径和事件时间字段；
-- 重复事件、并发与长时 soak 在 S1.1 时仍属于后续切片。重复事件若需要新增内部重放入口，必须先评审其是否会成为绕过来源绑定的测试后门。
+- 重复事件、并发与持续运行在 S1.1 时仍属于后续切片。重复事件若需要新增内部重放入口，必须先评审其是否会成为绕过来源绑定的测试后门。
 
 `e17038a4` 实现 S1.2 命令 `npm run event:trace-shadow-load-samples`，同样没有修改生产 Trace、Ring 或公开 API：
 
@@ -178,7 +178,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - `bounded_short_soak_fail_open` 以 4 个 worker、24 轮、每 worker 每轮 8 次 dispatch 和轮间 50 ms 停顿形成 768 次有界短时运行；完整场景受 60 秒上限保护，验证 worker/轮次完整、主库健康和 Trace 排空；
 - 重复本地样本中，并发突发的精确入队/丢弃分割会随调度变化，而短时 soak 可完整排空；耗时与精确比例只保存在忽略提交的本机证据中，不是性能 SLA 或产品合同；
 - JSON/Markdown 只写 `target/oclive-event/trace-shadow-load-samples/`；共用校验器拒绝正文、身份、事件/关联 ID、路径和事件时间字段，并拒绝目录中出现 SQLite 或其它额外文件；
-- 本切片没有添加 Replay、重复注入、消费者、checkpoint 或行为反馈入口。消费者重复投递与生产时长 soak 仍待后续评审和证据。
+- 本切片没有添加 Replay、重复注入、消费者、checkpoint 或行为反馈入口。消费者重复投递仍属于阶段 C；生产时长与目标硬件 soak 不属于 S1.2 或后续 S1.4 的能力声明。
 
 `20f44f47` 实现 S1.3 命令 `npm run event:trace-shadow-duplicate-samples`；它只编译并运行 B0 recorder 的内部测试，不增加生产 Trace、Ring 或公开 API：
 
@@ -186,6 +186,27 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - 验收固定为 2 次内部记录批次均入队并处理、SQLite 只保留 1 行、`duplicate_events = 1`、零丢弃、零 Trace 故障，且 worker 在显式 shutdown 后停止；这不是两次真实 Ring dispatch 的生产链路测试；
 - Rust 测试只打印规范化计数与布尔标记；采集器再递归拒绝正文、metadata、`stream_key`、事件/关联 ID、路径和事件时间字段，并只把 JSON/Markdown 写入 `target/oclive-event/trace-shadow-duplicate-samples/`，不导出 SQLite；
 - 这只证明 B0 recorder 对同一事件身份的幂等落库与诊断计数。它**不证明**消费者重复投递、至少一次消费、端到端幂等、checkpoint 恢复或 Production Stream；这些仍属于阶段 C 及后续工作。
+
+`993fb041` 在不增加读取或行为入口的前提下加固了 B0 生命周期，作为 S1 收口前置条件：
+
+- 诊断 schema v2 以 serde 默认值兼容读取 v1，并区分队列拒绝与“已入队但终端写失败”；
+- 终端写失败会停止接收、排空队列并把未持久批次计入失败，不让 worker 伪装成仍可用；
+- 并发或重复 shutdown 只执行一次有序排空；同一事件身份但事实头冲突时拒绝覆盖原记录并进入终端失败；
+- 这些变化只影响 Trace 健康度与关闭语义，Ring dispatch 仍保持 fail-open，且没有 consumer、checkpoint 或 Replay 入口。
+
+`b79c7912` 实现 S1.4 命令 `npm run event:trace-shadow-soak-samples`，用于固定而非产品化的持续运行证据：
+
+- 版本化合同固定十分钟、每秒一轮、2 个 worker 每轮各 2 次来源绑定 dispatch，共 600 轮、1,200 个 worker-run 与 2,400 次 Ring dispatch；完整场景有 660 秒硬上限；
+- 每 30 轮检查一次主库健康，共 20 次；同时采样进程 RSS 起点/峰值/终点，以 128 MiB 峰值增长上限作为本机回归门槛，并验证 Ring 诊断历史保持有界；
+- 显式 shutdown 后从临时 SQLite 核对 2,400 行与最终位置，再用同一 Trace 路径重启并追加 1 条，验证启动位置连续、写入位置为 2,401 且主库仍健康；
+- JSON/Markdown 只写 `target/oclive-event/trace-shadow-soak-samples/`；不导出 SQLite，校验器拒绝正文、身份、事件/关联 ID、路径和事件时间字段；该命令明确不进入常规 CI；
+- 十分钟与 RSS 结果只是固定开发者回归证据，**不是**生产时长、目标硬件、吞吐或 SLA 声明，也不证明 consumer、至少一次、checkpoint、Replay、保留期或恢复闭环。
+
+#### S1 退出与下一阶段入口
+
+S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：S0、S1.1、S1.2、S1.3 与 S1.4 的版本化合同通过；B0 生命周期、故障计数和 shutdown 测试通过；全部生成物留在忽略目录；生产代码仍没有读取/消费/Replay/Prompt/主动回复入口。这个“收口”只关闭合成样本缺口，不关闭阶段 B 的保留期、提交/输出覆盖，也不关闭 `K-EVENT-STREAM-01`。
+
+下一项获准工作回到阶段 A 的 **Production Stream 契约原型**：先冻结类型化外层记录、Session 分区映射、consumer/checkpoint 状态机与失败/恢复测试表。完成设计评审前，不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口；阶段 C 也不得与阶段 A 偷跑合并。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -393,7 +414,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
 | **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
-| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open；S0 固定 5 场景/7 记录，S1.1 覆盖队列满与启动后写失败，S1.2 覆盖并发突发与有界短时 soak，S1.3 覆盖 recorder 重复头幂等落库/计数；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
+| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open 与确定性 shutdown；S0/S1 合成证据已收口，含固定十分钟耐久和重启续位；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
 | **E · 主动与多通道** | 一个真实非用户输入适配器 + 调度状态机 + 输出端口 | TTL/冷却/抢占/取消/投递恢复与人工体验验收 | 不以单通道 demo 宣称通用 Bot 已完成 |
@@ -428,6 +449,9 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S1.1 合成故障合同证明队列饱和与启动后写失败均不改变 Ring dispatch；只导出脱敏计数和布尔不变量，不导出故障数据库。
 - [x] S1.2 合成负载合同证明 8 路并发突发与 24 轮短时 soak 不改变 Ring dispatch；验证计数守恒、排空、历史有界、主库健康和执行时限，不导出负载数据库。
 - [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
+- [x] 生命周期测试区分队列丢弃与入队后写失败，覆盖冲突重复头、终端失败停机和并发幂等 shutdown，并保持 v1 诊断反序列化兼容。
+- [x] S1.4 固定十分钟合同完成 2,400 次低速来源绑定 dispatch、20 次主库健康检查、RSS/有界历史检查、shutdown 排空与重启后第 2,401 位追加；只形成本机开发者证据，不冒充生产时长或硬件 soak。
+- [x] S1 合成证据阶段已收口；S2 未获准，下一实现入口仍须先完成阶段 A 的外层记录、Session 映射与 consumer/checkpoint 状态机设计评审。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）

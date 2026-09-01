@@ -4,9 +4,9 @@
 
 **Scope:** architecture and authority summary for the future Runtime Event Stream. The Chinese RFC is the contract SSOT. Current Event Ring wire and proactive authorization remain defined by [EVENT_RING](../plugin-and-architecture/EVENT_RING.md).
 
-**Last updated:** 2026-09-01.
+**Last updated:** 2026-09-02.
 
-**Status:** **Draft v0.6 · boundaries agreed · B0 trace-only plus S0, S1.1, S1.2, and S1.3 synthetic samples implemented · Production Stream not implemented**.
+**Status:** **Draft v0.7 · boundaries agreed · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
 ---
 
@@ -22,7 +22,7 @@ The following constraints are fixed:
 - A `Decision` is not a committed state. `State` may only describe a successful commit.
 - Proposal influence remains in the existing trusted `EventModuleRegistryPolicy`. A future Stream consumer registry manages subscriptions, read scope, cursors, and backpressure only.
 - Model tiers may change observation, query, and proposal budgets, never source or commit authority.
-- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1.1/S1.2/S1.3 commands create synthetic, Git-ignored structural, fault, bounded-load, and recorder duplicate-accounting evidence only. None of these capabilities claims that a durable Stream, consumer cursor, replay, multi-I/O scheduling, or a productized proactive bot exists today.
+- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored structural, fault, concurrent-load, recorder duplicate-accounting, and fixed ten-minute soak evidence only. None of these capabilities claims that a durable Stream, consumer cursor, replay, multi-I/O scheduling, or a productized proactive bot exists today.
 
 ---
 
@@ -95,7 +95,7 @@ Further collection follows this admission ladder:
 | Level | Scope | Admission boundary | Status |
 |-------|-------|--------------------|--------|
 | **S0 · fixed synthetic structure** | Versioned repository contract for success, derivation, decision, and restart structure | Explicit local command; ignored output only; no behavior or training input | **Implemented** |
-| **S1 · extended synthetic failure matrix** | Reproducible queue-full, write-failure, duplicate, concurrency, and soak scenarios | Still no real users, role memories, or model bodies; freeze expectations and privacy fields first | **Partial: S1.1 queue-full/write-failure + S1.2 concurrency/short soak + S1.3 recorder duplicate-header idempotency/accounting** |
+| **S1 · extended synthetic failure matrix** | Reproducible queue-full, write-failure, duplicate, concurrency, and sustained-run scenarios | Still no real users, role memories, or model bodies; freeze expectations and privacy fields first | **Closed: S1.1 faults + S1.2 concurrency/short soak + S1.3 recorder duplicate header + S1.4 fixed ten-minute soak** |
 | **S2 · explicitly consented local aggregates** | Minimal counts, latency, drop rate, and event-kind distributions | Requires prior opt-in notice, consent, retention, deletion, redaction, budget, and export review; no body collection or automatic upload by default | Not authorized |
 
 Commit `d03655b5` implements the S1.1 command `npm run event:trace-shadow-fault-samples` without changing production Trace, Ring, or public APIs:
@@ -103,7 +103,7 @@ Commit `d03655b5` implements the S1.1 command `npm run event:trace-shadow-fault-
 - `queue_saturation_fail_open` holds a writer lock on a temporary trace database and performs 640 contract-bound synthetic Ring dispatches. Admission freezes only the invariants that all Ring dispatches succeed, enqueue/drop accounting balances, `queue_full` is observed, all admitted work drains, and the main database remains healthy. Scheduler-dependent exact enqueue/drop counts are evidence, not product contract;
 - `post_start_write_failure_fail_open` removes only a temporary trace table and performs one synthetic dispatch. Ring must succeed, diagnostics must report `write_failed`, no dispatch may be rejected by Trace, and the main database must remain healthy;
 - JSON and Markdown are written only under Git-ignored `target/oclive-event/trace-shadow-fault-samples/`. No failed SQLite database is exported, and validation rejects content, identities, event IDs, correlation, runtime paths, and event timestamps;
-- duplicate delivery, concurrency, and soak remained later S1 slices at S1.1. Any duplicate-event probe that requires an internal replay entry must first be reviewed as a possible source-binding bypass.
+- duplicate handling, concurrency, and sustained running remained later S1 slices at S1.1. Any duplicate-event probe that requires an internal replay entry must first be reviewed as a possible source-binding bypass.
 
 Commit `e17038a4` implements the S1.2 command `npm run event:trace-shadow-load-samples`, again without changing production Trace, Ring, or public APIs:
 
@@ -111,7 +111,7 @@ Commit `e17038a4` implements the S1.2 command `npm run event:trace-shadow-load-s
 - `bounded_short_soak_fail_open` uses four workers over 24 rounds, eight dispatches per worker per round, and a 50 ms inter-round pause for 768 bounded dispatches. The whole scenario has a 60-second ceiling and verifies complete rounds/workers, main-database health, and Trace drain;
 - repeated local samples show that the burst's exact enqueue/drop split varies with scheduling while the short soak can drain fully. Elapsed time and exact ratios are Git-ignored machine evidence, not a performance SLA or product contract;
 - JSON and Markdown are written only under `target/oclive-event/trace-shadow-load-samples/`. Shared validation rejects content, identities, event/correlation IDs, runtime paths, event timestamps, SQLite files, and any other unexpected output file;
-- this slice adds no Replay, duplicate injection, consumer, checkpoint, or behavior-feedback entry. Consumer duplicate delivery and production-duration soak remain pending review and evidence.
+- this slice adds no Replay, duplicate injection, consumer, checkpoint, or behavior-feedback entry. Consumer duplicate delivery remains stage C work; neither S1.2 nor S1.4 claims a production-duration or target-hardware soak.
 
 Commit `20f44f47` implements the S1.3 command `npm run event:trace-shadow-duplicate-samples`. It compiles and runs only an internal B0 recorder test and changes no production Trace, Ring, or public API:
 
@@ -119,6 +119,27 @@ Commit `20f44f47` implements the S1.3 command `npm run event:trace-shadow-duplic
 - acceptance fixes two enqueued and processed internal record batches, one SQLite row, `duplicate_events = 1`, no drops, no Trace failure, and a worker that stops after explicit shutdown. This is not a production-path test of two real Ring dispatches;
 - the Rust test prints normalized counts and booleans only. The collector recursively rejects bodies, metadata, `stream_key`, event/correlation IDs, paths, and event timestamps, writes JSON/Markdown only under `target/oclive-event/trace-shadow-duplicate-samples/`, and exports no SQLite file;
 - this proves idempotent persistence and diagnostic accounting for the same event identity inside the B0 recorder only. It does **not** prove consumer duplicate delivery, at-least-once consumption, end-to-end idempotency, checkpoint recovery, or a Production Stream; those remain stage C or later work.
+
+Commit `993fb041` hardens the B0 lifecycle without adding a read or behavior entry point:
+
+- diagnostics schema v2 remains able to deserialize v1 and distinguishes queue rejection from accepted batches lost to a terminal write failure;
+- a terminal write failure stops admission, drains queued commands into explicit failure counters, and no longer leaves the worker looking available;
+- concurrent or repeated shutdown performs one orderly drain; the same event identity with a conflicting header cannot overwrite the original row;
+- these changes affect Trace health and shutdown semantics only. Ring dispatch remains fail-open, with no consumer, checkpoint, or Replay path.
+
+Commit `b79c7912` implements the S1.4 command `npm run event:trace-shadow-soak-samples` as a fixed developer probe rather than a product benchmark:
+
+- its versioned contract fixes ten minutes at one round per second, two workers with two source-bound dispatches each per round: 600 rounds, 1,200 worker-runs, and 2,400 Ring dispatches under a 660-second hard ceiling;
+- it checks the main database every 30 rounds (20 checks), samples process RSS start/peak/end under a 128 MiB local regression ceiling, and verifies bounded Ring history;
+- after explicit shutdown it verifies 2,400 temporary-SQLite rows and the final position, restarts on the same Trace path, and appends one record at position 2,401 while the main database remains healthy;
+- JSON and Markdown stay under `target/oclive-event/trace-shadow-soak-samples/`; SQLite is not exported, private fields are rejected, and the command is explicitly outside routine CI;
+- ten minutes and the RSS result are machine-local regression evidence, **not** a production-duration, target-hardware, throughput, or SLA claim. They do not prove consumer delivery, at-least-once, checkpoint, Replay, retention, or recovery.
+
+### S1 exit and next-stage entry
+
+S1 is closed only as the Trace-only synthetic-evidence stage: the versioned S0 and S1.1–S1.4 contracts pass, B0 lifecycle/failure/shutdown tests pass, artifacts stay ignored, and production code still has no read, consumer, Replay, Prompt, or proactive-reply path. This does not complete stage B retention or commit/output coverage, authorize S2, or close `K-EVENT-STREAM-01`.
+
+The next authorized implementation work returns to the stage A **Production Stream contract prototype**. Typed outer records, Session partition mapping, the consumer/checkpoint state machine, and failure/recovery tables must be frozen and reviewed before adding any production read API, checkpoint table, consumer loop, or second turn entry. Stage C must not be smuggled into the same slice.
 
 No sample level is an authoritative event store, behavior input, or training authorization. Real runtime collection must not be wired before S2 admission; content-level data would require a separate privacy and data-governance design rather than expanding this command.
 
@@ -211,7 +232,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 ## Staged admission
 
 1. Freeze taxonomy, Session mapping, outer record, checkpoint, and failure/recovery tests.
-2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, and fail-open degradation; S0 fixes five structural scenarios/seven records, S1.1 covers queue saturation and post-start write failure, S1.2 covers a concurrent burst plus bounded short soak, and S1.3 covers recorder duplicate-header idempotency/accounting. Retention and commit/output coverage remain open.
+2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, fail-open degradation, and deterministic shutdown. Its S0/S1 synthetic evidence is closed through S1.4's fixed ten-minute run and restart continuation. Retention and commit/output coverage remain open.
 3. Add cursor, at-least-once, idempotency, backpressure, and an effect-free test consumer.
 4. Integrate one low-risk real consumer through Draft → Ring → Decision → Rust application.
 5. Add one real non-user adapter, scheduler state machine, and output port with TTL/cooldown/preemption/cancellation/recovery tests.

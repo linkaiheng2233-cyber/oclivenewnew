@@ -1,7 +1,7 @@
 # Event Ring 与主动回合契约
 
 **SSOT 范围**：Event Ring 的事件信封、注册策略、权威边界、现有事件种类与主动回合授权契约。模块编号与归类见 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md)，实施进度与缺口见 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
-**最后更新**：2026-09-01。
+**最后更新**：2026-09-02。
 **读者**：内核集成方、Event 模块作者、目录插件作者与维护者。
 
 ---
@@ -35,9 +35,9 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 - Session 是角色运行实例与隔离边界，不因负责投递而自动取得事件采纳、人格修改或状态提交权；
 - 消费模块可观察、查询、提出和派生事件，但状态变化仍须经过 Event 决策与 Rust 编排；
 - 大模型可以获得更广的观察权、查询权和提案权，但不能伪造事实或直接提交权威状态；小模型继续消费经模块筛选和 Prompt 编译的有限上下文；
-- B0 持久 Trace 只证明行为中性的追加记录；重放、消费游标、生产背压/幂等、保留期与完整隐私策略仍属于未来 Stream/Trace 契约，不能由 B0 或当前有界诊断历史冒充。
+- B0 持久 Trace 只证明行为中性的追加记录；其 S0/S1 合成证据已收口并包含固定十分钟开发者耐久检查，但不构成生产时长或硬件 soak。重放、消费游标、生产背压/幂等、保留期与完整隐私策略仍属于未来 Stream/Trace 契约，不能由 B0 或当前有界诊断历史冒充。
 
-边界草案见 [`RFC_RUNTIME_EVENT_STREAM`](../rfc/RFC_RUNTIME_EVENT_STREAM.md)，设计与实施状态只在 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。B0 Trace 已有窄切片证据，但在消费者与恢复合同完成前，“河流”仍不是已交付能力。
+边界草案见 [`RFC_RUNTIME_EVENT_STREAM`](../rfc/RFC_RUNTIME_EVENT_STREAM.md)，设计与实施状态只在 [TECHNICAL_DEBT_INVENTORY 的 `K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。B0 Trace 的 S1 收口没有增加读取或行为权；在阶段 A 契约、消费者与恢复合同完成前，“河流”仍不是已交付能力。
 
 ---
 
