@@ -2,12 +2,15 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use anyhow::Context;
 use async_trait::async_trait;
 use oclive_kernel_contracts::{EventEmitter, EventModule, EventModuleRegistrar};
 use oclive_kernel_types::{
     EventDraft, EventEnvelope, EventModuleDeclaration, EventModuleOutput,
     RuntimeEventTraceDiagnostics,
 };
+use tokio::sync::Barrier;
+use tokio::task::JoinSet;
 
 struct TraceProbeSource {
     module_id: String,
@@ -80,6 +83,53 @@ pub(crate) async fn emit_many(
         successful = successful.saturating_add(1);
     }
     Ok(successful)
+}
+
+pub(crate) struct ConcurrentEmitOutcome {
+    pub(crate) completed_workers: u64,
+    pub(crate) successful_ring_dispatches: u64,
+}
+
+pub(crate) async fn emit_concurrently(
+    emitter: Arc<dyn EventEmitter>,
+    event_kind: &'static str,
+    stream_key: &'static str,
+    correlation_prefix: String,
+    workers: u16,
+    dispatches_per_worker: u16,
+) -> anyhow::Result<ConcurrentEmitOutcome> {
+    let barrier = Arc::new(Barrier::new(usize::from(workers).saturating_add(1)));
+    let mut tasks = JoinSet::new();
+    for worker in 0..workers {
+        let emitter = emitter.clone();
+        let barrier = barrier.clone();
+        let correlation_prefix = format!("{correlation_prefix}:w{worker}");
+        tasks.spawn(async move {
+            barrier.wait().await;
+            emit_many(
+                emitter.as_ref(),
+                event_kind,
+                stream_key,
+                &correlation_prefix,
+                u64::from(dispatches_per_worker),
+            )
+            .await
+        });
+    }
+    barrier.wait().await;
+
+    let mut outcome = ConcurrentEmitOutcome {
+        completed_workers: 0,
+        successful_ring_dispatches: 0,
+    };
+    while let Some(joined) = tasks.join_next().await {
+        let successful = joined.context("join synthetic trace worker")??;
+        outcome.completed_workers = outcome.completed_workers.saturating_add(1);
+        outcome.successful_ring_dispatches = outcome
+            .successful_ring_dispatches
+            .saturating_add(successful);
+    }
+    Ok(outcome)
 }
 
 pub(crate) async fn wait_for_diagnostics(

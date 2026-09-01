@@ -5,8 +5,6 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use oclive_kernel_contracts::EventEmitter;
 use oclive_kernel_types::{RuntimeEventTraceDiagnostics, RuntimeEventTraceErrorKind};
-use tokio::sync::Barrier;
-use tokio::task::JoinSet;
 
 use super::contract::LoadScenarioContract;
 use crate::{build_kernel, probe, sample_config};
@@ -145,42 +143,20 @@ async fn dispatch_round(
     scenario: &LoadScenarioContract,
     round: u16,
 ) -> anyhow::Result<DispatchProgress> {
-    let barrier = Arc::new(Barrier::new(
-        usize::from(scenario.workers).saturating_add(1),
-    ));
-    let mut tasks = JoinSet::new();
-    for worker in 0..scenario.workers {
-        let emitter = emitter.clone();
-        let barrier = barrier.clone();
-        let correlation_prefix = format!("synthetic-load:{}:r{round}:w{worker}", scenario.id);
-        let dispatches = u64::from(scenario.dispatches_per_worker);
-        tasks.spawn(async move {
-            barrier.wait().await;
-            probe::emit_many(
-                emitter.as_ref(),
-                LOAD_EVENT_KIND,
-                LOAD_STREAM_KEY,
-                &correlation_prefix,
-                dispatches,
-            )
-            .await
-        });
-    }
-    barrier.wait().await;
-
-    let mut progress = DispatchProgress {
+    let outcome = probe::emit_concurrently(
+        emitter,
+        LOAD_EVENT_KIND,
+        LOAD_STREAM_KEY,
+        format!("synthetic-load:{}:r{round}", scenario.id),
+        scenario.workers,
+        scenario.dispatches_per_worker,
+    )
+    .await?;
+    Ok(DispatchProgress {
         completed_rounds: 1,
-        completed_worker_runs: 0,
-        successful_ring_dispatches: 0,
-    };
-    while let Some(joined) = tasks.join_next().await {
-        let successful = joined.context("join synthetic trace load worker")??;
-        progress.completed_worker_runs = progress.completed_worker_runs.saturating_add(1);
-        progress.successful_ring_dispatches = progress
-            .successful_ring_dispatches
-            .saturating_add(successful);
-    }
-    Ok(progress)
+        completed_worker_runs: outcome.completed_workers,
+        successful_ring_dispatches: outcome.successful_ring_dispatches,
+    })
 }
 
 fn load_invariants(

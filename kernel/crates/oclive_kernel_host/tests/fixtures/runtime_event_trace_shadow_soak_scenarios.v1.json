@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_trace_shadow_synthetic_sustained_soak",
+  "authoritative_runtime_stream": false,
+  "behavior_driver": false,
+  "synthetic_only": true,
+  "exports_raw_database": false,
+  "bounded_execution": true,
+  "routine_ci": false,
+  "production_duration_claim": false,
+  "scenarios": [
+    {
+      "id": "fixed_ten_minute_trace_only_soak",
+      "action": "fixed_sustained_soak",
+      "duration_ms": 600000,
+      "maximum_elapsed_ms": 660000,
+      "interval_ms": 1000,
+      "workers": 2,
+      "dispatches_per_worker_per_interval": 2,
+      "health_check_interval_rounds": 30,
+      "maximum_rss_growth_mib": 128,
+      "expected_invariants": [
+        "all_rounds_completed",
+        "all_workers_completed",
+        "all_ring_dispatches_succeeded",
+        "dispatch_accounting_balanced",
+        "all_enqueued_dispatches_drained",
+        "no_trace_drop_duplicate_or_failure",
+        "trace_worker_remained_active",
+        "bounded_ring_history_preserved",
+        "periodic_main_database_health",
+        "main_database_healthy",
+        "privacy_flags_false",
+        "rss_growth_within_contract",
+        "execution_time_within_contract",
+        "shutdown_persisted_all_rows",
+        "restart_position_continuity",
+        "post_restart_append_succeeded",
+        "post_restart_main_database_healthy"
+      ]
+    }
+  ]
+}

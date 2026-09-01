@@ -9,6 +9,7 @@ mod evidence;
 mod faults;
 mod loads;
 mod probe;
+mod soak;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -57,6 +58,16 @@ async fn main() -> anyhow::Result<()> {
         }
         "load" => {
             loads::run(
+                &contract_text,
+                scenario_contract,
+                &output_dir,
+                source_commit,
+                source_worktree_dirty,
+            )
+            .await
+        }
+        "soak" => {
+            soak::run(
                 &contract_text,
                 scenario_contract,
                 &output_dir,
