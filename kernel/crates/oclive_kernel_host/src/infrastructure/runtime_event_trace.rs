@@ -568,3 +568,110 @@ fn paths_equal_for_platform(left: &Path, right: &Path) -> bool {
 fn paths_equal_for_platform(left: &Path, right: &Path) -> bool {
     left == right
 }
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use oclive_kernel_types::EVENT_RING_SCHEMA_VERSION;
+    use serde_json::json;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn duplicate_headers_are_idempotent_and_counted_without_replay_entry() {
+        let temp = tempfile::tempdir().expect("create duplicate trace test directory");
+        let trace_path = temp.path().join("runtime-event-trace.sqlite3");
+        let main_database_path = temp.path().join("main-kernel.sqlite3");
+        let trace = RuntimeEventTrace::start(Some(&trace_path), &main_database_path).await;
+        assert!(trace.is_recording());
+
+        let event = EventEnvelope {
+            schema_version: EVENT_RING_SCHEMA_VERSION,
+            event_id: "synthetic-duplicate-event".into(),
+            kind: "kernel.test.trace.duplicate_probe".into(),
+            source: "module.test.trace_duplicate_source".into(),
+            source_weight_bps: 10_000,
+            stream_key: "must-not-be-exported".into(),
+            correlation_id: "synthetic-duplicate-correlation".into(),
+            causation_id: None,
+            sequence: 1,
+            depth: 0,
+            occurred_at: Utc::now(),
+            payload: json!({ "private": "must-not-be-exported" }),
+            metadata: [("private".into(), json!("must-not-be-exported"))]
+                .into_iter()
+                .collect(),
+        };
+        trace.record_successful_dispatch(std::slice::from_ref(&event));
+        trace.record_successful_dispatch(std::slice::from_ref(&event));
+
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        let diagnostics = loop {
+            let diagnostics = trace.diagnostics();
+            if diagnostics.persisted_dispatches == 2 {
+                break diagnostics;
+            }
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "duplicate trace dispatches did not drain before the deadline"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        };
+
+        assert!(diagnostics.configured);
+        assert!(diagnostics.worker_active);
+        assert_eq!(diagnostics.enqueued_dispatches, 2);
+        assert_eq!(diagnostics.enqueued_events, 2);
+        assert_eq!(diagnostics.persisted_dispatches, 2);
+        assert_eq!(diagnostics.persisted_events, 1);
+        assert_eq!(diagnostics.duplicate_events, 1);
+        assert_eq!(diagnostics.dropped_dispatches, 0);
+        assert_eq!(diagnostics.dropped_events, 0);
+        assert_eq!(diagnostics.failure_count, 0);
+        assert_eq!(diagnostics.last_error_kind, None);
+        assert_eq!(diagnostics.last_persisted_position, Some(1));
+        assert!(!diagnostics.captures_payloads);
+        assert!(!diagnostics.captures_metadata);
+        assert!(!diagnostics.captures_stream_key);
+
+        let pool = super::super::sqlite_pool::connect_file(&trace_path)
+            .await
+            .expect("open duplicate trace test database");
+        let persisted_rows: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM runtime_event_trace_records")
+                .fetch_one(&pool)
+                .await
+                .expect("count duplicate trace test records");
+        assert_eq!(persisted_rows, 1);
+        pool.close().await;
+
+        trace.shutdown().await;
+        let stopped_diagnostics = trace.diagnostics();
+        assert!(!stopped_diagnostics.worker_active);
+
+        let marker = json!({
+            "schema_version": 1,
+            "attempted_dispatches": 2,
+            "configured": diagnostics.configured,
+            "worker_active_during_sample": diagnostics.worker_active,
+            "worker_stopped_after_shutdown": !stopped_diagnostics.worker_active,
+            "enqueued_dispatches": diagnostics.enqueued_dispatches,
+            "enqueued_events": diagnostics.enqueued_events,
+            "persisted_dispatches": diagnostics.persisted_dispatches,
+            "persisted_events": diagnostics.persisted_events,
+            "duplicate_events": diagnostics.duplicate_events,
+            "persisted_rows": persisted_rows,
+            "dropped_dispatches": diagnostics.dropped_dispatches,
+            "dropped_events": diagnostics.dropped_events,
+            "failure_count": diagnostics.failure_count,
+            "last_persisted_position": diagnostics.last_persisted_position,
+            "captures_payloads": diagnostics.captures_payloads,
+            "captures_metadata": diagnostics.captures_metadata,
+            "captures_stream_key": diagnostics.captures_stream_key,
+            "test_compilation_only": true,
+            "production_replay_entry": false,
+        });
+        println!("runtime-event-trace-duplicate-evidence:{marker}");
+    }
+}

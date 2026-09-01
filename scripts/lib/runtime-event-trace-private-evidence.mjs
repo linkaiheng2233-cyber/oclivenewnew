@@ -156,11 +156,10 @@ export function assertPrivateEvidenceEnvelope({
     || evidence.scenario_contract_sha256 !== expectedContractHash
     || evidence.summary?.scenarios !== contract.scenarios.length
     || evidence.summary?.passed !== contract.scenarios.length
-    || evidence.scenarios?.length !== contract.scenarios.length
-    || hasForbiddenEvidenceKey(evidence)
-    || evidenceText.includes('must-not-be-exported')) {
+    || evidence.scenarios?.length !== contract.scenarios.length) {
     throw new Error('runtime event trace private evidence failed boundary validation')
   }
+  assertNoPrivateEvidence(evidence, evidenceText)
 }
 
 function hasForbiddenEvidenceKey(value) {
@@ -171,4 +170,9 @@ function hasForbiddenEvidenceKey(value) {
   return Object.entries(value).some(([key, nested]) => (
     forbiddenEvidenceKeys.has(key) || hasForbiddenEvidenceKey(nested)
   ))
+}
+
+export function assertNoPrivateEvidence(value, serialized = JSON.stringify(value)) {
+  if (hasForbiddenEvidenceKey(value) || serialized.includes('must-not-be-exported'))
+    throw new Error('runtime event trace evidence contains private fields or sentinels')
 }

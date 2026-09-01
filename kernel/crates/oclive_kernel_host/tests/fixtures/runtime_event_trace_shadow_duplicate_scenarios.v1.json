@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_trace_shadow_synthetic_duplicate_samples",
+  "authoritative_runtime_stream": false,
+  "behavior_driver": false,
+  "synthetic_only": true,
+  "exports_raw_database": false,
+  "production_replay_entry": false,
+  "test_compilation_only": true,
+  "scenarios": [
+    {
+      "id": "duplicate_header_idempotency",
+      "action": "repeat_same_trace_header",
+      "attempted_dispatches": 2,
+      "expected_inserted_events": 1,
+      "expected_duplicate_events": 1,
+      "expected_persisted_rows": 1,
+      "expected_invariants": [
+        "both_dispatches_enqueued",
+        "both_dispatches_processed",
+        "single_row_persisted",
+        "duplicate_counted",
+        "no_dispatch_dropped",
+        "no_trace_failure",
+        "privacy_flags_false",
+        "test_only_no_production_replay"
+      ]
+    }
+  ]
+}
