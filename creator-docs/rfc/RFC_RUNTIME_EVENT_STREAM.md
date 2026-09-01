@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-01。
-**状态**：**草案 v0.2 · 边界已确认 · B0 Trace-only 第一切片已实现 · Production Stream 未实现**。
+**状态**：**草案 v0.3 · 边界已确认 · B0 Trace-only 与 S0 合成样本已实现 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；S0 命令只生成合成、忽略提交的结构样本；持久 Stream、消费者游标、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -146,6 +146,26 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 - `runtime_event_trace_diagnostics()` 只暴露配置/工作状态、队列与写入计数、最后位置和错误种类，不暴露路径或事件正文。
 
 所以 B0 只证明“成功 Ring 事实可被行为中性地旁路持久化”。它不证明 Session Runtime Event Stream、语义事件分型、至少一次消费或恢复闭环已经完成。
+
+#### B0 合成样本采集（已实现，仍只作为证据）
+
+`6bb3e1f7` 增加了显式开发者命令 `npm run event:trace-shadow-samples`，用于在不接触真实用户数据的前提下积累可复现结构样本：
+
+- 版本化场景合同固定为 5 个场景、7 条记录，覆盖单根事件、带 causation 的派生链、主动提案获准/拒绝，以及同一 Trace SQLite 上的内核重启；
+- 采集过程只注册合成 Event Ring 模块，注入的 payload、metadata、observation、角色/Session 标识均为合成值；不会调用模型回复，也不会把 Permit 送入主动回合；
+- 证据 JSON 只保留场景内索引、kind、source、注册权重、持久位置、Ring sequence、因果索引和 depth；采集器会递归拒绝 payload、metadata、`stream_key`、事件 ID、时间戳、observation 与用户消息字段；
+- SQLite、JSON 与 Markdown 只生成在被 Git 忽略的 `target/oclive-event/trace-shadow-samples/`，并记录源提交、工作树状态和场景合同 SHA-256；原始 SQLite 默认不得提交；
+- 当前样本证明存储位置在两次内核启动间连续为 1–7，而进程内 Ring sequence 在第二次启动重置为 1。这个观测只验证 B0 结构，不是 Session 游标、消费恢复或 Production Stream 证据。
+
+后续样本必须按以下阶梯准入，不能因为“需要更多数据”就直接收集角色对话：
+
+| 等级 | 范围 | 准入边界 | 当前状态 |
+|------|------|----------|----------|
+| **S0 · 固定合成结构样本** | 仓库内版本化合同；成功/派生/决策/重启结构 | 显式本地命令；只写忽略目录；不驱动行为、不进入训练 | **已实现** |
+| **S1 · 扩展合成故障矩阵** | 队列满、写入失败、重复事件、并发和长时运行等可复现场景 | 仍不使用真实用户、角色记忆或模型正文；每个新场景先冻结预期与隐私字段 | 待设计 |
+| **S2 · 明示同意的本地运行聚合** | 计数、延迟、丢弃率、事件种类分布等最小聚合 | 必须先完成开关、告知/同意、保留期、删除、脱敏、预算和导出审查；默认不采正文，不自动上传 | 未获准实现 |
+
+任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
 ---
 
@@ -351,7 +371,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
 | **A · 契约原型** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | 设计评审 + 失败/恢复状态表 | 不接生产 IO，不改回复 |
-| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
+| **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open，以及固定 5 场景/7 记录的 S0 合成采集；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
 | **E · 主动与多通道** | 一个真实非用户输入适配器 + 调度状态机 + 输出端口 | TTL/冷却/抢占/取消/投递恢复与人工体验验收 | 不以单通道 demo 宣称通用 Bot 已完成 |
@@ -382,6 +402,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] 只有成功 dispatch 进入观察口；失败 dispatch 与 Trace 故障都不改变 Ring 返回结果。
 - [x] 热路径为有界非阻塞入队；重启后从存储自增位置继续追加。
 - [x] schema 不含 payload、metadata、`stream_key`，并拒绝 update/delete。
+- [x] S0 合成采集合同可复现单根、派生因果、主动采纳/拒绝与重启边界；证据只写 Git 忽略的 `target/`，并拒绝敏感字段。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
