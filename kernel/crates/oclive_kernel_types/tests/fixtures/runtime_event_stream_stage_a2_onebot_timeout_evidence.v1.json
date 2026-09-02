@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_timeout_probe",
+  "stage": "a2_2_2_post_submission_timeout_reconciliation_probe_only",
+  "run_id": "b14bc4e6-242f-41c4-833b-bf7e0b4194cb",
+  "started_at": "2026-09-02T15:13:28.919Z",
+  "finished_at": "2026-09-02T15:13:30.637Z",
+  "source_commit": "8f033207ca1086b079c765f8536d0f145ce16ae9",
+  "source_worktree_dirty": true,
+  "scenario_contract": "kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json",
+  "scenario_contract_sha256": "eb8873fadde53356ae81d69d1b2cc61da2f0186c74f447039bf7351bf1f583ed",
+  "protocol_source_commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+  "synthetic": false,
+  "live_adapter_tested": true,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "endpoint_scope": "loopback",
+  "implementation_label": "napcat-4.18.19-qq-9.9.33-52230",
+  "transport": "http_json_post_with_in_process_response_withholding",
+  "target_kind": "group",
+  "authorization": {
+    "timeout_fault_confirmed_before_network": true,
+    "reconciliation_confirmed_before_network": true
+  },
+  "preflight": {
+    "outcome": "accepted",
+    "protocol_v11_confirmed": true,
+    "implementation_metadata_present": true
+  },
+  "injected_fault": {
+    "kind": "withhold_send_response_until_client_timeout",
+    "client_timeout_ms": 1200,
+    "upstream_send_requests": 1,
+    "client_abort_observed": true
+  },
+  "probe_observation": {
+    "send_outcome": "delivery_uncertain",
+    "send_http_status": null,
+    "automatic_retries": 0,
+    "probe_recall_attempts": 0,
+    "checkpoint_must_remain_blocked": true
+  },
+  "upstream_observation": {
+    "send_outcome": "delivered",
+    "send_http_status": 200,
+    "provider_message_id_present": true
+  },
+  "reconciliation": {
+    "started_only_after_probe_uncertain": true,
+    "action": "delete_msg",
+    "attempts": 1,
+    "outcome": "acknowledged",
+    "http_status": 200
+  },
+  "privacy": {
+    "provider_locator_storage": "process_memory_only",
+    "persisted_provider_locator": false,
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false
+  },
+  "remaining_gaps": {
+    "adapter_private_store_tested": false,
+    "timeout_after_possible_submission_tested": true,
+    "explicit_reconciliation_tested": true,
+    "multi_host_owner_lease_tested": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}

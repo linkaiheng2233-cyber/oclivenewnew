@@ -59,6 +59,13 @@ fn live_evidence() -> Value {
     .expect("parse Runtime Event Stream Stage A.2.2 OneBot live evidence fixture")
 }
 
+fn timeout_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_timeout_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot timeout evidence fixture")
+}
+
 fn assert_no_sensitive_runtime_values(value: &Value) {
     const FORBIDDEN_KEYS: &[&str] = &[
         "access_token",
@@ -433,6 +440,96 @@ fn stage_a2_onebot_live_evidence_proves_only_send_and_recall() {
             "remaining gap {field}"
         );
     }
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
+}
+
+#[test]
+fn stage_a2_onebot_timeout_evidence_proves_uncertainty_and_reconciliation_only() {
+    let evidence = timeout_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(
+        evidence["stage"],
+        "a2_2_2_post_submission_timeout_reconciliation_probe_only"
+    );
+    assert_eq!(evidence["synthetic"], false);
+    assert_eq!(evidence["live_adapter_tested"], true);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(evidence["endpoint_scope"], "loopback");
+    assert_eq!(evidence["target_kind"], "group");
+
+    assert_eq!(
+        evidence["authorization"]["timeout_fault_confirmed_before_network"],
+        true
+    );
+    assert_eq!(
+        evidence["authorization"]["reconciliation_confirmed_before_network"],
+        true
+    );
+    assert_eq!(
+        evidence["injected_fault"]["kind"],
+        "withhold_send_response_until_client_timeout"
+    );
+    assert_eq!(evidence["injected_fault"]["upstream_send_requests"], 1);
+    assert_eq!(evidence["injected_fault"]["client_abort_observed"], true);
+
+    assert_eq!(
+        evidence["probe_observation"]["send_outcome"],
+        "delivery_uncertain"
+    );
+    assert_eq!(
+        evidence["probe_observation"]["send_http_status"],
+        Value::Null
+    );
+    assert_eq!(evidence["probe_observation"]["automatic_retries"], 0);
+    assert_eq!(evidence["probe_observation"]["probe_recall_attempts"], 0);
+    assert_eq!(
+        evidence["probe_observation"]["checkpoint_must_remain_blocked"],
+        true
+    );
+    assert_eq!(
+        evidence["upstream_observation"]["send_outcome"],
+        "delivered"
+    );
+    assert_eq!(evidence["upstream_observation"]["send_http_status"], 200);
+    assert_eq!(
+        evidence["upstream_observation"]["provider_message_id_present"],
+        true
+    );
+
+    assert_eq!(
+        evidence["reconciliation"]["started_only_after_probe_uncertain"],
+        true
+    );
+    assert_eq!(evidence["reconciliation"]["attempts"], 1);
+    assert_eq!(evidence["reconciliation"]["outcome"], "acknowledged");
+    assert_eq!(
+        evidence["privacy"]["provider_locator_storage"],
+        "process_memory_only"
+    );
+    assert_eq!(evidence["privacy"]["persisted_provider_locator"], false);
+    assert_eq!(
+        evidence["remaining_gaps"]["timeout_after_possible_submission_tested"],
+        true
+    );
+    assert_eq!(
+        evidence["remaining_gaps"]["explicit_reconciliation_tested"],
+        true
+    );
+    assert_eq!(
+        evidence["remaining_gaps"]["adapter_private_store_tested"],
+        false
+    );
+    assert_eq!(
+        evidence["remaining_gaps"]["multi_host_owner_lease_tested"],
+        false
+    );
+    assert_eq!(
+        evidence["remaining_gaps"]["production_stream_connected"],
+        false
+    );
 
     assert_eq!(evidence["probe_success"], true);
     assert_no_sensitive_runtime_values(&evidence);
