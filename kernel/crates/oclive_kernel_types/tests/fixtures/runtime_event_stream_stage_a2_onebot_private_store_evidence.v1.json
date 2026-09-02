@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_private_store_probe",
+  "stage": "a2_2_2_encrypted_private_store_restart_reconciliation_probe_only",
+  "record_id": "r3-live-843a9429-d9d9-42ac-a81a-ecac101b2d4c",
+  "prepared_at": "2026-09-02T18:42:43.531Z",
+  "reconciled_at": "2026-09-02T18:43:59.137Z",
+  "prepare_source_commit": "dae70a8d3cb291c3f47592e4efb9442b94057332",
+  "reconcile_source_commit": "dae70a8d3cb291c3f47592e4efb9442b94057332",
+  "source_worktree_dirty": true,
+  "scenario_contract": "kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json",
+  "scenario_contract_sha256": "eb8873fadde53356ae81d69d1b2cc61da2f0186c74f447039bf7351bf1f583ed",
+  "protocol_source_commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+  "synthetic": false,
+  "live_adapter_tested": true,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "endpoint_scope": "loopback",
+  "implementation_label": "napcat-v4.18.19",
+  "target_kind": "group",
+  "send": {
+    "outcome": "delivered",
+    "http_status": 200,
+    "automatic_retries": 0,
+    "provider_message_id_present_before_encryption": true
+  },
+  "private_store": {
+    "format": "encrypted_json_envelope",
+    "algorithm": "aes-256-gcm",
+    "key_source": "process_environment_only",
+    "key_persisted_in_store": false,
+    "state_before_reconciliation": "delivered_pending_reconciliation",
+    "state_after_reconciliation": "recalled_locator_removed",
+    "sensitive_plaintext_absent_before_reconciliation": true,
+    "encrypted_locator_present_before_reconciliation": true,
+    "locator_present_after_acknowledged_reconciliation": false
+  },
+  "process_boundary": {
+    "prepare_instance_id": "84298b52-f282-4aef-907f-b48367f4cbdf",
+    "reconcile_instance_id": "240099d5-43e4-4b19-87ac-cbfb4168d8de",
+    "distinct_invocations": true
+  },
+  "reconciliation": {
+    "action": "delete_msg",
+    "attempts": 1,
+    "outcome": "acknowledged",
+    "http_status": 200
+  },
+  "privacy": {
+    "exported_store_key": false,
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false
+  },
+  "remaining_gaps": {
+    "encrypted_probe_private_store_tested": true,
+    "restart_reconciliation_tested": true,
+    "provider_accept_to_locator_persist_crash_window_closed": false,
+    "multi_host_owner_lease_tested": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}

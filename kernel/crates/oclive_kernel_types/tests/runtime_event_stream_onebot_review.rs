@@ -66,6 +66,13 @@ fn timeout_evidence() -> Value {
     .expect("parse Runtime Event Stream Stage A.2.2 OneBot timeout evidence fixture")
 }
 
+fn private_store_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_private_store_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot private-store evidence fixture")
+}
+
 fn assert_no_sensitive_runtime_values(value: &Value) {
     const FORBIDDEN_KEYS: &[&str] = &[
         "access_token",
@@ -530,6 +537,98 @@ fn stage_a2_onebot_timeout_evidence_proves_uncertainty_and_reconciliation_only()
         evidence["remaining_gaps"]["production_stream_connected"],
         false
     );
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
+}
+
+#[test]
+fn stage_a2_onebot_private_store_evidence_proves_encryption_and_restart_reconciliation_only() {
+    let evidence = private_store_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(
+        evidence["stage"],
+        "a2_2_2_encrypted_private_store_restart_reconciliation_probe_only"
+    );
+    assert_eq!(evidence["synthetic"], false);
+    assert_eq!(evidence["live_adapter_tested"], true);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(evidence["endpoint_scope"], "loopback");
+    assert_eq!(evidence["target_kind"], "group");
+
+    assert_eq!(evidence["send"]["outcome"], "delivered");
+    assert_eq!(evidence["send"]["http_status"], 200);
+    assert_eq!(evidence["send"]["automatic_retries"], 0);
+    assert_eq!(
+        evidence["send"]["provider_message_id_present_before_encryption"],
+        true
+    );
+
+    let store = &evidence["private_store"];
+    assert_eq!(store["format"], "encrypted_json_envelope");
+    assert_eq!(store["algorithm"], "aes-256-gcm");
+    assert_eq!(store["key_source"], "process_environment_only");
+    assert_eq!(store["key_persisted_in_store"], false);
+    assert_eq!(
+        store["state_before_reconciliation"],
+        "delivered_pending_reconciliation"
+    );
+    assert_eq!(
+        store["state_after_reconciliation"],
+        "recalled_locator_removed"
+    );
+    assert_eq!(
+        store["sensitive_plaintext_absent_before_reconciliation"],
+        true
+    );
+    assert_eq!(
+        store["encrypted_locator_present_before_reconciliation"],
+        true
+    );
+    assert_eq!(
+        store["locator_present_after_acknowledged_reconciliation"],
+        false
+    );
+
+    assert_eq!(evidence["process_boundary"]["distinct_invocations"], true);
+    assert_ne!(
+        evidence["process_boundary"]["prepare_instance_id"],
+        evidence["process_boundary"]["reconcile_instance_id"]
+    );
+    assert_eq!(evidence["reconciliation"]["action"], "delete_msg");
+    assert_eq!(evidence["reconciliation"]["attempts"], 1);
+    assert_eq!(evidence["reconciliation"]["outcome"], "acknowledged");
+    assert_eq!(evidence["reconciliation"]["http_status"], 200);
+
+    for field in [
+        "exported_store_key",
+        "exported_access_token",
+        "exported_endpoint",
+        "exported_target_id",
+        "exported_message_body",
+        "exported_provider_message_id",
+    ] {
+        assert_eq!(evidence["privacy"][field], false, "privacy field {field}");
+    }
+    assert_eq!(
+        evidence["remaining_gaps"]["encrypted_probe_private_store_tested"],
+        true
+    );
+    assert_eq!(
+        evidence["remaining_gaps"]["restart_reconciliation_tested"],
+        true
+    );
+    for field in [
+        "provider_accept_to_locator_persist_crash_window_closed",
+        "multi_host_owner_lease_tested",
+        "production_stream_connected",
+    ] {
+        assert_eq!(
+            evidence["remaining_gaps"][field], false,
+            "remaining gap {field}"
+        );
+    }
 
     assert_eq!(evidence["probe_success"], true);
     assert_no_sensitive_runtime_values(&evidence);
