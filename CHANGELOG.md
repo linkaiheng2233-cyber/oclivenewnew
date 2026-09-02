@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Runtime Event Stream Stage A.2.2.2-R1 首个真实 OneBot ACK 样本**：受控探针已在 loopback NapCat 4.18.19、专用 QQ 测试账号与测试群上完成一次同步群发送和一次撤回，两步均取得完整成功 ACK，自动重试为 0。版本化脱敏夹具不含账号、群号、端点、正文、token 或平台消息 ID；真实超时、人工对账、适配器私有 store、owner lease/fencing 与 Production Stream 仍未实现，技术债继续保持 OPEN。
 - **Runtime Event Stream Stage A.2.2.2-R0 OneBot 实机探针**：新增独立开发者命令，在精确确认短语、测试目标与 Bearer token 齐全后才允许执行 OneBot v11 同步发送并立即撤回；默认仅接受字面 loopback，远程端点须 HTTPS 和显式 `--allow-remote`。探针不自动重试，只把脱敏结果写入 Git 忽略的 `target/`，本次提交未连接真实 OneBot 或 QQ 账号。
 - **Runtime Event Stream Stage A.2.2.1 OneBot v11 协议评审合同**：新增钉住上游提交的 9 场景 QQ 文本输出夹具，冻结同步 ACK、`delivery_uncertain`、禁止不确定投递自动重试/换宿主、最小回执、撤回非擦除、适配器私有加密字段和单发送所有者/fencing 边界；夹具明确声明未启动 OneBot、未登录 QQ、未执行真实发送或撤回。
 - **Runtime Event Stream Stage A.2.1 设计评审合同**：新增版本化夹具，以现有 Tauri/HTTP/Library/主动 ingress/目录 Event 桥代码为证据，冻结独立 Production Stream SQLite、主库 producer outbox、消费者 inbox、adapter ACK、来源幂等、普通保留 tombstone 和 Session 隐私删除顺序；夹具显式保持 runtime disabled，并列出真实外部输出与多宿主证据缺口。
@@ -15,7 +16,7 @@
 
 ### Compatibility
 
-- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0 只增加 Rust 源码级 DTO、测试模型、设计/协议夹具和显式人工探针；没有 Stream/outbox/inbox 数据库迁移、生产 QQ 适配器、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
+- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1、A.2.2.2-R0 与 R1 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式人工探针；R1 的单次真实 ACK 不等于生产 QQ 适配器。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
 
 ## [0.5.2] - 2026-08-24

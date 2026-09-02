@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-02。
-**状态**：**草案 v0.11 · Stage A.1、A.2.1、A.2.2.1 与 A.2.2.2-R0 受控实机探针已落地 · 尚无真实 OneBot/QQ 执行证据 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
+**状态**：**草案 v0.12 · Stage A.1、A.2.1、A.2.2.1、A.2.2.2-R0 与 R1 首个真实同步发送/撤回 ACK 证据已落地 · 真实超时、适配器私有 store 与 owner lease 仍未验证 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与状态机测试模型，A.2.1 只有对现有代码路径做校验的版本化设计夹具，A.2.2.1 只有钉住 OneBot v11 文档版本的协议响应/治理夹具；A.2.2.2-R0 只有默认拒绝、须人工显式确认的独立发送/撤回探针，本轮未连接真实实现或账号。S0/S1 命令只生成合成、忽略提交的 Trace 证据。持久 Stream、outbox/inbox 表、生产 QQ 适配器、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与状态机测试模型，A.2.1 只有对现有代码路径做校验的版本化设计夹具，A.2.2.1 只有钉住 OneBot v11 文档版本的协议响应/治理夹具；A.2.2.2-R0 是默认拒绝、须人工显式确认的独立发送/撤回探针，R1 已在 loopback NapCat + 专用 QQ 测试账号上取得一次真实同步发送和撤回 ACK，并固化为脱敏夹具。S0/S1 命令仍只生成合成、忽略提交的 Trace 证据。持久 Stream、outbox/inbox 表、生产 QQ 适配器、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -206,7 +206,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 
 S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：S0、S1.1、S1.2、S1.3 与 S1.4 的版本化合同通过；B0 生命周期、故障计数和 shutdown 测试通过；全部生成物留在忽略目录；生产代码仍没有读取/消费/Replay/Prompt/主动回复入口。这个“收口”只关闭合成样本缺口，不关闭阶段 B 的保留期、提交/输出覆盖，也不关闭 `K-EVENT-STREAM-01`。
 
-下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机；A.2.1 已冻结本地存储拓扑、transactional outbox/inbox 与隐私删除设计；A.2.2.1 已用钉住提交的 OneBot v11 规范冻结 QQ 文本输出的 ACK、不确定投递、撤回与多宿主否定证据；A.2.2.2-R0 已准备默认拒绝的实机探针。A.2.2.2 仍须由维护者接真实 OneBot 实现与专用测试账号，分步验证实际发送/撤回、可控超时、适配器私有 store 和单写者租约；它完成前不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口，阶段 C 也不得与阶段 A 偷跑合并。
+下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机；A.2.1 已冻结本地存储拓扑、transactional outbox/inbox 与隐私删除设计；A.2.2.1 已用钉住提交的 OneBot v11 规范冻结 QQ 文本输出的 ACK、不确定投递、撤回与多宿主否定证据；A.2.2.2-R0 已准备默认拒绝的实机探针，R1 已用真实 OneBot 实现与专用测试账号验证一次同步发送/撤回成功路径。A.2.2.2 仍须分步验证提交后可控超时与人工对账、适配器私有 store 和单写者租约；它完成前不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口，阶段 C 也不得与阶段 A 偷跑合并。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -312,7 +312,7 @@ Ring handler 对原事件 payload/metadata 的原地替换仍只是 dispatch-loc
 | 主动输入 | 来源绑定 emitter → Ring → Permit → `process_proactive_turn` | 不能伪装用户消息，也不能绕过 Event 决策 |
 | 目录 Event 插件 | `event_ring.handle` 观察获准事件并发射自身命名空间子事件 | 只有提案/派生权，没有状态提交权 |
 
-仓库内仍没有 QQ、直播或硬件输出适配器提供可持久验证的“发送成功”回执；`SendMessageResponse` 和 SSE `done` 只证明内核生成完成，不等于外部送达。A.2.2.1 的 OneBot 规范评审只冻结未来适配器的判定边界，不是一次真实发送。
+仓库内仍没有 Production QQ、直播或硬件输出适配器提供运行时可持久验证的“发送成功”回执；`SendMessageResponse` 和 SSE `done` 只证明内核生成完成，不等于外部送达。A.2.2.1 的 OneBot 规范评审只冻结判定边界；A.2.2.2-R1 另以独立开发者探针固化一次真实同步发送/撤回 ACK，但未接入内核、Output adapter 或 Production Stream。
 
 首个 Production Stream 存储冻结为本地嵌入式 **SQLite**，默认文件名 `runtime-event-stream.sqlite3`，且必须与主状态 `app.db`、Trace-only 的 `runtime-event-trace.sqlite3` 三址互异：
 
@@ -428,6 +428,15 @@ npm run event:onebot-live-probe -- --confirm-live A2.2.2_TEST_ACCOUNT
 ```
 
 真实运行应使用专用测试账号和已同意接收测试消息的目标。R0 成功也只关闭“真实同步发送 + 撤回”这一子证据；真实超时、适配器私有 store、跨进程/多宿主 owner lease 和人工对账仍须分开验证。
+
+### 7.1.5 Stage A.2.2.2-R1 · 首个真实同步 ACK 样本
+
+2026-09-02 使用 NapCat 4.18.19、QQ 9.9.33-52230、专用测试账号和已同意接收测试消息的测试群完成一次 loopback HTTP 实测。Bearer token 仅存在于忽略提交的本机配置与请求头中；探针先确认 `get_version_info` 返回 OneBot v11，再发送一条固定、无用户内容的群探针文本：
+
+- `send_group_msg` 返回 HTTP 200、`status="ok"`、`retcode=0` 且 `data.message_id` 存在，因此该次结果可判为 `delivered`；自动重试次数为 0。
+- 随后唯一一次 `delete_msg` 返回 HTTP 200 的成功 ACK，因此该次撤回判为 `acknowledged`。
+- 提交 `82644216` 将脱敏证据固化为 [`runtime_event_stream_stage_a2_onebot_live_evidence.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_live_evidence.v1.json)。夹具没有端点、账号/群号、正文、token 或 provider `message_id`；契约测试还会拒绝这些直接字段和疑似长数字标识符。
+- 该样本只证明一个实现、一个账号、一个群目标的一次同步成功路径。它没有实现 Production Output adapter，也没有验证提交后超时、人工对账、适配器私有加密 store、跨进程 owner lease/fencing、多宿主恢复或 checkpoint；A.2.2.2 与 `K-EVENT-STREAM-01` 继续保持 OPEN。
 
 ### 7.2 顺序与冲突
 
@@ -547,7 +556,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 ### 11.4 Stage A.2.2.2-R0 探针准备证据
 
-提交 `79d8aad7` 增加受控实机探针及 6 条本地合成测试，覆盖默认拒绝、远程 HTTP 拒绝、目标互斥、路径型标签/运行 ID 拒绝、同步发送后撤回、缺失 `message_id` 不重试/不撤回、撤回不确定，以及落盘证据脱敏与本地互斥锁释放。测试只连接临时 loopback stub，`live_adapter_tested=false`；本轮未执行真实 OneBot/QQ 请求，因此 A.2.2.2 仍为 OPEN。
+提交 `79d8aad7` 增加受控实机探针及 6 条本地合成测试，覆盖默认拒绝、远程 HTTP 拒绝、目标互斥、路径型标签/运行 ID 拒绝、同步发送后撤回、缺失 `message_id` 不重试/不撤回、撤回不确定，以及落盘证据脱敏与本地互斥锁释放。合成测试只连接临时 loopback stub。提交 `82644216` 随后固化 2026-09-02 的 NapCat 4.18.19 真实 loopback 样本：同步群发送和唯一一次撤回均获得完整成功 ACK，自动重试为 0，`live_adapter_tested=true`，同时继续固定 `production_runtime_enabled=false` 与 `production_ready=false`。真实超时、适配器私有 store、owner lease/fencing 和人工对账仍未验证，因此 A.2.2.2 继续保持 OPEN。
 
 ---
 
@@ -557,7 +566,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
-| **A · 契约原型（A.2.2.2-R0 已备探针）** | 冻结事件分型、Session 映射、外层记录、checkpoint、本地存储/事务/删除与首个真实协议映射 | A.1 可编译 DTO + 14 场景状态表；A.2.1 五表面/三库/四事务/删除夹具；A.2.2.1 OneBot v11 的 9 场景合同；A.2.2.2-R0 受控实机探针及合成自测；真实发送/撤回、超时、私有 store 与 owner lease 仍待验证 | 不接生产 IO，不改回复 |
+| **A · 契约原型（A.2.2.2-R1 已有单次真实 ACK）** | 冻结事件分型、Session 映射、外层记录、checkpoint、本地存储/事务/删除与首个真实协议映射 | A.1 可编译 DTO + 14 场景状态表；A.2.1 五表面/三库/四事务/删除夹具；A.2.2.1 OneBot v11 的 9 场景合同；A.2.2.2-R0 受控探针及合成自测；R1 一次真实 loopback 群发送/撤回 ACK；真实超时、私有 store 与 owner lease 仍待验证 | 不接生产 IO，不改回复 |
 | **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open 与确定性 shutdown；S0/S1 合成证据已收口，含固定十分钟耐久和重启续位；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
@@ -574,7 +583,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - B0 当前记录所有成功 dispatch 的最终脱敏信封头；哪些提交/输出摘要及哪些事件进入 Production Stream、payload 最小化和访问规则仍未冻结。
 - A.2.1 已固定 1–256 字节 opaque key 规范、主库 producer outbox、消费者 inbox/outbox 与 adapter ACK 事务边界；具体表字段、加密/密钥轮换、reconcile 调度和故障预算仍未冻结。
 - 多宿主同时运行同一 Session 时的租约、leader 或冲突策略；A.2.2.1 已确认 OneBot v11 标准未定义发送幂等或 fencing，不能依赖标准协议解决。
-- 首个低风险真实消费者；首个 QQ 输出已完成 OneBot v11 协议映射和 A.2.2.2-R0 探针准备，但真实实现/账号运行、超时、适配器私有 store 与 owner lease 证据仍未完成。
+- 首个低风险真实消费者；首个 QQ 输出已完成 OneBot v11 协议映射、A.2.2.2-R0 探针和 R1 单次真实同步发送/撤回 ACK，但 Production Output adapter、提交后超时与人工对账、适配器私有 store 和 owner lease 证据仍未完成。
 - Replay 的隔离数据库、模型调用策略和隐私删除传播。
 
 这些问题不阻塞本文作为边界草案，但在相应阶段编码前必须转成可测试的 accepted contract。
@@ -595,7 +604,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
 - [x] 生命周期测试区分队列丢弃与入队后写失败，覆盖冲突重复头、终端失败停机和并发幂等 shutdown，并保持 v1 诊断反序列化兼容。
 - [x] S1.4 固定十分钟合同完成 2,400 次低速来源绑定 dispatch、20 次主库健康检查、RSS/有界历史检查、shutdown 排空与重启后第 2,401 位追加；只形成本机开发者证据，不冒充生产时长或硬件 soak。
-- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐纯类型，A.2.1 已补齐本地代码路径/存储/事务/删除设计合同，A.2.2.1 已补齐 OneBot v11 协议级输出评审，A.2.2.2-R0 已备受控探针；真实适配器证据仍未完成。
+- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐纯类型，A.2.1 已补齐本地代码路径/存储/事务/删除设计合同，A.2.2.1 已补齐 OneBot v11 协议级输出评审，A.2.2.2-R0 已备受控探针，R1 已固化一次真实同步发送/撤回 ACK；Production 适配器及超时、私有 store、owner lease 证据仍未完成。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
@@ -608,7 +617,8 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] A.2.1 夹具对照现有五个集成表面，冻结独立 Stream SQLite、主库 producer outbox、消费者 inbox、adapter ACK、普通保留 tombstone 与 Session 删除顺序，且显式保持 runtime disabled。
 - [x] A.2.2.1 夹具按钉住提交的 OneBot v11 规范冻结 9 个 ACK/重试/不确定投递场景、最小回执、撤回非擦除与多宿主否定证据，且显式保持 live adapter/runtime/production readiness 为 false。
 - [x] A.2.2.2-R0 探针默认拒绝执行，须测试目标、Bearer token 与精确确认；只用固定文本做一次同步发送和一次撤回，不自动重试，证据脱敏且只写 `target/`。6 条合成自测未连接真实 OneBot/QQ。
-- [ ] A.2.2.2 尚未在真实 OneBot 实现与 QQ 测试账号上验证发送、超时、撤回、适配器私有 store 和 owner lease；上述协议夹具不是 Production Stream、真实外部送达、消费者恢复、删除执行或持久 checkpoint 实现证据。
+- [x] A.2.2.2-R1 已在 NapCat 4.18.19、专用 QQ 测试账号与测试群上取得一次真实同步发送和撤回 ACK；脱敏夹具不含账号、群号、正文、端点、token 或 provider `message_id`，且明确保持 Production false。
+- [ ] A.2.2.2 尚未验证提交后真实超时、人工对账、适配器私有 store、跨进程/多宿主 owner lease 与 fencing；R1 单样本不是 Production Stream、消费者恢复、删除执行或持久 checkpoint 实现证据。
 - [ ] 持久语义变换使用带自身来源的派生事件；没有把修改后的 payload 永久归因给原始 emitter。
 - [ ] Fact / Observation / Proposal / Decision / State / Output 权力边界有类型或校验门禁。
 - [ ] LLM 输出只能通过受约束包装器形成 Proposal，不能直接形成 Fact/State。

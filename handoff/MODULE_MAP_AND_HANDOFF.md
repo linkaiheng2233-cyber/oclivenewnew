@@ -22,7 +22,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 `RuntimeEventTrace` 是默认关闭的基础设施观察器：它只在成功 Ring dispatch 后非阻塞记录脱敏事实头，不是六槽、Event 模块、Event 决策模块或 Runtime Event Stream，也不向 Prompt/记忆/主动回合提供输入。完整状态见 [`RFC_RUNTIME_EVENT_STREAM`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) 与 `K-EVENT-STREAM-01`。
 
-`oclive_kernel_types::runtime_event_stream` 目前只是 Stage A.1 纯契约层；A.2.1 以版本化夹具冻结本地持久化设计，A.2.2.1 再以 OneBot v11 规范样本冻结 ACK、不确定投递、撤回非擦除与多宿主否定证据。它仍没有 Production 存储/读取端口、consumer loop、真实 QQ Output ACK、Replay、Prompt 或回合接线，不能被列为已运行模块。
+`oclive_kernel_types::runtime_event_stream` 目前只是 Stage A.1 纯契约层；A.2.1 以版本化夹具冻结本地持久化设计，A.2.2.1 再以 OneBot v11 规范样本冻结 ACK、不确定投递、撤回非擦除与多宿主否定证据。A.2.2.2-R1 只有独立开发者探针取得的一次真实 QQ 同步发送/撤回 ACK，不是 Production Output adapter。它仍没有 Production 存储/读取端口、consumer loop、Output 接线、Replay、Prompt 或回合接线，不能被列为已运行模块。
 
 **稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；新增宿主入口必须委托同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。
 
