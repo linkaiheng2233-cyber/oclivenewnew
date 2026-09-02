@@ -189,14 +189,20 @@ function validateInterceptedRequest(config, action, input, options) {
   }
 }
 
-function waitForAbort(signal, onAbort) {
-  return new Promise((resolve, reject) => {
+function waitForAbort(signal, onAbort, watchdogMs) {
+  return new Promise((_, reject) => {
+    const watchdog = setTimeout(() => {
+      reject(new Error('ONEBOT_TIMEOUT_FAULT_SIGNAL_DID_NOT_ABORT'))
+    }, watchdogMs)
     const rejectForAbort = () => {
+      clearTimeout(watchdog)
       onAbort()
       reject(signal?.reason ?? new Error('ONEBOT_TIMEOUT_FAULT_ABORTED'))
     }
-    if (!signal)
+    if (!signal) {
+      clearTimeout(watchdog)
       return reject(new Error('ONEBOT_TIMEOUT_FAULT_SIGNAL_REQUIRED'))
+    }
     if (signal.aborted)
       return rejectForAbort()
     signal.addEventListener('abort', rejectForAbort, { once: true })
@@ -238,9 +244,13 @@ function createResponseWithholdingFetch(config, nativeFetch) {
         body,
         nativeFetch,
       )
-      return waitForAbort(options.signal, () => {
-        state.clientAbortObserved = true
-      })
+      return waitForAbort(
+        options.signal,
+        () => {
+          state.clientAbortObserved = true
+        },
+        config.clientTimeoutMs + 1000,
+      )
     }
     if (action === 'delete_msg') {
       state.probeRecallAttempts += 1
