@@ -118,7 +118,7 @@ fn stage_a2_onebot_review_freezes_ack_and_retry_boundaries() {
     );
     assert_eq!(source["commit"], PINNED_ONEBOT_V11_COMMIT);
     let documents = strings(&source["documents"]);
-    assert_eq!(documents.len(), 4);
+    assert_eq!(documents.len(), 5);
     for document in documents {
         assert!(document.contains(PINNED_ONEBOT_V11_COMMIT));
         assert!(!document.contains("/master/"));
@@ -305,6 +305,10 @@ fn stage_a2_onebot_review_keeps_governance_gaps_explicit() {
     );
 
     let security = &contract["security_contract"];
+    assert_eq!(
+        security["authorization_transport"],
+        "bearer_access_token_header"
+    );
     for field in [
         "credentials_outside_event_stream_trace_and_logs",
         "loopback_default",

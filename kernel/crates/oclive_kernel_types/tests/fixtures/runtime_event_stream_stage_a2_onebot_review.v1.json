@@ -10,6 +10,7 @@
       "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/README.md",
       "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/public.md",
       "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/http.md",
+      "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/authorization.md",
       "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/ws.md"
     ]
   },
@@ -236,6 +237,7 @@
   },
   "security_contract": {
     "credentials_outside_event_stream_trace_and_logs": true,
+    "authorization_transport": "bearer_access_token_header",
     "loopback_default": true,
     "remote_endpoint_requires_explicit_network_grant_and_tls": true,
     "get_with_message_query_forbidden": true,

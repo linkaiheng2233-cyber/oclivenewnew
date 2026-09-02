@@ -51,6 +51,8 @@
     "event:trace-shadow-soak-samples": "node scripts/collect-runtime-event-trace-soak-samples.mjs",
     "event:trace-shadow-contracts": "cargo test --locked -p oclive_kernel_host --example runtime_event_trace_sampler -- --test-threads=1",
     "event:trace-shadow-s1": "npm run event:trace-shadow-samples && npm run event:trace-shadow-fault-samples && npm run event:trace-shadow-load-samples && npm run event:trace-shadow-duplicate-samples && npm run event:trace-shadow-soak-samples",
+    "event:onebot-live-probe": "node scripts/runtime-event-onebot-live-probe.mjs",
+    "event:onebot-live-probe:self-test": "node --test scripts/runtime-event-onebot-live-probe.test.mjs",
     "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
