@@ -211,7 +211,7 @@ function classifyAck(result) {
   return 'delivery_uncertain'
 }
 
-function sourceState() {
+export function sourceState() {
   return {
     commit: execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd: repoRoot,
@@ -224,7 +224,7 @@ function sourceState() {
   }
 }
 
-function readProtocolContract() {
+export function readProtocolContract() {
   const text = readFileSync(contractPath, 'utf8')
   const contract = JSON.parse(text)
   if (contract.stage !== 'a2_2_1_onebot_v11_protocol_review_only'

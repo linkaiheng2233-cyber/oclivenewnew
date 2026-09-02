@@ -96,7 +96,7 @@ function actionUrl(endpoint, action) {
   return url
 }
 
-async function postUpstream(config, action, body, fetchImpl) {
+export async function postUpstream(config, action, body, fetchImpl) {
   let response
   try {
     response = await fetchImpl(actionUrl(config.endpoint, action), {
@@ -144,7 +144,7 @@ function isExplicitRejection(result) {
     && ![0, 1].includes(result.json.retcode)
 }
 
-function classifySend(result) {
+export function classifySend(result) {
   if (isExplicitRejection(result))
     return { outcome: 'rejected', messageId: null }
   const messageId = result.json?.data?.message_id
@@ -157,7 +157,7 @@ function classifySend(result) {
   return { outcome: 'delivery_uncertain', messageId: null }
 }
 
-function classifyAck(result) {
+export function classifyAck(result) {
   if (isExplicitRejection(result))
     return 'rejected'
   if (result.httpStatus === 200
