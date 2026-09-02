@@ -140,7 +140,7 @@ fn stage_a2_onebot_review_freezes_ack_and_retry_boundaries() {
         strings(&profile["forbidden_send_suffixes"]),
         ["_async", "_rate_limited"]
     );
-    assert_eq!(profile["provider_native_idempotency_key"], false);
+    assert_eq!(profile["protocol_native_idempotency_key"], false);
     assert_eq!(profile["websocket_echo_is_correlation_only"], true);
 
     let delivery = &contract["delivery_contract"];
@@ -293,7 +293,7 @@ fn stage_a2_onebot_review_keeps_governance_gaps_explicit() {
         multi_host["fencing_token_required_on_claim_and_receipt"],
         true
     );
-    assert_eq!(multi_host["onebot_native_fencing"], false);
+    assert_eq!(multi_host["onebot_standard_fencing"], false);
     assert_eq!(
         multi_host["automatic_failover_after_delivery_uncertain"],
         false
@@ -326,7 +326,7 @@ fn stage_a2_onebot_review_keeps_governance_gaps_explicit() {
         &[
             "no_onebot_runtime_or_qq_account_started",
             "no_provider_delivery_or_recall_executed",
-            "no_native_provider_idempotency_or_fencing",
+            "no_onebot_standard_idempotency_or_fencing",
             "no_production_adapter_store_or_owner_lease",
             "no_multi_host_delivery_proof",
             "no_production_stream_runtime",

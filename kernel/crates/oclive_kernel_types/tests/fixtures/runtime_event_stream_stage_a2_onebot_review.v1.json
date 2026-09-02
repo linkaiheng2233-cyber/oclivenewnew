@@ -23,7 +23,7 @@
     "content_type": "application/json",
     "plain_text_auto_escape_default": true,
     "forbidden_send_suffixes": ["_async", "_rate_limited"],
-    "provider_native_idempotency_key": false,
+    "protocol_native_idempotency_key": false,
     "websocket_echo_is_correlation_only": true
   },
   "delivery_contract": {
@@ -229,7 +229,7 @@
   "multi_host_contract": {
     "single_delivery_owner_lease_required": true,
     "fencing_token_required_on_claim_and_receipt": true,
-    "onebot_native_fencing": false,
+    "onebot_standard_fencing": false,
     "automatic_failover_after_delivery_uncertain": false,
     "local_sqlite_multi_host_ready": false,
     "external_broker_trigger": "same_session_active_on_multiple_hosts"
@@ -249,7 +249,7 @@
   "known_gaps": [
     "no_onebot_runtime_or_qq_account_started",
     "no_provider_delivery_or_recall_executed",
-    "no_native_provider_idempotency_or_fencing",
+    "no_onebot_standard_idempotency_or_fencing",
     "no_production_adapter_store_or_owner_lease",
     "no_multi_host_delivery_proof",
     "no_production_stream_runtime"
