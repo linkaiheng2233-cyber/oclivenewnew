@@ -1,6 +1,6 @@
 # 01 · 简架构
 
-> **最后更新**：2026-09-01
+> **最后更新**：2026-09-02
 > **读者**：已跑通主仓、要理解「一条消息怎么走」的工程师。  
 > **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和四层权力边界。
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
@@ -144,7 +144,7 @@ memory 找到候选 → recall.candidate → event decision
 
 权重只表示提案被判断时的基础影响力，不代表执行优先级，也不保证被采纳。完整契约见 [EVENT_RING](../creator-docs/plugin-and-architecture/EVENT_RING.md)。
 
-> **不要把当前 Ring 画成永久事件河流**：这里的“外环”是单次 dispatch 路由边界，不是持续轮询模块的运行顺序。现在虽有一个默认关闭、只把成功 dispatch 的脱敏事实头写入独立 SQLite 的 Trace 影子，但它不能被读取来驱动行为。仓库已经为未来 Stream 写下纯类型，并确定首版采用独立 SQLite、主库 outbox、消费者 inbox 和分阶段删除；这些仍只是设计合同，没有持久 Stream、读取循环、外部送达回执或真实消费者。跨回合/跨通道/跨重启能力仍由 [`K-EVENT-STREAM-01`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) 跟踪；即使以后实现，也不能替代 Event 决策、Rust 状态提交权或 Stable 回合管线。
+> **不要把当前 Ring 画成永久事件河流**：这里的“外环”是单次 dispatch 路由边界，不是持续轮询模块的运行顺序。现在虽有一个默认关闭、只把成功 dispatch 的脱敏事实头写入独立 SQLite 的 Trace 影子，但它不能被读取来驱动行为。仓库已经为未来 Stream 写下纯类型、本地持久化设计，并按 OneBot v11 规范明确了 QQ 文本 ACK 与“不确定投递”边界；这些仍只是设计/协议夹具，没有持久 Stream、读取循环、真实 QQ 适配器或消费者。跨回合/跨通道/跨重启能力仍由 [`K-EVENT-STREAM-01`](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) 跟踪；即使以后实现，也不能替代 Event 决策、Rust 状态提交权或 Stable 回合管线。
 
 ### 没有用户消息时如何主动开口
 

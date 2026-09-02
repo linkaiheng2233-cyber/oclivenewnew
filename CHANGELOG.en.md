@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Runtime Event Stream Stage A.2.2.1 OneBot v11 protocol-review contract**: a nine-case QQ-text fixture pinned to an upstream commit now freezes synchronous acknowledgement, `delivery_uncertain`, blocked automatic retry/failover after uncertain submission, minimal receipts, recall-not-erasure, encrypted adapter-private fields, and single-owner/fencing boundaries. It explicitly starts no OneBot runtime, logs into no QQ account, and performs no real send or recall.
 - **Runtime Event Stream Stage A.2.1 design-review contract**: a versioned fixture now anchors current Tauri/HTTP/Library/proactive-ingress/directory-event code paths and freezes a separate Production Stream SQLite, main-database producer outbox, consumer inbox, adapter ACK, source idempotency, normal-retention tombstone, and Session-erasure order. The fixture explicitly keeps runtime disabled and lists real-output and multi-host evidence gaps.
 - **Runtime Event Stream Stage A.1 pure contract prototype**: `oclive_kernel_types` now defines a typed durable outer record, host-owned Session partition binding, authority-free consumer registration, checkpoint/lease states, and delivery-result DTOs. A versioned 14-case reference model freezes success, duplicate, retry, expired-lease, CAS-conflict, blocked, and disabled semantics for future at-least-once delivery.
 - **Stable in-process role-kernel API**: `oclive_kernel_host` now provides `OcliveKernelConfig`, `OcliveKernelBuilder`, and `OcliveKernel` for trusted Rust hosts, covering role load/list/info, complete and streaming turns, trusted `TurnOrigin`, Event Ring registration/proactive turns/diagnostics, file-backed SQLite persistence, and explicit shutdown. HTTP, Tauri, and libraries continue to share one `AppState` / `process_message` orchestration path.
@@ -13,7 +14,7 @@
 
 ### Compatibility
 
-- **Event Stream remains disconnected from runtime behavior**: Stages A.1/A.2.1 add Rust source-level DTOs, test models, and a design fixture only. They add no Stream/outbox/inbox migration, read API, consumer loop, replay, Prompt/proactive input, or second `process_message`; B0 Trace-only remains default-off and behavior-neutral.
+- **Event Stream remains disconnected from runtime behavior**: Stages A.1/A.2.1/A.2.2.1 add Rust source-level DTOs, test models, and design/protocol fixtures only. They add no Stream/outbox/inbox migration, real QQ adapter, read API, consumer loop, replay, Prompt/proactive input, or second `process_message`; B0 Trace-only remains default-off and behavior-neutral.
 - **Additive Rust source-level facade**: role-pack schemas, HTTP/Tauri wire shapes, database migrations, and Event Ring authority semantics are unchanged. This is not a stable C ABI; Linux/ARM hardware, resource-budget, and long-soak proof remain tracked by `V-EMBED-01`.
 
 ## [0.5.2] - 2026-08-24

@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-09-02.
 
-**Status:** **Draft v0.9 · Stage A.1 pure types and the A.2.1 local topology/transaction/erasure review contract implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
+**Status:** **Draft v0.10 · Stage A.1, A.2.1, and the A.2.2.1 OneBot v11 protocol-review contract implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
 ---
 
@@ -22,7 +22,7 @@ The following constraints are fixed:
 - A `Decision` is not a committed state. `State` may only describe a successful commit.
 - Proposal influence remains in the existing trusted `EventModuleRegistryPolicy`. A future Stream consumer registry manages subscriptions, read scope, cursors, and backpressure only.
 - Model tiers may change observation, query, and proposal budgets, never source or commit authority.
-- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored evidence only. A.2.1 adds a design fixture that checks current code paths, not runtime I/O. No durable Stream, producer outbox, consumer cursor, replay, multi-I/O scheduling, or productized proactive bot exists today.
+- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored evidence only. A.2.1 checks current code paths; A.2.2.1 reviews a pinned OneBot v11 protocol version. Neither is runtime I/O. No durable Stream, producer outbox, real QQ adapter, consumer cursor, replay, multi-I/O scheduling, or productized proactive bot exists today.
 
 ---
 
@@ -139,7 +139,7 @@ Commit `b79c7912` implements the S1.4 command `npm run event:trace-shadow-soak-s
 
 S1 is closed only as the Trace-only synthetic-evidence stage: the versioned S0 and S1.1–S1.4 contracts pass, B0 lifecycle/failure/shutdown tests pass, artifacts stay ignored, and production code still has no read, consumer, Replay, Prompt, or proactive-reply path. This does not complete stage B retention or commit/output coverage, authorize S2, or close `K-EVENT-STREAM-01`.
 
-The next authorized work remains inside stage A. A.1 freezes pure types and a reference transition model. A.2.1 now freezes the local storage, transactional handoff, retention, and erasure design against current Tauri/HTTP/Library/proactive/directory-event paths. A.2.2 must still validate acknowledgements, retries, deletion, and multi-host assumptions with a real QQ/live/hardware output adapter. No production read API, checkpoint table, consumer loop, or second turn entry may be added before that review. Stage C must not be smuggled into the same slice.
+The next authorized work remains inside stage A. A.1 freezes pure types and a reference transition model. A.2.1 freezes local storage, transactional handoff, retention, and erasure. A.2.2.1 now freezes QQ-text acknowledgement, uncertain-delivery, recall, and negative multi-host evidence against a pinned OneBot v11 specification. A.2.2.2 must still exercise a real OneBot implementation and test account. No production read API, checkpoint table, consumer loop, or second turn entry may be added before that live review. Stage C must not be smuggled into the same slice.
 
 No sample level is an authoritative event store, behavior input, or training authorization. Real runtime collection must not be wired before S2 admission; content-level data would require a separate privacy and data-governance design rather than expanding this command.
 
@@ -177,6 +177,21 @@ Four transactional handoffs are fixed:
 Normal retention replaces content with a minimal same-position tombstone, while an unexpected physical gap blocks the consumer. Full Session erasure first quiesces ingress and leases, then deletes main state/outbox, Stream records/bindings/checkpoints, required consumer data, enabled mirrors, and caches; completion requires verified absence in every required domain. A minimal receipt must not retain raw Session, partition, subject, role, event, or payload identifiers. Existing best-effort chat-mirror deletion is explicitly insufficient for this future erasure contract.
 
 The fixture forces `production_runtime_enabled = false` and keeps the missing real output adapter, multi-host lease evidence, Stream schema/migration, retention/erasure executor, and consumer/read API visible. It is review evidence, not implementation or recovery evidence.
+
+---
+
+## Stage A.2.2.1 OneBot v11 output-protocol review
+
+Commits `01f2ae63`, `78a1e11a`, and `66b8a9a8` add and refine a versioned [OneBot review fixture](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json) and a pure nine-case response classifier. The evidence is pinned to OneBot v11 commit `d4456ee706f9ada9c2dfde56a2bcfc69752600e4`: its [API overview](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/README.md), [message/recall APIs](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/public.md), [HTTP response contract](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/http.md), and [WebSocket echo semantics](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/ws.md).
+
+- The first profile is synchronous HTTP JSON `send_private_msg` / `send_group_msg`; async and rate-limited suffixes cannot prove delivery. Plain text defaults to `auto_escape=true`.
+- `delivered` requires HTTP 200, `status="ok"`, `retcode=0`, and `data.message_id`. A timeout after possible submission, async response, malformed success, or missing message ID becomes `delivery_uncertain`; it blocks checkpoint advance, automatic retry, and host failover until reconciliation.
+- The OneBot v11 standard defines no native send-idempotency key or server-side fencing. WebSocket `echo` correlates a response only. One output item therefore needs one leased owner with epoch/fencing evidence; local SQLite is not a multi-host coordinator.
+- Generic Stream receipts contain only adapter identity, an opaque receipt reference, outcome, attempt, and acknowledgement time. Credentials, destination IDs, message body, and provider message ID stay in encrypted adapter-private storage.
+- `delete_msg` is provider recall, not proof of privacy erasure. Session erasure must remove and verify all local adapter rows; external recall is reported only as non-linkable aggregate status and never as a provider-deletion guarantee.
+- HTTP POST is required; message-bearing GET queries are forbidden. Loopback is the default, while a remote endpoint requires an explicit network grant and TLS.
+
+The fixture explicitly sets `live_adapter_tested=false`, `production_runtime_enabled=false`, and `production_ready=false`. It starts no OneBot implementation, logs into no QQ account, sends or recalls no message, and implements no adapter store or owner lease. Stage A.2.2.2 live-adapter evidence remains open.
 
 ---
 
@@ -261,6 +276,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 - Recovery uses checkpoints and idempotency, not replaying all historical Output events.
 - Credentials, full system prompts, raw long-term-memory bodies, and unconsented media must not enter generic payloads.
 - Every event kind requires host-owned source, schema/size, privacy, reader, retention, and erasure policy. Ordinary expiry leaves a minimal same-position tombstone; full Session erasure hard-deletes the partition and all required derived data.
+- External-platform recall is not privacy erasure. For OneBot v11, `delete_msg` only recalls a message; local completion must include the adapter-private store, while external results remain a non-linkable aggregate rather than a deletion guarantee.
 - Trace storage failure disables Trace without changing the user reply. A production Stream dependency enters explicit degraded/blocked state and must not bypass authority boundaries.
 - Consumer failure does not advance its checkpoint or block unrelated consumers.
 
@@ -268,7 +284,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 
 ## Staged admission
 
-1. Freeze taxonomy, Session mapping, outer record, checkpoint, failure/recovery tests, and local storage/transaction/erasure design. A.1 and A.2.1 are complete; real output/multi-host A.2.2 review remains open.
+1. Freeze taxonomy, Session mapping, outer record, checkpoint, failure/recovery tests, local storage/transaction/erasure design, and one real protocol mapping. A.1, A.2.1, and the OneBot v11 A.2.2.1 review are complete; A.2.2.2 real adapter and multi-host evidence remain open.
 2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, fail-open degradation, and deterministic shutdown. Its S0/S1 synthetic evidence is closed through S1.4's fixed ten-minute run and restart continuation. Retention and commit/output coverage remain open.
 3. Add cursor, at-least-once, idempotency, backpressure, and an effect-free test consumer.
 4. Integrate one low-risk real consumer through Draft → Ring → Decision → Rust application.
