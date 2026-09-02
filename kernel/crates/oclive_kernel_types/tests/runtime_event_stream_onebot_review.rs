@@ -52,6 +52,58 @@ fn contract() -> Value {
     .expect("parse Runtime Event Stream Stage A.2 OneBot review fixture")
 }
 
+fn live_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_live_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot live evidence fixture")
+}
+
+fn assert_no_sensitive_runtime_values(value: &Value) {
+    const FORBIDDEN_KEYS: &[&str] = &[
+        "access_token",
+        "endpoint",
+        "target_id",
+        "user_id",
+        "group_id",
+        "message",
+        "message_body",
+        "provider_message_id",
+    ];
+
+    match value {
+        Value::Object(entries) => {
+            for (key, child) in entries {
+                assert!(
+                    !FORBIDDEN_KEYS.contains(&key.as_str()),
+                    "live evidence contains forbidden runtime key: {key}"
+                );
+                assert_no_sensitive_runtime_values(child);
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                assert_no_sensitive_runtime_values(item);
+            }
+        }
+        Value::String(text) => {
+            assert!(
+                !text.starts_with("http://") && !text.starts_with("https://"),
+                "live evidence contains a runtime URL"
+            );
+        }
+        Value::Number(number) => {
+            if let Some(number) = number.as_u64() {
+                assert!(
+                    number < 100_000,
+                    "live evidence contains an identifier-like number"
+                );
+            }
+        }
+        Value::Null | Value::Bool(_) => {}
+    }
+}
+
 fn strings(value: &Value) -> Vec<&str> {
     value
         .as_array()
@@ -336,4 +388,52 @@ fn stage_a2_onebot_review_keeps_governance_gaps_explicit() {
             "no_production_stream_runtime",
         ],
     );
+}
+
+#[test]
+fn stage_a2_onebot_live_evidence_proves_only_send_and_recall() {
+    let evidence = live_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(evidence["stage"], "a2_2_2_send_and_recall_probe_only");
+    assert_eq!(evidence["synthetic"], false);
+    assert_eq!(evidence["live_adapter_tested"], true);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(evidence["endpoint_scope"], "loopback");
+    assert_eq!(evidence["target_kind"], "group");
+
+    assert_eq!(evidence["preflight"]["outcome"], "accepted");
+    assert_eq!(evidence["preflight"]["protocol_v11_confirmed"], true);
+    assert_eq!(evidence["send"]["action"], "send_group_msg");
+    assert_eq!(evidence["send"]["outcome"], "delivered");
+    assert_eq!(evidence["send"]["http_status"], 200);
+    assert_eq!(evidence["send"]["message_id_present"], true);
+    assert_eq!(evidence["send"]["automatic_retries"], 0);
+    assert_eq!(evidence["recall"]["action"], "delete_msg");
+    assert_eq!(evidence["recall"]["outcome"], "acknowledged");
+    assert_eq!(evidence["recall"]["http_status"], 200);
+
+    for field in [
+        "exported_access_token",
+        "exported_endpoint",
+        "exported_target_id",
+        "exported_message_body",
+        "exported_provider_message_id",
+    ] {
+        assert_eq!(evidence["privacy"][field], false, "privacy field {field}");
+    }
+    for field in [
+        "adapter_private_store_tested",
+        "timeout_after_possible_submission_tested",
+        "multi_host_owner_lease_tested",
+        "production_stream_connected",
+    ] {
+        assert_eq!(
+            evidence["remaining_gaps"][field], false,
+            "remaining gap {field}"
+        );
+    }
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
 }

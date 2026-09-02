@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_live_probe",
+  "stage": "a2_2_2_send_and_recall_probe_only",
+  "run_id": "1fe62e76-3e8a-47f3-ae61-13b57312090f",
+  "started_at": "2026-09-02T13:50:20.325Z",
+  "finished_at": "2026-09-02T13:50:21.216Z",
+  "source_commit": "d1ca80d07db8cafce60724e82df7256d1f5304b0",
+  "source_worktree_dirty": true,
+  "scenario_contract": "kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json",
+  "scenario_contract_sha256": "eb8873fadde53356ae81d69d1b2cc61da2f0186c74f447039bf7351bf1f583ed",
+  "protocol_source_commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+  "synthetic": false,
+  "live_adapter_tested": true,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "endpoint_scope": "loopback",
+  "implementation_label": "napcat-4.18.19-qq-9.9.33-52230",
+  "transport": "http_json_post",
+  "target_kind": "group",
+  "preflight": {
+    "outcome": "accepted",
+    "protocol_v11_confirmed": true,
+    "implementation_metadata_present": true
+  },
+  "send": {
+    "action": "send_group_msg",
+    "outcome": "delivered",
+    "http_status": 200,
+    "message_id_present": true,
+    "automatic_retries": 0
+  },
+  "recall": {
+    "action": "delete_msg",
+    "outcome": "acknowledged",
+    "http_status": 200
+  },
+  "privacy": {
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false
+  },
+  "remaining_gaps": {
+    "adapter_private_store_tested": false,
+    "timeout_after_possible_submission_tested": false,
+    "multi_host_owner_lease_tested": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}
