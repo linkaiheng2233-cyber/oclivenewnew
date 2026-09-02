@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-09-02.
 
-**Status:** **Draft v0.8 · Stage A.1 pure types and checkpoint reference model implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
+**Status:** **Draft v0.9 · Stage A.1 pure types and the A.2.1 local topology/transaction/erasure review contract implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
 ---
 
@@ -22,7 +22,7 @@ The following constraints are fixed:
 - A `Decision` is not a committed state. `State` may only describe a successful commit.
 - Proposal influence remains in the existing trusted `EventModuleRegistryPolicy`. A future Stream consumer registry manages subscriptions, read scope, cursors, and backpressure only.
 - Model tiers may change observation, query, and proposal budgets, never source or commit authority.
-- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored structural, fault, concurrent-load, recorder duplicate-accounting, and fixed ten-minute soak evidence only. None of these capabilities claims that a durable Stream, consumer cursor, replay, multi-I/O scheduling, or a productized proactive bot exists today.
+- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored evidence only. A.2.1 adds a design fixture that checks current code paths, not runtime I/O. No durable Stream, producer outbox, consumer cursor, replay, multi-I/O scheduling, or productized proactive bot exists today.
 
 ---
 
@@ -139,7 +139,7 @@ Commit `b79c7912` implements the S1.4 command `npm run event:trace-shadow-soak-s
 
 S1 is closed only as the Trace-only synthetic-evidence stage: the versioned S0 and S1.1–S1.4 contracts pass, B0 lifecycle/failure/shutdown tests pass, artifacts stay ignored, and production code still has no read, consumer, Replay, Prompt, or proactive-reply path. This does not complete stage B retention or commit/output coverage, authorize S2, or close `K-EVENT-STREAM-01`.
 
-The next authorized work remains inside stage A. A.1 now freezes pure types and a reference transition model. A.2 must review the fields against real multi-I/O consumers, select the first storage and transactional outbox/inbox boundary, and turn privacy/deletion policy into testable contracts. No production read API, checkpoint table, consumer loop, or second turn entry may be added before that review. Stage C must not be smuggled into the same slice.
+The next authorized work remains inside stage A. A.1 freezes pure types and a reference transition model. A.2.1 now freezes the local storage, transactional handoff, retention, and erasure design against current Tauri/HTTP/Library/proactive/directory-event paths. A.2.2 must still validate acknowledgements, retries, deletion, and multi-host assumptions with a real QQ/live/hardware output adapter. No production read API, checkpoint table, consumer loop, or second turn entry may be added before that review. Stage C must not be smuggled into the same slice.
 
 No sample level is an authoritative event store, behavior input, or training authorization. Real runtime collection must not be wired before S2 admission; content-level data would require a separate privacy and data-governance design rather than expanding this command.
 
@@ -158,6 +158,25 @@ Commit `3ee559a6` adds [`runtime_event_stream.rs`](../../kernel/crates/oclive_ke
 The versioned [`runtime_event_stream_consumer_transitions.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_consumer_transitions.v1.json) fixture freezes 14 reference cases: exact claim, no position skip, durable and already-applied success, retry, lease expiry/restart, stale-worker acknowledgement, CAS conflict, terminal block, explicit retry, retention gap, disable, and claim rejection while disabled. Only `applied` or `already_applied` on the exact current revision/epoch may advance to `delivered_position + 1`. Retry, crash recovery, conflict, block, and disable preserve progress.
 
 This is a test model, not consumer recovery evidence. Stage C must prove the same matrix against real durable crash/restart behavior.
+
+---
+
+## Stage A.2.1 local topology, transaction, and erasure review
+
+Commit `c1673ec0` adds the versioned [`runtime_event_stream_stage_a2_review.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_review.v1.json) fixture. It reads evidence from five current integration surfaces: the desktop HTTP proxy, HTTP JSON/SSE, the embedded Rust facade, trusted proactive ingress, and the directory Event Ring bridge. Every surface remains an adapter to the existing kernel and has neither a second turn pipeline nor direct state-commit authority. None provides a durable external delivery receipt.
+
+The first Production Stream backend is frozen as an embedded `runtime-event-stream.sqlite3`, distinct from authoritative `app.db` and trace-only `runtime-event-trace.sqlite3`. The future producer outbox belongs in `app.db` so authoritative state and its publication intent can commit together. Session bindings, event records, consumer registry/checkpoints, retention tombstones, and erasure work items belong in the Stream database. No cross-file atomic transaction is claimed; transfer is at least once and idempotent. An external broker is considered only after evidence of multi-host Session activity, independently available remote consumers, or exceeded WAL/latency budgets.
+
+Four transactional handoffs are fixed:
+
+- authoritative state and producer outbox commit in one `app.db` transaction;
+- successful Ring snapshots enter a host outbox only after complete dispatch and before durable acceptance or authorization escapes;
+- a consumer commits inbox deduplication, its side effect, and any derived-event outbox in its own authoritative store before checkpoint advance;
+- an `Output delivered` fact requires an adapter ACK—model generation, HTTP return, or SSE `done` is not delivery.
+
+Normal retention replaces content with a minimal same-position tombstone, while an unexpected physical gap blocks the consumer. Full Session erasure first quiesces ingress and leases, then deletes main state/outbox, Stream records/bindings/checkpoints, required consumer data, enabled mirrors, and caches; completion requires verified absence in every required domain. A minimal receipt must not retain raw Session, partition, subject, role, event, or payload identifiers. Existing best-effort chat-mirror deletion is explicitly insufficient for this future erasure contract.
+
+The fixture forces `production_runtime_enabled = false` and keeps the missing real output adapter, multi-host lease evidence, Stream schema/migration, retention/erasure executor, and consumer/read API visible. It is review evidence, not implementation or recovery evidence.
 
 ---
 
@@ -211,6 +230,7 @@ Current Ring handlers may replace payload or merge metadata while the primary ev
 - Rust applies expected revision/CAS or transaction checks. Stale decisions are rejected, recalculated, or marked superseded.
 - Bounded in-flight work, retry backoff, lag diagnostics, and explicit sampling/coalescing policy are required.
 - `Decision` and `State` must not be silently dropped. Production state commit plus event publication requires a transactional outbox/reconcile design.
+- V1 source idempotency keys are opaque, non-credential UTF-8 values of 1–256 bytes with no control characters. They are not trimmed or case-folded; uniqueness is scoped to partition + source + key, and conflicting content is rejected.
 
 ---
 
@@ -240,6 +260,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 - Replay defaults to an isolated Session/dry-run with production state and output ports disabled.
 - Recovery uses checkpoints and idempotency, not replaying all historical Output events.
 - Credentials, full system prompts, raw long-term-memory bodies, and unconsented media must not enter generic payloads.
+- Every event kind requires host-owned source, schema/size, privacy, reader, retention, and erasure policy. Ordinary expiry leaves a minimal same-position tombstone; full Session erasure hard-deletes the partition and all required derived data.
 - Trace storage failure disables Trace without changing the user reply. A production Stream dependency enters explicit degraded/blocked state and must not bypass authority boundaries.
 - Consumer failure does not advance its checkpoint or block unrelated consumers.
 
@@ -247,7 +268,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 
 ## Staged admission
 
-1. Freeze taxonomy, Session mapping, outer record, checkpoint, and failure/recovery tests.
+1. Freeze taxonomy, Session mapping, outer record, checkpoint, failure/recovery tests, and local storage/transaction/erasure design. A.1 and A.2.1 are complete; real output/multi-host A.2.2 review remains open.
 2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, fail-open degradation, and deterministic shutdown. Its S0/S1 synthetic evidence is closed through S1.4's fixed ten-minute run and restart continuation. Retention and commit/output coverage remain open.
 3. Add cursor, at-least-once, idempotency, backpressure, and an effect-free test consumer.
 4. Integrate one low-risk real consumer through Draft → Ring → Decision → Rust application.

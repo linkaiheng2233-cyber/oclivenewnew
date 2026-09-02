@@ -28,7 +28,7 @@ The legacy `event` slot remains backend module 3 and estimates dialogue `event.i
 
 ### Boundary with a future Runtime Event Stream
 
-The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Stage A.1 now freezes pure outer-record, Session-mapping, and checkpoint reference-model types, but there is no Production storage, read interface, consumer loop, or recovery implementation.
+The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Stage A.1 freezes pure types and A.2.1 freezes a separate-SQLite/outbox/inbox/erasure design fixture, but there is no Production database, read interface, consumer loop, external Output ACK, or recovery implementation.
 
 Only an off-by-default **B0 trace-only shadow** exists today. After a successful dispatch enters Ring history, redacted fact headers can be sent non-blockingly to an independent SQLite database. Failures affect diagnostics only. The shadow has no read, consumer, replay, Prompt, or proactive-trigger authority, so it is not Runtime Event Stream and does not alter the Ring authority defined here.
 

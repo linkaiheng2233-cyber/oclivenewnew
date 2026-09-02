@@ -6,13 +6,14 @@
 
 ### Added
 
+- **Runtime Event Stream Stage A.2.1 设计评审合同**：新增版本化夹具，以现有 Tauri/HTTP/Library/主动 ingress/目录 Event 桥代码为证据，冻结独立 Production Stream SQLite、主库 producer outbox、消费者 inbox、adapter ACK、来源幂等、普通保留 tombstone 和 Session 隐私删除顺序；夹具显式保持 runtime disabled，并列出真实外部输出与多宿主证据缺口。
 - **Runtime Event Stream Stage A.1 纯契约原型**：`oclive_kernel_types` 新增类型化外层事件记录、宿主 Session 分区绑定、无影响权重的 consumer 登记、checkpoint/lease 状态和 delivery 结果 DTO，并以 14 场景版本化参考模型固定至少一次消费中的成功、重复、重试、过期 lease、CAS 冲突、阻塞和禁用语义。
 - **稳定角色内核进程内接口**：`oclive_kernel_host` 新增 `OcliveKernelConfig`、`OcliveKernelBuilder` 与 `OcliveKernel`，为可信 Rust 宿主提供角色 load/list/info、完整与流式回合、可信 `TurnOrigin`、Event Ring 注册/主动回合/诊断、文件 SQLite 持久化和显式关闭；HTTP、Tauri 与 library 继续复用同一 `AppState` / `process_message` 编排。
 - **可运行的 library 脚手架**：`oclive-cli init --project-type library --kernel-source` 现在链接 host/contracts/runtime/types 并直接重导出稳定角色内核门面；生成说明包含最小完整回合示例，真实生成工程已纳入独立 `cargo check` 回归。
 
 ### Compatibility
 
-- **Event Stream 仍未接入运行时**：Stage A.1 只增加 Rust 源码级 DTO 和测试模型；没有数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
+- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1 只增加 Rust 源码级 DTO、测试模型和设计夹具；没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
 
 ## [0.5.2] - 2026-08-24

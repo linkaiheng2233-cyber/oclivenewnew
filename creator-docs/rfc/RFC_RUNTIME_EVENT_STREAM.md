@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-02。
-**状态**：**草案 v0.8 · Stage A.1 纯类型/状态机契约原型已落地 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
+**状态**：**草案 v0.9 · Stage A.1 纯类型与 A.2.1 本地拓扑/事务/删除评审合同已落地 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与版本化状态机测试模型；S0/S1 命令只生成合成、忽略提交的 Trace 证据。持久 Stream、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与状态机测试模型，A.2.1 只有对现有代码路径做校验的版本化设计夹具；S0/S1 命令只生成合成、忽略提交的 Trace 证据。持久 Stream、outbox/inbox 表、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -206,7 +206,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 
 S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：S0、S1.1、S1.2、S1.3 与 S1.4 的版本化合同通过；B0 生命周期、故障计数和 shutdown 测试通过；全部生成物留在忽略目录；生产代码仍没有读取/消费/Replay/Prompt/主动回复入口。这个“收口”只关闭合成样本缺口，不关闭阶段 B 的保留期、提交/输出覆盖，也不关闭 `K-EVENT-STREAM-01`。
 
-下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机，A.2 需要对照真实多 IO 消费方评审字段、选定首个存储与 transactional outbox/inbox 边界，并把隐私/删除策略变成可测试合同。完成评审前，不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口；阶段 C 也不得与阶段 A 偷跑合并。
+下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机；A.2.1 已对照仓库现有 Tauri/HTTP/Library/主动 ingress/目录 Event 桥冻结本地存储拓扑、transactional outbox/inbox 与隐私删除设计合同。A.2.2 仍须用首个真实 QQ/直播/硬件输出适配器验证 ACK、重试、删除与多宿主假设。A.2.2 完成前，不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口；阶段 C 也不得与阶段 A 偷跑合并。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -300,7 +300,31 @@ Ring handler 对原事件 payload/metadata 的原地替换仍只是 dispatch-loc
 - 一个 Session 可以绑定多个通道端点；端点离线不等于 Session 销毁。
 - 跨 Session 查询、记忆共享或角色合并必须经过独立授权和显式策略，不能靠相同 `role_id` 自动开放。
 
-### 5.3 持久化前必须补齐变换来源
+### 5.3 Stage A.2.1 真实代码路径评审与首个存储选择
+
+当前仓库能证明的是“多种集成表面共用一个内核”，不是已经存在多通道 Event Stream：
+
+| 现有表面 | 真实路径 | A.2.1 结论 |
+|----------|----------|-------------|
+| Desktop Tauri | `kernel_attach/chat.rs` 转发 `/chat` / `/chat/stream` | 只是 HTTP 代理，不建立回合管线 |
+| HTTP JSON / SSE | `http_api/chat.rs` 调用 `process_message` / `process_message_stream` | 两种传输共用现有 chat engine |
+| Rust Library | `OcliveKernel` 委托同一 `AppState` 与 chat engine | 宿主门面，不是第二内核 |
+| 主动输入 | 来源绑定 emitter → Ring → Permit → `process_proactive_turn` | 不能伪装用户消息，也不能绕过 Event 决策 |
+| 目录 Event 插件 | `event_ring.handle` 观察获准事件并发射自身命名空间子事件 | 只有提案/派生权，没有状态提交权 |
+
+目前没有 QQ、直播或硬件输出适配器提供可持久验证的“发送成功”回执；`SendMessageResponse` 和 SSE `done` 只证明内核生成完成，不等于外部送达。A.2.1 因此不能关闭真实多 IO 验收。
+
+首个 Production Stream 存储冻结为本地嵌入式 **SQLite**，默认文件名 `runtime-event-stream.sqlite3`，且必须与主状态 `app.db`、Trace-only 的 `runtime-event-trace.sqlite3` 三址互异：
+
+- `app.db` 继续保存权威角色状态与聊天 SQLite 数据，并在未来由同一事务写入 producer outbox；现有 chat transcript 虽共用同一个 `DbManager`，但当前仍在角色状态事务之后单独追加，不能被文档冒充一个原子提交。
+- `runtime-event-stream.sqlite3` 未来只拥有 Session binding、不可变事件记录、consumer registry/checkpoint、正常保留期 tombstone 与删除工作项；本切片没有创建文件、迁移或连接池。
+- Trace-only 数据库永不升级或复用为 Production Stream，仍默认关闭、不可读回行为。
+- JSON chat mirror 继续是非权威副本；用户删除完成语义不能沿用“SQLite 已删、mirror 失败只告警”的 best-effort 口径。
+- 两个 SQLite 文件之间不宣称原子事务，也不依赖 `ATTACH DATABASE` 制造跨库 exactly-once。主库 outbox 到 Stream 采用至少一次传输，Stream 以来源作用域幂等键拒绝冲突重复。
+
+只有出现以下任一有证据的条件，才进入外部 broker 选型：同一 Session 需要在多个宿主同时活跃；远程消费者要求独立于本机内核的可用性；实测 WAL、容量或延迟预算无法满足目标。提前抽象可替换 store port 可以，但不得在没有证据时把 broker 变成运行前提。
+
+### 5.4 持久化前必须补齐变换来源
 
 当前 Ring 允许已注册处理器在一次 dispatch 内替换当前 payload 或合并 metadata，但主事件的 `source` 仍属于最初 emitter。这适合有界兼容链，却不足以证明一条持久 Fact 的每次语义变换来自谁。
 
@@ -355,6 +379,19 @@ Stage A.1 的 `RuntimeEventStreamConsumerRegistration` 固定保存：`consumer_
 | 非 `disabled` | consumer 登记撤销/禁用 | `disabled` | 保留 `next_position`，停止签发新 lease |
 
 所有 checkpoint 改动使用 `revision` CAS。delivery 回报同时携带领取时的 `checkpoint_revision` 与 `lease_epoch`；任一不匹配都原样拒绝，不得“尽量合并”。`applied` 与 `already_applied` 都只对当前 lease 推进一次，后者用于至少一次投递中的幂等重复确认，不是 exactly-once 声明。
+
+### 7.1.2 Stage A.2.1 事务交接矩阵
+
+| 情况 | 必须处于同一事务 | 跨域交接与失败规则 |
+|------|------------------|--------------------|
+| Rust 权威状态提交 | `app.db` 中的领域状态 + producer outbox | 提交前失败两者一起回滚；提交后 Stream 不可用只重试 outbox，不能回滚已提交状态或发布假失败 State |
+| 成功 Ring dispatch 的持久快照 | 宿主批准的初始信封 + `app.db` producer outbox | 完整 dispatch 后才写；需要持久保证的授权/接受结果必须等 outbox commit 后才能逸出，dispatch-local 替换不得进入 |
+| 消费者副作用 | 消费者权威 store 中的 inbox 去重记录 + 副作用 + 可选派生事件 outbox | checkpoint 只在 `applied` / `already_applied` 证据后推进；重复投递复用 inbox 结果，不重复副作用 |
+| 外部 Output 送达 | 输出适配器权威 store 中的 output outbox + 送达回执 | 只有 adapter ACK 后才能发 `delivered` Output；模型生成完成、HTTP 返回或 SSE `done` 不能冒充送达 |
+
+跨 `app.db`、Stream SQLite 和消费者/适配器 store 的复制一律按至少一次处理。任一实现若没有“本域 inbox/outbox 原子写 + 跨域幂等接收”，不得宣称可靠发布、可靠消费或可靠输出。
+
+`source_idempotency_key` v1 只接受 1–256 字节、无控制字符、明确为非凭据的 opaque UTF-8；不 trim、不大小写折叠。唯一性作用域为 `(session_partition, source, source_idempotency_key)`，同键同内容返回既有结果，同键不同内容必须拒绝并诊断。
 
 ### 7.2 顺序与冲突
 
@@ -428,10 +465,15 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 ### 10.2 隐私与保留
 
-- 每类事件在进入生产 Stream 前必须声明 payload 分级、可读取消费者、默认保留期和删除策略。
+- 每类事件在进入生产 Stream 前必须由宿主 event-kind registry 声明语义类型、允许来源、payload schema/字节上限、隐私分级、可读取消费者、保留策略与删除行为；payload 不能自报这些字段。
 - 凭据、完整系统 Prompt、原始长期记忆正文、未经同意的音视频和目录插件秘密不得进入通用 payload。
 - 诊断默认只显示事件 kind、来源、因果、位置、状态与计数；payload/metadata 值继续最小披露。
-- 用户删除 Session 数据时，事件记录、消费者索引、checkpoint 和派生缓存必须有一致的删除/墓碑策略。
+- 普通过期不制造物理缺口：原事件内容替换为同一 `stream_position` 的最小 position tombstone，只保留 schema、分区、位置、retention policy、过期时间与原因码；不得保留 event/source/correlation/payload。消费者可以按宿主 tombstone 前进，未授权的物理缺口仍进入 `blocked`。
+- `Decision` / `State` 等 required 类别在必需消费者处理完成前不得因普通保留期清除；具体最长 lag 预算仍由 event-kind policy 冻结。
+- 用户请求删除整个 Session 时不保留分区 tombstone：先阻断新 ingress/lease，再依次删除主库状态与待发 outbox、Stream binding/事件/checkpoint、必需消费者派生数据、启用的 mirror/cache，最后验证所有必需域不存在。任一必需域失败，状态保持 `blocked`，不能返回“已完成”。
+- 删除流程状态固定为 `requested → quiescing → deleting → verifying → completed`，任一步可进入 `blocked` 并幂等重试。最小完成回执不得保存原始 Session/partition/访问主体/角色/event ID 或 payload。
+- 现有角色删除会在主 SQLite 提交后对 JSON mirror 做 best-effort 删除并只记录警告；这对当前功能是已知兼容行为，但不满足未来 Session 隐私删除合同，本切片没有修改该路径。
+- “正常运行 append-only”不覆盖法定/用户删除：Production Stream 必须把授权删除作为显式控制面例外，并留下不含可关联原始标识的最小完成证据。
 - 观察/训练用途必须与运行用途分权；“可用于角色运行”不自动等于“可用于模型训练”。
 
 ---
@@ -454,6 +496,12 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 这份模型只冻结状态转移与“不推进”的条件，不实现数据库、定时器、lease worker 或消费者副作用。阶段 C 实现必须用真实持久化 crash/restart 测试重新证明同一矩阵，不能把 Stage A 的内存参考模型当作生产恢复证据。
 
+### 11.2 Stage A.2.1 代码证据与治理合同
+
+提交 `c1673ec0` 的版本化夹具 [`runtime_event_stream_stage_a2_review.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_review.v1.json) 固定五类现有集成表面、三库分离、四类事务交接、来源幂等、普通保留 tombstone 与 Session 删除编排。测试会读取夹具列出的真实 Rust 路径并检查关键委托符号仍存在，防止后续把一个适配器漂移成第二条回合管线。
+
+该夹具同时强制声明 `production_runtime_enabled = false`，并保留五个缺口：没有真实 QQ/直播/硬件 Output ACK、没有多宿主 Session lease 证据、没有 Production schema/migration、没有保留/删除执行器、没有 consumer/read API。它是设计评审证据，不是 SQLite、跨库恢复、删除完成或外部投递的运行证据。
+
 ---
 
 ## 12. 分阶段实施准入
@@ -462,7 +510,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
-| **A · 契约原型（A.1 已落纯类型）** | 冻结事件分型、Session 映射、外层记录和消费者 checkpoint 测试模型 | A.1 已有可编译 DTO + 14 场景版本化状态表；仍需设计评审 | 不接生产 IO，不改回复 |
+| **A · 契约原型（A.2.1 已落本地评审）** | 冻结事件分型、Session 映射、外层记录、checkpoint、本地存储/事务/删除合同 | A.1 可编译 DTO + 14 场景状态表；A.2.1 五表面代码证据 + 三库/四事务/删除夹具；A.2.2 真实外部适配器仍待评审 | 不接生产 IO，不改回复 |
 | **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open 与确定性 shutdown；S0/S1 合成证据已收口，含固定十分钟耐久和重启续位；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
@@ -474,12 +522,12 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 ## 13. 实施前仍需冻结的决策
 
-- B0 Trace 已选独立 SQLite；Production Stream 的首个存储、可替换后端边界及何时需要外部 broker 仍未冻结。
-- A.1 已冻结 Session 映射字段及 v1 一 Session/一分区关系；宿主如何签发/轮换 opaque ID、映射存储位置、端点 ACL 与删除传播仍未冻结。
+- A.2.1 已选独立 `runtime-event-stream.sqlite3` 作为首个 Production 后端，并固定与 `app.db` / Trace 三址分离；具体 store port、schema、migration、WAL/容量预算和 broker 迁移实现仍未冻结。
+- A.1 已冻结 Session 映射字段及 v1 一 Session/一分区关系；宿主如何签发/轮换 opaque ID、端点 ACL 与多宿主 lease 仍未冻结。删除传播的状态与必需域已冻结，但还没有执行器。
 - B0 当前记录所有成功 dispatch 的最终脱敏信封头；哪些提交/输出摘要及哪些事件进入 Production Stream、payload 最小化和访问规则仍未冻结。
-- A.1 已固定来源作用域 idempotency key 与 checkpoint wire；键的规范化/摘要算法、transactional outbox/inbox schema 和持久化事务边界仍未冻结。
+- A.2.1 已固定 1–256 字节 opaque key 规范、主库 producer outbox、消费者 inbox/outbox 与 adapter ACK 事务边界；具体表字段、加密/密钥轮换、reconcile 调度和故障预算仍未冻结。
 - 多宿主同时运行同一 Session 时的租约、leader 或冲突策略。
-- 首个低风险真实消费者和首个主动输入适配器。
+- 首个低风险真实消费者、首个 QQ/直播/硬件输出适配器及其删除/回执合同。
 - Replay 的隔离数据库、模型调用策略和隐私删除传播。
 
 这些问题不阻塞本文作为边界草案，但在相应阶段编码前必须转成可测试的 accepted contract。
@@ -500,7 +548,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
 - [x] 生命周期测试区分队列丢弃与入队后写失败，覆盖冲突重复头、终端失败停机和并发幂等 shutdown，并保持 v1 诊断反序列化兼容。
 - [x] S1.4 固定十分钟合同完成 2,400 次低速来源绑定 dispatch、20 次主库健康检查、RSS/有界历史检查、shutdown 排空与重启后第 2,401 位追加；只形成本机开发者证据，不冒充生产时长或硬件 soak。
-- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐外层记录、Session 映射与 consumer/checkpoint 纯契约，A.2 设计评审仍未完成。
+- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐纯类型，A.2.1 已补齐本地代码路径/存储/事务/删除设计合同；A.2.2 真实外部适配器评审仍未完成。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
@@ -510,7 +558,8 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] `RuntimeEventRecord.stream_position` 与 `EventEnvelope.sequence` 是独立字段，类型/测试未将后者用作消费游标。
 - [x] Session v1 显式映射宿主分区、canonical Session、角色、角色包 revision、访问主体、legacy `srid` 和多个端点；角色扮演身份不参与分区。
 - [x] 14 场景参考模型固定至少一次消费中的成功、重复、重试、过期 lease、CAS 冲突、阻塞、禁用和保留期缺口语义。
-- [ ] Stage A 设计评审尚未完成；上述纯类型/参考模型不是 Production Stream、消费者恢复或持久 checkpoint 实现证据。
+- [x] A.2.1 夹具对照现有五个集成表面，冻结独立 Stream SQLite、主库 producer outbox、消费者 inbox、adapter ACK、普通保留 tombstone 与 Session 删除顺序，且显式保持 runtime disabled。
+- [ ] A.2.2 尚未用真实 QQ/直播/硬件输出和多宿主场景验证；上述纯类型/夹具不是 Production Stream、消费者恢复、删除执行或持久 checkpoint 实现证据。
 - [ ] 持久语义变换使用带自身来源的派生事件；没有把修改后的 payload 永久归因给原始 emitter。
 - [ ] Fact / Observation / Proposal / Decision / State / Output 权力边界有类型或校验门禁。
 - [ ] LLM 输出只能通过受约束包装器形成 Proposal，不能直接形成 Fact/State。
