@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_provider_locator_crash_window_probe",
+  "stage": "a2_2_2_provider_accept_locator_persist_crash_recovery_probe_only",
+  "record_id": "r4-live-edc48c64-2c5d-49b4-8ed1-c21a7ab46070",
+  "prepared_at": "2026-09-02T19:19:06.273Z",
+  "recovered_at": "2026-09-02T19:19:07.326Z",
+  "prepare_source_commit": "7871b2ff09e3b3fa000116ff28fc9a7964537c71",
+  "recover_source_commit": "7871b2ff09e3b3fa000116ff28fc9a7964537c71",
+  "source_worktree_dirty": true,
+  "scenario_contract": "kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json",
+  "scenario_contract_sha256": "eb8873fadde53356ae81d69d1b2cc61da2f0186c74f447039bf7351bf1f583ed",
+  "protocol_source_commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+  "synthetic": false,
+  "live_adapter_tested": true,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "endpoint_scope": "loopback",
+  "implementation_label": "napcat-4.18.19-qq-9.9.33-52230",
+  "target_kind": "group",
+  "injected_fault": {
+    "kind": "controlled_exit_after_send_ack_before_locator_persist",
+    "authorized_before_network": true,
+    "expected_exit_code": 86,
+    "attempting_record_without_locator_observed": true,
+    "automatic_send_retries": 0
+  },
+  "history_reconciliation": {
+    "action": "get_group_msg_history",
+    "profile": "napcat_go_cqhttp_extension",
+    "read_only": true,
+    "recovery_authorized_before_network": true,
+    "outcome": "unique_exact_own_match",
+    "candidate_count": 1,
+    "exact_body_required": true,
+    "exact_target_required": true,
+    "own_account_marker_required": true,
+    "locator_persisted_before_recall": true
+  },
+  "reconciliation": {
+    "action": "delete_msg",
+    "attempts": 1,
+    "outcome": "acknowledged",
+    "http_status": 200
+  },
+  "private_store": {
+    "format": "encrypted_json_envelope",
+    "algorithm": "aes-256-gcm",
+    "key_source": "process_environment_only",
+    "key_persisted_in_store": false,
+    "sensitive_plaintext_absent_before_recovery": true,
+    "locator_absent_at_recovery_start": true,
+    "locator_removed_after_acknowledged_recall": true
+  },
+  "privacy": {
+    "history_payload_exported": false,
+    "exported_store_key": false,
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false
+  },
+  "remaining_gaps": {
+    "napcat_group_crash_window_recovery_tested": true,
+    "generic_onebot_crash_window_closed": false,
+    "private_target_crash_window_closed": false,
+    "host_level_key_recovery_tested": false,
+    "multi_host_owner_lease_tested": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}

@@ -73,6 +73,13 @@ fn private_store_evidence() -> Value {
     .expect("parse Runtime Event Stream Stage A.2.2 OneBot private-store evidence fixture")
 }
 
+fn crash_window_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_crash_window_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot crash-window evidence fixture")
+}
+
 fn assert_no_sensitive_runtime_values(value: &Value) {
     const FORBIDDEN_KEYS: &[&str] = &[
         "access_token",
@@ -621,6 +628,89 @@ fn stage_a2_onebot_private_store_evidence_proves_encryption_and_restart_reconcil
     );
     for field in [
         "provider_accept_to_locator_persist_crash_window_closed",
+        "multi_host_owner_lease_tested",
+        "production_stream_connected",
+    ] {
+        assert_eq!(
+            evidence["remaining_gaps"][field], false,
+            "remaining gap {field}"
+        );
+    }
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
+}
+
+#[test]
+fn stage_a2_onebot_crash_window_evidence_proves_only_napcat_group_recovery() {
+    let evidence = crash_window_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(
+        evidence["stage"],
+        "a2_2_2_provider_accept_locator_persist_crash_recovery_probe_only"
+    );
+    assert_eq!(evidence["synthetic"], false);
+    assert_eq!(evidence["live_adapter_tested"], true);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(evidence["endpoint_scope"], "loopback");
+    assert_eq!(evidence["target_kind"], "group");
+
+    let fault = &evidence["injected_fault"];
+    assert_eq!(
+        fault["kind"],
+        "controlled_exit_after_send_ack_before_locator_persist"
+    );
+    assert_eq!(fault["authorized_before_network"], true);
+    assert_eq!(fault["expected_exit_code"], 86);
+    assert_eq!(fault["attempting_record_without_locator_observed"], true);
+    assert_eq!(fault["automatic_send_retries"], 0);
+
+    let history = &evidence["history_reconciliation"];
+    assert_eq!(history["action"], "get_group_msg_history");
+    assert_eq!(history["profile"], "napcat_go_cqhttp_extension");
+    assert_eq!(history["read_only"], true);
+    assert_eq!(history["recovery_authorized_before_network"], true);
+    assert_eq!(history["outcome"], "unique_exact_own_match");
+    assert_eq!(history["candidate_count"], 1);
+    assert_eq!(history["exact_body_required"], true);
+    assert_eq!(history["exact_target_required"], true);
+    assert_eq!(history["own_account_marker_required"], true);
+    assert_eq!(history["locator_persisted_before_recall"], true);
+
+    assert_eq!(evidence["reconciliation"]["action"], "delete_msg");
+    assert_eq!(evidence["reconciliation"]["attempts"], 1);
+    assert_eq!(evidence["reconciliation"]["outcome"], "acknowledged");
+    assert_eq!(evidence["reconciliation"]["http_status"], 200);
+
+    let store = &evidence["private_store"];
+    assert_eq!(store["format"], "encrypted_json_envelope");
+    assert_eq!(store["algorithm"], "aes-256-gcm");
+    assert_eq!(store["key_source"], "process_environment_only");
+    assert_eq!(store["key_persisted_in_store"], false);
+    assert_eq!(store["sensitive_plaintext_absent_before_recovery"], true);
+    assert_eq!(store["locator_absent_at_recovery_start"], true);
+    assert_eq!(store["locator_removed_after_acknowledged_recall"], true);
+
+    for field in [
+        "history_payload_exported",
+        "exported_store_key",
+        "exported_access_token",
+        "exported_endpoint",
+        "exported_target_id",
+        "exported_message_body",
+        "exported_provider_message_id",
+    ] {
+        assert_eq!(evidence["privacy"][field], false, "privacy field {field}");
+    }
+    assert_eq!(
+        evidence["remaining_gaps"]["napcat_group_crash_window_recovery_tested"],
+        true
+    );
+    for field in [
+        "generic_onebot_crash_window_closed",
+        "private_target_crash_window_closed",
+        "host_level_key_recovery_tested",
         "multi_host_owner_lease_tested",
         "production_stream_connected",
     ] {
