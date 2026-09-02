@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url'
 import { LIVE_CONFIRMATION } from './runtime-event-onebot-live-probe.mjs'
 import {
   parsePrivateStoreProbeConfig,
+  PRIVATE_CRASH_CONFIRMATION,
+  PRIVATE_CRASH_EXIT_CODE,
+  PRIVATE_CRASH_RECOVERY_CONFIRMATION,
   PRIVATE_RECONCILE_CONFIRMATION,
   PRIVATE_STORE_CONFIRMATION,
 } from './runtime-event-onebot-private-store-probe.mjs'
@@ -22,6 +25,7 @@ const scriptPath = join(repoRoot, 'scripts/runtime-event-onebot-private-store-pr
 const tokenSentinel = 'must-not-export-private-store-token'
 const targetSentinel = '1000010000'
 const providerIdSentinel = 51515151
+const selfIdSentinel = 1000020000
 
 function envFor(endpoint, outputDir, overrides = {}) {
   return {
@@ -37,6 +41,13 @@ function envFor(endpoint, outputDir, overrides = {}) {
     TEST_OUTPUT_DIR: outputDir,
     ...overrides,
   }
+}
+
+function groupEnvFor(endpoint, outputDir, overrides = {}) {
+  const env = envFor(endpoint, outputDir, overrides)
+  delete env.OCLIVE_ONEBOT_TEST_USER_ID
+  env.OCLIVE_ONEBOT_TEST_GROUP_ID = targetSentinel
+  return env
 }
 
 function prepareArgs(recordId) {
@@ -58,6 +69,32 @@ function reconcileArgs(recordId) {
     LIVE_CONFIRMATION,
     '--confirm-reconcile',
     PRIVATE_RECONCILE_CONFIRMATION,
+    '--record-id',
+    recordId,
+  ]
+}
+
+function crashPrepareArgs(recordId) {
+  return [
+    'prepare-crash',
+    '--confirm-live',
+    LIVE_CONFIRMATION,
+    '--confirm-private-store',
+    PRIVATE_STORE_CONFIRMATION,
+    '--confirm-crash-after-ack',
+    PRIVATE_CRASH_CONFIRMATION,
+    '--record-id',
+    recordId,
+  ]
+}
+
+function crashRecoveryArgs(recordId) {
+  return [
+    'recover-unpersisted',
+    '--confirm-live',
+    LIVE_CONFIRMATION,
+    '--confirm-recover-unpersisted',
+    PRIVATE_CRASH_RECOVERY_CONFIRMATION,
     '--record-id',
     recordId,
   ]
@@ -100,6 +137,21 @@ async function startOneBotStub(handler) {
 
 function responseData(data) {
   return { body: { status: 'ok', retcode: 0, data } }
+}
+
+function ownGroupHistoryMessage(recordId, messageId = providerIdSentinel) {
+  const body = `${messagePrefixForTest()} ${recordId}`
+  return {
+    group_id: Number(targetSentinel),
+    message: [{ type: 'text', data: { text: body } }],
+    message_id: messageId,
+    message_sent_type: 'self',
+    message_type: 'group',
+    post_type: 'message_sent',
+    raw_message: body,
+    self_id: selfIdSentinel,
+    user_id: selfIdSentinel,
+  }
 }
 
 function runChild(args, env) {
@@ -147,6 +199,30 @@ test('private store probe fails closed on mode, confirmation, key, and remote sc
       envFor('https://example.com', outputDir),
     ),
     /ONEBOT_PRIVATE_STORE_PROBE_LOOPBACK_ONLY/,
+  )
+  assert.throws(
+    () => parsePrivateStoreProbeConfig(
+      crashPrepareArgs('record-1').filter(
+        value => value !== '--confirm-crash-after-ack'
+          && value !== PRIVATE_CRASH_CONFIRMATION,
+      ),
+      groupEnvFor('http://127.0.0.1:5700', outputDir),
+    ),
+    /ONEBOT_PRIVATE_STORE_CRASH_CONFIRMATION_REQUIRED/,
+  )
+  assert.throws(
+    () => parsePrivateStoreProbeConfig(
+      crashPrepareArgs('record-1'),
+      envFor('http://127.0.0.1:5700', outputDir),
+    ),
+    /ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_GROUP_ONLY/,
+  )
+  assert.throws(
+    () => parsePrivateStoreProbeConfig(
+      crashRecoveryArgs('record-1').slice(0, -4),
+      groupEnvFor('http://127.0.0.1:5700', outputDir),
+    ),
+    /ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_CONFIRMATION_REQUIRED/,
   )
 })
 
@@ -343,6 +419,343 @@ test('uncertain recall retains the encrypted locator without automatic retry', a
     '/get_version_info',
     '/delete_msg',
   ])
+})
+
+test('crash window recovery finds one exact own group message and recalls it', async (t) => {
+  const recordId = 'synthetic-crash-window-success'
+  const stub = await startOneBotStub((path) => {
+    if (path === '/get_version_info') {
+      return responseData({
+        app_name: 'onebot-private-store-test-double',
+        app_version: '1.0.0',
+        protocol_version: 'v11',
+      })
+    }
+    if (path === '/send_group_msg')
+      return responseData({ message_id: providerIdSentinel })
+    if (path === '/get_group_msg_history') {
+      return responseData({
+        messages: [ownGroupHistoryMessage(recordId)],
+      })
+    }
+    if (path === '/delete_msg')
+      return responseData(null)
+    return { status: 404, body: '' }
+  })
+  t.after(stub.stop)
+
+  const outputDir = resolve(
+    'target/oclive-event/onebot-private-store-probe-self-test/crash-window-success',
+  )
+  rmSync(outputDir, { recursive: true, force: true })
+  t.after(() => rmSync(outputDir, { recursive: true, force: true }))
+  const env = groupEnvFor(stub.endpoint, outputDir)
+
+  const crashed = await runChild(
+    withOutputDir(crashPrepareArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(crashed.code, PRIVATE_CRASH_EXIT_CODE)
+  assert.match(
+    crashed.stderr,
+    /ONEBOT_PRIVATE_STORE_FAULT_EXIT_AFTER_ACK/,
+  )
+  const storePath = join(outputDir, 'private-store', `${recordId}.json`)
+  const attemptingText = readFileSync(storePath, 'utf8')
+  const attempting = JSON.parse(attemptingText)
+  assert.equal(attempting.state, 'attempting')
+  assert.equal(attempting.audit.crash_fault_authorized, true)
+  for (const forbidden of [
+    env.OCLIVE_ONEBOT_PRIVATE_STORE_KEY,
+    tokenSentinel,
+    targetSentinel,
+    String(providerIdSentinel),
+    `${messagePrefixForTest()} ${recordId}`,
+  ]) {
+    assert.equal(attemptingText.includes(forbidden), false)
+  }
+
+  const recovered = await runChild(
+    withOutputDir(crashRecoveryArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(recovered.code, 0, recovered.stderr)
+  const tombstone = JSON.parse(readFileSync(storePath, 'utf8'))
+  assert.equal(tombstone.state, 'crash_recalled_locator_removed')
+  assert.equal(tombstone.cipher, null)
+  assert.equal(tombstone.audit.crash_recovery_candidate_count, 1)
+  assert.equal(
+    tombstone.audit.crash_recovery_history_outcome,
+    'unique_exact_own_match',
+  )
+
+  const evidencePath = join(
+    outputDir,
+    recordId,
+    'onebot-private-store-crash-window-probe.evidence.json',
+  )
+  const evidenceText = readFileSync(evidencePath, 'utf8')
+  const evidence = JSON.parse(evidenceText)
+  assert.equal(evidence.synthetic, true)
+  assert.equal(evidence.probe_success, true)
+  assert.equal(
+    evidence.injected_fault.attempting_record_without_locator_observed,
+    true,
+  )
+  assert.equal(
+    evidence.history_reconciliation.outcome,
+    'unique_exact_own_match',
+  )
+  assert.equal(evidence.history_reconciliation.candidate_count, 1)
+  assert.equal(
+    evidence.history_reconciliation.recovery_authorized_before_network,
+    true,
+  )
+  assert.equal(
+    evidence.history_reconciliation.locator_persisted_before_recall,
+    true,
+  )
+  assert.equal(evidence.reconciliation.attempts, 1)
+  assert.equal(evidence.reconciliation.outcome, 'acknowledged')
+  assert.deepEqual(evidence.remaining_gaps, {
+    napcat_group_crash_window_recovery_tested: false,
+    generic_onebot_crash_window_closed: false,
+    private_target_crash_window_closed: false,
+    host_level_key_recovery_tested: false,
+    multi_host_owner_lease_tested: false,
+    production_stream_connected: false,
+  })
+  for (const forbidden of [
+    env.OCLIVE_ONEBOT_PRIVATE_STORE_KEY,
+    tokenSentinel,
+    targetSentinel,
+    String(providerIdSentinel),
+    stub.endpoint,
+    `${messagePrefixForTest()} ${recordId}`,
+  ]) {
+    assert.equal(evidenceText.includes(forbidden), false)
+  }
+  assert.deepEqual(stub.requests.map(request => request.path), [
+    '/get_version_info',
+    '/send_group_msg',
+    '/get_version_info',
+    '/get_group_msg_history',
+    '/delete_msg',
+  ])
+})
+
+test('zero or ambiguous crash recovery matches stay blocked without recall', async (t) => {
+  let historyMessages = []
+  const stub = await startOneBotStub((path) => {
+    if (path === '/get_version_info') {
+      return responseData({
+        app_name: 'onebot-private-store-test-double',
+        app_version: '1.0.0',
+        protocol_version: 'v11',
+      })
+    }
+    if (path === '/send_group_msg')
+      return responseData({ message_id: providerIdSentinel })
+    if (path === '/get_group_msg_history')
+      return responseData({ messages: historyMessages })
+    if (path === '/delete_msg')
+      assert.fail('ambiguous crash recovery must not recall')
+    return { status: 404, body: '' }
+  })
+  t.after(stub.stop)
+
+  const outputDir = resolve(
+    'target/oclive-event/onebot-private-store-probe-self-test/crash-window-blocked',
+  )
+  rmSync(outputDir, { recursive: true, force: true })
+  t.after(() => rmSync(outputDir, { recursive: true, force: true }))
+  const env = groupEnvFor(stub.endpoint, outputDir)
+
+  for (const scenario of [
+    {
+      id: 'synthetic-crash-window-zero',
+      messages: (() => {
+        const exact = ownGroupHistoryMessage('synthetic-crash-window-zero')
+        return [
+          { ...exact, user_id: selfIdSentinel + 1 },
+          { ...exact, group_id: Number(targetSentinel) + 1 },
+          { ...exact, raw_message: `${exact.raw_message} near-match` },
+        ]
+      })(),
+      count: 0,
+    },
+    {
+      id: 'synthetic-crash-window-ambiguous',
+      messages: [
+        ownGroupHistoryMessage('synthetic-crash-window-ambiguous'),
+        ownGroupHistoryMessage('synthetic-crash-window-ambiguous', 51515152),
+      ],
+      count: 2,
+    },
+  ]) {
+    historyMessages = scenario.messages
+    const crashed = await runChild(
+      withOutputDir(crashPrepareArgs(scenario.id), outputDir),
+      env,
+    )
+    assert.equal(crashed.code, PRIVATE_CRASH_EXIT_CODE)
+    const recovered = await runChild(
+      withOutputDir(crashRecoveryArgs(scenario.id), outputDir),
+      env,
+    )
+    assert.equal(recovered.code, 1)
+    const storeText = readFileSync(
+      join(outputDir, 'private-store', `${scenario.id}.json`),
+      'utf8',
+    )
+    const store = JSON.parse(storeText)
+    assert.equal(store.state, 'crash_recovery_blocked_locator_unresolved')
+    assert.equal(store.audit.crash_recovery_candidate_count, scenario.count)
+    assert.equal(store.cipher.algorithm, 'aes-256-gcm')
+    assert.equal(storeText.includes(targetSentinel), false)
+    assert.equal(storeText.includes(String(providerIdSentinel)), false)
+  }
+
+  assert.equal(
+    stub.requests.filter(request => request.path === '/send_group_msg').length,
+    2,
+  )
+  assert.equal(
+    stub.requests.filter(
+      request => request.path === '/get_group_msg_history',
+    ).length,
+    2,
+  )
+  assert.equal(
+    stub.requests.filter(request => request.path === '/delete_msg').length,
+    0,
+  )
+})
+
+test('unavailable crash recovery history stays blocked without recall', async (t) => {
+  const recordId = 'synthetic-crash-window-history-unavailable'
+  const stub = await startOneBotStub((path) => {
+    if (path === '/get_version_info') {
+      return responseData({
+        app_name: 'onebot-private-store-test-double',
+        app_version: '1.0.0',
+        protocol_version: 'v11',
+      })
+    }
+    if (path === '/send_group_msg')
+      return responseData({ message_id: providerIdSentinel })
+    if (path === '/get_group_msg_history')
+      return { status: 500, body: 'not-json' }
+    if (path === '/delete_msg')
+      assert.fail('unavailable crash recovery history must not recall')
+    return { status: 404, body: '' }
+  })
+  t.after(stub.stop)
+
+  const outputDir = resolve(
+    'target/oclive-event/onebot-private-store-probe-self-test/crash-window-history-unavailable',
+  )
+  rmSync(outputDir, { recursive: true, force: true })
+  t.after(() => rmSync(outputDir, { recursive: true, force: true }))
+  const env = groupEnvFor(stub.endpoint, outputDir)
+  const crashed = await runChild(
+    withOutputDir(crashPrepareArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(crashed.code, PRIVATE_CRASH_EXIT_CODE)
+  const recovered = await runChild(
+    withOutputDir(crashRecoveryArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(recovered.code, 1)
+
+  const store = JSON.parse(readFileSync(
+    join(outputDir, 'private-store', `${recordId}.json`),
+    'utf8',
+  ))
+  assert.equal(store.state, 'crash_recovery_blocked_locator_unresolved')
+  assert.equal(store.audit.crash_recovery_candidate_count, 0)
+  assert.equal(
+    store.audit.crash_recovery_history_outcome,
+    'history_unavailable',
+  )
+  assert.equal(
+    stub.requests.filter(request => request.path === '/delete_msg').length,
+    0,
+  )
+})
+
+test('crash recovery retains the recovered locator after uncertain recall', async (t) => {
+  const recordId = 'synthetic-crash-window-recall-uncertain'
+  const stub = await startOneBotStub((path) => {
+    if (path === '/get_version_info') {
+      return responseData({
+        app_name: 'onebot-private-store-test-double',
+        app_version: '1.0.0',
+        protocol_version: 'v11',
+      })
+    }
+    if (path === '/send_group_msg')
+      return responseData({ message_id: providerIdSentinel })
+    if (path === '/get_group_msg_history') {
+      return responseData({
+        messages: [ownGroupHistoryMessage(recordId)],
+      })
+    }
+    if (path === '/delete_msg')
+      return { status: 500, body: 'not-json' }
+    return { status: 404, body: '' }
+  })
+  t.after(stub.stop)
+
+  const outputDir = resolve(
+    'target/oclive-event/onebot-private-store-probe-self-test/crash-window-recall-uncertain',
+  )
+  rmSync(outputDir, { recursive: true, force: true })
+  t.after(() => rmSync(outputDir, { recursive: true, force: true }))
+  const env = groupEnvFor(stub.endpoint, outputDir)
+  const crashed = await runChild(
+    withOutputDir(crashPrepareArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(crashed.code, PRIVATE_CRASH_EXIT_CODE)
+  const recovered = await runChild(
+    withOutputDir(crashRecoveryArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(recovered.code, 1)
+
+  const storeText = readFileSync(
+    join(outputDir, 'private-store', `${recordId}.json`),
+    'utf8',
+  )
+  const store = JSON.parse(storeText)
+  assert.equal(
+    store.state,
+    'crash_reconciliation_failed_locator_retained',
+  )
+  assert.equal(store.cipher.algorithm, 'aes-256-gcm')
+  assert.equal(store.audit.crash_reconciliation_attempts, 1)
+  assert.equal(
+    store.audit.crash_reconciliation_outcome,
+    'delivery_uncertain',
+  )
+  assert.equal(storeText.includes(String(providerIdSentinel)), false)
+  assert.equal(
+    stub.requests.filter(request => request.path === '/delete_msg').length,
+    1,
+  )
+  const requestCountAfterUncertainRecall = stub.requests.length
+  const repeated = await runChild(
+    withOutputDir(crashRecoveryArgs(recordId), outputDir),
+    env,
+  )
+  assert.equal(repeated.code, 1)
+  assert.match(
+    repeated.stderr,
+    /ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_PAYLOAD_INVALID/,
+  )
+  assert.equal(stub.requests.length, requestCountAfterUncertainRecall)
 })
 
 function messagePrefixForTest() {

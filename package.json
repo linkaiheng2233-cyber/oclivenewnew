@@ -57,6 +57,7 @@
     "event:onebot-timeout-probe:self-test": "node --test scripts/runtime-event-onebot-timeout-probe.test.mjs",
     "event:onebot-private-store-probe": "node scripts/runtime-event-onebot-private-store-probe.mjs",
     "event:onebot-private-store-probe:self-test": "node --test scripts/runtime-event-onebot-private-store-probe.test.mjs",
+    "event:onebot-crash-window-probe": "node scripts/runtime-event-onebot-private-store-probe.mjs",
     "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",

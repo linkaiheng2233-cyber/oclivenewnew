@@ -34,10 +34,16 @@ import {
 
 export const PRIVATE_STORE_CONFIRMATION = 'A2.2.2_PRIVATE_STORE'
 export const PRIVATE_RECONCILE_CONFIRMATION = 'A2.2.2_RESTART_RECONCILE'
+export const PRIVATE_CRASH_CONFIRMATION = 'A2.2.2_CRASH_AFTER_ACK'
+export const PRIVATE_CRASH_RECOVERY_CONFIRMATION
+  = 'A2.2.2_RECOVER_UNPERSISTED'
+export const PRIVATE_CRASH_EXIT_CODE = 86
 
 const storeSchemaVersion = 1
 const defaultOutputDir = 'target/oclive-event/onebot-private-store-probe'
 const messagePrefix = 'OCLive A.2.2.2 private store probe'
+const crashWindowEvidenceName
+  = 'onebot-private-store-crash-window-probe.evidence.json'
 
 function fail(code) {
   throw new Error(code)
@@ -70,13 +76,19 @@ export function parsePrivateStoreProbeConfig(
   env = process.env,
 ) {
   const mode = argv[0]
-  if (!['prepare', 'reconcile'].includes(mode))
+  if (![
+    'prepare',
+    'prepare-crash',
+    'reconcile',
+    'recover-unpersisted',
+  ].includes(mode)) {
     fail('ONEBOT_PRIVATE_STORE_MODE_REQUIRED')
+  }
   if (optionValue(argv, '--confirm-live', '') !== LIVE_CONFIRMATION)
     fail('ONEBOT_LIVE_CONFIRMATION_REQUIRED')
   if (argv.includes('--allow-remote'))
     fail('ONEBOT_PRIVATE_STORE_PROBE_LOOPBACK_ONLY')
-  if (mode === 'prepare'
+  if (['prepare', 'prepare-crash'].includes(mode)
     && optionValue(argv, '--confirm-private-store', '')
     !== PRIVATE_STORE_CONFIRMATION) {
     fail('ONEBOT_PRIVATE_STORE_CONFIRMATION_REQUIRED')
@@ -85,6 +97,16 @@ export function parsePrivateStoreProbeConfig(
     && optionValue(argv, '--confirm-reconcile', '')
     !== PRIVATE_RECONCILE_CONFIRMATION) {
     fail('ONEBOT_PRIVATE_RECONCILIATION_CONFIRMATION_REQUIRED')
+  }
+  if (mode === 'prepare-crash'
+    && optionValue(argv, '--confirm-crash-after-ack', '')
+    !== PRIVATE_CRASH_CONFIRMATION) {
+    fail('ONEBOT_PRIVATE_STORE_CRASH_CONFIRMATION_REQUIRED')
+  }
+  if (mode === 'recover-unpersisted'
+    && optionValue(argv, '--confirm-recover-unpersisted', '')
+    !== PRIVATE_CRASH_RECOVERY_CONFIRMATION) {
+    fail('ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_CONFIRMATION_REQUIRED')
   }
 
   const recordId = validateSafeId(
@@ -110,9 +132,15 @@ export function parsePrivateStoreProbeConfig(
   )
   if (base.endpointScope !== 'loopback')
     fail('ONEBOT_PRIVATE_STORE_PROBE_LOOPBACK_ONLY')
+  if (['prepare-crash', 'recover-unpersisted'].includes(mode)
+    && base.target.kind !== 'group') {
+    fail('ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_GROUP_ONLY')
+  }
 
   return {
     ...base,
+    crashFaultAuthorized: mode === 'prepare-crash',
+    crashRecoveryAuthorized: mode === 'recover-unpersisted',
     keyId,
     mode,
     recordId,
@@ -131,6 +159,10 @@ function evidencePath(config) {
     config.recordId,
     'onebot-private-store-probe.evidence.json',
   )
+}
+
+function crashWindowEvidencePath(config) {
+  return join(config.outputDir, config.recordId, crashWindowEvidenceName)
 }
 
 function aad(recordId) {
@@ -285,6 +317,7 @@ async function withRecordLock(config, callback) {
 }
 
 export async function preparePrivateStoreProbe(config, {
+  afterDeliveredAck,
   fetchImpl = fetch,
   instanceId = randomUUID(),
   now = () => new Date(),
@@ -306,6 +339,7 @@ export async function preparePrivateStoreProbe(config, {
     }
     const audit = {
       automatic_retries: 0,
+      crash_fault_authorized: config.crashFaultAuthorized,
       implementation_label: config.implementationLabel,
       prepare_instance_id: instanceId,
       preflight_outcome: 'not_attempted',
@@ -359,6 +393,8 @@ export async function preparePrivateStoreProbe(config, {
       fetchImpl,
     )
     const send = classifySend(sendResult)
+    if (send.outcome === 'delivered' && afterDeliveredAck)
+      await afterDeliveredAck()
     audit.send_http_status = sendResult.httpStatus
     audit.send_outcome = send.outcome
     payload.provider_message_id = send.messageId
@@ -563,15 +599,393 @@ export async function reconcilePrivateStoreProbe(config, {
   })
 }
 
+function exactTextMessage(message, expectedBody) {
+  if (typeof message === 'string')
+    return message === expectedBody
+  return Array.isArray(message)
+    && message.length === 1
+    && message[0]?.type === 'text'
+    && message[0]?.data?.text === expectedBody
+}
+
+export function exactOwnGroupHistoryCandidates(
+  result,
+  config,
+  expectedBody,
+) {
+  if (classifyAck(result) !== 'acknowledged'
+    || !Array.isArray(result.json?.data?.messages)) {
+    return { candidates: [], outcome: 'history_unavailable' }
+  }
+  const candidates = result.json.data.messages.filter(message => (
+    message?.message_type === 'group'
+    && message.group_id === config.target.id
+    && Number.isSafeInteger(message.self_id)
+    && message.user_id === message.self_id
+    && (message.message_sent_type === 'self'
+      || message.post_type === 'message_sent')
+    && message.raw_message === expectedBody
+    && exactTextMessage(message.message, expectedBody)
+    && Number.isSafeInteger(message.message_id)
+  ))
+  if (candidates.length === 0)
+    return { candidates, outcome: 'no_exact_own_match' }
+  if (candidates.length > 1)
+    return { candidates, outcome: 'ambiguous_exact_own_match' }
+  return { candidates, outcome: 'unique_exact_own_match' }
+}
+
+function validateCrashRecoveryPayload(config, envelope, payload) {
+  const expectedBody = `${messagePrefix} ${config.recordId}`
+  const locatorExpected
+    = envelope.state === 'crash_locator_recovered_pending_reconciliation'
+  const unresolvedExpected = [
+    'attempting',
+    'crash_recovery_blocked_locator_unresolved',
+  ].includes(envelope.state)
+  if ((!locatorExpected && !unresolvedExpected)
+    || payload.target_kind !== 'group'
+    || payload.target_id !== config.target.id
+    || payload.message_body !== expectedBody
+    || (locatorExpected
+      && !Number.isSafeInteger(payload.provider_message_id))
+    || (locatorExpected
+      && (envelope.audit.crash_recovery_history_outcome
+        !== 'unique_exact_own_match'
+        || envelope.audit.crash_recovery_candidate_count !== 1))
+      || (unresolvedExpected && payload.provider_message_id !== null)) {
+    fail('ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_PAYLOAD_INVALID')
+  }
+  return { expectedBody, locatorExpected, unresolvedExpected }
+}
+
+function writeCrashRecoveryEnvelope({
+  audit,
+  config,
+  envelope,
+  payload,
+  state,
+  updatedAt,
+}) {
+  const next = encryptedEnvelope({
+    audit,
+    config,
+    createdAt: envelope.created_at,
+    payload,
+    state,
+    updatedAt,
+  })
+  const path = storePath(config)
+  atomicWriteJson(path, next)
+  const serialized = readFileSync(path, 'utf8')
+  if (!plaintextAbsent(serialized, payload))
+    fail('ONEBOT_PRIVATE_STORE_PLAINTEXT_LEAK')
+  return next
+}
+
+function crashWindowEvidence({
+  candidateCount,
+  config,
+  envelope,
+  finishedAt,
+  historyOutcome,
+  initialAttemptingWithoutLocator,
+  locatorPersistedBeforeRecall,
+  plaintextAbsentBeforeRecovery,
+  recallHttpStatus,
+  recallOutcome,
+  source,
+}) {
+  const protocol = readProtocolContract()
+  const successfulRecovery = initialAttemptingWithoutLocator
+    && historyOutcome === 'unique_exact_own_match'
+    && locatorPersistedBeforeRecall
+    && recallOutcome === 'acknowledged'
+  const liveRecoveryVerified = !config.synthetic && successfulRecovery
+  return {
+    schema_version: 1,
+    evidence_kind:
+      'runtime_event_stream_onebot_provider_locator_crash_window_probe',
+    stage:
+      'a2_2_2_provider_accept_locator_persist_crash_recovery_probe_only',
+    record_id: config.recordId,
+    prepared_at: envelope.created_at,
+    recovered_at: finishedAt,
+    prepare_source_commit: envelope.audit.source_commit,
+    recover_source_commit: source.commit,
+    source_worktree_dirty:
+      envelope.audit.source_worktree_dirty || source.worktreeDirty,
+    scenario_contract:
+      'kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json',
+    scenario_contract_sha256: protocol.sha256,
+    protocol_source_commit: protocol.commit,
+    synthetic: config.synthetic,
+    live_adapter_tested: !config.synthetic,
+    production_runtime_enabled: false,
+    production_ready: false,
+    endpoint_scope: config.endpointScope,
+    implementation_label: config.implementationLabel,
+    target_kind: config.target.kind,
+    injected_fault: {
+      kind: 'controlled_exit_after_send_ack_before_locator_persist',
+      authorized_before_network: envelope.audit.crash_fault_authorized === true,
+      expected_exit_code: PRIVATE_CRASH_EXIT_CODE,
+      attempting_record_without_locator_observed:
+        initialAttemptingWithoutLocator,
+      automatic_send_retries: envelope.audit.automatic_retries,
+    },
+    history_reconciliation: {
+      action: 'get_group_msg_history',
+      profile: 'napcat_go_cqhttp_extension',
+      read_only: true,
+      recovery_authorized_before_network: config.crashRecoveryAuthorized,
+      outcome: historyOutcome,
+      candidate_count: candidateCount,
+      exact_body_required: true,
+      exact_target_required: true,
+      own_account_marker_required: true,
+      locator_persisted_before_recall: locatorPersistedBeforeRecall,
+    },
+    reconciliation: {
+      action: 'delete_msg',
+      attempts: locatorPersistedBeforeRecall ? 1 : 0,
+      outcome: recallOutcome,
+      http_status: recallHttpStatus,
+    },
+    private_store: {
+      format: 'encrypted_json_envelope',
+      algorithm: 'aes-256-gcm',
+      key_source: 'process_environment_only',
+      key_persisted_in_store: false,
+      sensitive_plaintext_absent_before_recovery:
+        plaintextAbsentBeforeRecovery,
+      locator_absent_at_recovery_start: initialAttemptingWithoutLocator,
+      locator_removed_after_acknowledged_recall:
+        recallOutcome === 'acknowledged',
+    },
+    privacy: {
+      history_payload_exported: false,
+      exported_store_key: false,
+      exported_access_token: false,
+      exported_endpoint: false,
+      exported_target_id: false,
+      exported_message_body: false,
+      exported_provider_message_id: false,
+    },
+    remaining_gaps: {
+      napcat_group_crash_window_recovery_tested: liveRecoveryVerified,
+      generic_onebot_crash_window_closed: false,
+      private_target_crash_window_closed: false,
+      host_level_key_recovery_tested: false,
+      multi_host_owner_lease_tested: false,
+      production_stream_connected: false,
+    },
+    probe_success: config.synthetic ? successfulRecovery : liveRecoveryVerified,
+  }
+}
+
+export async function recoverUnpersistedLocatorProbe(config, {
+  fetchImpl = fetch,
+  instanceId = randomUUID(),
+  now = () => new Date(),
+  source = sourceState(),
+} = {}) {
+  return withRecordLock(config, async () => {
+    const { envelope, path } = readEnvelope(config)
+    const payload = decryptPayload(config.storeKey, envelope)
+    const {
+      expectedBody,
+      locatorExpected,
+      unresolvedExpected,
+    } = validateCrashRecoveryPayload(config, envelope, payload)
+    const before = readFileSync(path, 'utf8')
+    const plaintextAbsentBeforeRecovery = plaintextAbsent(before, payload)
+    if (!plaintextAbsentBeforeRecovery)
+      fail('ONEBOT_PRIVATE_STORE_PLAINTEXT_LEAK')
+
+    const preflight = await postUpstream(
+      config,
+      'get_version_info',
+      {},
+      fetchImpl,
+    )
+    if (!preflightAccepted(preflight))
+      fail('ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_PREFLIGHT_FAILED')
+
+    const originatingCrashWindow = unresolvedExpected || (
+      locatorExpected
+      && envelope.audit.crash_fault_authorized === true
+      && envelope.audit.crash_recovery_history_outcome
+      === 'unique_exact_own_match'
+      && envelope.audit.crash_recovery_candidate_count === 1
+    )
+    let candidateCount = locatorExpected
+      ? envelope.audit.crash_recovery_candidate_count
+      : null
+    let historyOutcome = locatorExpected
+      ? envelope.audit.crash_recovery_history_outcome
+      : 'not_queried'
+    let locatorPersistedBeforeRecall = locatorExpected
+    let workingEnvelope = envelope
+    if (unresolvedExpected) {
+      const history = await postUpstream(
+        config,
+        'get_group_msg_history',
+        {
+          group_id: config.target.id,
+          count: 20,
+          reverse_order: false,
+          disable_get_url: true,
+          parse_mult_msg: false,
+          quick_reply: false,
+        },
+        fetchImpl,
+      )
+      const match = exactOwnGroupHistoryCandidates(
+        history,
+        config,
+        expectedBody,
+      )
+      candidateCount = match.candidates.length
+      historyOutcome = match.outcome
+      if (match.outcome !== 'unique_exact_own_match') {
+        const blockedAt = now().toISOString()
+        writeCrashRecoveryEnvelope({
+          audit: {
+            ...envelope.audit,
+            crash_recovery_candidate_count: candidateCount,
+            crash_recovery_history_outcome: historyOutcome,
+            crash_recovery_instance_id: instanceId,
+            crash_recovery_source_commit: source.commit,
+          },
+          config,
+          envelope,
+          payload,
+          state: 'crash_recovery_blocked_locator_unresolved',
+          updatedAt: blockedAt,
+        })
+        const evidence = crashWindowEvidence({
+          candidateCount,
+          config,
+          envelope,
+          finishedAt: blockedAt,
+          historyOutcome,
+          initialAttemptingWithoutLocator: true,
+          locatorPersistedBeforeRecall: false,
+          plaintextAbsentBeforeRecovery,
+          recallHttpStatus: null,
+          recallOutcome: 'not_attempted',
+          source,
+        })
+        const outputPath = crashWindowEvidencePath(config)
+        atomicWriteJson(outputPath, evidence)
+        return { evidence, evidencePath: outputPath, success: false }
+      }
+
+      payload.provider_message_id = match.candidates[0].message_id
+      workingEnvelope = writeCrashRecoveryEnvelope({
+        audit: {
+          ...envelope.audit,
+          crash_recovery_candidate_count: candidateCount,
+          crash_recovery_history_outcome: historyOutcome,
+          crash_recovery_instance_id: instanceId,
+          crash_recovery_source_commit: source.commit,
+        },
+        config,
+        envelope,
+        payload,
+        state: 'crash_locator_recovered_pending_reconciliation',
+        updatedAt: now().toISOString(),
+      })
+      locatorPersistedBeforeRecall = true
+    }
+
+    const recallResult = await postUpstream(
+      config,
+      'delete_msg',
+      { message_id: payload.provider_message_id },
+      fetchImpl,
+    )
+    const recallOutcome = classifyAck(recallResult)
+    const finishedAt = now().toISOString()
+    if (recallOutcome === 'acknowledged') {
+      atomicWriteJson(path, {
+        schema_version: storeSchemaVersion,
+        store_kind: 'onebot_adapter_private_recovery_probe',
+        record_id: config.recordId,
+        state: 'crash_recalled_locator_removed',
+        key_id: config.keyId,
+        created_at: envelope.created_at,
+        updated_at: finishedAt,
+        cipher: null,
+        audit: {
+          ...workingEnvelope.audit,
+          crash_reconciliation_attempts: 1,
+          crash_reconciliation_http_status: recallResult.httpStatus,
+          crash_reconciliation_outcome: recallOutcome,
+        },
+      })
+    }
+    else {
+      writeCrashRecoveryEnvelope({
+        audit: {
+          ...workingEnvelope.audit,
+          crash_reconciliation_attempts: 1,
+          crash_reconciliation_http_status: recallResult.httpStatus,
+          crash_reconciliation_outcome: recallOutcome,
+        },
+        config,
+        envelope: workingEnvelope,
+        payload,
+        state: 'crash_reconciliation_failed_locator_retained',
+        updatedAt: finishedAt,
+      })
+    }
+
+    const evidence = crashWindowEvidence({
+      candidateCount,
+      config,
+      envelope,
+      finishedAt,
+      historyOutcome,
+      initialAttemptingWithoutLocator: originatingCrashWindow,
+      locatorPersistedBeforeRecall,
+      plaintextAbsentBeforeRecovery,
+      recallHttpStatus: recallResult.httpStatus,
+      recallOutcome,
+      source,
+    })
+    const outputPath = crashWindowEvidencePath(config)
+    atomicWriteJson(outputPath, evidence)
+    return { evidence, evidencePath: outputPath, success: evidence.probe_success }
+  })
+}
+
 async function main() {
   const config = parsePrivateStoreProbeConfig()
-  if (config.mode === 'prepare') {
-    const result = await preparePrivateStoreProbe(config)
+  if (['prepare', 'prepare-crash'].includes(config.mode)) {
+    const dependencies = config.mode === 'prepare-crash'
+      ? { afterDeliveredAck: () => fail('ONEBOT_PRIVATE_STORE_FAULT_EXIT_AFTER_ACK') }
+      : undefined
+    const result = await preparePrivateStoreProbe(config, dependencies)
     console.log(JSON.stringify({
       prepared: result.prepared,
       state: result.state,
     }))
     if (!result.prepared)
+      process.exitCode = 1
+    return
+  }
+
+  if (config.mode === 'recover-unpersisted') {
+    const result = await recoverUnpersistedLocatorProbe(config)
+    console.log(JSON.stringify({
+      probe_success: result.success,
+      history_outcome: result.evidence.history_reconciliation.outcome,
+      reconciliation_outcome: result.evidence.reconciliation.outcome,
+    }))
+    console.log(`evidence: ${result.evidencePath}`)
+    if (!result.success)
       process.exitCode = 1
     return
   }
@@ -596,6 +1010,8 @@ if (isMain) {
       ? error.message
       : 'ONEBOT_PRIVATE_STORE_PROBE_FAILED'
     console.error(safeMessage)
-    process.exitCode = 1
+    process.exitCode = safeMessage === 'ONEBOT_PRIVATE_STORE_FAULT_EXIT_AFTER_ACK'
+      ? PRIVATE_CRASH_EXIT_CODE
+      : 1
   })
 }
