@@ -4,7 +4,7 @@
 
 **SSOT scope:** Event envelopes, registry policy, authority boundaries, integrated event kinds, and proactive-turn authorization. See [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for module classification and [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) for implementation status and open gaps.
 
-**Last updated:** 2026-09-02.
+**Last updated:** 2026-09-03.
 
 **Audience:** kernel integrators, Event module authors, directory-plugin authors, and maintainers.
 
@@ -28,7 +28,7 @@ The legacy `event` slot remains backend module 3 and estimates dialogue `event.i
 
 ### Boundary with a future Runtime Event Stream
 
-The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Stages A.1/A.2.1 freeze pure types and local persistence design; A.2.2.1 reviews OneBot v11 acknowledgement and uncertain-delivery semantics; A.2.2.2-R1/R2 preserve one real synchronous success path and one real post-submission timeout/explicit-reconciliation path from standalone developer probes. There is still no Production database, read interface, consumer loop, Production QQ adapter, durable private locator store, restart recovery, or owner-lease implementation.
+The current Event Ring governs trusted event circulation within one dispatch. It is **not** the cross-turn, cross-channel, restartable Session timeline discussed as a continuous “character runtime river.” That future concept is provisionally named **Runtime Event Stream**. It may carry continuous facts and derived events from chat platforms, livestreams, games, sensors, memory, and agents. Stages A.1/A.2.1 freeze pure types and local persistence design; A.2.2.1 reviews OneBot v11 acknowledgement and uncertain-delivery semantics; A.2.2.2-R1/R2 preserve one real synchronous success path and one real post-submission timeout/explicit-reconciliation path, while R3 uses a standalone two-process developer probe to verify one AES-256-GCM private-locator persistence and restart-style reconciliation path. R3 is not a Production store. There is still no Production database, read interface, consumer loop, Production QQ adapter, closure of the provider-ACK-to-locator-persist crash window, host-level key recovery, or owner-lease implementation.
 
 Only an off-by-default **B0 trace-only shadow** exists today. After a successful dispatch enters Ring history, redacted fact headers can be sent non-blockingly to an independent SQLite database. Failures affect diagnostics only. The shadow has no read, consumer, replay, Prompt, or proactive-trigger authority, so it is not Runtime Event Stream and does not alter the Ring authority defined here.
 
