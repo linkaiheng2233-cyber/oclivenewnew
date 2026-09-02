@@ -57,7 +57,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": false,
-      "terminal_block": false
+      "checkpoint_blocks": false
     },
     {
       "id": "sync_send_acknowledged",
@@ -74,7 +74,7 @@
       "checkpoint_advances": true,
       "emits_delivered": true,
       "requires_reconciliation": false,
-      "terminal_block": false
+      "checkpoint_blocks": false
     },
     {
       "id": "success_shape_missing_message_id",
@@ -91,7 +91,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": true,
-      "terminal_block": false
+      "checkpoint_blocks": true
     },
     {
       "id": "async_submission_has_no_final_result",
@@ -108,7 +108,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": true,
-      "terminal_block": false
+      "checkpoint_blocks": true
     },
     {
       "id": "provider_rejected_request",
@@ -125,7 +125,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": false,
-      "terminal_block": true
+      "checkpoint_blocks": true
     },
     {
       "id": "authentication_rejected",
@@ -142,7 +142,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": false,
-      "terminal_block": true
+      "checkpoint_blocks": true
     },
     {
       "id": "malformed_http_200_response",
@@ -159,7 +159,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": true,
-      "terminal_block": false
+      "checkpoint_blocks": true
     },
     {
       "id": "timeout_after_body_may_have_been_accepted",
@@ -170,7 +170,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": true,
-      "terminal_block": false
+      "checkpoint_blocks": true
     },
     {
       "id": "unexpected_server_response_after_submission",
@@ -187,7 +187,7 @@
       "checkpoint_advances": false,
       "emits_delivered": false,
       "requires_reconciliation": true,
-      "terminal_block": false
+      "checkpoint_blocks": true
     }
   ],
   "receipt_privacy_contract": {

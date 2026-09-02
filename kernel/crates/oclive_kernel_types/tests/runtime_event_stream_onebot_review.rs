@@ -42,7 +42,7 @@ struct DeliveryCase {
     checkpoint_advances: bool,
     emits_delivered: bool,
     requires_reconciliation: bool,
-    terminal_block: bool,
+    checkpoint_blocks: bool,
 }
 
 fn contract() -> Value {
@@ -211,9 +211,12 @@ fn stage_a2_onebot_review_freezes_ack_and_retry_boundaries() {
             case.id
         );
         assert_eq!(
-            case.terminal_block,
-            outcome == DeliveryOutcome::Rejected,
-            "{} block",
+            case.checkpoint_blocks,
+            matches!(
+                outcome,
+                DeliveryOutcome::Rejected | DeliveryOutcome::DeliveryUncertain
+            ),
+            "{} checkpoint block",
             case.id
         );
     }
