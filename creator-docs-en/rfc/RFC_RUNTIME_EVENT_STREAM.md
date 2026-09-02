@@ -6,7 +6,7 @@
 
 **Last updated:** 2026-09-02.
 
-**Status:** **Draft v0.10 · Stage A.1, A.2.1, and the A.2.2.1 OneBot v11 protocol-review contract implemented · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
+**Status:** **Draft v0.11 · Stage A.1, A.2.1, A.2.2.1, and the A.2.2.2-R0 guarded live probe implemented · no real OneBot/QQ execution evidence yet · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
 ---
 
@@ -22,7 +22,7 @@ The following constraints are fixed:
 - A `Decision` is not a committed state. `State` may only describe a successful commit.
 - Proposal influence remains in the existing trusted `EventModuleRegistryPolicy`. A future Stream consumer registry manages subscriptions, read scope, cursors, and backpressure only.
 - Model tiers may change observation, query, and proposal budgets, never source or commit authority.
-- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored evidence only. A.2.1 checks current code paths; A.2.2.1 reviews a pinned OneBot v11 protocol version. Neither is runtime I/O. No durable Stream, producer outbox, real QQ adapter, consumer cursor, replay, multi-I/O scheduling, or productized proactive bot exists today.
+- The optional B0 shadow records redacted headers from successful Ring dispatches only. Its S0/S1 commands create synthetic, Git-ignored evidence only. A.2.1 checks current code paths; A.2.2.1 reviews a pinned OneBot v11 protocol version; A.2.2.2-R0 provides a default-deny manually operated probe that has not been run against a real implementation in this change. None is runtime wiring. No durable Stream, producer outbox, production QQ adapter, consumer cursor, replay, multi-I/O scheduling, or productized proactive bot exists today.
 
 ---
 
@@ -182,7 +182,7 @@ The fixture forces `production_runtime_enabled = false` and keeps the missing re
 
 ## Stage A.2.2.1 OneBot v11 output-protocol review
 
-Commits `01f2ae63`, `78a1e11a`, and `66b8a9a8` add and refine a versioned [OneBot review fixture](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json) and a pure nine-case response classifier. The evidence is pinned to OneBot v11 commit `d4456ee706f9ada9c2dfde56a2bcfc69752600e4`: its [API overview](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/README.md), [message/recall APIs](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/public.md), [HTTP response contract](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/http.md), and [WebSocket echo semantics](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/ws.md).
+Commits `01f2ae63`, `78a1e11a`, and `66b8a9a8` add and refine a versioned [OneBot review fixture](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json) and a pure nine-case response classifier. The evidence is pinned to OneBot v11 commit `d4456ee706f9ada9c2dfde56a2bcfc69752600e4`: its [API overview](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/README.md), [message/recall APIs](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/public.md), [HTTP response contract](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/http.md), [Bearer-token authorization](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/authorization.md), and [WebSocket echo semantics](https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/ws.md).
 
 - The first profile is synchronous HTTP JSON `send_private_msg` / `send_group_msg`; async and rate-limited suffixes cannot prove delivery. Plain text defaults to `auto_escape=true`.
 - `delivered` requires HTTP 200, `status="ok"`, `retcode=0`, and `data.message_id`. A timeout after possible submission, async response, malformed success, or missing message ID becomes `delivery_uncertain`; it blocks checkpoint advance, automatic retry, and host failover until reconciliation.
@@ -192,6 +192,18 @@ Commits `01f2ae63`, `78a1e11a`, and `66b8a9a8` add and refine a versioned [OneBo
 - HTTP POST is required; message-bearing GET queries are forbidden. Loopback is the default, while a remote endpoint requires an explicit network grant and TLS.
 
 The fixture explicitly sets `live_adapter_tested=false`, `production_runtime_enabled=false`, and `production_ready=false`. It starts no OneBot implementation, logs into no QQ account, sends or recalls no message, and implements no adapter store or owner lease. Stage A.2.2.2 live-adapter evidence remains open.
+
+## Stage A.2.2.2-R0 default-deny live probe
+
+Commit `79d8aad7` adds the standalone developer command `npm run event:onebot-live-probe`. It is not a production adapter. It fails before network access unless the operator supplies the exact `A2.2.2_TEST_ACCOUNT` confirmation, a Bearer token, and exactly one private or group test target. Literal loopback is the default; a remote endpoint requires HTTPS plus `--allow-remote`, and URL credentials, queries, fragments, and redirects are rejected.
+
+The probe first verifies `get_version_info` reports `protocol_version="v11"`, then sends a fixed content-free probe with `auto_escape=true`. Only the full synchronous ACK permits one `delete_msg` call. It never retries; timeout, malformed output, or a missing message ID remains `delivery_uncertain`. Sanitized JSON under `target/oclive-event/onebot-live-probe/` excludes endpoint, target ID, text, token, and provider message ID. Six synthetic loopback tests cover refusal, send/recall, uncertainty, evidence redaction, and path confinement. No real OneBot or QQ request was made, so live A.2.2.2 evidence, private adapter storage, timeout injection, owner lease, and Production Stream remain open.
+
+After setting `OCLIVE_ONEBOT_BASE_URL`, `OCLIVE_ONEBOT_ACCESS_TOKEN`, `OCLIVE_ONEBOT_IMPLEMENTATION_LABEL`, and exactly one of `OCLIVE_ONEBOT_TEST_USER_ID` / `OCLIVE_ONEBOT_TEST_GROUP_ID` in the local process environment, an operator with a dedicated test account may run:
+
+```powershell
+npm run event:onebot-live-probe -- --confirm-live A2.2.2_TEST_ACCOUNT
+```
 
 ---
 
@@ -284,7 +296,7 @@ An Observation or high-influence Proposal does not automatically make the charac
 
 ## Staged admission
 
-1. Freeze taxonomy, Session mapping, outer record, checkpoint, failure/recovery tests, local storage/transaction/erasure design, and one real protocol mapping. A.1, A.2.1, and the OneBot v11 A.2.2.1 review are complete; A.2.2.2 real adapter and multi-host evidence remain open.
+1. Freeze taxonomy, Session mapping, outer record, checkpoint, failure/recovery tests, local storage/transaction/erasure design, and one real protocol mapping. A.1, A.2.1, and the OneBot v11 A.2.2.1 review are complete; A.2.2.2-R0 provides a guarded probe, while real implementation/account execution, timeout, private-store, and owner-lease evidence remain open.
 2. Add a disableable trace-only recorder. B0 now proves disabled parity, restart-safe position, redaction, append-only storage, fail-open degradation, and deterministic shutdown. Its S0/S1 synthetic evidence is closed through S1.4's fixed ten-minute run and restart continuation. Retention and commit/output coverage remain open.
 3. Add cursor, at-least-once, idempotency, backpressure, and an effect-free test consumer.
 4. Integrate one low-risk real consumer through Draft → Ring → Decision → Rust application.
