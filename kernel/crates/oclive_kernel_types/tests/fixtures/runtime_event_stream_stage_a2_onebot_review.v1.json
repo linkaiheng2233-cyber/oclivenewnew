@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "stage": "a2_2_1_onebot_v11_protocol_review_only",
+  "production_runtime_enabled": false,
+  "live_adapter_tested": false,
+  "protocol_source": {
+    "repository": "https://github.com/botuniverse/onebot-11",
+    "commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+    "documents": [
+      "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/README.md",
+      "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/api/public.md",
+      "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/http.md",
+      "https://github.com/botuniverse/onebot-11/blob/d4456ee706f9ada9c2dfde56a2bcfc69752600e4/communication/ws.md"
+    ]
+  },
+  "adapter_profile": {
+    "adapter_id": "reference.qq.onebot_v11_http",
+    "channel": "qq_text",
+    "transport": "http_json_post",
+    "send_actions": ["send_private_msg", "send_group_msg"],
+    "recall_action": "delete_msg",
+    "send_method": "POST",
+    "content_type": "application/json",
+    "plain_text_auto_escape_default": true,
+    "forbidden_send_suffixes": ["_async", "_rate_limited"],
+    "provider_native_idempotency_key": false,
+    "websocket_echo_is_correlation_only": true
+  },
+  "delivery_contract": {
+    "states": [
+      "prepared",
+      "attempting",
+      "delivered",
+      "rejected",
+      "delivery_uncertain"
+    ],
+    "delivered_requires": [
+      "http_status_200",
+      "status_ok",
+      "retcode_0",
+      "data_message_id_present"
+    ],
+    "automatic_retry_only_when": "request_proven_not_submitted",
+    "timeout_after_possible_submission": "delivery_uncertain",
+    "async_response": "delivery_uncertain",
+    "malformed_or_incomplete_success": "delivery_uncertain",
+    "checkpoint_advances_only_on": "delivered",
+    "delivery_uncertain_blocks_failover": true
+  },
+  "cases": [
+    {
+      "id": "connect_failure_before_submission",
+      "request_progress": "not_submitted",
+      "response": null,
+      "expected_outcome": "retryable_not_submitted",
+      "automatic_retry_allowed": true,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": false,
+      "terminal_block": false
+    },
+    {
+      "id": "sync_send_acknowledged",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 200,
+        "well_formed_json": true,
+        "status": "ok",
+        "retcode": 0,
+        "message_id": 42
+      },
+      "expected_outcome": "delivered",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": true,
+      "emits_delivered": true,
+      "requires_reconciliation": false,
+      "terminal_block": false
+    },
+    {
+      "id": "success_shape_missing_message_id",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 200,
+        "well_formed_json": true,
+        "status": "ok",
+        "retcode": 0,
+        "message_id": null
+      },
+      "expected_outcome": "delivery_uncertain",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": true,
+      "terminal_block": false
+    },
+    {
+      "id": "async_submission_has_no_final_result",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 200,
+        "well_formed_json": true,
+        "status": "async",
+        "retcode": 1,
+        "message_id": null
+      },
+      "expected_outcome": "delivery_uncertain",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": true,
+      "terminal_block": false
+    },
+    {
+      "id": "provider_rejected_request",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 200,
+        "well_formed_json": true,
+        "status": "failed",
+        "retcode": 100,
+        "message_id": null
+      },
+      "expected_outcome": "rejected",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": false,
+      "terminal_block": true
+    },
+    {
+      "id": "authentication_rejected",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 401,
+        "well_formed_json": false,
+        "status": null,
+        "retcode": null,
+        "message_id": null
+      },
+      "expected_outcome": "rejected",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": false,
+      "terminal_block": true
+    },
+    {
+      "id": "malformed_http_200_response",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 200,
+        "well_formed_json": false,
+        "status": null,
+        "retcode": null,
+        "message_id": null
+      },
+      "expected_outcome": "delivery_uncertain",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": true,
+      "terminal_block": false
+    },
+    {
+      "id": "timeout_after_body_may_have_been_accepted",
+      "request_progress": "body_may_have_been_accepted",
+      "response": null,
+      "expected_outcome": "delivery_uncertain",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": true,
+      "terminal_block": false
+    },
+    {
+      "id": "unexpected_server_response_after_submission",
+      "request_progress": "response_received",
+      "response": {
+        "http_status": 500,
+        "well_formed_json": false,
+        "status": null,
+        "retcode": null,
+        "message_id": null
+      },
+      "expected_outcome": "delivery_uncertain",
+      "automatic_retry_allowed": false,
+      "checkpoint_advances": false,
+      "emits_delivered": false,
+      "requires_reconciliation": true,
+      "terminal_block": false
+    }
+  ],
+  "receipt_privacy_contract": {
+    "stream_safe_receipt_fields": [
+      "adapter_id",
+      "receipt_ref",
+      "outcome",
+      "attempt",
+      "acknowledged_at"
+    ],
+    "adapter_private_encrypted_fields": [
+      "destination_id",
+      "message_body_while_pending",
+      "provider_message_id"
+    ],
+    "forbidden_stream_receipt_fields": [
+      "access_token",
+      "user_id",
+      "group_id",
+      "message",
+      "provider_message_id"
+    ],
+    "provider_locator_deleted_after_recall_window_or_session_erasure": true
+  },
+  "deletion_contract": {
+    "recall_action": "delete_msg",
+    "recall_ack_requires": ["http_status_200", "status_ok", "retcode_0"],
+    "recall_is_provider_message_recall_not_privacy_erasure": true,
+    "external_recall_failure_blocks_local_erasure_completion": false,
+    "completion_must_report_external_recall_as_unverified": true,
+    "required_local_order": [
+      "block_new_deliveries_and_leases",
+      "attempt_recall_when_private_locator_exists",
+      "delete_adapter_private_payload_destination_and_locator",
+      "verify_no_session_linked_adapter_rows",
+      "report_only_aggregate_external_recall_status"
+    ]
+  },
+  "multi_host_contract": {
+    "single_delivery_owner_lease_required": true,
+    "fencing_token_required_on_claim_and_receipt": true,
+    "onebot_native_fencing": false,
+    "automatic_failover_after_delivery_uncertain": false,
+    "local_sqlite_multi_host_ready": false,
+    "external_broker_trigger": "same_session_active_on_multiple_hosts"
+  },
+  "security_contract": {
+    "credentials_outside_event_stream_trace_and_logs": true,
+    "loopback_default": true,
+    "remote_endpoint_requires_explicit_network_grant_and_tls": true,
+    "get_with_message_query_forbidden": true,
+    "plain_text_defaults_to_auto_escape": true
+  },
+  "review_result": {
+    "protocol_mapping_feasible": true,
+    "production_ready": false,
+    "next_stage": "a2_2_2_live_adapter_evidence"
+  },
+  "known_gaps": [
+    "no_onebot_runtime_or_qq_account_started",
+    "no_provider_delivery_or_recall_executed",
+    "no_native_provider_idempotency_or_fencing",
+    "no_production_adapter_store_or_owner_lease",
+    "no_multi_host_delivery_proof",
+    "no_production_stream_runtime"
+  ]
+}
