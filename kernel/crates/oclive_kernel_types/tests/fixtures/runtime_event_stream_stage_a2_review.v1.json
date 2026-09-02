@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "stage": "a2_1_design_only",
+  "production_runtime_enabled": false,
+  "observed_surfaces": [
+    {
+      "id": "desktop_tauri_http_proxy",
+      "evidence_path": "distros/desktop-tauri/src/kernel_attach/chat.rs",
+      "required_tokens": ["/chat", "/chat/stream"],
+      "creates_turn_pipeline": false,
+      "may_directly_commit_authoritative_state": false,
+      "has_durable_output_receipt": false
+    },
+    {
+      "id": "http_json_and_sse",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/http_api/chat.rs",
+      "required_tokens": ["process_message(&state", "process_message_stream("],
+      "creates_turn_pipeline": false,
+      "may_directly_commit_authoritative_state": false,
+      "has_durable_output_receipt": false
+    },
+    {
+      "id": "embedded_rust_facade",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/role_kernel.rs",
+      "required_tokens": ["process_message(&self.state", "process_proactive_turn(&self.state"],
+      "creates_turn_pipeline": false,
+      "may_directly_commit_authoritative_state": false,
+      "has_durable_output_receipt": false
+    },
+    {
+      "id": "trusted_proactive_ingress",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs",
+      "required_tokens": ["TurnInput::ExternalObservation", "ProactiveTurnPermit"],
+      "creates_turn_pipeline": false,
+      "may_directly_commit_authoritative_state": false,
+      "has_durable_output_receipt": false
+    },
+    {
+      "id": "directory_event_ring_bridge",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/event_ring.rs",
+      "required_tokens": ["event_ring.handle", "EventModuleOutput"],
+      "creates_turn_pipeline": false,
+      "may_directly_commit_authoritative_state": false,
+      "has_durable_output_receipt": false
+    }
+  ],
+  "review_evidence": [
+    {
+      "id": "chat_and_state_share_main_db_manager",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/state/app_state_builder.rs",
+      "required_tokens": ["DbManager::new", "build_conversation_store", "db_manager.clone()"]
+    },
+    {
+      "id": "turn_state_and_transcript_are_separate_steps",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/infrastructure/db/chat_turn_atomic.rs",
+      "required_tokens": ["Intentionally separate from chat transcript storage", "tx.commit()"]
+    },
+    {
+      "id": "current_mirror_delete_is_best_effort",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/service/role/delete.rs",
+      "required_tokens": ["delete_all_data_for_manifest_role", "delete_mirror_tree_for_role failed"]
+    }
+  ],
+  "storage_decision": {
+    "first_backend": "sqlite",
+    "main_state_database": "app.db",
+    "production_stream_database": "runtime-event-stream.sqlite3",
+    "trace_database": "runtime-event-trace.sqlite3",
+    "all_paths_must_be_distinct": true,
+    "cross_database_atomicity_claimed": false,
+    "main_database_owns_producer_outbox": true,
+    "stream_database_owns": [
+      "session_bindings",
+      "event_records",
+      "consumer_registry",
+      "consumer_checkpoints",
+      "retention_tombstones",
+      "erasure_work_items"
+    ],
+    "external_broker_triggers": [
+      "same_session_active_on_multiple_hosts",
+      "remote_consumers_require_independent_availability",
+      "measured_wal_or_latency_budget_exceeded"
+    ]
+  },
+  "publication_cases": [
+    {
+      "id": "authoritative_state_commit",
+      "transaction_domain": "app.db",
+      "atomic_writes": ["authoritative_state", "producer_outbox"],
+      "publication_gate": "state_and_outbox_commit_together",
+      "failure_rule": "rollback_both_before_commit_retry_outbox_after_commit"
+    },
+    {
+      "id": "ring_dispatch_snapshot",
+      "transaction_domain": "app.db",
+      "atomic_writes": ["approved_initial_envelopes", "producer_outbox"],
+      "publication_gate": "complete_dispatch_then_commit_outbox_before_durable_acceptance",
+      "failure_rule": "never_persist_dispatch_local_replacement_or_release_authorization_early"
+    },
+    {
+      "id": "consumer_side_effect",
+      "transaction_domain": "consumer_authoritative_store",
+      "atomic_writes": ["consumer_inbox", "side_effect", "derived_event_outbox_when_any"],
+      "publication_gate": "checkpoint_after_applied_or_already_applied_proof",
+      "failure_rule": "duplicate_delivery_reuses_inbox_result_without_repeating_side_effect"
+    },
+    {
+      "id": "external_output_delivery",
+      "transaction_domain": "adapter_authoritative_store",
+      "atomic_writes": ["output_outbox", "delivery_receipt"],
+      "publication_gate": "delivered_output_fact_only_after_adapter_ack",
+      "failure_rule": "generated_response_is_not_a_delivery_receipt"
+    }
+  ],
+  "idempotency_contract": {
+    "scope": ["session_partition", "source", "source_idempotency_key"],
+    "maximum_key_bytes": 256,
+    "empty_forbidden": true,
+    "control_characters_forbidden": true,
+    "trim_or_case_fold": false,
+    "conflicting_content": "reject",
+    "credential_material_forbidden": true
+  },
+  "retention_contract": {
+    "normal_expiry_entry": "position_tombstone",
+    "normal_expiry_tombstone_fields": [
+      "schema_version",
+      "session_partition",
+      "stream_position",
+      "retention_policy_id",
+      "expired_at",
+      "reason_code"
+    ],
+    "normal_expiry_may_advance_checkpoint": true,
+    "unexpected_physical_gap": "blocked",
+    "required_event_classes_wait_for_required_consumers": true,
+    "session_erasure_hard_deletes_partition": true
+  },
+  "session_erasure_contract": {
+    "states": ["requested", "quiescing", "deleting", "verifying", "completed", "blocked"],
+    "required_order": [
+      "block_new_ingress_and_leases",
+      "delete_main_state_and_pending_outbox",
+      "delete_stream_partition_binding_records_and_checkpoints",
+      "delete_required_consumer_derived_data",
+      "delete_enabled_mirrors_and_caches",
+      "verify_required_domains_absent",
+      "write_minimal_completion_receipt"
+    ],
+    "required_domains": [
+      "main_app_database",
+      "production_stream_database",
+      "required_consumer_stores",
+      "enabled_chat_mirrors",
+      "in_process_session_caches"
+    ],
+    "completion_requires_all_required_domains": true,
+    "retry_is_idempotent": true,
+    "completion_receipt_forbidden_fields": [
+      "runtime_session_id",
+      "session_partition",
+      "access_subject_id",
+      "role_id",
+      "event_id",
+      "payload"
+    ]
+  },
+  "known_gaps": [
+    "no_real_qq_live_or_hardware_output_adapter",
+    "no_multi_host_session_lease_evidence",
+    "no_production_stream_schema_or_migration",
+    "no_erasure_or_retention_executor",
+    "no_consumer_runtime_or_read_api"
+  ]
+}
