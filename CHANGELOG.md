@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Runtime Event Stream Stage A.2.2.2-R6 私聊/无历史能力失败关闭策略证据**：新增 synthetic-only、网络无依赖的恢复策略探针，固定 `attempting` 且 provider locator 未落盘时的 9 场景裁决矩阵。OneBot v11 标准、私聊目标、未登记扩展、profile 作用域不匹配、历史不可用/未查询、零候选或多候选一律保持 `manual_reconciliation_required`，禁止自动重发、换宿主、推进 checkpoint 或产生 `delivered`；只有已登记的 NapCat 群历史 profile 得到唯一精确本账号候选时，才允许把 locator 作为后续显式对账候选加密落盘，该裁决本身仍不授权撤回。13/13 Node 测试及版本化脱敏夹具通过；这只冻结失败关闭策略，不等于私聊自动恢复、通用 OneBot 恢复、宿主密钥托管、多宿主协调、Production adapter/store 或 Production Stream。
 - **Runtime Event Stream Stage A.2.2.2-R5 单宿主跨进程 Output owner lease/fencing 合成证据**：新增 synthetic-only、默认拒绝、仅限 loopback stub 的独立 SQLite 探针。`BEGIN IMMEDIATE` 串行化 claim，revision CAS 与递增 lease epoch 阻止旧 owner 在发送前或完成回报时越权；两个进程并发时只有一个进程发送。仅 `leased` 且尚未进入副作用的过期记录可被接管，一旦 `attempting` 已在发送前持久化，owner 退出后也禁止自动 failover/retry，只能进入人工对账。6/6 Node 测试和版本化脱敏夹具通过；该证据未连接真实 QQ，不等于多宿主协调、provider 侧 fencing、SIGKILL/断电、宿主密钥恢复、Production adapter/store 或 Production Stream。
 - **Runtime Event Stream Stage A.2.2.2-R4 provider ACK→locator 落盘窗口恢复样本**：私有存储探针新增默认拒绝、仅限 loopback 群目标的 `prepare-crash` / `recover-unpersisted` 模式。故障注入在完整发送 ACK 后、provider locator 写入前执行受控非零退出；恢复进程只使用 NapCat 的 go-cqhttp 兼容 `get_group_msg_history` 扩展，在目标、正文与本账号标记全部精确且候选唯一时才先加密落盘 locator、再执行一次撤回。R3/R4 探针套件总计 8 条合成测试，覆盖唯一/零/多候选、历史不可用、撤回不确定和禁止重复撤回；真实样本恢复并撤回成功，群历史复核无残留。该证据不等于 SIGKILL/断电，不适用于私聊或通用 OneBot，宿主级密钥恢复、owner lease/fencing、Production adapter/store 与 Production Stream 仍未实现。
 - **Runtime Event Stream Stage A.2.2.2-R3 加密私有恢复存储与跨进程对账样本**：新增默认拒绝、仅限 loopback 的双阶段开发探针。`prepare` 在发送前先原子写入 AES-256-GCM 加密状态，并在完整 ACK 后只以密文保存目标、固定正文和 provider locator；独立 Node 进程退出后，`reconcile` 使用另一次精确确认执行唯一一次撤回，成功后以不含密文的墓碑替换记录。4 条合成测试覆盖双进程恢复、错误密钥前置拒绝、撤回不确定时保留密文和零自动重试；真实样本取得一次发送/撤回 ACK，群历史复核无残留。该探针不是 Production store，仍未关闭 provider 已接收至 locator 落盘的崩溃窗口、宿主级密钥恢复、owner lease/fencing 或 Production Stream。
@@ -20,7 +21,7 @@
 
 ### Compatibility
 
-- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R5 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R4 的真实 ACK/恢复样本与 R5 的 synthetic-only 本地 lease SQLite 都不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
+- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R6 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R4 的真实 ACK/恢复样本、R5 的 synthetic-only 本地 lease SQLite 与 R6 的网络无依赖失败关闭矩阵都不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
 
 ## [0.5.2] - 2026-08-24

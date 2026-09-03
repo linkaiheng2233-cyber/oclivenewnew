@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
 **最后更新**：2026-09-03。
-**状态**：**草案 v0.16 · Stage A.1、A.2.1、A.2.2.1、A.2.2.2-R0～R5 已落地 · R1 固化真实同步成功 ACK，R2 固化真实提交后超时与显式对账撤回，R3 固化探针级加密私有 locator 跨进程对账，R4 固化一次 NapCat 群历史扩展下的受控 ACK→locator 窗口恢复，R5 固化单宿主跨进程 SQLite owner lease/fencing 合成证据 · 私聊/通用 OneBot 崩溃窗、宿主级密钥恢复与多宿主 owner lease 仍未验证 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
+**状态**：**草案 v0.17 · Stage A.1、A.2.1、A.2.2.1、A.2.2.2-R0～R6 已落地 · R1 固化真实同步成功 ACK，R2 固化真实提交后超时与显式对账撤回，R3 固化探针级加密私有 locator 跨进程对账，R4 固化一次 NapCat 群历史扩展下的受控 ACK→locator 窗口恢复，R5 固化单宿主跨进程 SQLite owner lease/fencing 合成证据，R6 冻结私聊/无可信历史能力时的失败关闭策略 · 私聊自动恢复、宿主级密钥恢复与多宿主 owner lease 仍未验证 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
 ---
@@ -21,7 +21,7 @@
 | 决策不等于提交 | `Decision` 表示提案已被领域决策接受/拒绝；只有提交成功后才能产生 `State` 事实 |
 | 注册表不重复 | 基础影响权重继续只由现有 `EventModuleRegistryPolicy` 分配；Stream 的消费者登记只管理订阅、游标、读取权限和背压，不产生第二套影响权重 |
 | 模型档位不扩权 | 大模型可以观察更多、查询更多、提出更丰富的提案；小模型使用模块筛选和 Prompt 编译后的有限上下文。任何模型都没有事实伪造或状态提交权 |
-| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与状态机测试模型，A.2.1 只有对现有代码路径做校验的版本化设计夹具，A.2.2.1 只有钉住 OneBot v11 文档版本的协议响应/治理夹具；A.2.2.2-R0 是默认拒绝的独立探针，R1 已固化一次真实同步发送/撤回 ACK，R2 已固化一次真实提交后响应截断、`delivery_uncertain`、零重试和显式对账撤回 ACK，R3 已固化一次双进程 AES-256-GCM 私有 locator 对账，R4 已固化一次受控非零退出后通过 NapCat 群历史严格唯一匹配、先加密 locator 再撤回的样本，R5 则只用 synthetic-only 独立 SQLite 与 loopback stub 固化单宿主跨进程 claim、revision CAS、lease epoch 和 `attempting` 后禁止自动接管。R4 不是 SIGKILL/断电测试，`get_group_msg_history` 也不是 OneBot v11 标准能力；R5 未连接真实 QQ，不能外推为多宿主或 provider 侧 fencing；临时密钥仍由父环境提供。S0/S1 命令仍只生成合成、忽略提交的 Trace 证据。持久 Stream、outbox/inbox 表、生产 QQ 适配器、Production 私有 store、私聊/通用 OneBot 崩溃窗闭环、宿主级密钥恢复、多宿主 owner lease、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
+| 当前能力声明 | 可选 B0 Trace-only 影子只旁路记录成功 Ring dispatch 的脱敏事实头；Stage A.1 只有可编译 DTO 与状态机测试模型，A.2.1 只有对现有代码路径做校验的版本化设计夹具，A.2.2.1 只有钉住 OneBot v11 文档版本的协议响应/治理夹具；A.2.2.2-R0 是默认拒绝的独立探针，R1 已固化一次真实同步发送/撤回 ACK，R2 已固化一次真实提交后响应截断、`delivery_uncertain`、零重试和显式对账撤回 ACK，R3 已固化一次双进程 AES-256-GCM 私有 locator 对账，R4 已固化一次受控非零退出后通过 NapCat 群历史严格唯一匹配、先加密 locator 再撤回的样本，R5 只用 synthetic-only 独立 SQLite 与 loopback stub 固化单宿主跨进程 claim、revision CAS、lease epoch 和 `attempting` 后禁止自动接管，R6 只用网络无依赖的 9 场景矩阵冻结私聊、无标准历史、未登记/错作用域 profile 以及历史不可用/零/多候选时的 `manual_reconciliation_required`。R6 唯一允许的“候选”仍只是已登记 NapCat 群历史 profile 的唯一精确本账号匹配，且必须先加密 locator、另行显式授权对账；裁决自身不撤回也不重发。R4 不是 SIGKILL/断电测试，`get_group_msg_history` 也不是 OneBot v11 标准能力；R5/R6 未连接真实 QQ，不能外推为多宿主、provider 侧 fencing 或私聊自动恢复；临时密钥仍由父环境提供。S0/S1 命令仍只生成合成、忽略提交的 Trace 证据。持久 Stream、outbox/inbox 表、生产 QQ 适配器、Production 私有 store、私聊自动崩溃恢复、宿主级密钥恢复、多宿主 owner lease、消费者游标存储、读取循环、重放、多 IO 调度或产品化主动 Bot 仍未交付 |
 
 ---
 
@@ -206,7 +206,7 @@ Runtime Event Stream 的加入不得改变上述权威顺序。
 
 S1 只在以下条件同时满足时视为“Trace-only 合成证据收口”：S0、S1.1、S1.2、S1.3 与 S1.4 的版本化合同通过；B0 生命周期、故障计数和 shutdown 测试通过；全部生成物留在忽略目录；生产代码仍没有读取/消费/Replay/Prompt/主动回复入口。这个“收口”只关闭合成样本缺口，不关闭阶段 B 的保留期、提交/输出覆盖，也不关闭 `K-EVENT-STREAM-01`。
 
-下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机；A.2.1 已冻结本地存储拓扑、transactional outbox/inbox 与隐私删除设计；A.2.2.1 已用钉住提交的 OneBot v11 规范冻结 QQ 文本输出的 ACK、不确定投递、撤回与多宿主否定证据；A.2.2.2-R0 已准备默认拒绝的实机探针，R1～R4 已分别验证同步成功、提交后超时、加密 locator 跨进程对账与 NapCat 群历史恢复，R5 已验证同一宿主、共享 SQLite 下的跨进程 owner claim 与 epoch fencing。A.2.2.2 仍须冻结宿主级密钥恢复与多宿主租约/协调策略，并明确私聊或不支持历史查询的通用 OneBot fail-closed 策略；它完成前不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口，阶段 C 也不得与阶段 A 偷跑合并。
+下一项获准工作仍在阶段 A：A.1 已冻结纯类型和参考状态机；A.2.1 已冻结本地存储拓扑、transactional outbox/inbox 与隐私删除设计；A.2.2.1 已用钉住提交的 OneBot v11 规范冻结 QQ 文本输出的 ACK、不确定投递、撤回与多宿主否定证据；A.2.2.2-R0 已准备默认拒绝的实机探针，R1～R4 已分别验证同步成功、提交后超时、加密 locator 跨进程对账与 NapCat 群历史恢复，R5 已验证同一宿主、共享 SQLite 下的跨进程 owner claim 与 epoch fencing，R6 已冻结私聊或不支持可信历史查询时的 fail-closed 策略。A.2.2.2 仍须冻结宿主级密钥恢复与多宿主租约/协调策略；它完成前不得直接实现生产读取 API、checkpoint 表、消费者循环或第二套回合入口，阶段 C 也不得与阶段 A 偷跑合并。
 
 任一级样本都不是权威事件库、行为输入或训练授权。S2 之前不得增加真实运行采集接线；S2 之后若要使用内容级数据，必须另立隐私与数据治理设计，不能沿用本命令扩权。
 
@@ -312,7 +312,7 @@ Ring handler 对原事件 payload/metadata 的原地替换仍只是 dispatch-loc
 | 主动输入 | 来源绑定 emitter → Ring → Permit → `process_proactive_turn` | 不能伪装用户消息，也不能绕过 Event 决策 |
 | 目录 Event 插件 | `event_ring.handle` 观察获准事件并发射自身命名空间子事件 | 只有提案/派生权，没有状态提交权 |
 
-仓库内仍没有 Production QQ、直播或硬件输出适配器提供运行时可持久验证的“发送成功”回执；`SendMessageResponse` 和 SSE `done` 只证明内核生成完成，不等于外部送达。A.2.2.1 的 OneBot 规范评审只冻结判定边界；A.2.2.2-R1～R4 的独立开发者探针分别固化同步 ACK、提交后超时、加密私有 locator 与 NapCat 群历史窗口恢复样本，R5 只增加 synthetic-only 单宿主 SQLite lease/fencing 证据；它们都未接入内核、Output adapter 或 Production Stream。
+仓库内仍没有 Production QQ、直播或硬件输出适配器提供运行时可持久验证的“发送成功”回执；`SendMessageResponse` 和 SSE `done` 只证明内核生成完成，不等于外部送达。A.2.2.1 的 OneBot 规范评审只冻结判定边界；A.2.2.2-R1～R4 的独立开发者探针分别固化同步 ACK、提交后超时、加密私有 locator 与 NapCat 群历史窗口恢复样本，R5 只增加 synthetic-only 单宿主 SQLite lease/fencing 证据，R6 只增加网络无依赖的失败关闭裁决证据；它们都未接入内核、Output adapter 或 Production Stream。
 
 首个 Production Stream 存储冻结为本地嵌入式 **SQLite**，默认文件名 `runtime-event-stream.sqlite3`，且必须与主状态 `app.db`、Trace-only 的 `runtime-event-trace.sqlite3` 三址互异：
 
@@ -484,6 +484,16 @@ npm run event:onebot-live-probe -- --confirm-live A2.2.2_TEST_ACCOUNT
 - Node 测试报告 6/6 通过；测试完成后才写出脱敏证据。提交 `2271325f` 将逐字节相同的 1617 字节夹具固化为 [`runtime_event_stream_stage_a2_onebot_owner_lease_evidence.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_owner_lease_evidence.v1.json)，Rust 合同锁定敏感字段缺失及 Production/multi-host false。
 - R5 只证明单机共享同一 SQLite 文件时的跨进程 claim/CAS/epoch 语义。它没有真实 QQ 流量，不证明跨机器或网络文件系统协调、provider 侧 fencing、SIGKILL/断电与 durability、宿主密钥恢复、Production schema/migration/read API、消费者恢复或 checkpoint；`K-EVENT-STREAM-01` 和 A.2.2.2 继续保持 OPEN。
 
+### 7.1.10 Stage A.2.2.2-R6 · 私聊/无可信历史能力失败关闭策略证据
+
+提交 `6d5da2c3` 增加 `npm run event:onebot-recovery-policy-probe`。该命令必须取得精确确认并设置 `OCLIVE_ONEBOT_PROBE_SYNTHETIC=1`；生产探针只导入文件/路径与纯合同常量，没有 HTTP、fetch 或 OneBot 调用，不读取账号、目标、token、正文或 provider locator，也不接入内核、Session、Event Ring、Prompt、Production Output adapter/store：
+
+- 裁决只适用于 `attempting_without_provider_locator`。OneBot v11 标准没有历史查询能力时，私聊与群聊都进入 `manual_reconciliation_required`；未登记扩展、已登记 profile 作用域不匹配、可信历史尚未查询/不可用、零候选或多候选也全部保持阻塞。
+- 所有 9 个场景均禁止自动重发、自动 owner failover、自动 provider 副作用、checkpoint 推进和 `delivered` 事件，并要求显式运维动作。格式合法但未登记的新 profile 同样默认拒绝，不需要为每个扩展名字维护黑名单。
+- 唯一候选场景是已登记 `napcat_go_cqhttp_extension`、群目标与 `unique_exact_own_match` 同时成立。其结果只表示“可先加密持久化 locator，再进入另一次显式对账”，不授权本次裁决直接撤回，更不允许重发原消息；这与 R4 的严格群历史路径使用同一 profile/outcome 常量。
+- Node 测试报告 13/13 通过。提交 `b3f7f515` 将逐字节相同的 8168 字节脱敏夹具固化为 [`runtime_event_stream_stage_a2_onebot_recovery_policy_evidence.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_recovery_policy_evidence.v1.json)，并把 OneBot Rust 证据合同增加到 8/8。夹具不含端点、账号/目标 ID、正文、token、历史 payload 或 provider `message_id`。
+- R6 关闭的是“没有可证明恢复能力时该如何停住”的策略歧义，不是私聊或通用 OneBot 自动崩溃恢复。它没有真实 QQ 流量，也不证明宿主密钥恢复、多宿主 lease/provider fencing、SIGKILL/断电 durability、Production schema/migration/read API、消费者恢复或 checkpoint；`K-EVENT-STREAM-01` 和 A.2.2.2 继续保持 OPEN。
+
 ### 7.2 顺序与冲突
 
 - 只保证单个 Session 分区内的 `stream_position` 顺序，不提供全局总序。
@@ -620,6 +630,10 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 提交 `074b49f5` 增加 synthetic-only、loopback-only 的独立 SQLite 探针及 6/6 Node 测试，覆盖跨进程并发 claim、过期 pre-attempt lease 接管、旧 owner 发送前/完成回报 fencing，以及 `attempting` 持久化后禁止自动 failover。提交 `2271325f` 固化逐字节相同的脱敏夹具和 7/7 OneBot Rust 证据合同。该证据未连接真实 QQ，只覆盖同一宿主共享 SQLite 文件，不覆盖多宿主、provider fencing、宿主密钥恢复、Production store 或 Stream。
 
+### 11.9 Stage A.2.2.2-R6 私聊/无可信历史能力失败关闭证据
+
+提交 `6d5da2c3` 增加网络无依赖、synthetic-only 的 9 场景恢复裁决探针与 13/13 Node 测试；提交 `b3f7f515` 固化 8168 字节脱敏夹具和 8/8 OneBot Rust 合同。私聊、OneBot 标准无历史、未登记/错作用域 profile 以及历史不可用/未查询/零/多候选均保持人工对账、零自动重发/接管；唯一精确 NapCat 群候选也只获得加密 locator 后续显式对账资格。本证据未连接真实 QQ，不提供私聊自动恢复、宿主密钥托管、多宿主协调、Production store 或 Stream。
+
 ---
 
 ## 12. 分阶段实施准入
@@ -628,7 +642,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 
 | 阶段 | 范围 | 完成证据 | 明确不做 |
 |------|------|----------|----------|
-| **A · 契约原型（A.2.2.2-R5 已有单宿主 owner lease/fencing 合成证据）** | 冻结事件分型、Session 映射、外层记录、checkpoint、本地存储/事务/删除与首个真实协议映射 | A.1 可编译 DTO + 14 场景状态表；A.2.1 五表面/三库/四事务/删除夹具；A.2.2.1 OneBot v11 的 9 场景合同；R0 受控探针；R1 一次真实同步成功；R2 一次真实提交后超时、零重试和显式撤回；R3 一次 AES-256-GCM 私有 locator 跨 Node 进程恢复；R4 一次 NapCat 群目标受控 ACK→locator 窗口恢复；R5 一次 synthetic-only 单宿主跨进程 lease/CAS/epoch 矩阵；私聊/通用 OneBot 策略、宿主级密钥恢复与多宿主 lease 仍待冻结 | 不接生产 IO，不改回复 |
+| **A · 契约原型（A.2.2.2-R6 已冻结私聊/无可信历史失败关闭策略）** | 冻结事件分型、Session 映射、外层记录、checkpoint、本地存储/事务/删除与首个真实协议映射 | A.1 可编译 DTO + 14 场景状态表；A.2.1 五表面/三库/四事务/删除夹具；A.2.2.1 OneBot v11 的 9 场景合同；R0 受控探针；R1 一次真实同步成功；R2 一次真实提交后超时、零重试和显式撤回；R3 一次 AES-256-GCM 私有 locator 跨 Node 进程恢复；R4 一次 NapCat 群目标受控 ACK→locator 窗口恢复；R5 一次 synthetic-only 单宿主跨进程 lease/CAS/epoch 矩阵；R6 一次网络无依赖的私聊/无可信历史能力失败关闭矩阵；宿主级密钥恢复与多宿主 lease 仍待冻结 | 不接生产 IO，不改回复 |
 | **B · Trace-only（B0 部分落地）** | 可关闭的持久记录器；B0 只观察成功 Ring dispatch 头，提交/输出摘要仍待后续合同 | B0 已有 disabled parity、重启续位、脱敏、append-only、坏库/同址 fail-open 与确定性 shutdown；S0/S1 合成证据已收口，含固定十分钟耐久和重启续位；保留期与提交/输出覆盖未完成 | 不驱动决策或主动回复 |
 | **C · Consumer 基础** | 游标、至少一次、幂等、背压、隔离失败；先接无副作用测试消费者 | crash/restart、重复投递、lag、删除测试 | 不允许消费者直接写状态 |
 | **D · 首个领域闭环** | 选择一个真实低风险消费者，经 Draft → Ring → Decision → Rust 应用闭环 | 正常、拒绝、重复、过期 revision、降级测试 | 不一次接入所有记忆/Agent/IO |
@@ -645,7 +659,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - B0 当前记录所有成功 dispatch 的最终脱敏信封头；哪些提交/输出摘要及哪些事件进入 Production Stream、payload 最小化和访问规则仍未冻结。
 - A.2.1 已固定 1–256 字节 opaque key 规范、主库 producer outbox、消费者 inbox/outbox 与 adapter ACK 事务边界；R3/R4 只验证探针 JSON 信封使用父环境密钥的 AES-256-GCM 路径，Production 表字段、密钥托管/轮换、reconcile 调度和故障预算仍未冻结。
 - 多宿主同时运行同一 Session 时的租约、leader 或冲突策略；A.2.2.1 已确认 OneBot v11 标准未定义发送幂等或 fencing，不能依赖标准协议解决。
-- 首个低风险真实消费者；首个 QQ 输出已完成 OneBot v11 协议映射、R0 探针、R1 单次同步成功、R2 单次提交后超时/显式对账、R3 单次探针级加密跨进程恢复、R4 单次 NapCat 群历史窗口恢复和 R5 单宿主跨进程 owner lease/fencing 合成矩阵，但 Production Output adapter/store、私聊/通用 OneBot fail-closed 策略、宿主级密钥恢复和多宿主 lease 证据仍未完成。
+- 首个低风险真实消费者；首个 QQ 输出已完成 OneBot v11 协议映射、R0 探针、R1 单次同步成功、R2 单次提交后超时/显式对账、R3 单次探针级加密跨进程恢复、R4 单次 NapCat 群历史窗口恢复、R5 单宿主跨进程 owner lease/fencing 合成矩阵和 R6 私聊/无可信历史能力失败关闭矩阵，但 Production Output adapter/store、私聊自动恢复、宿主级密钥恢复和多宿主 lease 证据仍未完成。
 - Replay 的隔离数据库、模型调用策略和隐私删除传播。
 
 这些问题不阻塞本文作为边界草案，但在相应阶段编码前必须转成可测试的 accepted contract。
@@ -666,7 +680,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] S1.3 测试编译专用合同证明同一合成 Trace 头处理两次时只落 1 行并计 1 次重复；无生产 Replay/注入入口，不把 recorder 幂等冒充消费者至少一次投递或端到端幂等。
 - [x] 生命周期测试区分队列丢弃与入队后写失败，覆盖冲突重复头、终端失败停机和并发幂等 shutdown，并保持 v1 诊断反序列化兼容。
 - [x] S1.4 固定十分钟合同完成 2,400 次低速来源绑定 dispatch、20 次主库健康检查、RSS/有界历史检查、shutdown 排空与重启后第 2,401 位追加；只形成本机开发者证据，不冒充生产时长或硬件 soak。
-- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐纯类型，A.2.1 已补齐本地代码路径/存储/事务/删除设计合同，A.2.2.1 已补齐 OneBot v11 协议级输出评审，A.2.2.2-R0 已备受控探针，R1～R5 已固化真实同步成功、提交后超时/显式对账、探针级加密跨进程恢复、NapCat 群 locator 窗口恢复与单宿主 owner lease/fencing 合成样本；Production 适配器/store、私聊/通用 OneBot 策略、宿主级密钥恢复和多宿主 lease 证据仍未完成。
+- [x] S1 合成证据阶段已收口；S2 未获准。Stage A.1 已补齐纯类型，A.2.1 已补齐本地代码路径/存储/事务/删除设计合同，A.2.2.1 已补齐 OneBot v11 协议级输出评审，A.2.2.2-R0 已备受控探针，R1～R6 已固化真实同步成功、提交后超时/显式对账、探针级加密跨进程恢复、NapCat 群 locator 窗口恢复、单宿主 owner lease/fencing 与私聊/无可信历史能力失败关闭样本；Production 适配器/store、私聊自动恢复、宿主级密钥恢复和多宿主 lease 证据仍未完成。
 - [x] 当前没有读取/消费/Replay/Prompt/主动回复接线，`K-EVENT-STREAM-01` 保持 OPEN。
 
 ### 14.2 Production Stream 总体验收（未完成）
@@ -684,7 +698,8 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - [x] A.2.2.2-R3 已验证一次双进程开发探针路径：发送前写入加密状态，完整 ACK 后只以 AES-256-GCM 密文保存目标/正文/locator；进程 A 退出后，独立确认的进程 B 撤回成功并用无密文墓碑替换记录。错误密钥与不确定撤回测试均保持 fail-closed，真实群历史复核无残留。
 - [x] A.2.2.2-R4 已验证一次 NapCat 群目标受控 ACK→locator 窗口恢复：退出后加密 `attempting` 记录不含 locator，独立恢复只在历史中严格唯一匹配后先持久化加密 locator，再执行一次撤回；零/多候选、历史不可用与撤回不确定均阻塞且不重发，真实历史复核无残留。
 - [x] A.2.2.2-R5 已以 synthetic-only 独立 SQLite 验证单宿主跨进程 owner claim：并发只发送一次；pre-attempt 过期接管递增 epoch 并拒绝旧 owner；`attempting` 持久化后 owner 退出仍阻塞自动 failover，测试与证据不含真实 QQ 流量。
-- [ ] A.2.2.2 尚未验证 SIGKILL/断电与文件系统 durability、私聊或无历史扩展的通用 OneBot 策略、宿主进程/机器重启后的密钥恢复、Production adapter/store、多宿主 owner lease 与 provider fencing；R1～R5 单样本不是 Production Stream、消费者恢复、删除执行或持久 checkpoint 实现证据。
+- [x] A.2.2.2-R6 已以 synthetic-only、网络无依赖的 9 场景矩阵冻结私聊或无可信历史能力时的失败关闭策略：默认人工对账、零自动重发/接管、checkpoint 不推进；唯一精确 NapCat 群候选也只获得后续显式对账资格，不直接撤回。
+- [ ] A.2.2.2 尚未验证 SIGKILL/断电与文件系统 durability、私聊自动崩溃恢复、宿主进程/机器重启后的密钥恢复、Production adapter/store、多宿主 owner lease 与 provider fencing；R1～R6 单样本不是 Production Stream、消费者恢复、删除执行或持久 checkpoint 实现证据。
 - [ ] 持久语义变换使用带自身来源的派生事件；没有把修改后的 payload 永久归因给原始 emitter。
 - [ ] Fact / Observation / Proposal / Decision / State / Output 权力边界有类型或校验门禁。
 - [ ] LLM 输出只能通过受约束包装器形成 Proposal，不能直接形成 Fact/State。

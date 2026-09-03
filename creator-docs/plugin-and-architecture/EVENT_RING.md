@@ -24,7 +24,7 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 
 ### 1.1 与未来 Runtime Event Stream 的边界
 
-当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件。Stage A.1/A.2.1 已冻结纯类型和本地持久化设计，A.2.2.1 已完成 OneBot v11 协议级 ACK/不确定投递评审，A.2.2.2-R1～R4 已固化真实同步成功、提交后超时、加密 locator 与 NapCat 群历史恢复样本，R5 再以 synthetic-only 独立 SQLite 探针验证同一宿主内的跨进程 owner claim、revision CAS 与 lease-epoch fencing。R5 不是 Production store 或多宿主协调能力，仍没有 Production 数据库、读取接口、consumer loop、Production QQ 适配器、私聊/通用 OneBot 崩溃窗闭环、宿主级密钥恢复或多宿主 owner lease。
+当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件。Stage A.1/A.2.1 已冻结纯类型和本地持久化设计，A.2.2.1 已完成 OneBot v11 协议级 ACK/不确定投递评审，A.2.2.2-R1～R4 已固化真实同步成功、提交后超时、加密 locator 与 NapCat 群历史恢复样本，R5 以 synthetic-only 独立 SQLite 验证同一宿主内的跨进程 owner claim、revision CAS 与 lease-epoch fencing，R6 再以网络无依赖矩阵冻结私聊或无可信历史能力时的默认人工对账、零自动重发/接管策略。R6 只关闭策略歧义，不提供私聊自动恢复。当前仍没有 Production 数据库、读取接口、consumer loop、Production QQ 适配器、宿主级密钥恢复或多宿主 owner lease。
 
 当前只有一个默认关闭的 **B0 Trace-only 影子**：成功 dispatch 写入 Ring 历史后，可将不含 payload、metadata、`stream_key` 的事实头非阻塞送入独立 SQLite；失败只进入诊断，不能影响 Ring 结果。它没有读取/消费/Replay/Prompt/主动触发权，因此不是 Runtime Event Stream，也没有改变本文件的 Ring 权威边界。
 
