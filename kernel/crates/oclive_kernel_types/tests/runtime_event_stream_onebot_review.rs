@@ -80,6 +80,13 @@ fn crash_window_evidence() -> Value {
     .expect("parse Runtime Event Stream Stage A.2.2 OneBot crash-window evidence fixture")
 }
 
+fn owner_lease_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_owner_lease_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot owner-lease evidence fixture")
+}
+
 fn assert_no_sensitive_runtime_values(value: &Value) {
     const FORBIDDEN_KEYS: &[&str] = &[
         "access_token",
@@ -712,6 +719,74 @@ fn stage_a2_onebot_crash_window_evidence_proves_only_napcat_group_recovery() {
         "private_target_crash_window_closed",
         "host_level_key_recovery_tested",
         "multi_host_owner_lease_tested",
+        "production_stream_connected",
+    ] {
+        assert_eq!(
+            evidence["remaining_gaps"][field], false,
+            "remaining gap {field}"
+        );
+    }
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
+}
+
+#[test]
+fn stage_a2_onebot_owner_lease_evidence_proves_only_single_host_process_fencing() {
+    let evidence = owner_lease_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(
+        evidence["stage"],
+        "a2_2_2_single_host_cross_process_owner_lease_probe_only"
+    );
+    assert_eq!(evidence["synthetic"], true);
+    assert_eq!(evidence["live_adapter_tested"], false);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(evidence["endpoint_scope"], "loopback");
+    assert_eq!(evidence["store_backend"], "node_sqlite_probe_only");
+
+    let lease = &evidence["lease_contract"];
+    for field in [
+        "single_host_cross_process_claim_tested",
+        "sqlite_begin_immediate_serializes_claims",
+        "revision_cas_required",
+        "lease_epoch_fencing_required",
+        "expired_pre_attempt_takeover_increments_epoch",
+        "stale_owner_blocked_before_effect",
+    ] {
+        assert_eq!(lease[field], true, "lease invariant {field}");
+    }
+
+    let delivery = &evidence["delivery_contract"];
+    for field in [
+        "attempting_persisted_before_provider_effect",
+        "expired_attempting_blocks_automatic_failover",
+        "stale_completion_rejected",
+    ] {
+        assert_eq!(delivery[field], true, "delivery invariant {field}");
+    }
+    assert_eq!(delivery["automatic_send_retries"], 0);
+    assert_eq!(delivery["concurrent_provider_send_count"], 1);
+    assert_eq!(delivery["pre_attempt_takeover_provider_send_count"], 1);
+    assert_eq!(delivery["post_attempt_crash_provider_send_count"], 0);
+
+    for field in [
+        "exported_access_token",
+        "exported_endpoint",
+        "exported_target_id",
+        "exported_message_body",
+        "exported_provider_message_id",
+        "sqlite_contains_delivery_payload_or_locator",
+    ] {
+        assert_eq!(evidence["privacy"][field], false, "privacy field {field}");
+    }
+    for field in [
+        "multi_host_owner_lease_tested",
+        "provider_side_fencing_available",
+        "sigkill_or_power_loss_tested",
+        "host_level_key_recovery_tested",
+        "production_adapter_store_connected",
         "production_stream_connected",
     ] {
         assert_eq!(

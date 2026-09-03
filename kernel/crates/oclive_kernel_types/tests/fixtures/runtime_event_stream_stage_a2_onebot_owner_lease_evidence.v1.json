@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_local_owner_lease_probe",
+  "stage": "a2_2_2_single_host_cross_process_owner_lease_probe_only",
+  "synthetic": true,
+  "live_adapter_tested": false,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "endpoint_scope": "loopback",
+  "store_backend": "node_sqlite_probe_only",
+  "lease_contract": {
+    "single_host_cross_process_claim_tested": true,
+    "sqlite_begin_immediate_serializes_claims": true,
+    "revision_cas_required": true,
+    "lease_epoch_fencing_required": true,
+    "expired_pre_attempt_takeover_increments_epoch": true,
+    "stale_owner_blocked_before_effect": true
+  },
+  "delivery_contract": {
+    "attempting_persisted_before_provider_effect": true,
+    "expired_attempting_blocks_automatic_failover": true,
+    "stale_completion_rejected": true,
+    "automatic_send_retries": 0,
+    "concurrent_provider_send_count": 1,
+    "pre_attempt_takeover_provider_send_count": 1,
+    "post_attempt_crash_provider_send_count": 0
+  },
+  "privacy": {
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false,
+    "sqlite_contains_delivery_payload_or_locator": false
+  },
+  "remaining_gaps": {
+    "multi_host_owner_lease_tested": false,
+    "provider_side_fencing_available": false,
+    "sigkill_or_power_loss_tested": false,
+    "host_level_key_recovery_tested": false,
+    "production_adapter_store_connected": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}
