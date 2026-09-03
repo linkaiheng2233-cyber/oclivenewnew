@@ -24,7 +24,7 @@ legacy `event` 槽仍是第 3 后端模块，但只负责对话 `event.impact` �
 
 ### 1.1 与未来 Runtime Event Stream 的边界
 
-当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件。Stage A.1/A.2.1 已冻结纯类型和本地持久化设计，A.2.2.1 已完成 OneBot v11 协议级 ACK/不确定投递评审，A.2.2.2-R1/R2 已固化真实同步成功和提交后超时/显式对账路径，R3 又以独立双进程开发探针验证一次 AES-256-GCM 私有 locator 持久化与重启式对账。R3 不是 Production store，仍没有 Production 数据库、读取接口、consumer loop、Production QQ 适配器、provider ACK 至 locator 落盘崩溃窗闭环、宿主级密钥恢复或 owner lease 实现。
+当前 Event Ring 处理一次 dispatch 内的可信事件流通，**不等于**角色跨回合、跨通道、跨重启持续运行的 Session 时间线。后续讨论中的“角色运行河流”暂称 **Runtime Event Stream**：它可能承载 QQ、直播、游戏、传感器、记忆与 Agent 等来源的连续事实及派生事件。Stage A.1/A.2.1 已冻结纯类型和本地持久化设计，A.2.2.1 已完成 OneBot v11 协议级 ACK/不确定投递评审，A.2.2.2-R1/R2 已固化真实同步成功和提交后超时/显式对账路径，R3 以独立双进程开发探针验证一次 AES-256-GCM 私有 locator 持久化与重启式对账，R4 再验证一次 NapCat 群历史扩展下的受控 ACK→locator 窗口恢复。R3/R4 都不是 Production store 或通用 OneBot 恢复能力，仍没有 Production 数据库、读取接口、consumer loop、Production QQ 适配器、私聊/通用 OneBot 崩溃窗闭环、宿主级密钥恢复或 owner lease 实现。
 
 当前只有一个默认关闭的 **B0 Trace-only 影子**：成功 dispatch 写入 Ring 历史后，可将不含 payload、metadata、`stream_key` 的事实头非阻塞送入独立 SQLite；失败只进入诊断，不能影响 Ring 结果。它没有读取/消费/Replay/Prompt/主动触发权，因此不是 Runtime Event Stream，也没有改变本文件的 Ring 权威边界。
 

@@ -6,6 +6,7 @@
 
 ### Added
 
+- **Runtime Event Stream Stage A.2.2.2-R4 provider ACK→locator 落盘窗口恢复样本**：私有存储探针新增默认拒绝、仅限 loopback 群目标的 `prepare-crash` / `recover-unpersisted` 模式。故障注入在完整发送 ACK 后、provider locator 写入前执行受控非零退出；恢复进程只使用 NapCat 的 go-cqhttp 兼容 `get_group_msg_history` 扩展，在目标、正文与本账号标记全部精确且候选唯一时才先加密落盘 locator、再执行一次撤回。R3/R4 探针套件总计 8 条合成测试，覆盖唯一/零/多候选、历史不可用、撤回不确定和禁止重复撤回；真实样本恢复并撤回成功，群历史复核无残留。该证据不等于 SIGKILL/断电，不适用于私聊或通用 OneBot，宿主级密钥恢复、owner lease/fencing、Production adapter/store 与 Production Stream 仍未实现。
 - **Runtime Event Stream Stage A.2.2.2-R3 加密私有恢复存储与跨进程对账样本**：新增默认拒绝、仅限 loopback 的双阶段开发探针。`prepare` 在发送前先原子写入 AES-256-GCM 加密状态，并在完整 ACK 后只以密文保存目标、固定正文和 provider locator；独立 Node 进程退出后，`reconcile` 使用另一次精确确认执行唯一一次撤回，成功后以不含密文的墓碑替换记录。4 条合成测试覆盖双进程恢复、错误密钥前置拒绝、撤回不确定时保留密文和零自动重试；真实样本取得一次发送/撤回 ACK，群历史复核无残留。该探针不是 Production store，仍未关闭 provider 已接收至 locator 落盘的崩溃窗口、宿主级密钥恢复、owner lease/fencing 或 Production Stream。
 - **Runtime Event Stream Stage A.2.2.2-R2 真实提交后超时与显式对账样本**：新增默认拒绝、仅限 loopback、须三重精确确认的进程内响应截断探针。真实样本只向上游发送一次固定群探针；客户端在 1,200ms 后进入 `delivery_uncertain`，上游实际取得完整发送 ACK，探针不重试也不自行撤回，随后才执行一次预先显式授权的对账撤回并取得成功 ACK。版本化证据不含账号、群号、端点、正文、token 或平台消息 ID；定位符只短暂存在进程内存，因此适配器私有持久 store、重启后人工对账、owner lease/fencing 与 Production Stream 仍未实现。
 - **Runtime Event Stream Stage A.2.2.2-R1 首个真实 OneBot ACK 样本**：受控探针已在 loopback NapCat 4.18.19、专用 QQ 测试账号与测试群上完成一次同步群发送和一次撤回，两步均取得完整成功 ACK，自动重试为 0。版本化脱敏夹具不含账号、群号、端点、正文、token 或平台消息 ID；R1 当时不含真实超时与对账，且适配器私有 store、owner lease/fencing 与 Production Stream 至今仍未实现，技术债继续保持 OPEN。
@@ -18,7 +19,7 @@
 
 ### Compatibility
 
-- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R3 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R3 的真实 ACK、故障注入与探针私有恢复存储不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
+- **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R4 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R4 的真实 ACK、故障注入、探针私有恢复存储与 NapCat 群历史对账不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
 
 ## [0.5.2] - 2026-08-24
