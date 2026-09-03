@@ -21,6 +21,10 @@ import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 import {
+  ONEBOT_GROUP_HISTORY_OUTCOMES,
+  ONEBOT_GROUP_HISTORY_PROFILE,
+} from './lib/runtime-event-onebot-recovery-contract.mjs'
+import {
   LIVE_CONFIRMATION,
   parseProbeConfig,
   readProtocolContract,
@@ -615,7 +619,10 @@ export function exactOwnGroupHistoryCandidates(
 ) {
   if (classifyAck(result) !== 'acknowledged'
     || !Array.isArray(result.json?.data?.messages)) {
-    return { candidates: [], outcome: 'history_unavailable' }
+    return {
+      candidates: [],
+      outcome: ONEBOT_GROUP_HISTORY_OUTCOMES.UNAVAILABLE,
+    }
   }
   const candidates = result.json.data.messages.filter(message => (
     message?.message_type === 'group'
@@ -629,10 +636,10 @@ export function exactOwnGroupHistoryCandidates(
     && Number.isSafeInteger(message.message_id)
   ))
   if (candidates.length === 0)
-    return { candidates, outcome: 'no_exact_own_match' }
+    return { candidates, outcome: ONEBOT_GROUP_HISTORY_OUTCOMES.NONE }
   if (candidates.length > 1)
-    return { candidates, outcome: 'ambiguous_exact_own_match' }
-  return { candidates, outcome: 'unique_exact_own_match' }
+    return { candidates, outcome: ONEBOT_GROUP_HISTORY_OUTCOMES.AMBIGUOUS }
+  return { candidates, outcome: ONEBOT_GROUP_HISTORY_OUTCOMES.UNIQUE }
 }
 
 function validateCrashRecoveryPayload(config, envelope, payload) {
@@ -651,7 +658,7 @@ function validateCrashRecoveryPayload(config, envelope, payload) {
       && !Number.isSafeInteger(payload.provider_message_id))
     || (locatorExpected
       && (envelope.audit.crash_recovery_history_outcome
-        !== 'unique_exact_own_match'
+        !== ONEBOT_GROUP_HISTORY_OUTCOMES.UNIQUE
         || envelope.audit.crash_recovery_candidate_count !== 1))
       || (unresolvedExpected && payload.provider_message_id !== null)) {
     fail('ONEBOT_PRIVATE_STORE_CRASH_RECOVERY_PAYLOAD_INVALID')
@@ -698,7 +705,7 @@ function crashWindowEvidence({
 }) {
   const protocol = readProtocolContract()
   const successfulRecovery = initialAttemptingWithoutLocator
-    && historyOutcome === 'unique_exact_own_match'
+    && historyOutcome === ONEBOT_GROUP_HISTORY_OUTCOMES.UNIQUE
     && locatorPersistedBeforeRecall
     && recallOutcome === 'acknowledged'
   const liveRecoveryVerified = !config.synthetic && successfulRecovery
@@ -736,7 +743,7 @@ function crashWindowEvidence({
     },
     history_reconciliation: {
       action: 'get_group_msg_history',
-      profile: 'napcat_go_cqhttp_extension',
+      profile: ONEBOT_GROUP_HISTORY_PROFILE,
       read_only: true,
       recovery_authorized_before_network: config.crashRecoveryAuthorized,
       outcome: historyOutcome,
@@ -816,7 +823,7 @@ export async function recoverUnpersistedLocatorProbe(config, {
       locatorExpected
       && envelope.audit.crash_fault_authorized === true
       && envelope.audit.crash_recovery_history_outcome
-      === 'unique_exact_own_match'
+      === ONEBOT_GROUP_HISTORY_OUTCOMES.UNIQUE
       && envelope.audit.crash_recovery_candidate_count === 1
     )
     let candidateCount = locatorExpected
@@ -848,7 +855,7 @@ export async function recoverUnpersistedLocatorProbe(config, {
       )
       candidateCount = match.candidates.length
       historyOutcome = match.outcome
-      if (match.outcome !== 'unique_exact_own_match') {
+      if (match.outcome !== ONEBOT_GROUP_HISTORY_OUTCOMES.UNIQUE) {
         const blockedAt = now().toISOString()
         writeCrashRecoveryEnvelope({
           audit: {
