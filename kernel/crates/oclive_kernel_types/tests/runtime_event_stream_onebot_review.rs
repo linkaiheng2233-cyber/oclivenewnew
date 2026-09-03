@@ -87,6 +87,13 @@ fn owner_lease_evidence() -> Value {
     .expect("parse Runtime Event Stream Stage A.2.2 OneBot owner-lease evidence fixture")
 }
 
+fn recovery_policy_evidence() -> Value {
+    serde_json::from_str(include_str!(
+        "fixtures/runtime_event_stream_stage_a2_onebot_recovery_policy_evidence.v1.json"
+    ))
+    .expect("parse Runtime Event Stream Stage A.2.2 OneBot recovery-policy evidence fixture")
+}
+
 fn assert_no_sensitive_runtime_values(value: &Value) {
     const FORBIDDEN_KEYS: &[&str] = &[
         "access_token",
@@ -786,6 +793,133 @@ fn stage_a2_onebot_owner_lease_evidence_proves_only_single_host_process_fencing(
         "provider_side_fencing_available",
         "sigkill_or_power_loss_tested",
         "host_level_key_recovery_tested",
+        "production_adapter_store_connected",
+        "production_stream_connected",
+    ] {
+        assert_eq!(
+            evidence["remaining_gaps"][field], false,
+            "remaining gap {field}"
+        );
+    }
+
+    assert_eq!(evidence["probe_success"], true);
+    assert_no_sensitive_runtime_values(&evidence);
+}
+
+#[test]
+fn stage_a2_onebot_recovery_policy_freezes_private_and_no_history_fail_closed() {
+    let evidence = recovery_policy_evidence();
+    assert_eq!(evidence["schema_version"], 1);
+    assert_eq!(
+        evidence["stage"],
+        "a2_2_2_private_and_no_history_fail_closed_policy_probe_only"
+    );
+    assert_eq!(evidence["synthetic"], true);
+    assert_eq!(evidence["live_adapter_tested"], false);
+    assert_eq!(evidence["network_requests_performed"], 0);
+    assert_eq!(evidence["production_runtime_enabled"], false);
+    assert_eq!(evidence["production_ready"], false);
+    assert_eq!(
+        evidence["trigger_state"],
+        "attempting_without_provider_locator"
+    );
+
+    let protocol = &evidence["protocol_contract"];
+    assert_eq!(
+        protocol["pinned_onebot_v11_commit"],
+        PINNED_ONEBOT_V11_COMMIT
+    );
+    for field in [
+        "onebot_v11_standard_history_lookup_available",
+        "protocol_native_idempotency_key_available",
+        "provider_side_fencing_available",
+    ] {
+        assert_eq!(protocol[field], false, "protocol boundary {field}");
+    }
+
+    let policy = &evidence["policy_contract"];
+    assert_eq!(policy["default_decision"], "manual_reconciliation_required");
+    assert_eq!(
+        strings(&policy["accepted_lookup_profiles"]),
+        ["napcat_go_cqhttp_extension"]
+    );
+    for field in [
+        "lookup_profile_scope_must_match_target",
+        "unique_exact_own_match_required",
+        "read_only_lookup_requires_explicit_operator_action",
+        "recovered_locator_must_be_encrypted_before_recall",
+        "recall_requires_separate_explicit_reconciliation",
+        "eligible_decision_does_not_authorize_recall",
+        "original_send_must_never_be_retried_from_uncertain_state",
+        "owner_failover_must_remain_blocked",
+        "checkpoint_must_remain_blocked",
+    ] {
+        assert_eq!(policy[field], true, "policy invariant {field}");
+    }
+
+    let scenarios = evidence["scenarios"].as_array().expect("scenario array");
+    assert_eq!(scenarios.len(), 9);
+    let expected_ids = BTreeSet::from([
+        "private_without_standard_history",
+        "group_without_standard_history",
+        "private_with_group_only_profile",
+        "private_with_untrusted_extension",
+        "group_history_unavailable",
+        "group_history_not_yet_queried",
+        "group_without_exact_match",
+        "group_with_ambiguous_matches",
+        "group_with_unique_exact_own_match",
+    ]);
+    let actual_ids = scenarios
+        .iter()
+        .map(|scenario| scenario["id"].as_str().expect("scenario id"))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(actual_ids, expected_ids);
+
+    let mut eligible = 0;
+    for scenario in scenarios {
+        let result = &scenario["result"];
+        assert_eq!(result["automatic_failover_allowed"], false);
+        assert_eq!(result["automatic_provider_effects_allowed"], false);
+        assert_eq!(result["automatic_send_retries"], 0);
+        assert_eq!(result["checkpoint_advances"], false);
+        assert_eq!(result["emits_delivered"], false);
+        assert_eq!(result["requires_explicit_operator_action"], true);
+
+        if scenario["input"]["target_kind"] == "private" {
+            assert_eq!(result["decision"], "manual_reconciliation_required");
+            assert_eq!(result["locator_persistence_allowed"], false);
+        }
+        if result["decision"] == "eligible_for_explicit_locator_reconciliation" {
+            eligible += 1;
+            assert_eq!(scenario["id"], "group_with_unique_exact_own_match");
+            assert_eq!(scenario["input"]["target_kind"], "group");
+            assert_eq!(
+                scenario["input"]["lookup_profile"],
+                "napcat_go_cqhttp_extension"
+            );
+            assert_eq!(
+                scenario["input"]["lookup_outcome"],
+                "unique_exact_own_match"
+            );
+            assert_eq!(result["locator_persistence_allowed"], true);
+        }
+    }
+    assert_eq!(eligible, 1);
+
+    let result = &evidence["evidence_result"];
+    assert_eq!(result["scenario_count"], 9);
+    assert_eq!(result["private_target_fail_closed_policy_frozen"], true);
+    assert_eq!(result["no_history_fail_closed_policy_frozen"], true);
+    assert_eq!(result["eligible_scenario_count"], 1);
+    assert_eq!(result["automatic_provider_request_count"], 0);
+
+    for field in [
+        "private_target_automatic_crash_recovery_available",
+        "generic_onebot_automatic_crash_recovery_available",
+        "host_level_key_recovery_tested",
+        "multi_host_owner_lease_tested",
+        "provider_side_fencing_available",
         "production_adapter_store_connected",
         "production_stream_connected",
     ] {

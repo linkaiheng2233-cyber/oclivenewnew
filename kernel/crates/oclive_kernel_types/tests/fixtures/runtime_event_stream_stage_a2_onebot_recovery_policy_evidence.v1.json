@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "runtime_event_stream_onebot_fail_closed_recovery_policy_probe",
+  "stage": "a2_2_2_private_and_no_history_fail_closed_policy_probe_only",
+  "synthetic": true,
+  "live_adapter_tested": false,
+  "network_requests_performed": 0,
+  "production_runtime_enabled": false,
+  "production_ready": false,
+  "trigger_state": "attempting_without_provider_locator",
+  "protocol_contract": {
+    "pinned_onebot_v11_commit": "d4456ee706f9ada9c2dfde56a2bcfc69752600e4",
+    "review_fixture": "kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_review.v1.json",
+    "onebot_v11_standard_history_lookup_available": false,
+    "protocol_native_idempotency_key_available": false,
+    "provider_side_fencing_available": false
+  },
+  "policy_contract": {
+    "default_decision": "manual_reconciliation_required",
+    "accepted_lookup_profiles": [
+      "napcat_go_cqhttp_extension"
+    ],
+    "lookup_profile_scope_must_match_target": true,
+    "unique_exact_own_match_required": true,
+    "read_only_lookup_requires_explicit_operator_action": true,
+    "recovered_locator_must_be_encrypted_before_recall": true,
+    "recall_requires_separate_explicit_reconciliation": true,
+    "eligible_decision_does_not_authorize_recall": true,
+    "original_send_must_never_be_retried_from_uncertain_state": true,
+    "owner_failover_must_remain_blocked": true,
+    "checkpoint_must_remain_blocked": true
+  },
+  "scenarios": [
+    {
+      "id": "private_without_standard_history",
+      "input": {
+        "lookup_outcome": "not_queried",
+        "lookup_profile": "none",
+        "target_kind": "private"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "no_trusted_lookup_profile",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_without_standard_history",
+      "input": {
+        "lookup_outcome": "not_queried",
+        "lookup_profile": "none",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "no_trusted_lookup_profile",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "private_with_group_only_profile",
+      "input": {
+        "lookup_outcome": "unique_exact_own_match",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "private"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "lookup_scope_mismatch",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "private_with_untrusted_extension",
+      "input": {
+        "lookup_outcome": "unique_exact_own_match",
+        "lookup_profile": "vendor.private_history",
+        "target_kind": "private"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "lookup_profile_not_allowlisted",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_history_unavailable",
+      "input": {
+        "lookup_outcome": "history_unavailable",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "history_unavailable",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_history_not_yet_queried",
+      "input": {
+        "lookup_outcome": "not_queried",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "trusted_lookup_not_queried",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_without_exact_match",
+      "input": {
+        "lookup_outcome": "no_exact_own_match",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "no_exact_own_match",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_with_ambiguous_matches",
+      "input": {
+        "lookup_outcome": "ambiguous_exact_own_match",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "manual_reconciliation_required",
+        "emits_delivered": false,
+        "locator_persistence_allowed": false,
+        "reason": "ambiguous_exact_own_match",
+        "requires_explicit_operator_action": true
+      }
+    },
+    {
+      "id": "group_with_unique_exact_own_match",
+      "input": {
+        "lookup_outcome": "unique_exact_own_match",
+        "lookup_profile": "napcat_go_cqhttp_extension",
+        "target_kind": "group"
+      },
+      "result": {
+        "automatic_failover_allowed": false,
+        "automatic_provider_effects_allowed": false,
+        "automatic_send_retries": 0,
+        "checkpoint_advances": false,
+        "decision": "eligible_for_explicit_locator_reconciliation",
+        "emits_delivered": false,
+        "locator_persistence_allowed": true,
+        "reason": "trusted_scope_unique_exact_own_match",
+        "requires_explicit_operator_action": true
+      }
+    }
+  ],
+  "privacy": {
+    "exported_access_token": false,
+    "exported_endpoint": false,
+    "exported_target_id": false,
+    "exported_message_body": false,
+    "exported_provider_message_id": false,
+    "exported_history_payload": false
+  },
+  "evidence_result": {
+    "scenario_count": 9,
+    "private_target_fail_closed_policy_frozen": true,
+    "no_history_fail_closed_policy_frozen": true,
+    "eligible_scenario_count": 1,
+    "automatic_provider_request_count": 0
+  },
+  "remaining_gaps": {
+    "private_target_automatic_crash_recovery_available": false,
+    "generic_onebot_automatic_crash_recovery_available": false,
+    "host_level_key_recovery_tested": false,
+    "multi_host_owner_lease_tested": false,
+    "provider_side_fencing_available": false,
+    "production_adapter_store_connected": false,
+    "production_stream_connected": false
+  },
+  "probe_success": true
+}
