@@ -12,7 +12,7 @@
 | 2 | 理解「纯净内核」与 library / kernel_server 分工 | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | 生成最小无头/库骨架 | `cargo run -p oclive-cli -- init`（交互或 `--non-interactive`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
 
-**验收**：能在本机 `cargo build` 生成的骨架工程，并能区分生成工程的根级 `roles/` / `plugins/` 与主仓 `distros/chat-pro/roles/` / `plugins/`。当前非双核 `init` 示例仍是 legacy `roles/default/settings.json`；新 Stable 角色包以 v4 `pipeline.ocblueprint` 为 SSOT。
+**验收**：能在本机 `cargo build` 生成的骨架工程，并能区分生成工程的根级 `roles/` / `plugins/` 与主仓 `distros/chat-pro/roles/` / `plugins/`。当前非双核 `init` 示例仍是 legacy 参考宿主组合目录；现行参考宿主蓝图格式族的 Stable 样例以 v4 `pipeline.ocblueprint` 为 SSOT。两者都不是内核最小角色 contract；CLI 对该 contract 的生成/识别能力仍由 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 跟踪。
 
 ---
 

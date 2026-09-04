@@ -1,6 +1,6 @@
 # 蓝图与系统配置参考（SETTINGS_REFERENCE）
 
-> 对 v2/v3/v4 角色包，**蓝图文件 `pipeline.ocblueprint`** 是**包内运行配置**的唯一来源（**不以** `steps[]` 作 Stable 主路径调度）；宿主设置、发行版能力上限和会话内存覆盖属于包外层。下列字段通常为**蓝图 / 宿主管理员**专属；Stable v4 `inference_profile` 是唯一可由编写器以非技术表单暴露的创作者向例外。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
+> 对当前参考宿主的 v2/v3/v4 组合目录，**蓝图文件 `pipeline.ocblueprint`** 是**包内运行配置**的唯一来源（**不以** `steps[]` 作 Stable 主路径调度）；宿主设置、发行版能力上限和会话内存覆盖属于包外层。下列字段通常为**参考宿主蓝图 / 宿主管理员**专属，并不属于内核最小角色 contract；Stable v4 `inference_profile` 是唯一可由编写器以非技术表单暴露的创作者向例外。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
 
 ## 零、蓝图专属字段（非角色包）
 
@@ -101,7 +101,7 @@
 
 **校验**：`pack validate`（默认蓝图全量）· **`pack validate --profile creator`**（仅角色包，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)）。
 
-**当前蓝图包（新包 Stable v4，兼容 v2）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
+**当前参考宿主蓝图包（该格式族新包 Stable v4，兼容 v2）**：后端实例写在 **`pipeline.ocblueprint` → `slot_registry`**。CLI 总览 **`oclive plugin manage --tui`**。下文 §一 **`settings.json` → `plugin_backends`** 仅 **legacy** 对照。
 
 本文档描述 **桌面宿主（Tauri）** 与 **`oclive-cli` 脚手架** 共用的配置语义。单一事实来源以源码为准：
 
@@ -178,7 +178,7 @@
 | `headless-api` | full | 关闭 | kernel_server |
 | `library-embed` | minimal | 关闭 | library |
 
-角色包跨发行版底座：`pack validate --profile portable-core`。它只检查 Portable Core（基础人格 Prompt + 七张默认情绪图片），不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展。
+历史参考宿主视觉 profile：`pack validate --profile portable-core`。它检查基础人格 Prompt 与七张默认情绪图片，不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展；它也不是跨发行版的内核最小角色 contract。
 
 **`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 

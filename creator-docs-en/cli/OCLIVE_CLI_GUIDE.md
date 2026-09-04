@@ -19,7 +19,7 @@ cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
-The end of `init --help` lists **presets and the six-slot backend matrix**. The current legacy `init` scaffold writes that matrix as `plugin_backends`, matching the generated root **`CONFIG_REFERENCE.md`**; new Stable role packs still use v4 blueprint `slot_registry`.
+The end of `init --help` lists **presets and the six-slot backend matrix**. The current legacy `init` scaffold writes that matrix as `plugin_backends`, matching the generated root **`CONFIG_REFERENCE.md`**. Current reference-host blueprint packs express composition through v4 `pipeline.ocblueprint` / `slot_registry`; that format is not the kernel-minimal role contract.
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
@@ -103,7 +103,8 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`validate` (exact v2/v3/v4 dispatch)**: `pipeline.ocblueprint` (`meta`, `slot_registry`, at least one `type: llm`, etc.). v4 is Stable; v3 is the frozen dual-core Beta — see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
 - **`validate --profile legacy`**: merged `manifest.json` / `settings.json`, `plugin_backends`, `min_runtime_version` vs `--host-version`, etc.
 - **`validate --profile robot-soul`**: RobotSoulPack rules after legacy validation (ROLE_PACK_SPEC §6).
-- **`create`**: minimal pack; prefer **`--format-blueprint-v4`** for new Stable packs. `--format-blueprint-v2` remains for compatibility; with `--flat`, `-o` is the role root.
+- **`validate --profile portable-core`**: validates a v2/v3/v4 blueprint, non-empty `core_personality.txt`, an enabled `portrait_catalog`, and seven fixed default emotion image IDs. This is a historical reference-host visual profile, not the cross-distro kernel-minimal contract.
+- **`create`**: creates a valid directory in the current reference-host format family; prefer **`--format-blueprint-v4`** for its new Stable examples. `--format-blueprint-v2` remains for compatibility; with `--flat`, `-o` is the role root. Kernel-minimal generation/recognition remains tracked as `D-CLI-BLUEPRINT-05` in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 - **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2/v3/v4) or **`manifest.id`** (legacy).
 
 **JSON Schema**: `kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`, `pipeline.ocblueprint.v3.schema.json`, and `pipeline.ocblueprint.v4.schema.json`; legacy: `role_pack_manifest.schema.json`, `role_pack_settings.schema.json`, `role_pack_index.schema.json`.
@@ -203,7 +204,7 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 ## Generated artifacts
 
 - **Stub `Cargo.toml` without `--kernel-source`**: depends only on **`serde` / `serde_json`** to validate directory/config shape. With `--kernel-source <repo root>`, `kernel_server` links the real headless entry and `library` links host/contracts/runtime/types while re-exporting the complete stable in-process **`OcliveKernel`** facade.
-- **`roles/default/settings.json`** (the current non-dual `init` legacy example): includes `_comment_*`, six-slot `plugin_backends`, and a `complex_emotion` facility hint key ignored by legacy `PluginBackends`. `none` is a legal Noop backend for all six types, although disabling prompt or llm breaks the healthy path. New Stable packs should use a v4 blueprint.
+- **`roles/default/settings.json`** (the current non-dual `init` legacy reference-host example): includes `_comment_*`, six-slot `plugin_backends`, and a `complex_emotion` facility hint key ignored by legacy `PluginBackends`. `none` is a legal Noop backend for all six types, although disabling prompt or llm breaks the healthy path. New Stable examples in the current reference-host blueprint family use v4; this neither requires migrating `init` to a complete v4 pack nor defines the kernel-minimal role contract.
 - **`CONFIG_REFERENCE.md` (project root)**: preset matrix and one-liner per slot; **developer compile options (Monolith)** and RFC link.
 - **End of `init --help`**: preset matrix, **`--monolith`**, pointer to [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md).
 - **Generated README**: pointers to `oclive_kernel_server`, OOCP, and directory plugins based on project shape/toggles; a linked `library` also gets an `OcliveKernel::start → load_role → process_message → shutdown` example.

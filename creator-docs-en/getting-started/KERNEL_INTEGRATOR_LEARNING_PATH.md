@@ -14,7 +14,7 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 | 2 | Minimal-kernel boundary | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | Generate a minimal project | `cargo run -p oclive-cli -- init` ([OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
 
-**Done when:** `cargo build` works in the generated tree and you can distinguish its root-level `roles/` / `plugins/` from the monorepo's `distros/chat-pro/roles/` / `plugins/`. The current non-dual `init` example is still legacy `roles/default/settings.json`; new Stable packs use a v4 `pipeline.ocblueprint` SSOT.
+**Done when:** `cargo build` works in the generated tree and you can distinguish its root-level `roles/` / `plugins/` from the monorepo's `distros/chat-pro/roles/` / `plugins/`. The current non-dual `init` example is still a legacy reference-host combined directory; Stable examples in the current reference-host blueprint family use a v4 `pipeline.ocblueprint` SSOT. Neither is the kernel-minimal role contract; CLI generation/recognition for that contract remains tracked as `D-CLI-BLUEPRINT-05` in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 ---
 

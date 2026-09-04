@@ -10,7 +10,7 @@
 4. **Facility modules**: reference-runtime extensions **not** in the six slots (e.g. complex emotion, expert routing).
 5. **Side-channel capability enhancement modules**: dedicated resolver + turn-chain anchor, host-input path, **or** standalone API; registry [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) (`user_identity`, `reply_post_process`, `theater_director`, `voice.asr`).
 6. **Kernel crates** are **not** renamed in v0.2.x — see [kernel/crates/README.md](../kernel/crates/README.md).
-7. **Blueprint file** `pipeline.ocblueprint` is a **frozen filename**; it is **not** a step-scheduling DSL (`steps[]` is deprecated on the hot path).
+7. **Blueprint file** `pipeline.ocblueprint` is the current reference-host blueprint's **frozen filename**; it is neither a step-scheduling DSL (`steps[]` is deprecated on the hot path) nor the kernel-minimal role contract.
 8. **`dual_core`** = feature/config gate; **`dual_pipeline`** = Rust orchestrator + blueprint `pipeline.{stable,experimental}` JSON section.
 9. **Canonical imports**:
    - DTOs / errors → `oclive_kernel_types`

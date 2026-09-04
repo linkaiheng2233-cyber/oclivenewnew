@@ -1,15 +1,17 @@
 # 角色包定制指南
 
-本页说明如何直接维护当前 OCLive 角色包。完整字段契约以
+本页说明如何直接维护当前 OCLive 参考宿主的组合角色包。完整字段契约以
 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 为准；这里提供最短、可执行的创作路径。
 用户关系细节见 [CREATOR_USER_RELATIONS.md](CREATOR_USER_RELATIONS.md)，场景写法见
 [CREATOR_SCENE_GUIDE.md](CREATOR_SCENE_GUIDE.md)；本页不替代这些专项说明。
 
 ## 1. 当前格式
 
-新角色包只使用 **`pipeline.ocblueprint`** 作为主清单（SSOT），当前校验器精确支持
-`schema_version: 2`、`3`、`4`，新 Stable 包使用 v4。不要在同一目录新增 `manifest.json` /
+当前参考宿主的新蓝图包只使用 **`pipeline.ocblueprint`** 作为主清单（SSOT），当前校验器精确支持
+`schema_version: 2`、`3`、`4`，该格式族的新 Stable 包使用 v4。不要在同一目录新增 `manifest.json` /
 `settings.json`；这两个文件只属于 legacy 迁移路径。
+
+这一目录把角色内容、宿主槽位和产品资源放在一起，不是内核最小角色 contract；其它发行版可以维护自己的产品格式，再通过适配器映射到内核 contract。
 
 推荐目录如下。`<角色包根>` 在本 monorepo 中是 `distros/chat-pro/roles`；`oclive-cli init` 生成的独立工程通常使用根级 `roles`：
 
@@ -19,7 +21,7 @@
 ├── core_personality.txt        # 必填：Tier 0 核心人设
 ├── config.json                 # 可选：时间、记忆、立绘、思考节奏等运行策略
 ├── memory_seed.json            # 可选：只读初始记忆种子
-├── portrait_catalog.json       # Portable Core 需要
+├── portrait_catalog.json       # 可选；portable-core 视觉 profile 需要
 ├── user_identities/
 │   ├── index.json              # 可选：用户身份目录
 │   └── <identity>.md
@@ -58,9 +60,9 @@
 
 连续性状态用于保持位置、姿态、活动等微状态，不替代长期记忆、短期情绪或核心人设。
 
-## 4. 立绘与 Portable Core
+## 4. 立绘与 `portable-core` 视觉 profile
 
-需要跨发行版携带基础视觉能力时：
+当前参考宿主选择这一历史视觉 profile 时：
 
 1. 在 `config.json` 设置 `portrait_catalog.enabled: true`；
 2. 创建 `portrait_catalog.json`；
@@ -69,8 +71,8 @@
    `excited_default`、`confused_default`、`shy_default`；
 4. 确保每个 `path` 都是包内安全相对路径且文件真实存在。
 
-Portable Core 只定义通用人格与七张基础立绘，不限制角色还可以携带多少场景、语音、
-知识或发行版专属能力。
+`portable-core` profile 检查通用人格与七张基础立绘，不限制角色还可以携带多少场景、
+语音、知识或发行版专属能力。它是产品/展示层的视觉基线，不是跨发行版内核最小 contract。
 
 ## 5. 语音与其它侧通道
 
@@ -83,7 +85,7 @@ Portable Core 只定义通用人格与七张基础立绘，不限制角色还可
 ## 6. 创建与验收
 
 可以复制结构接近的正式角色，再逐项替换内容；不要把沐沐视为所有角色的能力上限，
-它是针对 Chat Pro 体验定制的完整角色。较轻量的跨发行版结构可参考
+它是针对 Chat Pro 体验定制的完整角色。较轻量的当前参考宿主样例可参考
 `distros/chat-pro/roles/deepseek/`。
 
 每次修改至少执行：
@@ -92,7 +94,7 @@ Portable Core 只定义通用人格与七张基础立绘，不限制角色还可
 cargo run -p oclive-cli -- pack validate .\distros\chat-pro\roles\<角色 id>
 ```
 
-需要 Portable Core 时再执行：
+需要验收 `portable-core` 视觉 profile 时再执行：
 
 ```powershell
 cargo run -p oclive-cli -- pack validate .\distros\chat-pro\roles\<角色 id> --profile portable-core

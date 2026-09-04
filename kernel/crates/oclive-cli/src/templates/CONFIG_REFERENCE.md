@@ -1,6 +1,6 @@
 # oclive-cli 生成项目：后端预设对照
 
-本文件由 **`oclive-cli init`** 自动生成，与 `init --help` 中的逻辑预设矩阵一致。当前 `init` 的非双核示例仍生成 legacy `manifest.json` + `settings.json.plugin_backends`；`--dual-core` 生成冻结的 v3 蓝图。面向新角色包的 Stable v4 请使用 `oclive pack create --format-blueprint-v4`，再把同一预设映射到 `pipeline.ocblueprint.slot_registry`。正式契约以主仓 **[PLUGIN_V1.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_V1.md)** 与 **[SETTINGS_REFERENCE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/SETTINGS_REFERENCE.md)** 为准。
+本文件由 **`oclive-cli init`** 自动生成，与 `init --help` 中的逻辑预设矩阵一致。当前 `init` 的非双核示例仍生成 legacy `manifest.json` + `settings.json.plugin_backends`；`--dual-core` 生成冻结的 v3 蓝图。若要生成现行参考宿主格式族的 Stable v4 样例，可使用 `oclive pack create --format-blueprint-v4`，再把同一预设映射到 `pipeline.ocblueprint.slot_registry`；该完整蓝图不是内核最小角色 contract，也不是 `init` 的默认迁移目标。正式契约以主仓 **[PLUGIN_V1.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_V1.md)** 与 **[SETTINGS_REFERENCE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/SETTINGS_REFERENCE.md)** 为准。
 
 ## 内核工厂模板（`--template`）
 

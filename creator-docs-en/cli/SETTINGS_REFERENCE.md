@@ -1,6 +1,6 @@
 # Blueprint and system configuration (SETTINGS_REFERENCE)
 
-> For v2/v3/v4 role packs, **`pipeline.ocblueprint` is the single source of in-pack runtime configuration.** It does not schedule the Stable main path through `steps[]`; host settings, distro capability ceilings, and in-memory session overrides are outside the pack. Fields below are normally **blueprint / host admin** only. Stable v4 `inference_profile` is the sole exception that an editor may expose through a non-technical creator form. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
+> For the current reference host's v2/v3/v4 combined directories, **`pipeline.ocblueprint` is the single source of in-pack runtime configuration.** It does not schedule the Stable main path through `steps[]`; host settings, distro capability ceilings, and in-memory session overrides are outside the pack. Fields below are normally **reference-host blueprint / host-admin** concerns and are not part of the kernel-minimal role contract. Stable v4 `inference_profile` is the sole exception that an editor may expose through a non-technical creator form. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
 
 ## 0. Blueprint-only fields
 
@@ -58,7 +58,9 @@ The current kernel forwards `temperature`, `top_p`, the output limit, and prefer
 
 ---
 
-**v2/v3/v4:** backends live in **`slot_registry`**; new Stable packs use v4. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
+**Current reference-host v2/v3/v4 blueprints:** backends live in **`slot_registry`**; new Stable examples in this format family use v4. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
+
+The `portable-core` validation profile is a historical reference-host visual baseline that requires a core persona and seven default emotion images. It is not the cross-distro kernel-minimal role contract.
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 

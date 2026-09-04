@@ -18,7 +18,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 3. **Complete reference runtime** = the current embeddable `OcliveKernel` facade plus persistence, Event Ring, facilities, concrete implementations, and transport dependencies; it is not the physical minimal core.
 4. **Facility modules** = reference-runtime extensions **not** in the six slots (e.g. complex emotion, expert routing).
 5. **Kernel crates** are **not** renamed in v0.2.x; use the [crate quick-reference](#3-crate-层级速查表) instead.
-6. **`pipeline.ocblueprint`** is a **frozen filename**; conceptually call it **blueprint file** — it is **not** a step-scheduling DSL.
+6. **`pipeline.ocblueprint`** is the current reference-host blueprint's **frozen filename**; conceptually call it **blueprint file** — it is **not** a step-scheduling DSL or the kernel-minimal role contract.
 7. **`dual_core`** = feature/config gate; **`dual_pipeline`** = Rust orchestrator + blueprint `pipeline.{stable,experimental}` section.
 8. **Canonical imports**: DTOs → `oclive_kernel_types`; traits → `oclive_kernel_contracts`; orchestration → `oclive_kernel_host::domain::…`.
 9. **Normative creator docs**: Chinese under `creator-docs/`; English mirrors under `creator-docs-en/`. Crate / module READMEs: **English body**, Chinese notes optional.
@@ -290,7 +290,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 名称 | 是什么 | 不是什么 | 能否 rename |
 |------|--------|----------|-------------|
-| **`pipeline.ocblueprint`** | 角色包磁盘上的**蓝图文件**（Stable v4 canonical；v2 兼容） | 调度 DSL 文件 | **文件名冻结** |
+| **`pipeline.ocblueprint`** | 当前参考宿主组合目录中的**蓝图文件**（该格式族以 Stable v4 为 canonical；v2 兼容） | 调度 DSL 文件或内核最小角色 contract | **文件名冻结** |
 | **`slot_registry`** | 多实例后端配置总表 | 执行顺序表 | 键名冻结 |
 | **蓝图 JSON 键 `pipeline`** | v3 双核下的 `{ stable, experimental }` 步骤 DAG | 与文件名 `pipeline.` 前缀同义 | v3 冻结 |
 | **`dual_pipeline.rs`** | Rust 模块：`DualPipelineRunner` 运行时编排 | 蓝图文件 | 代码模块；见 §5.3 |

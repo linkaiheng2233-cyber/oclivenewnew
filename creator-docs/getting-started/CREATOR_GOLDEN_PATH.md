@@ -2,7 +2,7 @@
 
 [English](../../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md)
 
-这条路径只解决一件事：做出一个能被 A.I.Live 加载、校验和对话的角色包。格式真源是 [角色包规范](../role-pack/ROLE_PACK_SPEC.md)；这里不重复字段表。
+这条路径只解决一件事：做出一个能被当前 A.I.Live 参考宿主加载、校验和对话的组合角色包。格式真源是 [角色包规范](../role-pack/ROLE_PACK_SPEC.md)；这里不重复字段表，也不把该完整目录当作内核最小角色 contract。
 
 ## 你需要什么
 
@@ -10,7 +10,7 @@
 - [角色包编写器](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)，或本仓库的 `oclive-cli`；
 - 至少一份人设正文。立绘、场景、知识与预置记忆都可以稍后补。
 
-## 1. 建立最小包（5 分钟）
+## 1. 建立可加载的参考宿主包（5 分钟）
 
 在编写器中新建角色包，或者在仓库根执行：
 
@@ -18,7 +18,7 @@
 cargo run -p oclive-cli -- pack create -o .\work\my-role --flat --id my-role --name "My Role" --format-blueprint-v2
 ```
 
-新包采用 `pipeline.ocblueprint`，不要再同时创建 legacy 的 `manifest.json` / `settings.json`。
+该命令当前生成参考宿主 v2 蓝图样例；不要再同时创建 legacy 的 `manifest.json` / `settings.json`。CLI 尚未提供独立的内核最小角色 contract 生成器。
 
 ## 2. 写角色，而不是写运行时（15 分钟）
 
@@ -28,10 +28,12 @@ cargo run -p oclive-cli -- pack create -o .\work\my-role --flat --id my-role --n
 |------|----------|
 | 角色是谁、如何说话、不可越过的边界 | `core_personality.txt` |
 | 名称、作者、七维人格、关系默认值 | `pipeline.ocblueprint` 的 `meta` |
-| 七张基础情绪立绘 | `portrait_catalog.json` 与对应 PNG |
+| 可选：七张基础情绪立绘 | `portrait_catalog.json` 与对应 PNG |
 | 可选的前置记忆事件 | `memory_seed.json` |
 
 `memory_seed.json` 是创作者提供的只读种子，不是用户运行后产生的长期记忆。可变人设和用户长期记忆由运行时管理，不要写回角色包。
+
+七张立绘只在选择历史 `portable-core` 视觉 profile 时强制，不是内核识别角色的最低要求。
 
 初次创作不需要修改 `slot_registry`、`groups`、远程插件、双核或 MCP；这些属于发行版和高级集成能力。
 

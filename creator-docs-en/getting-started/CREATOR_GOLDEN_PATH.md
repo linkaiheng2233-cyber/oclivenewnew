@@ -2,7 +2,7 @@
 
 [中文](../../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)
 
-This path has one goal: produce a role pack that A.I.Live can load, validate, and use in a conversation. [Role Pack Spec](../role-pack/ROLE_PACK_SPEC.md) is the format SSOT; this page does not duplicate its field reference.
+This path has one goal: produce a combined role pack that the current A.I.Live reference host can load, validate, and use in a conversation. [Role Pack Spec](../role-pack/ROLE_PACK_SPEC.md) is the format SSOT; this page neither duplicates its field reference nor treats that complete directory as the kernel-minimal role contract.
 
 ## What you need
 
@@ -10,7 +10,7 @@ This path has one goal: produce a role pack that A.I.Live can load, validate, an
 - the [role-pack editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor), or this repository's `oclive-cli`;
 - one personality draft. Portraits, scenes, knowledge, and seed memories can come later.
 
-## 1. Create a minimal pack (5 minutes)
+## 1. Create a loadable reference-host pack (5 minutes)
 
 Create a pack in the editor, or run this from the repository root:
 
@@ -18,7 +18,7 @@ Create a pack in the editor, or run this from the repository root:
 cargo run -p oclive-cli -- pack create -o .\work\my-role --flat --id my-role --name "My Role" --format-blueprint-v2
 ```
 
-New packs use `pipeline.ocblueprint`. Do not also create the legacy `manifest.json` / `settings.json` pair.
+This command currently creates a reference-host v2 blueprint example. Do not also create the legacy `manifest.json` / `settings.json` pair. The CLI does not yet provide a separate kernel-minimal role-contract generator.
 
 ## 2. Write the role, not the runtime (15 minutes)
 
@@ -28,10 +28,12 @@ Start with only these items:
 |---------|----------|
 | Identity, voice, and behavioral boundaries | `core_personality.txt` |
 | Name, author, seven traits, and default relations | `meta` in `pipeline.ocblueprint` |
-| Seven portable emotion portraits | `portrait_catalog.json` and the PNG assets |
+| Optional: seven baseline emotion portraits | `portrait_catalog.json` and the PNG assets |
 | Optional pre-authored memory events | `memory_seed.json` |
 
 `memory_seed.json` is a read-only seed supplied by the creator. It is separate from user-generated long-term memory. Mutable personality and user memory belong to the runtime and must not be written back into the pack.
+
+The seven portraits are mandatory only when claiming the historical `portable-core` visual profile. They are not a minimum requirement for kernel role recognition.
 
 For a first pack, leave `slot_registry`, `groups`, remote plugins, dual-core settings, and MCP alone. They belong to distro or advanced integration work.
 

@@ -18,7 +18,7 @@ cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
-`init --help` **末尾**附有 **预设与六槽后端矩阵**（当前 `init` legacy 脚手架写 `plugin_backends`；与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。新 Stable 角色包仍以 v4 蓝图 `slot_registry` 为准。
+`init --help` **末尾**附有 **预设与六槽后端矩阵**（当前 `init` legacy 脚手架写 `plugin_backends`；与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。现行参考宿主蓝图包以 v4 `pipeline.ocblueprint` / `slot_registry` 表达组合；它不是内核最小角色 contract。
 
 **角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
 
@@ -376,7 +376,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile robot-soul
 # 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
-# Portable Core：跨发行版基础人格 + 七张默认情绪图
+# portable-core：历史参考宿主视觉 profile（人格 + 七张默认情绪图；非内核最小 contract）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 cargo run -p oclive-cli -- pack validate-persona ./exports/mumu.ocpersona
 cargo run -p oclive-cli -- pack validate-memory ./exports/mumu.ocmemory
@@ -388,8 +388,8 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
-- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；发行版增强能力不在此 profile 内。
-- **`create`**：生成最小可校验目录；Stable 新包推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。
+- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；这是历史参考宿主的视觉 profile，不是跨发行版内核最小 contract。
+- **`create`**：生成当前参考宿主格式的可校验目录；该格式族的新 Stable 样例推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。内核最小角色 contract 的生成/识别能力尚未实现，跟踪于 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05`。
 - **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2/v3/v4）或 **`manifest.id`**（legacy）。
 
 **JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。
@@ -639,7 +639,7 @@ cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 ## 生成物说明
 
 - **未传 `--kernel-source` 的占位 `Cargo.toml`**：仅依赖 **`serde` / `serde_json`**，用于验证目录/配置形状。传入 `--kernel-source <主仓根>` 后，`kernel_server` 链接真实无头入口，`library` 则链接 host/contracts/runtime/types 并直接重导出稳定 **`OcliveKernel`** 完整进程内门面。
-- **`roles/default/settings.json`**（当前非双核 `init` 的 legacy 示例）：含 `_comment_*` 与六槽 `plugin_backends`，另有会被 legacy `PluginBackends` 忽略的 `complex_emotion` 设施提示键；`none` 已是六槽合法 Noop 后端，但关闭 prompt / llm 会破坏健康主链。新 Stable 角色包应改用 v4 蓝图。
+- **`roles/default/settings.json`**（当前非双核 `init` 的 legacy 参考宿主示例）：含 `_comment_*` 与六槽 `plugin_backends`，另有会被 legacy `PluginBackends` 忽略的 `complex_emotion` 设施提示键；`none` 已是六槽合法 Noop 后端，但关闭 prompt / llm 会破坏健康主链。现行参考宿主蓝图格式的新 Stable 样例使用 v4；这不等于 `init` 应迁移为完整 v4，也不定义内核最小角色 contract。
 - **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 还包含 `OcliveKernel::start → load_role → process_message → shutdown` 示例。
