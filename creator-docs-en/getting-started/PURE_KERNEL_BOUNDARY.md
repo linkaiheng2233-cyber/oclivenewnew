@@ -46,15 +46,16 @@ Physical extraction is tracked by `K-CORE-BOUNDARY-01` in [TECHNICAL_DEBT_INVENT
 
 ## 3. Role-pack delivery unit
 
-Externally: a **role delivery unit = versioned data + configurable slot policy**, loaded by the reference runtime rather than hard-coded in orchestration. It is an important portable asset, not minimal-core code.
+Role data and slot policy are both portable inputs, but they are not the same contract layer. A distro may ship them in one product package; its adapter must separate minimal role data from host capability bindings before entering the kernel.
 
 | Part | Description |
 |------|-------------|
-| **Role pack (Stable v4 canonical; v2 compatible)** | **`pipeline.ocblueprint`** (`meta` + `slot_registry` + optional `runtime_config` / `extensions`) · `core_personality.txt` · scenes/knowledge ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
-| **Effective backends** | Blueprint `slot_registry` fold + **`set_session_slot_override`** + env ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
+| **Kernel minimal role definition (target boundary)** | contract version, stable role id, display name/role version, non-empty core persona, and at least one relation plus its default id; personality defaults, scenes, knowledge, and memory seed are optional |
+| **Reference-host combined directory (current)** | **`pipeline.ocblueprint`** v2/v3/v4 combines `meta` with `slot_registry` / `runtime_config`, then the loader consumes persona, scene, knowledge, and product-extension files from the same directory. This is a reference implementation input, not the kernel canonical schema ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
+| **Effective backends** | Host blueprint `slot_registry` fold + **`set_session_slot_override`** + environment; outside the minimal role definition ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
 | **Relation & memory** | `role_runtime`, long-term memory via Repository; `memory` slot implements policy |
 
-**Robot scenario**: swap soul pack and blueprint slot config without changing kernel version (within `min_runtime_version`).
+**Robot scenario**: swap role data while the device host independently selects its six-port assembly; a soul pack need not carry desktop model, portrait, or blueprint policy.
 
 Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile robot-soul`**; fields and sample: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md), [examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md).
 
@@ -95,7 +96,7 @@ The kernel guarantees call order, ports, errors, and state-commit boundaries. Qu
 
 - Linux user space, devices/gateways with **hundreds of MB RAM** and up.
 - **Rust async**, HTTP/JSON-RPC, directory plugin subprocesses, SQLite persistence.
-- **Same current role-pack contract** (blueprint `slot_registry`) as desktop, folded into the same runtime `PluginBackends` six-slot view.
+- Different distros adapt to the same minimal role definition and bind providers separately. The complete reference runtime still accepts the combined blueprint and folds it into `PluginBackends`; that is a transition implementation, not a cross-distro format requirement.
 - On the current desktop development target, an in-process integration test covers file SQLite, role loading, ordinary/streaming turns, Event Ring registration, and an authorized proactive turn.
 - Sidecar LLM (`remote`), local Ollama (`ollama`), hardware via directory plugins.
 

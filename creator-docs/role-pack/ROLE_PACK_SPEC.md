@@ -1,10 +1,10 @@
 # 角色包格式规范（ROLE_PACK_SPEC）
 
-> **职责边界（必读）**：**角色包仅包含角色身份、人格、关系与提示词内容。系统配置（槽位、后端、模型、交互模式、双核等）由蓝图管理。** 完整划分见 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**；系统字段清单见 **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**。
+> **职责边界（必读）**：本文记录的是 **A.I.Live 完整参考宿主当前接受的组合目录格式**，不是 kernel minimal role contract。角色内容、参考宿主蓝图和发行版产品包的三层划分见 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**；系统字段清单见 **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**。
 
 **创作者学习路径（时间盒：入门 → 进阶 → 发布）**：[CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
 
-本文档描述 **与 A.I.Live 主宿主加载逻辑一致** 的磁盘角色包形状，便于 **多发行版**（桌面 Tauri、无头 `kernel_server`、未来启动器）共用同一包。权威细节仍以源码与既有文档为准：
+本文档描述 **与 A.I.Live 完整参考宿主加载逻辑一致** 的磁盘目录形状，供桌面 Tauri 与参考 `kernel_server` 使用。ChatPro、VS Code、游戏版及第三方发行版可以维护自己的产品包格式，只需通过适配层分别产出最小角色定义与宿主能力绑定；它们不需要原样采用 `pipeline.ocblueprint` v4。权威细节仍以源码与既有文档为准：
 
 - 发行角色目录说明：[README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
 - 创作者门面与字段语义：[CREATOR_ROLE_PACK_CUSTOMIZATION.md](CREATOR_ROLE_PACK_CUSTOMIZATION.md)
@@ -22,7 +22,7 @@
 | **角色包** | 身份、七维人格、关系、**`core_personality.txt`** 人设真源、场景文案 | — |
 | **蓝图** | **不要改**（除非你是集成方） | **`slot_registry`**、**`groups`**、后端 **`backend`**、**`model`**、**`interaction_mode`**、**`memory_config`**、远程/自主场景策略、**`dual_core.enabled`**（RFC）等 |
 
-所有支持版本共用 **同一蓝图入口 `pipeline.ocblueprint`**（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表「角色包」字段由编写器默认暴露；**`slot_registry` 与 Stable v4 `runtime_config`** 归高级蓝图视图。v2 的引擎向 `meta` 键仅作兼容（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
+当前**参考宿主**支持的蓝图版本共用入口 `pipeline.ocblueprint`（**不以** `steps[]` 作主路径调度）：`meta` 中仅上表角色内容字段由编写器默认暴露；**`slot_registry` 与 Stable v4 `runtime_config`** 归高级蓝图视图。这里的 Stable v4 指参考宿主蓝图版本，不是内核最小角色 schema。v2 的引擎向 `meta` 键仅作兼容（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §零）。
 
 **创作者可编辑（`meta` 子集）**：`id`、`name`、`version`、`author`、`description`、`personality`、`relations`、`default_relation`、`scenes`；可选剧情向 `life_*`。人格来源由高级运行时视图配置：Stable v4 写 `runtime_config.evolution.personality_source`，v2 仅兼容 `meta.evolution.personality_source`。
 
@@ -32,11 +32,11 @@
 
 ## 1. 目录结构（推荐）
 
-角色包根目录通常命名为 **`distros/chat-pro/roles/{角色id}/`**（所有蓝图版本均要求 `{角色id}` 与 `meta.id` 一致）。
+参考宿主中的角色目录通常命名为 **`distros/chat-pro/roles/{角色id}/`**（所有蓝图版本均要求 `{角色id}` 与 `meta.id` 一致）。这不是第三方发行版必须复制的产品目录布局。
 
 ```text
 distros/chat-pro/roles/{role_id}/
-├── pipeline.ocblueprint    # **蓝图文件（Stable v4 canonical · v2 兼容 · 瘦）**：meta + slot_registry + runtime_config/includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
+├── pipeline.ocblueprint    # **参考宿主蓝图（Stable v4 · v2 兼容 · 瘦）**：meta + slot_registry + runtime_config/includes；**不以** steps[] 调度；见 [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 ├── blueprint/              # 可选：includes/、overlays/、revisions/、docs/（卫星，不替代本体路径）
 ├── config.json             # 可选；遗忘曲线、虚拟时间（沉浸模式）；见 §9
 ├── prompts/                # **可选创作辅助**（非 Tier0）：`reply_quality_anchor.md` 镜像等；`deep_capsule.txt`（Wave D · Deep 离线蒸馏胶囊）；`system.md` **非宿主必需、不参与 PromptBuilder**
@@ -140,7 +140,7 @@ distros/chat-pro/roles/{role_id}/
 
 ---
 
-## 2. `pipeline.ocblueprint`（Stable v4 canonical；v2 兼容；v3 双核 Beta）
+## 2. 参考宿主 `pipeline.ocblueprint`（Stable v4；v2 兼容；v3 双核 Beta）
 
 | 顶层键 | 归属 | 必填 | 说明 |
 |--------|------|------|------|
@@ -297,9 +297,9 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 
 **JSON Schema**（IDE 提示 / 外部校验器）：`kernel/crates/oclive-cli/schemas/role_pack_manifest.schema.json`、`role_pack_settings.schema.json`。
 
-### Portable Core（`--profile portable-core`）
+### 现有 Portable Core profile（`--profile portable-core`）
 
-Portable Core 是跨发行版的**最低通用契约**，不是发行版功能上限。它要求角色包使用 v2/v3/v4 `pipeline.ocblueprint`，并携带所有合规宿主都能理解的基础人格 Prompt 与七张默认情绪图：
+`portable-core` 是已经实现的**参考宿主视觉基线 profile**：它在 v2/v3/v4 组合蓝图之上要求基础人格 Prompt 与七张默认情绪图。这个历史名称不代表 kernel minimal role contract；无视觉能力的内核宿主不应被迫携带图片，发行版也不应因为该 profile 而统一产品包格式。
 
 | 规则 | 说明 |
 |------|------|
@@ -307,10 +307,11 @@ Portable Core 是跨发行版的**最低通用契约**，不是发行版功能�
 | `config.json` | 必须设置 `portrait_catalog.enabled = true` |
 | `portrait_catalog.json` | 必须存在并通过路径安全校验 |
 | 七个固定资源 | `happy_default`、`sad_default`、`angry_default`、`neutral_default`、`excited_default`、`confused_default`、`shy_default`；每项 `kind` 必须为 `image` |
-| 发行版扩展 | UI、语音、Live2D/3D、Agent、硬件与高级模块由发行版 `HostProfile` / 扩展命名空间决定，不属于 Portable Core 必需项 |
-#### 最小蓝图壳（"七图 + 一段人设"的落地形态）
+| 发行版扩展 | UI、语音、Live2D/3D、Agent、硬件与高级模块由发行版 `HostProfile` / 扩展命名空间决定，不属于该视觉 profile 的检查项 |
 
-宿主按目录扫描只把 `pipeline.ocblueprint`（或 legacy `manifest.json`）识别为角色入口，因此"七张情绪图 + `core_personality.txt`"本身不会被识别为角色——还必须挂一个最小的蓝图壳（v2 是最省字段的兼容版本；v3/v4 亦可）：
+#### 当前 profile 所需蓝图壳（不是 kernel minimal contract）
+
+当前参考宿主按目录扫描只把 `pipeline.ocblueprint`（或 legacy `manifest.json`）识别为角色入口，因此“七张情绪图 + `core_personality.txt`”本身不会被识别为角色——还必须挂一个当前加载器可接受的蓝图壳（v2 是字段较少的兼容版本；v3/v4 亦可）：
 
 ```json
 {
@@ -338,15 +339,15 @@ Portable Core 是跨发行版的**最低通用契约**，不是发行版功能�
 - `slot_registry` **不能省略、也不能为空**：当前校验强制"非空 + 至少一个 `type: llm`"（`validate_slot_registry_contract`），`{}` 会被 `pack validate` 与宿主加载直接拒绝。llm 后端允许 `ollama` / `remote` / `directory` / `none`。
 - 除 llm 外，六槽中的 `memory` / `emotion` / `event` / `prompt` / `agent` 均可省略——运行时从 `PluginBackends::default()` 回落为内置（builtin）实现，即“省略 = 五槽默认 builtin”。`complex_emotion` 是独立设施（**非六槽**），语义与六槽不同：**省略（无条目）= 不启用复杂情绪**（解析为 Noop，不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价）。该语义已随情绪引擎 B 阶段 M1 落地。
 - 仓库内现有角色包（如 `deepseek`、`mumu`）的 `slot_registry` 写满 agent / complex_emotion / ollama 等条目，那是 **chatpro 发行版的功能需求**（远程模型、情绪引擎、Agent 等），**不是**最小格式的必需项；新创作者不必照抄填满开关。`pack create --format-blueprint-v2` 生成的是“六个稳定槽条目 + `complex_emotion` 设施条目”的七项完整脚手架，不是七个稳定槽，也不是最小格式。
-- 配上 Portable Core 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，就是"七图 + 一段人设 prompt"的完整最小角色包。若未来想让"空 `slot_registry` = 全 builtin"成为合法最小格式，需先放宽 `validate_slot_registry_contract`（当前是校验硬约束）。
+- 配上该 profile 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，得到的是“七图 + 一段人设 prompt”的**视觉兼容样本**，不是 kernel 最小角色包。将来实现 kernel minimal contract 时，不应以放宽这份组合蓝图来偷换边界；应由共享适配层把最小角色定义与宿主能力绑定分开。
 
-合规宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图，没有视觉能力时安全忽略图片。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
+宣称支持这一视觉 profile 的宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
 
 ```bash
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 ```
 
-`portable-core` 只验证包的通用底座，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
+`portable-core` 只验证这份历史视觉基线，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价，更不能作为 kernel compatibility boundary；这些能力应由发行版自己的 capability-conformance 验收负责。
 
 ### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
 
@@ -450,7 +451,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 | 命令 | 作用 |
 |------|------|
 | `pack validate <dir>` | 按 `schema_version` 精确分派 v2/v3/v4 蓝图目录校验 |
-| `pack validate <dir> --profile portable-core` | v2/v3/v4 + Portable Core（基础人格 + 七张默认情绪图） |
+| `pack validate <dir> --profile portable-core` | v2/v3/v4 参考宿主蓝图 + 历史视觉基线（基础人格 + 七张默认情绪图）；非 kernel minimal |
 | `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
 | `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |

@@ -48,15 +48,16 @@ OCLive 真正要长期守住的最小核心是：
 
 ## 3. 角色包交付单元
 
-对外可说：**角色交付单元 = 可版本化的数据 + 可配置的槽位策略**，由参考运行时加载，而非写死在编排代码里。它是重要的可携带资产，但不是最小内核代码本身。
+角色数据与槽位策略都是可携带输入，但它们不是同一层 contract。发行版可以把两者放在同一个产品包中；进入内核前必须由适配层拆成最小角色定义与宿主能力绑定。
 
 | 组成部分 | 说明 |
 |----------|------|
-| **角色包（Stable v4 canonical；v2 兼容）** | **`pipeline.ocblueprint`**（`meta` + `slot_registry` + 可选 `runtime_config` / `extensions`）· `core_personality.txt` · 场景/知识等（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
-| **有效后端** | 蓝图 `slot_registry` 折叠为六槽 + **`set_session_slot_override`** 会话覆盖 + 环境变量（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
+| **内核最小角色定义（目标边界）** | contract 版本、稳定角色 id、展示名/角色版本、非空核心人设、至少一个关系定义与默认关系 id；七维人格、场景、知识与记忆种子可选 |
+| **参考宿主组合目录（当前实现）** | **`pipeline.ocblueprint`** v2/v3/v4 把 `meta` 与 `slot_registry` / `runtime_config` 放在同一文件，再从同目录加载 `core_personality.txt`、场景、知识及产品扩展；这是参考实现输入，不是 kernel canonical schema（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
+| **有效后端** | 由宿主蓝图 `slot_registry`、**`set_session_slot_override`** 会话覆盖和环境变量合成；不属于最小角色定义（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **关系与记忆** | `role_runtime`、长期记忆等由内核经 Repository 读写；策略由 `memory` 等槽实现 |
 
-**机器人场景**：设备上通常只换「灵魂包」与蓝图内槽位配置，不换编排内核版本（在 `min_runtime_version` 兼容前提下）。
+**机器人场景**：设备可以只替换角色数据，由设备宿主独立选择六槽装配；不要求灵魂包携带桌面版的模型、立绘或蓝图策略。
 
 工作名 **RobotSoulPack**（最小灵魂包）已与 **`oclive pack validate --profile robot-soul`** 对齐；字段与示例见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、[examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md)。
 
@@ -99,7 +100,7 @@ OCLive 真正要长期守住的最小核心是：
 
 - Linux 用户态、**数百 MB 级 RAM** 以上的设备或网关。
 - **Rust 异步**、HTTP/JSON-RPC、子进程目录插件、SQLite 持久化。
-- 与桌面**共用当前角色包契约**（蓝图 `slot_registry`）；运行时折叠为同一 `PluginBackends` 六槽视图。
+- 不同发行版通过适配层产出同一最小角色定义；六槽 provider 由各宿主另行绑定。当前完整参考运行时仍接受组合蓝图并折叠为 `PluginBackends`，这是过渡实现而非跨发行版格式要求。
 - 当前桌面开发机已用真实文件 SQLite、角色加载、普通/流式回合、Event Ring 注册与主动回合完成进程内集成测试。
 - 侧车 LLM（`remote`）、本机 Ollama（`ollama`）、目录插件扩展硬件。
 

@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：与 **Stable v4 扩展外壳已交付** 对齐；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 已校正“内核最小角色 contract / 参考宿主蓝图 / 发行版产品包”三层边界。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -13,14 +13,45 @@
 
 ---
 
-## 1. 一句话划分
+## 0. 三层 contract，不得混称
+
+| 层 | 只负责 | 不负责 |
+|----|--------|--------|
+| **Kernel Minimal Role Contract** | 让内核识别一个角色、建立角色生命周期命名空间，并取得非空核心人设与最小关系基线 | 不选择 LLM/插件/backend，不规定头像、立绘、语音、市场或某个发行版的完整包布局 |
+| **参考宿主装配蓝图** | OCLive 完整参考运行时的 `slot_registry`、backend/provider/model 路由、运行策略与扩展声明 | 不是内核最小角色格式，也不要求第三方发行版原样采用 |
+| **发行版 / 产品角色包** | ChatPro、VS Code、游戏版或第三方产品自己的 UI、资产、语音、市场元数据、版本与扩展 | 不得反向扩大 kernel minimal contract；只需通过适配器映射到最小角色数据与宿主能力装配 |
+
+**当前事实（不是目标边界）**：参考宿主的 `RoleStorage` 仍把角色内容和装配配置从同一目录聚合；v2/v3/v4 以 **`pipeline.ocblueprint`** 为入口，legacy 以 `manifest.json` + `settings.json` 为入口。Stable v4 只是在这条**参考宿主组合格式**中的 Stable 蓝图版本。第三方发行版可以维护自己的磁盘格式，再分别映射为内核角色定义与宿主能力绑定，不必复制 v4 产品外壳。
+
+### 0.1 建议冻结的最小逻辑 contract
+
+第一版最小边界只要求以下逻辑值；本节先冻结语义，不提前决定它最终落在 `role.json`、其它文件名或嵌入宿主 DTO 中：
+
+| 必需值 | 原因 |
+|--------|------|
+| contract 版本 | 让解析与迁移可判定，不能借发行版版本猜格式 |
+| 稳定 `role_id` | 角色生命周期、缓存、持久化与资源命名空间 |
+| 展示名与角色版本 | 最小可识别信息及兼容诊断 |
+| 非空核心人设 | 角色区别于空配置的语义底座；当前参考宿主对应 `core_personality.txt` |
+| 至少一个关系定义与默认关系 id | 当前关系状态初始化与 Prompt 身份基线 |
+
+七维人格、场景、知识与只读 `memory_seed` 可以作为**可选角色内容**映射；省略时由内核定义稳定默认。`author`、`description`、`featured`、`preset_order`、头像/立绘、UI、语音、市场数据和产品扩展不是内核运行必需项。`slot_registry`、`runtime_config`、backend、provider、model、URL、资源预算与权限授权属于**宿主装配输入**，不得进入最小角色 contract。
+
+```text
+发行版角色包 ──发行版适配器──> 最小角色定义 ──> 内核生命周期
+                              └> 宿主能力绑定 ──> 六槽 ports / 外围设施
+```
+
+这两个输出可以由同一个发行版适配器生成，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。专用磁盘 schema、共享适配 trait 与 CLI 生成格式尚未实现，由 `D-CLI-BLUEPRINT-05` 分阶段跟踪。
+
+## 1. 当前参考宿主内部划分
 
 | 组件 | 职责 | 面向 |
 |------|------|------|
-| **角色包** | 角色身份、人格、关系、提示词与场景**内容** | **初级创作者** |
-| **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等**系统配置** | **高级开发者 / 宿主管理员**；仅 `inference_profile` 可由编写器以受限表单向创作者开放 |
+| **角色内容** | 角色身份、人格、关系、提示词与场景内容 | 创作者 |
+| **蓝图** | 槽位实例、后端路由、模型名、交互/记忆/远程策略、双核开关等系统配置 | 高级开发者 / 参考宿主管理员；仅 `inference_profile` 可由编写器以受限表单向创作者开放 |
 
-**物理落盘（今日）**：v2/v3/v4 均以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为宿主加载入口；新包 canonical 格式为 **Stable v4**。**逻辑上**分责；外置片段、扩展载荷、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经 `includes` 或 v4 `extensions.*.config_ref` 引用（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。
+**物理落盘（今日参考宿主）**：v2/v3/v4 均以 **`distros/chat-pro/roles/{id}/pipeline.ocblueprint`** 为加载入口；Stable v4 是当前 Stable **蓝图**格式。**逻辑上**仍需分责；外置片段、扩展载荷、专家修订与说明放入 **`distros/chat-pro/roles/{id}/blueprint/`**，经 `includes` 或 v4 `extensions.*.config_ref` 引用（见 [BLUEPRINT_FOLDER_LAYOUT.md](./BLUEPRINT_FOLDER_LAYOUT.md)），**禁止**把长文与向导结果搅进蓝图 JSON。
 
 **legacy**：`manifest.json` + `settings.json` 已废弃，**不得**与 `pipeline.ocblueprint` 并存；引擎字段应视为**蓝图侧**，非「角色门面」。
 
@@ -151,7 +182,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
 | 引擎字段 | v2 兼容读取 `meta.*` | v4 顶层 **`runtime_config`**，禁止与 `meta` 双写 |
-| CLI | `pack validate` 全量 v2/v3/v4 | **`--profile creator`** 已实现（§2 子集 + `prompts/`；**不**校验 `slot_registry` / `pipeline`） |
+| CLI | `pack validate` 全量 v2/v3/v4；`creator` 与 `portable-core` 是专用 profile，均不等于 kernel minimal | 先实现最小逻辑 contract 的共享校验/适配，再让 `init` 生成该最小输入；不以迁移完整 v4 为目标 |
 | 编写器 | 新建 v4；导入 v2 后无损保持 v2 | 默认「角色」视图 / 高级「蓝图」视图 |
 
 **`--profile creator` 与完整示例包**：`distros/chat-pro/roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3/v4）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。

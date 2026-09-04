@@ -2,11 +2,11 @@
 
 [中文](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
 
-> **Boundary (required):** **Role packs contain only identity, personality, relations, and prompt content. System configuration (slots, backends, models, interaction mode, dual-core, etc.) is owned by the blueprint.** See **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)** and **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**.
+> **Boundary (required):** this page records the combined directory format currently accepted by the **complete A.I.Live reference host**. It is not the kernel minimal role contract. See the three-layer split between role data, reference-host blueprints, and distro product packs in **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**; system fields are listed in **[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)**.
 
 **Author learning path:** [CREATOR_LEARNING_PATH.md](CREATOR_LEARNING_PATH.md)
 
-This specification describes on-disk role packs **aligned with the A.I.Live host loader** (desktop Tauri, headless `kernel_server`, launchers). Engineering codename **oclive**; authoritative detail remains in source and linked docs.
+This specification describes on-disk directories **aligned with the complete A.I.Live reference-host loader** (desktop Tauri and the reference headless `kernel_server`). ChatPro, VS Code, game, and third-party distros may keep their own product-pack formats and adapt them into minimal role data plus separate host capability bindings; they are not required to adopt v4 verbatim.
 
 [中文全文](../role-pack/ROLE_PACK_SPEC.md)
 
@@ -19,7 +19,7 @@ This specification describes on-disk role packs **aligned with the A.I.Live host
 | **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`prompts/`**, scene prose | — |
 | **Blueprint** | **Do not edit** unless you integrate hosts | **`slot_registry`**, **`groups`**, **`backend`**, **`model`**, **`interaction_mode`**, **`memory_config`**, **`runtime_config.dual_core.enabled`** (RFC), … |
 
-On disk, every supported blueprint version uses **one entry file** `pipeline.ocblueprint`. New packs use Stable v4; v2 remains compatible, while v3 is the frozen dual-core Beta. Editors should expose a **role** view vs an **advanced blueprint** view.
+In the current **reference host**, every supported blueprint version uses one entry file, `pipeline.ocblueprint`. Stable v4 is the Stable reference-host blueprint version; it is not the kernel canonical role-pack schema. v2 remains compatible, while v3 is the frozen dual-core Beta. Editors should expose a **role** view vs an **advanced blueprint** view.
 
 **Creator `meta` fields:** `id`, `name`, `version`, `author`, `description`, `personality`, `relations`, `default_relation`, and `scenes`.
 
@@ -191,10 +191,11 @@ Role packs have two version layers — do not mix them:
 - **Legacy** still uses `manifest.json` + `settings.json`; key whitelist, `min_runtime_version` (host semver gate), and unknown-key policy live in [PACK_VERSIONING.md](PACK_VERSIONING.md) — do not restate those tables here.
 - JSON Schema / CLI: `oclive pack validate`; implementation SSOT is `oclive_validation`.
 
-### Portable Core (`--profile portable-core`)
+### Existing Portable Core profile (`--profile portable-core`)
 
-Portable Core is the cross-distro minimum, not a ceiling on distro features. A v2/v3/v4 pack validated with this profile must provide a non-empty `core_personality.txt`, enable `config.json` → `portrait_catalog.enabled`, and include local `image` assets for the seven stable IDs: `happy_default`, `sad_default`, `angry_default`, `neutral_default`, `excited_default`, `confused_default`, and `shy_default`. Hosts must be able to load the persona and run a basic turn; visual, voice, UI, agent, and hardware extensions remain distro `HostProfile` concerns. Validate with `oclive pack validate <role-dir> --profile portable-core`. Full capability parity is a separate distro conformance test.
-A minimal portable pack still needs a blueprint shell: host scanning only recognizes `pipeline.ocblueprint` (or legacy `manifest.json`) as a role entry, so the seven images plus `core_personality.txt` alone are not enough. The minimal shell is `schema_version` + `meta` (`id` equal to the role folder name, `name`, `version`, `author`, `description`, and at least one `relations` entry) + a `slot_registry` that must be non-empty with at least one `type: llm` instance (allowed backends: `ollama` / `remote` / `directory` / `none`); an empty `{}` is rejected by `pack validate` and host loading. The other five six-slot backends (`memory`, `emotion`, `event`, `prompt`, `agent`) are optional and fall back to builtin defaults at runtime (`PluginBackends::default()`). `complex_emotion` is a separate facility (not one of the six slots) with different semantics: **omitted (no entry) = disabled** (resolved to Noop, no hint produced); explicit `builtin` = enabled; explicit `none` = explicitly disabled (equivalent to omitted). This behavior is implemented by emotion-engine phase-B M1. Full `slot_registry` entries in shipped packs such as `deepseek` / `mumu` reflect Chat Pro distro feature needs (remote models, emotion engine, agent), not minimum-format requirements. `pack create --format-blueprint-v2` scaffolds seven entries—six stable slots plus the `complex_emotion` facility—which is a convenience default rather than the minimum or a seven-slot core contract.
+`portable-core` is an implemented **reference-host visual-baseline profile**. It layers a non-empty `core_personality.txt` and seven fixed portrait assets on top of a v2/v3/v4 combined blueprint. Its historical name does not make it the kernel minimal role contract: a non-visual kernel host must not be forced to carry images, and distros need not standardize their product-pack formats around it. Validate with `oclive pack validate <role-dir> --profile portable-core` only when claiming this visual profile.
+
+The current profile still needs a reference-host blueprint shell because host scanning recognizes `pipeline.ocblueprint` (or legacy `manifest.json`) as the entry. That shell requires `schema_version`, `meta` (`id`, `name`, `version`, `author`, `description`, and at least one `relations` entry), and a non-empty `slot_registry` with at least one `type: llm` instance. These are facts about the current combined loader, not the proposed kernel-minimal boundary. The other five stable slots fall back to builtin defaults, while omitted `complex_emotion` remains disabled. Full `slot_registry` entries in shipped packs reflect reference-host or ChatPro needs, not minimum role data.
 
 Portable state is split into two JSON documents. `.ocpersona` carries the immutable core identity plus an optional mutable-profile snapshot; import may restore only the mutable profile after matching the installed role id and core. `.ocmemory` carries optional creator-authored `memory_seed` entries and runtime long-term memories. Chat logs, short-term cache, and ephemeral situation state are excluded from both. Optional role-pack `memory_seed.json` is read-only at runtime, participates in retrieval without decay, and is never merged into user LTM. Validate with `oclive-cli pack validate-persona` and `validate-memory`; extension data belongs under the top-level `extensions` object.
 
