@@ -13,4 +13,4 @@
 
 角色文案仍在包根 **`prompts/`**、**`scenes/`**、**`core_personality.txt`**。
 
-完整约定见 [handoff/BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)。
+完整约定见 [handoff/BLUEPRINT_FOLDER_LAYOUT.md](../../../../handoff/BLUEPRINT_FOLDER_LAYOUT.md)。

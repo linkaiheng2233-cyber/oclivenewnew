@@ -13,7 +13,9 @@ slot.<registry_key>.<method>
 
 ---
 
-## 七槽 Method 一览
+## 当前七类 Method 一览（六槽 + `complex_emotion` 设施）
+
+这里的七类是当前 `PluginHost` 可执行 method 集合，不是七个稳定槽；Stable 核心分类仍只有六槽。
 
 | `type` | `method` | 共景阶段 | 说明 |
 |--------|----------|----------|------|
@@ -23,7 +25,7 @@ slot.<registry_key>.<method>
 | `prompt` | `assemble` | `build_prompt` | 组装主对话 Prompt 字符串（不调用 LLM） |
 | `llm` | `generate` | `llm_generate` | 标记回合须完成生成；实验链结束后走完整 `co_present`（含 LLM） |
 | `agent` | `process` | `agent_process` | 调用 Agent；若 `handled` 则直接返回 Agent 回复 |
-| `complex_emotion` | `resolve_turn` | `complex_emotion_resolve_turn` | 解析复杂情感 `narrative_hint`（写会话缓存） |
+| `complex_emotion` | `resolve_turn` | `complex_emotion_resolve_turn` | 实验链调用 provider 并校验可执行性；当前返回值不写会话状态，Stable 完成仍按正式 post-LLM 契约解析与持久化 |
 
 ---
 
@@ -69,7 +71,7 @@ slot.<registry_key>.<method>
 ### `resolve_turn`
 
 - **输入**：`ComplexEmotionInput`（含上一轮对话、`previous_narrative_hint`、七维情感指标等）。
-- **输出**：`ComplexEmotionOutput`；更新 `AppState` 会话级 `narrative_hint`（失败时可被快照回滚）。
+- **输出**：provider 返回 `ComplexEmotionOutput`，但冻结的 v3 Beta runner 当前只把这一步作为可执行性/失败边界检查，返回值随后丢弃，**不会**由该 method 写 hint。若实验链要求 `generate`，后续完整 Stable `co_present` 会按 `[EMO]` / 插件降级契约重新解析并持久化；这是当前限制，不应把实验 method 描述成正式状态提交者。
 - **示例**：`slot.complex_emotion.resolve_turn`
 
 ---

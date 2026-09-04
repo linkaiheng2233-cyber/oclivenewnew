@@ -16,7 +16,7 @@
 | (fallback) `OCLIVE_REMOTE_PLUGIN_URL` | Shared endpoint when Agent URL unset; method `agent.process` |
 | (fallback) `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS` / `TOKEN` | Same as [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) |
 
-**Directory**: `plugin_backends.agent = directory` and `directory_plugins.agent` points at an installed directory plugin; RPC root URL is resolved by host lazy spawn (same as other directory slots).
+**Directory**: set a current `type: agent` blueprint instance to `backend: directory` and select installed plugins through `plugin` / `plugins`. Only legacy v1 uses `plugin_backends.agent` plus `directory_plugins.agent`. The host resolves its RPC root by lazy spawn.
 
 **Permissions**: Outbound HTTP needs `remote:agent` in `high_risk_grants` (or directory loopback policy); MCP tool calls reuse `mcp:http` / `mcp:stdio` grants — **no** second Agent permission table.
 

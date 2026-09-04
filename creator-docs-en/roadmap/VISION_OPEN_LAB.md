@@ -1,10 +1,10 @@
-# Platform vision: open lab (summary)
+# Optional vision: open experimentation tooling (summary)
 
-oclive’s long-term direction is a **local-first, swappable-subsystem desktop base** where **creators and players can experiment safely**: modules switch (built-in / v2 / remote sidecar), contracts and CI guard compatibility, and docs plus examples lower integration cost. Architecture: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** (outer kernel + optional Monolith weld). **Dual-core runtime** (Stable / Experimental orchestration): **[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)** (proposed; not a release blocker).
+OCLive's essence remains a **minimal tool kernel plus six stable capability ports**. Its reference runtime can compose those pieces into local-first experimentation tooling: replace one slot implementation while reusing the same role, turn semantics, error boundaries, and test baseline. This is one supported assembly, not a mandatory platform form, and role packs are not the only possible integration surface. Architecture: [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md).
 
-This aligns with [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md); this page highlights the **“open experimentation”** axis for README and external messaging.
+Strong-model assemblies may stay thinner; small-model assemblies may use more explicit assistance. Experiments should compare reproducible outcomes, not pipeline complexity. The optional **dual-core runtime** is documented in [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) and does not redefine the minimal kernel.
 
-**Soul weight layer (roadmap)**: After the three distros ship, the creator toolchain adds a **fine-tune workshop**—packable LoRA/SFT adapters switched at runtime by the **expert-model facility** (`expert_routing` · `slot.lora.apply`). See the workshop section in the monthly vision doc and [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §5.
+**Model adaptation layer (roadmap)**: creator tooling may add a fine-tune workshop for packable LoRA/SFT adapters selected by the expert-model facility (`expert_routing` · `slot.lora.apply`). This is reference-assembly capability, not a kernel requirement. See [BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md](BACKLOG_EXPERIENCE_AND_ECOSYSTEM.md) §5.
 
 [中文](../../creator-docs/roadmap/VISION_OPEN_LAB.md)
 

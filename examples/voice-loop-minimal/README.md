@@ -15,7 +15,7 @@
 |----|------|
 | Python | 3.10+ |
 | 内核 | `http://127.0.0.1:8420` 已启动 |
-| 角色包 | 默认 `roles/mumu`；联调立绘建议 `roles/demo-doll`（视觉线 A2 创建） |
+| 角色包 | 默认 `distros/chat-pro/roles/mumu`；联调立绘建议 `distros/chat-pro/roles/demo-doll`（若该测试包存在） |
 | 路径 | `<REPO_ROOT>` = 仓库根（例 `D:\oclivenewnew`） |
 
 ### 启动内核（二选一）
@@ -113,7 +113,7 @@ python loop.py --stream
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `OCLIVE_API_BASE` | `http://127.0.0.1:8420` | 内核地址 |
-| `OCLIVE_ROLE_PATH` | 仓库内 `roles/mumu` 绝对路径 | 与 HTTP `role_path` 一致 |
+| `OCLIVE_ROLE_PATH` | 仓库内 `distros/chat-pro/roles/mumu` 绝对路径 | 与 HTTP `role_path` 一致 |
 | `OCLIVE_SCENE_ID` | `default` | 场景 id |
 | `OCLIVE_SESSION_ID` | 脚本内固定 UUID | **勿每轮随机**，否则无记忆 |
 

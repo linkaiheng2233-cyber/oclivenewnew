@@ -17,7 +17,7 @@ pub(crate) struct ExperimentalMethodSpec {
     pub co_present_stage: &'static str,
 }
 
-/// Common methods for seven slots (consistent with `DualPipelineRunner` executor).
+/// Current seven method types: six stable slots plus the `complex_emotion` facility.
 pub(crate) const EXPERIMENTAL_METHOD_SPECS: &[ExperimentalMethodSpec] = &[
     ExperimentalMethodSpec {
         slot_type: "memory",

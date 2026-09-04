@@ -14,7 +14,7 @@
 
 ## 0. English summary
 
-**Facility submodule #3 — Portrait Facility**: per-turn **semantic visual state selection** from a closed **`portrait_catalog`** in the role pack. The **Portrait Director** (builtin AI via `generate_tag` or structured pick) chooses a catalog **`id`** using dialogue context and **complex emotion `narrative_hint`** — **not** filename conventions.
+**Facility submodule #3 — Portrait Facility**: per-turn **semantic visual state selection** from a closed **`portrait_catalog`** in the role pack. After the main reply, the **Portrait Director** (builtin AI via `generate_tag` or structured pick) chooses a catalog **`id`** using clean reply/context plus effective complex-emotion state — **not** filename conventions.
 
 **Stable baseline**: legacy **`portrait_emotion`** (7 tags) and `{tag}.png` fallback remain when the facility is disabled or resolution fails.
 
@@ -32,7 +32,7 @@
 **消歧**：
 
 - **立绘设施** ≠ **第 2 模块 emotion**（用户句七维 / `Emotion` 枚举）
-- **立绘设施** ≠ **第 1 设施复杂情感**（生成 `narrative_hint` 进 Prompt；本子模块**消费** hint）
+- **立绘设施** ≠ **第 1 设施复杂情感**（post-LLM 解析本轮回复情绪并维护跨轮 `narrative_hint`；本子模块只消费其有效结果）
 - **立绘设施** ≠ **第 4 设施视觉表现**（把 `visual_state_id` 落成 Live2D / 3D / 演算；**无 AI 选图**）
 - **立绘设施** ≠ 今日 `pick_portrait_emotion` 的 **长期并列** — 目标为 **合并/替换** 其「选状态」职责，保留 7 tag 作 legacy 字段
 
@@ -46,8 +46,9 @@ sequenceDiagram
   participant LLM as 主 LLM
   participant PF as 第3设施 立绘
   participant VP as 第4设施 视觉表现
-  CE->>LLM: narrative_hint + Prompt
-  LLM->>PF: reply + 上下文
+  LLM->>CE: reply + 可选 [EMO]
+  CE->>CE: 剥离 marker · 主模型优先 · 插件降级
+  CE->>PF: clean reply + bot_emotion + 有效 hint/intensity
   PF->>PF: 表现导演 → visual_state_id
   PF->>VP: visual_state_id（若 VP 启用）
   Note over VP: 无二次 LLM
@@ -55,9 +56,10 @@ sequenceDiagram
 
 | 顺序 | 阶段 | 锚点 | 立绘设施 |
 |------|------|------|----------|
-| 1 | co_present | `complex_emotion.resolve_turn` | — |
-| 2 | post_llm | `turn_pipeline/persistence.rs` | **替换/合并** `pick_portrait_emotion` |
-| 3 | assemble response | `SendMessageResponse` | 输出 `visual_state_id` + legacy `portrait_emotion` |
+| 1 | main LLM | `turn_pipeline/post.rs` | 产生 reply + 可选 `[EMO]` |
+| 2 | post_llm | `turn_pipeline/post/post_llm.rs` | 剥离 marker，得到有效复杂情感与 `bot_emotion` |
+| 3 | post 持久化 | `turn_pipeline/persistence.rs` | **替换/合并** `pick_portrait_emotion` |
+| 4 | assemble response | `SendMessageResponse` | 输出 `visual_state_id` + legacy `portrait_emotion` |
 
 **CoPresent 特例**：今日跳过 portrait LLM，用 `bot_emotion_str` → 映射 catalog 默认项；不强制额外 LLM 调用。
 
@@ -124,7 +126,7 @@ distros/chat-pro/roles/{role_id}/
 
 ## 4. 表现导演（Portrait Director · builtin）
 
-**输入**：`narrative_hint`（本回合 + 可选上一轮）、用户句、bot reply、七维性格、好感、近期事件、`portrait_catalog.assets`（id + desc 列表）。
+**输入**：clean bot reply、已解析 `bot_emotion`、本轮有效 `narrative_hint`（为空时可退回上一轮已存值）、intensity、用户句、七维性格、好感、近期事件、`portrait_catalog.assets`（id + desc 列表）。
 
 **输出**：单个 `visual_state_id`（catalog `id`）。
 

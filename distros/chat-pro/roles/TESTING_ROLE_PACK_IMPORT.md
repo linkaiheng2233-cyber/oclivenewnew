@@ -64,8 +64,8 @@
 ## 7. 回归命令（开发者）
 
 ```bash
-cd src-tauri
-cargo test role_pack
+# 在仓库根目录
+cargo test -p oclivenewnew-tauri role_pack
 cargo clippy -p oclivenewnew-tauri -- -D warnings
 ```
 

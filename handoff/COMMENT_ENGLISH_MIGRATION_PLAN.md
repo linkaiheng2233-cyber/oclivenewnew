@@ -1,5 +1,7 @@
 # 代码注释英文化 · 执行计划（供 auto 执行）
 
+> **已完成的历史执行记录（2026-06）**：本文中的文件数量、`crates/`、`src-tauri/` 与根级 `roles/` 均保留为当时快照，不可作为当前路径或待执行任务。当前代码入口见 [BUS_FACTOR_NOTES.md](BUS_FACTOR_NOTES.md)，当前仓库布局见 [STALE_PATHS_MIGRATION_CHECKLIST.md](distros/STALE_PATHS_MIGRATION_CHECKLIST.md)。
+
 > 目标：把仓库**代码注释**从中文统一为英文，提升人类（含国际/开源/招聘场景）可读性。
 > 本文件是给执行 Agent（auto）的**操作说明书**，请逐条遵守，尤其是「硬性边界」。
 

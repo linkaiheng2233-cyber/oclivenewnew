@@ -9,7 +9,7 @@ description: >-
 
 # OCLive 技术债偿还马拉松
 
-**不替代** [`dev-pipeline`](~/.cursor/skills/dev-pipeline/SKILL.md) 与 [`oclive-dev-pipeline`](../oclive-dev-pipeline/SKILL.md)。  
+**不替代**用户级 `dev-pipeline`（`~/.cursor/skills/dev-pipeline/SKILL.md`）与 [`oclive-dev-pipeline`](../oclive-dev-pipeline/SKILL.md)。
 本 Skill = 长计划书 + 分阶段子 Agent；**必须同时加载二者 + [`AI_AND_PIPELINE_GATES`](../../../handoff/debt-marathon/AI_AND_PIPELINE_GATES.md)**。
 
 ## 存放点

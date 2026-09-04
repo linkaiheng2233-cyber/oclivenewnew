@@ -98,11 +98,11 @@
 
 ### 2.0 Remote LLM：JSON-RPC vs OpenAI-compatible（env 矩阵 SSOT）
 
-角色包 `plugin_backends.llm` 与加载覆盖见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §`plugin_backends`、[PLUGIN_V1.md](PLUGIN_V1.md)；版本/发行相容见 [COMPATIBILITY.md](../COMPATIBILITY.md)。**本表为 Remote LLM 宿主 env 与 API 分叉的权威矩阵**（勿在其它文档复制长表）。
+当前角色包以 `pipeline.ocblueprint.slot_registry` 声明 LLM 实例；宿主再将有效六槽折叠为 `PluginBackends` 兼容视图，legacy v1 才直接读取 `settings.json.plugin_backends.llm`。加载与覆盖顺序见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PLUGIN_V1.md](PLUGIN_V1.md)；版本/发行相容见 [COMPATIBILITY.md](../COMPATIBILITY.md)。**本表为 Remote LLM 宿主 env 与 API 分叉的权威矩阵**（勿在其它文档复制长表）。
 
 | 变量 | 作用 |
 |------|------|
-| `OCLIVE_LLM_BACKEND` | 加载角色时覆盖包内 `plugin_backends.llm`：`ollama`（默认本地）/ `remote` / `directory`。未设或 `local` → **Ollama**（进程内客户端） |
+| `OCLIVE_LLM_BACKEND` | 参与有效 LLM backend 解析：`ollama`（默认本地）/ `remote` / `directory`。它覆盖运行时六槽兼容视图，不改写角色包 `slot_registry`；未设或 `local` → **Ollama**（进程内客户端） |
 | `OCLIVE_REMOTE_LLM_URL` | `llm = remote` 时的端点。**JSON-RPC**：完整 POST URL（如 `…/rpc`）。**OpenAI-compatible**：Base URL（宿主规范化为 `…/v1/chat/completions`；见 `openai_compatible_llm::chat_completions_url`） |
 | `OCLIVE_REMOTE_LLM_TOKEN` | 可选 Bearer（两路径共用） |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 可选；默认 `120000`（毫秒；宿主钳制上下限） |

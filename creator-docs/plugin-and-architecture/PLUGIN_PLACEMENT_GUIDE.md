@@ -1,6 +1,6 @@
 # 插件放置指南（贡献者决策树）
 
-物理安装路径：`{app_data}/distros/chat-pro/plugins/<manifest.id>/`（目录插件）；开发时还可被 `distros/chat-pro/roles/` 同级 `distros/chat-pro/plugins/`、工作目录 `distros/chat-pro/plugins/` 扫描到（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+物理安装路径：`{app_data}/plugins/<manifest.id>/`（用户目录插件）；开发时还可从角色包根同级的 `plugins/` 扫描，本 monorepo 对应 `distros/chat-pro/plugins/`，独立脚手架项目对应根级 `plugins/`（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
 ## 三问决策树
 

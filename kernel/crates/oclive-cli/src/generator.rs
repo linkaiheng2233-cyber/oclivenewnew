@@ -168,21 +168,21 @@ fn cargo_path(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
-const COMMENT_PLUGIN_BACKENDS: &str = "七条编排槽位（与 PLUGIN_V1 / plugin_host 对齐）。主应用当前反序列化 6 个标准槽；complex_emotion 为扩展键，宿主会忽略未知字段。可选值以各槽枚举为准（见 SETTINGS_REFERENCE.md）。";
+const COMMENT_PLUGIN_BACKENDS: &str = "七个预设后端键：六个稳定槽 + complex_emotion 设施键（与 PLUGIN_V1 / plugin_host 对齐）。主应用当前只反序列化 6 个标准槽；complex_emotion 扩展键会被忽略，蓝图中则可作为设施 type 解析。可选值以 SETTINGS_REFERENCE.md 为准。";
 
-const COMMENT_MEMORY: &str = "记忆检索 (memory.rank)。常用: builtin | remote | directory | local（builtin_v2 为已废弃读兼容 alias，等同 builtin）。选 none：不参与检索排序（主应用无 none 枚举；若复制进 oclive 请删除该键或改为 builtin）。";
+const COMMENT_MEMORY: &str = "记忆检索 (memory.rank)。可用: builtin | remote | directory | local | none（builtin_v2 为已废弃读兼容 alias，等同 builtin）。none 使用 Noop，不参与检索排序。";
 
-const COMMENT_EMOTION: &str = "用户情绪分析 (emotion.analyze)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：跳过该子系统（主应用请删除键或改为 builtin）。";
+const COMMENT_EMOTION: &str = "用户情绪分析 (emotion.analyze)。可用: builtin | remote | directory | none（builtin_v2 读兼容 alias）。none 使用 Noop，跳过该子系统。";
 
-const COMMENT_EVENT: &str = "事件影响估计 (event.estimate)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：跳过事件估计链（主应用请删除键或改为 builtin）。";
+const COMMENT_EVENT: &str = "事件影响估计 (event.estimate)。可用: builtin | remote | directory | none（builtin_v2 读兼容 alias）。none 使用 Noop，跳过事件估计链。";
 
-const COMMENT_PROMPT: &str = "Prompt 组装 (prompt.build_prompt)。常用: builtin | remote | directory（builtin_v2 读兼容 alias）。选 none：无有效 prompt 组装（主应用请删除键或改为 builtin）。";
+const COMMENT_PROMPT: &str = "Prompt 组装 (prompt.build_prompt)。可用: builtin | remote | directory | none（builtin_v2 读兼容 alias）。none 合法但会令健康共景主链缺少必要 Prompt 能力。";
 
-const COMMENT_LLM: &str = "主对话 LLM (llm.generate)。主应用枚举: ollama（本机默认进程内客户端，需 Ollama）| remote（HTTP 侧车，需 OCLIVE_REMOTE_LLM_URL）| directory。若无本地模型，请改为 remote 并配置远端 URL。选 none：主生成链不可用（仅实验）。";
+const COMMENT_LLM: &str = "主对话 LLM (llm.generate)。可用: ollama（本机默认进程内客户端，需 Ollama）| remote（HTTP 侧车，需 OCLIVE_REMOTE_LLM_URL）| directory | none。none 合法但主生成链不可用。";
 
-const COMMENT_AGENT: &str = "Agent / 工具编排 (ReAct)。常用: builtin | remote | directory。预设 minimal 在 JSON 中省略本键（语义「不额外声明」= 宿主默认 builtin）。选 none 且需写入 JSON 时: 主应用无 none，请省略 agent 键。";
+const COMMENT_AGENT: &str = "Agent / 工具编排 (ReAct)。可用: builtin | remote | directory | none。none 使用 Noop；但当前非双核 minimal legacy 示例省略本键，因此实际回退宿主默认 builtin。";
 
-const COMMENT_COMPLEX_EMOTION: &str = "复杂情感扩展（路线图）。可写 builtin | remote | directory | none 作团队约定；当前桌面 PluginBackends 不含此槽，宿主加载时会忽略。remote 时需侧车并实现协议（见 REMOTE_PLUGIN_PROTOCOL.md）。";
+const COMMENT_COMPLEX_EMOTION: &str = "复杂情感设施（非第七稳定槽）。本 legacy settings 的扩展键会被 PluginBackends 忽略；迁移到蓝图后，以 type: complex_emotion + builtin | remote | directory | none 实际选择，省略或 none 为关闭。";
 
 /// Build the `roles/default/settings.json` root object (including `_comment_*` and the full `plugin_backends`).
 pub fn build_settings_value(cfg: &ProjectConfig) -> Value {

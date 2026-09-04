@@ -6,21 +6,22 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-**Release**: desktop host **0.5.1** · see [CHANGELOG.en.md](CHANGELOG.en.md)
+**Release**: desktop host **0.5.2** · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
 ---
 
 ## What is this?
 
-**A.I.Live (OCLive)** is not “yet another fixed AI chat app.” It is an **assemble–contract–pack–distribute** platform for AI characters and agents:
+**A.I.Live (OCLive)** is not “yet another fixed AI chat app,” and a centralized platform is not its essence. It is first an **embeddable tool kernel that organizes AI-character capabilities through stable contracts**:
 
-- **Six swappable slots** (memory, emotion, event, prompt, LLM, agent) compose your role runtime
+- The kernel owns one turn/lifecycle orchestration path, authoritative state commits, errors, and failure isolation
+- **Six stable capability ports**—memory, emotion, legacy event impact, prompt, LLM, and agent—accept replaceable implementations
 - **Role packs** (persona, scenes, prompts) ship independently
 - **Local-first** by default; cloud APIs optional (BYOK)
 
-Built-in roles (e.g. `distros/chat-pro/roles/mumu`) are **official examples**. Community packs and module ecosystems define the ceiling.
+This repository also ships a complete reference runtime: concrete slot implementations, SQLite, Event Ring, facilities, HTTP/Tauri, and Chat Pro. Built-in roles such as `mumu` are examples. The runtime, distros, editor, and market can use the kernel, but none defines the minimal core.
 
-> **One line**: OCLive = **cargo + docker-compose** for AI characters — an open, local-first thin kernel with swappable, validatable, packagable modules. Assemble and distribute your own role runtime in ~30 minutes. **Ceiling = module ecosystem ceiling** (competitors’ strengths can become a slot backend).
+> **One line**: OCLive = **one tool kernel + six stable capability ports + optional reference assemblies**. Use the whole runtime or take only the interfaces, contracts, and modules you need. “cargo + docker-compose for characters” is an assembly analogy, not platform lock-in.
 >
 > Deep positioning: [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)
 
@@ -46,7 +47,7 @@ The same `manifest.json` + `pipeline.ocblueprint` is validated by **desktop Taur
 
 ### Example 4 · Module author: new capability only
 
-Fork `examples/directory-plugin-minimal` or `examples/voice-loop-minimal`, implement **one slot** or a **side channel** (e.g. TTS) — persona, UI, chat loop, validation, and packaging come from the platform. Directory plugins declaring `process:spawn` / `network:*` / `mcp:*` require **explicit user consent** before execution (otherwise degrade, no silent escalation).
+Fork `examples/directory-plugin-minimal` or `examples/voice-loop-minimal`, implement **one slot** or a **side channel** (e.g. TTS), and reuse the reference host/toolchain for persona, UI, chat loop, validation, and packaging. Directory plugins declaring `process:spawn` / `network:*` / `mcp:*` require **explicit user consent** before execution (otherwise degrade, no silent escalation).
 
 Start: [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · permissions: [PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)
 
@@ -59,7 +60,7 @@ Start: [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/
 | What you get | Blocks + glue — **write code** | A **finished dish** — fixed memory/affect | **Standard kitchen + plating rules** — **assemble and pack** your engine |
 | Swappable modules | Yes, no role-domain contract | Mostly fixed | **Six slots + builtin/remote/directory** unified contract |
 | Role content distribution | DIY | Bound to product | **`.ocpak` / zip**, editor export, deep-link install |
-| Ceiling | Your code | Vendor implementation | **Union of module ecosystem** |
+| Ceiling | Your code | Vendor implementation | **Not welded to one builtin implementation**; swap modules and models by contract |
 
 **SillyTavern**-class “frontend shell + many backends” (common question):
 
@@ -78,8 +79,8 @@ Orchestration is **one** (`process_message`); differences are **`distro.oclive.t
 
 | Distro | `distro_id` | Shape | Status |
 |--------|-------------|-------|--------|
-| **A.I.Live Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.5.1** main path |
-| **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = chat platform |
+| **A.I.Live Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.5.2** main path |
+| **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = lightweight chat host |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
 | **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |
 
@@ -97,7 +98,7 @@ Cross-cutting engineering, not a single feature:
 | **`process_message` + PluginHost** | Stable turn semantics; swap backends, not orchestration |
 | **Three memory stores** | Chat log / STM / LTM decoupled (deleting chat ≠ wiping AI memory) |
 | **G1–G16 + CI gates** | OOCP S0–S12, Dimension 5 **15** registered / **14** in CI, layering ratchet, doc registry |
-| **Role pack vs blueprint split** | Creators don’t touch `slot_registry`; admins don’t pollute content packs |
+| **Role-content vs in-pack blueprint-config split** | Creators don’t touch `slot_registry`; admins don’t pollute character content |
 | **Side channels (e.g. voice.asr)** | Voice/TTS **outside six slots** — does not pollute `process_message` |
 
 Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md)
@@ -108,24 +109,26 @@ Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs-en/getting-started/OCLIV
 
 Design goal: **orthogonal layers** — swap LLM without touching persona; add voice without polluting the main chain; freeze experimental cores without blocking Stable releases.
 
+**The categories below describe the complete reference runtime, not the minimal-core contents.** The minimal core keeps orchestration/authority boundaries and six ports; Event Ring, facilities, persistence, hosts, and concrete implementations compose around it. OCLive also does not mandate explicit or implicit cognition: the default favors explicit assistance for local small models, while strong-model assemblies may stay thinner. The design rule is: **make facts explicit, keep interpretations as candidates, let the model express them**.
+
 ### Four module categories (map first)
 
-| Category | In six `plugin_backends` keys? | Examples |
-|----------|----------------------------------|----------|
-| **Backend modules (slots 1–6)** | **Yes** | memory · emotion · event · prompt · llm · agent |
-| **Facility submodules** | **No** (in orchestration) | complex emotion · expert routing · portrait · visual stage |
+| Category | Relation to the six-field runtime `PluginBackends` fold | Examples |
+|----------|---------------------------------------------------------|----------|
+| **Backend modules (slots 1–6)** | Current blueprints declare `slot_registry.type`; the host folds those types into the compatibility view | memory · emotion · event · prompt · llm · agent |
+| **Facility submodules** | **Outside the six-field fold**; may own blueprint registry entries | complex emotion · expert routing · portrait · visual stage |
 | **Side channels** | **No** (own resolver) | user identity · reply post-process · **voice.asr** · theater director API |
 | **Backend plugins** | Attached to a slot | directory LLM plugin · remote sidecar |
 
 **Discipline**: plugins do **not** get a “slot 7” number; facilities do **not** become six-slot keys. Per-slot definitions → [MODULE_MAP §2–§10](handoff/MODULE_MAP_AND_HANDOFF.md).
 
-**Six-slot decoupling**: compile-time traits + `PluginHost` (fixed `process_message` order) · config-time `slot_registry` multi-instance fold · runtime session override (not persisted).
+**Six-slot decoupling**: compile-time traits + `PluginHost` (`process_message` fixes stage/authority/commit order, **not** a linear slot-1→6 sequence) · config-time `slot_registry` multi-instance fold · runtime session override (not persisted).
 
-**Orthogonal config layers**: role pack (creator content) → blueprint (`slot_registry`, **`steps[]` not on hot path**) → distro HostProfile → session DB.
+**Orthogonal config layers**: role-content surface → blueprint configuration inside the same role pack (`slot_registry`, **`steps[]` not on the Stable hot path**) → distro HostProfile → in-memory `SessionCache` slot override. Runtime role state such as relation, emotion, and memory follows separate persistence contracts; it is not a slot-config layer.
 
 **Single kernel, dual build modes**: **outer core** (default PluginHost, swappable backends) vs **Monolith macro core** (compile-time weld via `monolith.toml` for embedded/perf). Not runtime hot-switch.
 
-**Experimental core (`dual_core`)**: mechanism wired, **default off** — `dual_core` Cargo feature + blueprint opt-in; expert routing frozen per [TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md).
+**Experimental core (`dual_core`)**: mechanism wired, **default off** — `dual_core` Cargo feature + frozen-v3 `runtime_config.dual_core.enabled`; expert routing frozen per [TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 Human 45-min guide: [human-docs-en/01_ARCHITECTURE_SIMPLE.md](human-docs-en/01_ARCHITECTURE_SIMPLE.md)
 
@@ -143,9 +146,9 @@ Human 45-min guide: [human-docs-en/01_ARCHITECTURE_SIMPLE.md](human-docs-en/01_A
 
 ---
 
-## Roadmap · open lab
+## Roadmap · optional open experimentation tooling
 
-Product axis: **local-first, swappable modules, role pack as the only integration surface** — an **open experiment harness**. Researchers/developers **write new modules**, plug into a slot, and try them in a full role; persona, storage, UI, and turn loop come from the platform.
+Stable ports can form an **open experiment harness**. Researchers and developers can write one new module, attach it to a slot, and compare it under the same role, turn loop, and tests while reusing reference persona, storage, and UI tooling. This is one use of the kernel, not a mandatory product form for every downstream.
 
 | Phase | Highlights |
 |-------|------------|
@@ -169,11 +172,11 @@ npm run check        # daily gates (build + fmt + clippy + test --lib)
 
 | Prerequisite | Notes |
 |--------------|-------|
-| Node.js 18+, Rust stable | Windows also needs **VS Build Tools (MSVC)** |
+| Node.js 22+, Rust stable | Windows also needs **VS Build Tools (MSVC)** |
 | Ollama | **Optional** for build; needed for local LLM chat |
 | Cargo artifacts | Default outside repo: `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
 
-**Installers**: GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) currently emphasize **role packs**; desktop client requires **clone + local build** (`npm run tauri:dev` / release flow in [CONTRIBUTING.en.md](CONTRIBUTING.en.md)).
+**Installers**: GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) provides the **A.I.Live Chat Pro 0.5.0 beta** Windows x64 MSI / NSIS installers (unsigned and without automatic updates). The current main branch is **0.5.2** and may be ahead of the published installer; clone the repo and follow [CONTRIBUTING.en.md](CONTRIBUTING.en.md) when you need the latest source build.
 
 Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md)
 
@@ -210,7 +213,7 @@ Full index: [DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATI
 
 | Tree | Role | When English is missing |
 |------|------|-------------------------|
-| [creator-docs-en/](creator-docs-en/) | Contracts, kernel, plugin, role-pack, testing | Follow `[中文](…)` links or [coverage matrix](creator-docs-en/README.md#mirror-coverage-matrix) |
+| [creator-docs-en/](creator-docs-en/) | Contracts, kernel, plugin, role-pack, testing | Follow each page's Chinese backlink or the [coverage matrix](creator-docs-en/README.md#mirror-coverage-matrix) |
 | [human-docs-en/](human-docs-en/) | Human learning ladder L0–L8 | Fall back to [human-docs/README.md](human-docs/README.md) |
 
 **Maintenance**: update the English mirror in the **same change-set** when you change a mirrored Chinese page. See [creator-docs-en/README.md § Sync rules](creator-docs-en/README.md#sync-rules).

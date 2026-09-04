@@ -5,9 +5,9 @@
 
 **You plug in**: Registry `id` **`user_identity`** (not a six-slot key) · `user_identities/` · `turn_pipeline/pre.rs` · enters `process_message` at **pre**.
 
-**Do**: Identity file format · pre injection into `PromptInput` · [RFC_SIDE_CHANNEL](../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) scope.
+**Do**: Identity file format · SQLite global/per-scene selection state · pre injection into `PromptInput` · [RFC_SIDE_CHANNEL](../../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) scope.
 
-**Don't**: Write to `plugin_backends` as a slot · confuse with MCP user (agent authorization domain).
+**Don't**: Write to `plugin_backends` as a slot · persist the selection into the pack or six-slot SessionCache · conflate `meta.relations` with `user_identities/` · confuse with MCP user (agent authorization domain).
 
 Current boundaries: [user identity and reply post-processor RFC](../../../creator-docs/rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md) and [MODULE_MAP](../../../handoff/MODULE_MAP_AND_HANDOFF.md).
 

@@ -2,7 +2,7 @@
 
 **Full documentation hub**: [../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)
 
-Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** selected via `settings.json` → `plugin_backends`. Memory / emotion / event / prompt / **Agent** default to **builtin**; **`llm` defaults to `ollama`**. Each slot may instead use **`remote`** or **`directory`** (`distros/chat-pro/plugins/*/manifest.json` child process — see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)).
+Aligned with [PLUGIN_V1.md](PLUGIN_V1.md): current packs declare instances and backends in `pipeline.ocblueprint.slot_registry`. The six stable types are memory, emotion, event, prompt, llm, and agent; `complex_emotion` is a facility type. Compile-time enums and registered providers still bound the implementations, and remote/directory do not gain kernel authority. Legacy v1 `settings.json` → `plugin_backends` is migration-only.
 
 **How to replace implementations**: [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md). **HTTP sidecar JSON‑RPC**: [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 
@@ -13,7 +13,7 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 ## Host aggregation
 
 - **`PluginHost`**: holds `Arc<dyn Trait>` per backend and dispatches by enum — [`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs). **Remote** slots use the HTTP client under [`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`](../../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/) when `OCLIVE_REMOTE_*` URLs are set. **Directory** slots call [`DirectoryPluginRuntime::ensure_rpc_url`](../../kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime/mod.rs) to lazily spawn a child, then reuse the same HTTP client stack.
-- **`ResolvedRolePlugins`**: `PluginHost::resolve_for_role(role)` resolves **memory / emotion / event / prompt / llm / agent** once per role and is **reused for a whole `send_message` / `RoleManager` turn** to avoid repeated matching.
+- **`ResolvedRolePlugins`**: the session path folds the six stable types from the effective registry and resolves **memory / emotion / event / prompt / llm / agent** once for the turn. No-session and legacy paths can still resolve role defaults.
 
 ## Rust traits and source files
 
@@ -23,22 +23,22 @@ Same model as [PLUGIN_V1.md](PLUGIN_V1.md): **v1 uses compile‑time enums** sel
 | User‑sentence emotion | `UserEmotionAnalyzer` | `BuiltinUserEmotionAnalyzer` | `kernel/crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs` |
 | Event impact | `EventEstimator` | `BuiltinEventEstimator` | `kernel/crates/oclive_kernel_host/src/domain/event_estimator.rs` |
 | Prompt assembly | `PromptAssembler` | `BuiltinPromptAssembler` | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs` |
-| LLM | `LlmClient` (`plugin_backends.llm`: `ollama` / `remote` / `directory`) | Injected `OllamaClient`; `remote` when `OCLIVE_REMOTE_LLM_URL` set; **`directory`** uses **`directory_plugins.llm`** URL (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)); else built‑in fallback | `kernel/crates/oclive_kernel_host/src/infrastructure/llm.rs`, `remote_plugin/` |
-| Agent | `AgentProvider` (`builtin` / `remote` / `directory`) | `BuiltinReActAgent`; `directory` needs `directory_plugins.agent`; MCP roots under `app_data_dir` | `kernel/crates/oclive_kernel_host/src/domain/agent.rs`, `mcp_client.rs` |
+| LLM | `LlmClient` (`type: llm`: `ollama` / `remote` / `directory` / `none`) | Injected `OllamaClient`; `remote` uses `OCLIVE_REMOTE_LLM_URL`; directory uses instance `plugin` | `kernel/crates/oclive_kernel_host/src/infrastructure/llm.rs`, `remote_plugin/` |
+| Agent | `AgentProvider` (`type: agent`: `builtin` / `remote` / `directory` / `none`) | `BuiltinReActAgent`; directory uses instance `plugin` / `plugins`; MCP roots under `app_data_dir` | `kernel/crates/oclive_kernel_host/src/domain/agent.rs`, `mcp_client.rs` |
 | Long‑term memory persistence | `MemoryRepository` | SQLite | `domain/repository.rs`, `infrastructure/repositories` |
 | Policies | `EmotionPolicy`, … (trait: `kernel/crates/oclive_kernel_contracts/src/policy.rs`) | `Default*` (`kernel/crates/oclive_kernel_runtime/src/domain/policy.rs`) | wiring: `kernel/crates/oclive_kernel_host/src/infrastructure/policy_registry.rs` |
 
-**World knowledge** (`distros/chat-pro/roles/{id}/knowledge/*.md`, optional manifest `knowledge`) is **pack resources + prompt/rules** — **not** switched via `plugin_backends`; see [WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md).
+**World knowledge** (`distros/chat-pro/roles/{id}/knowledge/*.md`, optional current blueprint `meta.knowledge`; legacy manifest/settings remain migration-readable) is **pack resources + prompt/rules**—**not** selected through six-slot backends; see [WORLDVIEW_KNOWLEDGE.md](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md).
 
 ## Runtime selection
 
-- **`AppState::resolved_plugins_for(role)`**: resolves all six subsystems; **`chat_engine` prefers this** — [`kernel/crates/oclive_kernel_host/src/state/mod.rs`](../../kernel/crates/oclive_kernel_host/src/state/mod.rs).
-- **`memory_retrieval_for` / …**: single‑slot helpers still parse full `role.plugin_backends` (including **`directory`** ids).
+- **`AppState::resolved_plugins_for_session(role, session_namespace)`**: the main chat path resolves all six subsystems from the effective registry — [`kernel/crates/oclive_kernel_host/src/state/mod.rs`](../../kernel/crates/oclive_kernel_host/src/state/mod.rs).
+- **`resolved_plugins_for(role)` / single-slot helpers**: no-session or compatibility paths; their folded `role.plugin_backends` input is not the current disk authority.
 - **`RoleManager`**: holds [`ResolvedRolePlugins`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs); see [`role_manager.rs`](../../kernel/crates/oclive_kernel_host/src/domain/role_manager.rs).
 
 ## Frontend
 
-- Reply presentation: [`distros/shared/src/utils/replyPresentation.ts`](../../distros/shared/src/utils/replyPresentation.ts). `get_role_info` / `load_role` echo **`plugin_backends`** for UI.
+- Reply presentation: [`distros/shared/src/utils/replyPresentation.ts`](../../distros/shared/src/utils/replyPresentation.ts). `get_role_info` / `load_role` expose pack/effective registries plus the folded six-slot diagnostics; UI should prefer the instance registry.
 
 ## External integration (roadmap)
 

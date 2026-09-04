@@ -46,7 +46,7 @@ RUST_LOG=info,oclive_chat=debug,oclive_plugin=debug npm run tauri:dev
 **检索命令**（自行更新表）：
 
 ```bash
-rg 'target: "oclive' crates src-tauri
+rg 'target: "oclive' kernel/crates distros/desktop-tauri
 ```
 
 ---
@@ -64,7 +64,7 @@ rg 'target: "oclive' crates src-tauri
 
 | 项 | 说明 |
 |----|------|
-| **路径** | `{app_data}/app.db`（Windows 常见 `%APPDATA%` 下应用标识目录） |
+| **路径** | `{app_data}/app.db`（桌面 / shared kernel 的 Windows canonical 默认是 `%LOCALAPPDATA%/OCLive/data/app.db`；旧 `%APPDATA%/com.oclivenewnew.app` 仅为迁移来源） |
 | **文档** | [CONFIGURATION_FILES.md](../creator-docs/guides/CONFIGURATION_FILES.md) |
 | **打开** | [DB Browser for SQLite](https://sqlitebrowser.org/) 或 `sqlite3` CLI |
 | **迁移 SSOT** | [`kernel/crates/oclive_kernel_host/migrations/`](../kernel/crates/oclive_kernel_host/migrations/) |

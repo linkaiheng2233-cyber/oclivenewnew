@@ -2,7 +2,7 @@
 
 **状态**：P1 契约（Schema + 示例）**Done**；P4 profile 调度（`HostProfile` 加载与合并）**Done**（`host_profile.rs` / spawn 时 `OCLIVE_DISTRO_PROFILE`）。  
 **受众**：桌面、VS Code、启动器、硬件发行版集成方。  
-**SSOT 模块形状**：与角色包 `settings.json` → `plugin_backends` 对齐，见 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) 与 `kernel/crates/oclive_validation/src/plugin_backends.rs`。
+**运行时模块形状**：HostProfile 的 `[plugin_backends]` 复用六槽 `PluginBackends` 折叠形状；角色包磁盘 SSOT 则是 `pipeline.ocblueprint` → `slot_registry`，legacy `settings.json` 仅用于迁移。见 [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md) 与 `kernel/crates/oclive_validation/src/plugin_backends.rs`。
 
 ---
 
@@ -12,9 +12,9 @@
 |------|----------|------|
 | **发行版** | 发行版根目录 `distro.oclive.toml`（与 bundled `bin/` 同级） | spawn 时加载的 **HostProfile**：prompt/memory/post_process、`host_flags`、可选 **`[plugin_backends]` 整表替换** |
 | **角色包** | `distros/chat-pro/roles/<id>/pipeline.ocblueprint` → `slot_registry`（v2/v3/v4 精确分派）；legacy `settings.json` | 六槽默认；可被发行版 profile **整表替换**（若 profile 声明 `[plugin_backends]`） |
-| **会话** | 宿主 DB / 会话覆盖 | 在有效 backends 上临时覆盖字段 |
+| **会话** | 进程内 `SessionCache` / `set_session_slot_override` | 在有效 backends 上临时覆盖字段；不写包、不进 SQLite |
 
-**不承载于**：蓝图文件 `pipeline.ocblueprint` / blueprint v3 `runtime_config`（v3 冻结，见 handoff）。**不替代** Monolith `monolith.toml`（仅编译期）。后处理链扩展点 RFC（预留）：[RFC_OCLIVE_POST_PROCESS_CHAIN.md](../rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。
+**HostProfile 不承载于**蓝图文件 `pipeline.ocblueprint` 的 `runtime_config`：前者是发行版层，后者是包内运行配置层（Stable v4；v3 双核 Beta 冻结）。**不替代** Monolith `monolith.toml`（仅编译期）。后处理链扩展点 RFC（预留）：[RFC_OCLIVE_POST_PROCESS_CHAIN.md](../rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md)。
 
 **与内核二进制的关系**：配置文件描述「该发行版 spawn 时期望的有效模块矩阵 + prompt/memory 偏好」；**不**声明裁剪内核二进制。进程选择见 [DISTRO_KERNEL_LIFECYCLE.md](./DISTRO_KERNEL_LIFECYCLE.md)（bundled-first spawn · attach/replace）；范围裁定见 [KERNEL_SCHEDULER_RESCOPE.md](../../handoff/KERNEL_SCHEDULER_RESCOPE.md)。
 
@@ -67,7 +67,7 @@ prompt = "builtin"            # … | none（共景路径禁止 none，见 MODUL
 llm = "ollama"                # ollama | remote | directory | none（共景路径禁止 none）
 agent = "builtin"             # builtin | remote | directory | none；若 host_flags.skip_agent = true，运行时强制 agent = none
 
-# --- 槽位（第 7 模块等，非 plugin_backends 字段）---
+# --- 参考运行时设施（非六槽、非“第 7 槽”）---
 [slots]
 complex_emotion = "off"       # on | off
 
@@ -117,7 +117,7 @@ retrieval = "default"         # default | light
 chain = "standard"            # standard | minimal
 
 [user_identity]
-default_id = "classmate"      # optional; used when session has no explicit identity
+default_id = "classmate"      # 当前仅用于 manifest 默认已关闭但 DB 显式 id 缺失的兼容回退
 allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
 
 [interaction]
@@ -149,9 +149,9 @@ favor_low  = "…"              # optional; favor < 40
 ### 3.2 `host_flags` 与 `slots`
 
 - **`host_flags.skip_agent`**：为 `true` 时，运行时强制 `plugin_backends.agent = none`（与角色包声明 `agent: none` 等效）。
-- **`host_flags.skip_complex_emotion`**：为 `true` 时，跳过共景复杂情感解析（`co_present` 阶段）。
+- **`host_flags.skip_complex_emotion`**：为 `true` 时，不调用 Deep / 插件复杂情感 provider；共景 middle 仍保留轻量确定性强度供立绘等消费，上一轮 hint 的 Prompt 连续性读取与本轮主 LLM `[EMO]` 解析遵循 [NARRATIVE_HINT_CONTRACT](../testing/NARRATIVE_HINT_CONTRACT.md)。
 - **`host_flags.event_impact_llm`**：为 `false` 时，**全局**跳过第 3 模块 event 的 LLM `estimate_event_impact`（`generate_tag`）；仍走规则 `EventDetector` / `estimate_event_impact_rules_only`。环境变量 `OCLIVE_EVENT_IMPACT_LLM=0` 等价。与 **Turn Thinking** 组合：Fast 轮本就不调 event LLM；Deep 轮仍受本开关约束。见 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md)。
-- **`slots.complex_emotion`**：`off` 等价于 `skip_complex_emotion`（二者任一为 off 即关闭）。
+- **`slots.complex_emotion`**：`off` 与 `skip_complex_emotion` 使用同一 host skip 标志；它是 provider / 成本上限，不是第七槽，也不能替代角色包 `slot_registry` 对 hint 读写能力的启用语义。
 
 ### 3.2.1 `[llm_runtime]`（发行版运行时 · 非角色包 backend）
 
@@ -223,7 +223,7 @@ target_adapter_id = "builtin.voice.cosyvoice2"
 | 字段 | 合法值 / 类型 | 说明 |
 |------|----------------|------|
 | `default` | `fast` \| `deep` \| `auto` | `auto`：闲聊→Fast；长句 / 高唤醒情绪 / Quarrel 事件链 / 关键词→Deep |
-| `fast_skip_complex_emotion` | bool | Fast 轮跳过复杂情感（可与 `host_flags.skip_complex_emotion` 叠加） |
+| `fast_skip_complex_emotion` | bool | Fast 轮跳过 Deep / 插件 provider，并改用本地确定性强度；可与 `host_flags.skip_complex_emotion` 叠加 |
 | `auto_deep_min_chars` | usize | Auto 触发 Deep 的最小用户句字符数 |
 | `fast_knowledge_limit` | usize | Fast 轮知识检索条数上限 |
 | `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
@@ -256,7 +256,7 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 | `memory.retrieval` | 默认 8 条相关记忆 | `light`：4 条（`HostProfile.memory_retrieval`） |
 | `post_process.chain` | `standard` | `standard`（VS Code 也保留角色包启用的去引号、去用户原话回声清理；未启用后处理的角色包仍保持关闭） |
 | `visual_presentation.mode` | 未设（跟随角色包 `visual_presentation.enabled`） | `off` \| `image_only` \| `stage_full`（已接线；Theater 可用 `stage_full`） |
-| `user_identity.default_id` | 未设 | 会话无显式身份且非 sentinel 时作为默认 catalog id |
+| `user_identity.default_id` | 未设 | 当前仅在 manifest 默认已关闭但 DB 显式 id 缺失时作兼容回退；正常默认仍取角色 catalog |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
 | `state_expression.favor_*` | 未设 | 按好感分档追加一句语气调节到 Prompt「角色当前状态」 |
 | `[theater].director_plugin` | 未设（builtin prompt 模板） | Theater：`com.oclive.theater_director_official`；可被 env `OCLIVE_THEATER_DIRECTOR_PLUGIN` 覆盖 |
@@ -268,7 +268,7 @@ director_plugin = "com.oclive.theater_director_official"
 
 **合并规则（Theater Scene Director）**：仅当 profile 或 env 声明 `director_plugin` 且 `{app_data}/plugins` 中存在对应 manifest（`provides: theater_director`）时使用 directory RPC `theater.build_prompt`；否则 **builtin**（`scene_director.rs` / `patch_scene.rs`）。RPC 失败不 500，fallback builtin。
 
-**合并优先级（User Identity）**：DB 会话/场景覆盖 → `HostProfile.user_identity.default_id` → catalog `default_identity_id` → legacy `user_relations.prompt_hint`。
+**当前解析（User Identity）**：身份选择持久化在 SQLite `role_runtime` / `role_scene_identity`，不是六槽 SessionCache。global 路径为 DB 显式 id → 仅在“manifest 默认关闭但 DB id 缺失”时取 `HostProfile.user_identity.default_id` → catalog 默认 → legacy；per-scene 路径为 scene DB id → catalog 默认 → legacy。`allowed_ids` 始终约束 API 显式选择。`default_id` 的配置名/原设计与当前窄回退行为之差见 `K-UID-DEFAULT-02`。
 
 **合并规则（Reply Post-Processor）**：`post_process.chain=minimal` 时 effective `builtin.profile=minimal`；remote/directory 仍可按角色包配置解析，失败降级 builtin → raw。
 
@@ -285,10 +285,10 @@ mode = "off"   # off | image_only | stage_full
 
 内核在 `effective_plugin_backends_for_session` 路径上合并（`host_backends.rs`）：
 
-1. **角色基础**：从 **`slot_registry`**（v2）或 legacy `plugin_backends` 解析六槽；`directory_plugins` 取自角色包。
+1. **角色基础**：从 **`slot_registry`**（v2 / 冻结 v3 / Stable v4）或 legacy `plugin_backends` 解析六槽；`directory_plugins` 取自角色包。
 2. **用户 LLM 设置 / env**：`resolve_effective_ollama_model` 等 override（在 profile 之前或之后按现有路径）。
 3. **发行版 profile**：若 `distro.oclive.toml` 声明 **`[plugin_backends]`**，则 **`profile_override`（实现名 `apply_host_ceiling`）用 profile 值整表替换六槽**（`directory_plugins` **不**被 profile 覆盖）。
-4. **`host_flags`**：`skip_agent = true` → 强制 `agent = none`；`skip_complex_emotion` / `slots.complex_emotion = off` → 跳过共景复杂情感。
+4. **`host_flags`**：`skip_agent = true` → 强制 `agent = none`；`skip_complex_emotion` / `slots.complex_emotion = off` → 跳过 Deep / 插件复杂情感 provider，但不改变设施实例是否允许跨轮 hint 读写的包级契约。
 5. **会话覆盖**：`PluginBackendsOverride` 在有效 backends 上再叠一层（仍受 startup health 与 none 语义约束）。
 
 **与旧文档差异**：**不是** `role.apply_within_ceiling(host_ceiling)` 的「交集上限」模型。稳定发行版（vscode / theater）通过 **显式 `[plugin_backends]`** 锁定矩阵；实验场（desktop-chat）**省略**该段，角色蓝图说了算。详见 [DISTRO_DEFAULT_PLUGINS.md](./DISTRO_DEFAULT_PLUGINS.md) §2。
@@ -304,7 +304,7 @@ mode = "off"   # off | image_only | stage_full
 | 场景 | 行为 |
 |------|------|
 | **冷启动** | 优先 spawn **本发行版 bundled** `oclive-kernel-server` |
-| **bundled 失败** | 同 `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` 下 spawn **shared 兜底核**；`{app_data}/distros/chat-pro/plugins/` 自动复用 |
+| **bundled 失败** | 同 `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` 下 spawn **shared 兜底核**；`{app_data}/plugins/` 自动复用 |
 | **`promote`** | 开发者将本机构建写入 shared runtime — **维护通道**，非终端用户默认路径 |
 | **Deferred** | 每发行版裁剪 binary · 进程内自升级（P3b） |
 

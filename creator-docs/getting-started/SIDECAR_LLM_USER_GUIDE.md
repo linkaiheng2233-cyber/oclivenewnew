@@ -38,7 +38,7 @@ python server.py
 
 ### 步骤 B：在角色包里把 LLM 设为 remote
 
-在对应角色的 **`settings.json`**（或编写器里等价配置）中，将 **`plugin_backends.llm`** 设为 **`"remote"`**（与 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 一致）。
+在对应角色的 **`pipeline.ocblueprint`**（或编写器里等价配置）中，将目标 `type: llm` 实例的 **`backend`** 设为 **`"remote"`**（与 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) 一致）。legacy v1 包才编辑 `settings.json.plugin_backends.llm`。
 
 未设置环境变量时，宿主可能回退内置并打警告；因此必须配置下一步。
 

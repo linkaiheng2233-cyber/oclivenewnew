@@ -22,7 +22,7 @@ It is **not** a six-slot backend and **not** a numbered facility submodule. It h
 |----------|-----------------|--------------------|--------|
 | Modules 1–6 | Yes | — | `PluginHost` → `process_message` |
 | Facilities ①–④ | No | Yes | Inside `turn_pipeline` orchestration |
-| **`reply_mode`** | **No** | **No** | `turn_pipeline/post.rs` · after `post_llm` · own resolver |
+| **`reply_mode`** | **No** | **No** | `turn_pipeline/post/post_llm.rs` · semantic preprocessing + post-processor display phase · own resolver |
 
 Classification mirrors `reply_post_process`: both are "after LLM output, before the user sees it" reply transforms, but with different responsibilities. `reply_post_process` polishes text; `reply_mode` owns segmentation and presentation rhythm. It therefore gets a new side-channel id instead of reusing or absorbing the post-process channel.
 
@@ -78,7 +78,7 @@ Any pack enabling the mode gets the protocol automatically; changing `separator`
 ```text
 pre / build_prompt
   → host appends 【输出格式要求】 per reply_mode
-  → six-slot LLM generation
+  → Stable fixed stages invoke the applicable slots and complete LLM generation
   → emo/adult parsing
   → ordinary co-present turns split and strip protocol markers early
   → emotion policy / profile evolution / short_term_memory consume marker-free text

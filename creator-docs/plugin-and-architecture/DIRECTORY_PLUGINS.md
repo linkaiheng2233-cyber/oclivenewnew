@@ -4,7 +4,7 @@
 
 **Wire 格式**：与现有 Remote 侧车一致（HTTP POST JSON-RPC 2.0、请求头 `x-oclive-remote-protocol` 等），见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。
 
-**与 `plugin_backends` 的关系**：各模块枚举值可为 **`directory`**；同包（或会话覆盖）内嵌对象 **`directory_plugins`** 为各槽位指定 **`manifest.id`**（见下节）。就绪行：子进程 stdout 打印 **`{ready_prefix} {rpc_url}`**（默认前缀 `OCLIVE_READY`，与一行 URL，空格分隔）。
+**与六槽配置的关系**：当前蓝图在 `slot_registry` 实例上写 **`backend: directory`**，并以 `plugin` / `plugins` 指定 **`manifest.id`**；会话覆盖走 `set_session_slot_override`。legacy v1 才使用 `plugin_backends.directory_plugins`（见下节）。就绪行：子进程 stdout 打印 **`{ready_prefix} {rpc_url}`**（默认前缀 `OCLIVE_READY`，与一行 URL，空格分隔）。
 
 **`manifest.id` 安全约束**：1–128 字节；首尾必须为 ASCII 字母或数字；中间仅允许 ASCII 字母、数字、`.`、`_`、`-`，且禁止 `..`。该 id 会同时进入 URL、授权表与插件目录名，宿主在扫描/安装前统一校验，路径分隔符与穿越片段会直接拒绝。
 
@@ -14,9 +14,9 @@
 
 宿主合并以下**存在的**扫描根，每个根下的一级子目录若含 `manifest.json` 则视为一个插件包（以 manifest 内 `id` 注册；重复 `id` 时后扫描到的根覆盖并打日志）：
 
-1. **`<roles 父目录>/distros/chat-pro/plugins/`**（与 `distros/chat-pro/roles/` 同级；开发时常为仓库根下 `distros/chat-pro/plugins/`）
-2. **`./distros/chat-pro/plugins/`**（相对进程当前工作目录）
-3. **`{app_data}/distros/chat-pro/plugins/`**（与 `app.db` 同级的应用数据目录下的 `distros/chat-pro/plugins/`）
+1. **`<roles 父目录>/plugins/`**（与角色包根同级；本 monorepo 中即 `distros/chat-pro/plugins/`）
+2. **`./plugins/`**（相对进程当前工作目录）
+3. **`{app_data}/plugins/`**（应用数据目录下的用户插件根；与 `app.db` 同级）
 
 **开发者模式（C1）**：当 `app_data/oclive_host_plugins.json` 中 **`developer_mode`: true**，或环境变量 **`OCLIVE_DEVELOPER=1`**（`true`/`yes` 亦可）时，额外扫描 **`extra_plugin_roots`** 中每一项（须为已存在目录）；行为同上。
 
@@ -47,7 +47,7 @@
 | `slot_attachment` | `object \| object[]?` | 可选：安装时自动写入角色包 **`slot_registry`**（见 [PLUGIN_V1.md](PLUGIN_V1.md)）；需配合 **`oclive plugin install --role`** |
 | `description` / `author` | `string?` | 可选：简单管理列表展开详情 |
 
-**懒启动**：首次需要该插件的 RPC（`plugin_backends` 六模块中 **`directory`**、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
+**懒启动**：首次需要该插件的 RPC（六槽实例解析为 **`directory`**、`directory_plugin_invoke`、或需解析 shell manifest）时启动子进程，并缓存 **RPC URL** 与 **子进程**（当前实现不随角色切换回收子进程；应用退出时释放）。并发多次触发同一 `id` 时，宿主对单次启动加锁，避免重复子进程。
 
 ### 高风险：`process` 与子进程 spawn
 
@@ -59,37 +59,36 @@
 
 ---
 
-## 3. 后端六模块（A2）
+## 3. 后端六槽（A2）
 
-在 `settings.json`（或等价磁盘设置）的 `plugin_backends` 中：
+当前 v2/v3/v4 角色包在 **`pipeline.ocblueprint.slot_registry`** 中声明实例：`backend: directory`，并用 `plugin` 引用目录插件 `manifest.id`。schema 也接受部分类型的 `plugins` 列表，但每种类型是否真正合并执行必须以 `SlotRunner` / `PluginHost` 为准；不能仅凭字段存在推断工具并集。legacy v1 才使用 `settings.json → plugin_backends.directory_plugins`。
 
-- `memory` / `emotion` / `event` / `prompt` 为 **`directory`** 时，使用 **`directory_plugins.<slot>`** 中的插件 `id` 懒启动后，对该 URL 走与 env-remote 相同的 HTTP 客户端（方法名分别为 `memory.rank` 等）。
-- `llm` 为 **`directory`** 时，使用 **`directory_plugins.llm`** 指向的插件 URL，须实现 **`llm.generate` / `llm.generate_tag`**（超时默认按 LLM 档读取，见环境变量）。
-- `agent` 为 **`directory`** 时，使用 **`directory_plugins.agent`** 指向的插件 URL，须实现 **`agent.process`**（host-orchestrated MCP，见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)）。
+- `memory` / `emotion` / `event` / `prompt` 实例为 **`directory`** 时，宿主按该实例的 `plugin` id 懒启动后，对该 URL 走与 env-remote 相同的 HTTP 客户端（方法名分别为 `memory.rank` 等）。
+- `llm` 实例为 **`directory`** 时，插件须实现 **`llm.generate` / `llm.generate_tag`**（超时默认按 LLM 档读取，见环境变量）。
+- `agent` 实例为 **`directory`** 时，插件须实现 **`agent.process`**（host-orchestrated MCP，见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)）。当前运行时只执行折叠后的单一 Agent；多个 Agent/`plugins[]` 只形成诊断 ID 集合，工具并集尚未实现（`K-AGENT-MERGE-01`）。
 
 若对应槽位 **id 缺失**、**运行时未注入目录插件**、**spawn 或握手失败**，宿主记日志并回退：**memory/emotion/event/prompt → builtin**，**llm → Ollama**，**agent → builtin**。
 
-**示例（LLM 槽 → 本机 llama.cpp HTTP，不经 Ollama）**：仓库 [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.md)（[English](../../examples/directory-plugin-llamacpp/README.en.md)）— Node 侧车实现 `llm.generate` / `llm.generate_tag`，将请求转发到 `OCLIVE_LLAMACPP_SERVER_URL`（默认 `http://127.0.0.1:8080`）上的 `llama-server`；角色包内将 `plugin_backends.llm` 设为 **`directory`** 并填写 `directory_plugins.llm` 为该 manifest **`id`** 即可与其它仍用 Ollama 的角色并存。
+**示例（LLM 槽 → 本机 llama.cpp HTTP，不经 Ollama）**：仓库 [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.md)（[English](../../examples/directory-plugin-llamacpp/README.en.md)）— Node 侧车实现 `llm.generate` / `llm.generate_tag`，将请求转发到 `OCLIVE_LLAMACPP_SERVER_URL`（默认 `http://127.0.0.1:8080`）上的 `llama-server`；角色包内将一个 `type: llm` 实例设为 **`backend: directory`** 并令 `plugin` 等于该 manifest **`id`**，即可与其它仍用 Ollama 的角色并存。
 
-### `plugin_backends` 与 `directory_plugins` 示例（节选）
+### `slot_registry` 示例（节选）
 
 ```json
 {
-  "plugin_backends": {
-    "memory": "directory",
-    "emotion": "builtin",
-    "event": "builtin",
-    "prompt": "builtin",
-    "llm": "directory",
-    "directory_plugins": {
-      "memory": "com.example.myplugin",
-      "llm": "com.example.myplugin"
+  "slot_registry": {
+    "memory_primary": {
+      "type": "memory", "label": "Memory", "backend": "directory",
+      "position": 0, "plugin": "com.example.myplugin"
+    },
+    "llm_primary": {
+      "type": "llm", "label": "LLM", "backend": "directory",
+      "position": 0, "plugin": "com.example.myplugin"
     }
   }
 }
 ```
 
-**`directory_plugins` 槽位来源**：以角色包 **`settings.json` → `plugin_backends.directory_plugins`** 为准。`PluginBackendsOverride` 在 Rust 中**支持**按槽合并 `directory_plugins`（见 `apply_to`），但当前 Tauri 命令 **`set_session_plugin_backend` 仅覆盖六模块枚举与 `local_memory_provider_id`**，**不**传入 `directory_plugins`；多会话场景下若需不同目录插件 id，请通过角色包或后续扩展的会话 API 提供。
+**插件 id 真源**：v2/v3/v4 来自每个 `slot_registry` 实例的 `plugin` / `plugins`；会话级临时切换使用 **`set_session_slot_override`**，可覆盖 `backend`、`plugin`、`plugins`、`model` 与 `local_memory_provider_id`，不写回角色包。旧 **`set_session_plugin_backend`** 与 `PluginBackendsOverride.directory_plugins` 仅保留 legacy 折叠路径。
 
 ---
 
@@ -343,7 +342,7 @@
 |------|------|
 | 扫描 / manifest / 懒启动 / shell URL | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/` |
 | 枚举与 `directory_plugins` 槽位 | `kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs` |
-| 六模块解析与 HTTP 复用 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` |
+| 六槽解析与 HTTP 复用 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` |
 | Tauri 命令 | `distros/desktop-tauri/src/api/directory_plugin.rs`、`distros/desktop-tauri/src/api/plugin_bridge.rs`、`distros/desktop-tauri/src/api/plugin_update.rs`（本地 zip 覆盖 / 更新检查预留） |
 | 自定义协议 + 启动 | `distros/desktop-tauri/src/lib.rs` |
 | 内置 UI 启动引导 | `distros/shared/src/main.js`、`distros/shared/src/utils/directoryShellBootstrap.ts`、`distros/shared/src/DirectoryShellApp.vue` |

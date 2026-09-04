@@ -136,7 +136,7 @@ GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未�
 1. `error.code`、`error.message`、`error.hint`（若有）  
 2. 触发动作（检测 API / 发送消息 / 自动启动）  
 3. 环境变量是否设置（仅变量名，不贴密钥值）：  
-   - `OCLIVE_LLM_BACKEND`（`ollama` / `remote`；由启动器注入时可覆盖角色包 `plugin_backends.llm`）
+   - `OCLIVE_LLM_BACKEND`（`ollama` / `remote`；由启动器注入时覆盖本次进程的有效 LLM 后端，不改写角色包 `slot_registry`）
    - `OCLIVE_REMOTE_PLUGIN_URL`
    - `OCLIVE_REMOTE_LLM_URL`
    - `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS`

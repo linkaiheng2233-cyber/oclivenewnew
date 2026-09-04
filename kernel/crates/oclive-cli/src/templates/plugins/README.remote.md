@@ -8,7 +8,7 @@
 2. 启动侧车后，在环境或启动器中设置：
    - 通用槽：`OCLIVE_REMOTE_PLUGIN_URL=http://127.0.0.1:8765/rpc`
    - LLM 槽：`OCLIVE_REMOTE_LLM_URL=http://127.0.0.1:8765/rpc`
-3. 在角色包 `settings.json` 将对应 `plugin_backends.<slot>` 设为 **`remote`**。
+3. 在角色包 `pipeline.ocblueprint.slot_registry` 中将对应实例设为 **`backend: remote`**。只有 legacy v1 包才编辑 `settings.json.plugin_backends.<slot>`。
 
 ## 本地调试
 

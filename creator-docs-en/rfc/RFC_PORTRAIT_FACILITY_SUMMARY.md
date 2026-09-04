@@ -12,11 +12,11 @@ See full RFC: [RFC_PORTRAIT_FACILITY.md](../../creator-docs/rfc/RFC_PORTRAIT_FAC
 
 ## Runtime
 
-- **Portrait Director** (Phase 3): LLM picks a catalog `id` using dialogue + complex emotion `narrative_hint`
+- **Portrait Director** (Phase 3): after the main reply and `[EMO]` resolution, an LLM may pick a catalog `id` using the clean reply/context plus effective complex-emotion hint/intensity
 - Response adds optional `visual_state_id`; legacy `portrait_emotion` tag retained
 - CoPresent: rule maps `bot_emotion` → catalog tag → id (no director LLM by default)
 - Legacy packs without catalog behave as v0.3 filename heuristics
 
 ## Validation
 
-- `oclive pack validate`: unique ids, safe paths, 7-slot coverage when enabled
+- `oclive pack validate`: unique ids, safe paths, seven-portrait coverage when enabled

@@ -3,7 +3,7 @@
 > **读者**：改 `performance_directive`、宿主 UI 帧循环与视觉表现的工程师。  
 > **读完能做什么**：在设施④边界内改表现层，**无** AI 选图。  
 > **耗时**：约 **40 min**  
-> **SSOT 范围**：人类 checklist；RFC 见 [RFC_VISUAL_PRESENTATION_FACILITY](../../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)（草案链 RFC_PORTRAIT 族）
+> **SSOT 范围**：人类 checklist；RFC 见 [RFC_VISUAL_PRESENTATION_FACILITY](../../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)（directive / gating 已交付，渲染 adapter 部分交付）
 > **最后更新**：2026-07-14
 > **下一篇**：[portrait](portrait.md) · [surfaces/frontend-chat-pro](../surfaces/frontend-chat-pro.md)
 

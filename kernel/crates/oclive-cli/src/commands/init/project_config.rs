@@ -15,7 +15,7 @@ pub enum ProjectTypeArg {
     Library,
 }
 
-/// Scaffolding-internal representation aligned with `settings.json` → `plugin_backends`.
+/// Scaffolding-internal logical backend preset, rendered either to legacy `settings.json` or a blueprint registry.
 ///
 /// - **`Ollama`**: used only for the **`llm`** slot, serialized as the JSON string **`ollama`** (the main app's default local LLM backend).
 /// - **`None`**: writes **`none`** for the slot (host maps it to a no-op backend: agent → NoopAgentProvider, complex_emotion → NoopComplexEmotionProvider).

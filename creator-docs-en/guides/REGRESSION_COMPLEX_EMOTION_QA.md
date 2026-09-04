@@ -1,5 +1,11 @@
 # REGRESSION — Plugin Manager V2 & Complex Emotion
 
+> **Obsolete (audit marker, 2026-06-10):** this checklist targets the removed
+> `PluginManagerPanel` / `PluginManagerV2` split and its preview toggle. The
+> current plugin entry is `SimplePluginManagerPanel` (**Ctrl+Shift+F**) and the
+> model entry is `ModelManagerPanel` (**Ctrl+Shift+M**). Keep this page only as
+> historical reference; do not use it as a current regression plan.
+
 Manual checklist for **Plugin Manager V2** and **Complex Emotion** related changes.
 
 [中文](../../creator-docs/guides/REGRESSION_COMPLEX_EMOTION_QA.md)

@@ -8,7 +8,7 @@ Spec-first description of oclive’s **local plugin** contract for future **WASM
 
 - Unified discovery, registration, and capability declaration for local providers.
 - Version gates **before** runtime wiring so old runtimes do not misread newer specs.
-- Compatible with existing `settings.json` → `plugin_backends`; behavior unchanged when local providers are off.
+- Compatible with current `type: memory` + `backend: local` blueprints and legacy `settings.json.plugin_backends`; behavior is unchanged when local providers are off.
 
 ## 2. Provider descriptor
 
@@ -52,7 +52,7 @@ Fields:
 
 ### 4.1 File manifest discovery (`file_manifest`)
 
-- Directory: **`<roles root>/_local_distros/chat-pro/plugins/`** (same `roles_dir` as `RoleStorage`; in dev often `distros/chat-pro/roles/_local_distros/chat-pro/plugins/` in the repo).
+- Directory: **`<roles root>/_local_plugins/`** (same `roles_dir` as `RoleStorage`; in this repo, `distros/chat-pro/roles/_local_plugins/`).
 - Scan `*.json` files (case‑insensitive); each file deserializes to one `LocalPluginProviderDescriptor`.
 - Parse/read errors: skip file, log `oclive_plugin` warning, do not block startup.
 - On startup the host `register_provider` for each discovery; **duplicate `provider_id` → later registration wins** (directory order is platform‑dependent — **do not rely on override order**; configure each id once).
@@ -63,10 +63,10 @@ Fields:
 - Local providers register as a **skeleton** first (default resolution unchanged).
 - Future: resolver‑level selection policy while preserving remote/builtin fallback semantics.
 
-### 5.1 `plugin_backends.memory`
+### 5.1 Memory slot
 
-- When pack or session override sets `plugin_backends.memory` to **`local`**, the host picks a registered provider with the `memory` capability.
+- When the effective memory instance uses **`backend: local`**, the host picks a registered provider with the `memory` capability. Legacy v1 expresses the same choice as `plugin_backends.memory = local`.
 - Optional sibling field **`plugin_backends.local_memory_provider_id`**: when non‑empty, match that `provider_id` exactly; on miss, fall back lexicographically and `warn`.
 - Multiple memory providers without `local_memory_provider_id`: take **lexicographically first** `provider_id` and `warn` ambiguity (recommend setting id explicitly in the pack).
 - **Current behavior**: ranking still delegates to **`builtin`** (local path selects a provider via registry, then uses built-in ranking); `MemoryRetrieval::diagnostic_local_provider_id` exposes the chosen id.
-- **Session scope**: aligned with `SendMessageRequest.session_id`, use Tauri **`set_session_plugin_backend`** (`module = memory`, optional **`local_memory_provider_id`**) for overrides; read merged `plugin_backends_effective` via **`get_role_info`** with the same **`session_id`** (see [PLUGIN_V1.md](PLUGIN_V1.md) “session overrides”).
+- **Session scope**: use Tauri **`set_session_slot_override`** on the memory instance key to override `backend` / `local_memory_provider_id`, then read `slot_registry_effective` through **`get_role_info`** with the same `session_id`. The old module-based command is only a thin wrapper for the default key.

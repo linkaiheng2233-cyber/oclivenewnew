@@ -14,7 +14,7 @@
 | （回退）`OCLIVE_REMOTE_PLUGIN_URL` | 未设 Agent URL 时使用共享端点，方法为 `agent.process` |
 | （回退）`OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS` / `TOKEN` | 与 [REMOTE_PLUGIN_PROTOCOL.md](./REMOTE_PLUGIN_PROTOCOL.md) 相同 |
 
-**Directory**：`plugin_backends.agent = directory` 且 `directory_plugins.agent` 指向已安装目录插件；RPC 根 URL 由宿主 lazy spawn 解析（与其它 directory 槽一致）。
+**Directory**：当前蓝图的 `type: agent` 实例设为 `backend: directory`，并以 `plugin` / `plugins` 指向已安装目录插件；legacy v1 才使用 `plugin_backends.agent` + `directory_plugins.agent`。RPC 根 URL 由宿主 lazy spawn 解析。
 
 **权限**：出站 HTTP 需 `high_risk_grants` 中的 `remote:agent`（或目录 loopback 策略）；MCP 工具调用复用 `mcp:http` / `mcp:stdio` grant，**不**建第二套 Agent 权限表。
 

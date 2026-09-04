@@ -3,7 +3,10 @@
 use crate::commands::init::{BackendImpl, ProjectConfig};
 use serde_json::json;
 
-/// Fixed six-slot order for `pipeline.stable` / the default `pipeline.experimental` (the Stable core does **not** execute this section at runtime; it is only for documentation and validation).
+/// Fixed six-slot order emitted into both frozen-v3 pipeline sections.
+///
+/// The dual-core runner consumes `pipeline.experimental`; the Stable core ignores
+/// `pipeline.stable` and always uses its host-owned `co_present` order.
 #[must_use]
 pub fn default_dual_core_pipeline_steps() -> serde_json::Value {
     json!([

@@ -5,7 +5,7 @@
 
 ## 当前契约
 
-- 主清单：`roles/<id>/pipeline.ocblueprint`（v2/v3 SSOT）
+- 主清单：`distros/chat-pro/roles/<id>/pipeline.ocblueprint`（v2/v3/v4 SSOT；新 Stable 包用 v4）
 - 核心人设：`core_personality.txt`
 - 可选运行策略：`config.json`
 - 可选身份模板：`user_identities/index.json` + Markdown

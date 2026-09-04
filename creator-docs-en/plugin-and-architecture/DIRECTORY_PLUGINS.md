@@ -4,7 +4,7 @@ User paths **A1–C1**: scanning `distros/chat-pro/plugins/`, `manifest.json`, c
 
 **Wire format**: same as the HTTP remote sidecar (**POST JSON‑RPC 2.0**, `x-oclive-remote-protocol` header, …) — [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md).
 
-**`plugin_backends`**: each slot may be **`directory`**; the nested object **`directory_plugins`** maps slots to **`manifest.id`** (below). Ready line: child stdout prints **`{ready_prefix} {rpc_url}`** (default prefix `OCLIVE_READY`, one line, space before URL).
+**Six-slot configuration**: current blueprints set **`backend: directory`** on a `slot_registry` instance and use `plugin` / `plugins` for its **`manifest.id`**; session overrides use `set_session_slot_override`. Only legacy v1 uses `plugin_backends.directory_plugins` (below). Ready line: child stdout prints **`{ready_prefix} {rpc_url}`** (default prefix `OCLIVE_READY`, one line, space before URL).
 
 [中文](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
 
@@ -14,9 +14,9 @@ User paths **A1–C1**: scanning `distros/chat-pro/plugins/`, `manifest.json`, c
 
 The host merges these **existing** roots; each **first‑level** subdirectory containing `manifest.json` is one plugin (registered by manifest `id`; later roots **override** duplicates with a log line):
 
-1. **`<parent of roles>/distros/chat-pro/plugins/`** (sibling of `distros/chat-pro/roles/`; often `./distros/chat-pro/plugins/` in dev)  
-2. **`./distros/chat-pro/plugins/`** (relative to process CWD)  
-3. **`{app_data}/distros/chat-pro/plugins/`** under app data next to `app.db`
+1. **`<parent of roles>/plugins/`** (next to the role-pack root; in this monorepo, `distros/chat-pro/plugins/`)
+2. **`./plugins/`** (relative to process CWD)
+3. **`{app_data}/plugins/`** (the user-plugin root under app data, next to `app.db`)
 
 **Developer mode (C1)**: when `app_data/oclive_host_plugins.json` has **`developer_mode`: true**, or env **`OCLIVE_DEVELOPER=1`** (`true`/`yes` accepted), also scan each directory in **`extra_plugin_roots`** (each entry is a **container**; its first‑level children are plugin roots).
 
@@ -44,41 +44,40 @@ Env **`OCLIVE_SHELL_PLUGIN_ID`** (non‑empty trim) overrides file `shell_plugin
 | `ready_prefix` | `string?` | default **`OCLIVE_READY`**; ready line = prefix + space + **JSON‑RPC base URL** (`http`/`https`) |
 | `dependencies` | `object?` | optional map **`other plugin id` → semver range**; missing / mismatch marks plugin disabled in manager |
 
-**Lazy start**: first RPC need (`plugin_backends` **`directory`**, `directory_plugin_invoke`, or shell manifest resolution) spawns the child and caches **RPC URL** + **process** (today children are **not** recycled per role switch; released on app exit). Concurrent starts for the same `id` are locked.
+**Lazy start**: the first RPC need (a six-slot instance resolving to **`directory`**, `directory_plugin_invoke`, or shell manifest resolution) spawns the child and caches its **RPC URL** + **process**. Children are not recycled on role switch today; app exit releases them. Concurrent starts for the same `id` are locked.
 
 ---
 
 ## 3. Six backend slots (A2)
 
-In `settings.json` `plugin_backends`:
+Current v2/v3/v4 packs declare instances in **`pipeline.ocblueprint.slot_registry`** with `backend: directory` and a `plugin` reference to the directory-plugin `manifest.id`. The schema also accepts `plugins` lists for selected types, but executable merge behavior is defined by `SlotRunner` / `PluginHost`; field presence alone does not imply a tool union. Only legacy v1 packs use `settings.json → plugin_backends.directory_plugins`.
 
-- `memory` / `emotion` / `event` / `prompt` **`directory`** → use **`directory_plugins.<slot>`** id, lazy‑start, then same HTTP client as env remote (`memory.rank`, …).  
-- `llm` **`directory`** → **`directory_plugins.llm`** URL; must implement **`llm.generate` / `llm.generate_tag`**.  
-- `agent` **`directory`** → **`directory_plugins.agent`**; wire same as other remotes (methods per host + protocol).
+- `memory` / `emotion` / `event` / `prompt` directory instances lazy-start their `plugin` id and use the same HTTP client as env remote (`memory.rank`, …).
+- `llm` directory instances must implement **`llm.generate` / `llm.generate_tag`**.
+- `agent` directory instances must implement **`agent.process`**. The runtime currently executes the folded single Agent; multiple Agent entries / `plugins[]` only form a diagnostic id set, and tool-union execution remains `K-AGENT-MERGE-01`.
 
 If id missing, scan miss, spawn/handshake fails → log + fallback: **memory/emotion/event/prompt → builtin**, **llm → Ollama**, **agent → builtin**.
 
-**Example (LLM slot → local llama.cpp HTTP, no Ollama):** repo [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.en.md) — Node sidecar implements `llm.generate` / `llm.generate_tag` and forwards to `OCLIVE_LLAMACPP_SERVER_URL` (default `http://127.0.0.1:8080`) on `llama-server`. Set `plugin_backends.llm` to **`directory`** and `directory_plugins.llm` to this manifest **`id`** to coexist with roles that still use Ollama. Chinese: [../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) §3.
+**Example (LLM slot → local llama.cpp HTTP, no Ollama):** repo [`examples/directory-plugin-llamacpp/`](../../examples/directory-plugin-llamacpp/README.en.md) — the Node sidecar implements `llm.generate` / `llm.generate_tag` and forwards to `OCLIVE_LLAMACPP_SERVER_URL` (default `http://127.0.0.1:8080`) on `llama-server`. Set one `type: llm` instance to **`backend: directory`** and set its `plugin` to this manifest **`id`**. Chinese: [../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) §3.
 
 ### Example (excerpt)
 
 ```json
 {
-  "plugin_backends": {
-    "memory": "directory",
-    "emotion": "builtin",
-    "event": "builtin",
-    "prompt": "builtin",
-    "llm": "directory",
-    "directory_plugins": {
-      "memory": "com.example.myplugin",
-      "llm": "com.example.myplugin"
+  "slot_registry": {
+    "memory_primary": {
+      "type": "memory", "label": "Memory", "backend": "directory",
+      "position": 0, "plugin": "com.example.myplugin"
+    },
+    "llm_primary": {
+      "type": "llm", "label": "LLM", "backend": "directory",
+      "position": 0, "plugin": "com.example.myplugin"
     }
   }
 }
 ```
 
-**`directory_plugins` source of truth**: pack **`settings.json`**. Rust `PluginBackendsOverride` can merge `directory_plugins` per slot, but today Tauri **`set_session_plugin_backend`** only overrides the six enums + `local_memory_provider_id` — **not** `directory_plugins`; use pack or future session APIs for per‑session ids.
+**Plugin-id authority**: v2/v3/v4 reads each `slot_registry` instance's `plugin` / `plugins`. Use **`set_session_slot_override`** for a temporary per-session override of `backend`, `plugin`, `plugins`, `model`, or `local_memory_provider_id`; it does not write the pack. Old **`set_session_plugin_backend`** and `PluginBackendsOverride.directory_plugins` remain for the legacy folded path.
 
 ---
 
@@ -98,7 +97,7 @@ When **`shell_plugin_id`** (file or `OCLIVE_SHELL_PLUGIN_ID`) points at a scanne
 
 If **`shell.bridge`** declares non‑empty **`invoke`** / **`events`**: for **`shell.entry` HTML** the host injects **`window.OclivePluginBridge`** before `</body>`; for **`shell.vueEntry`** Vue shell, **`provide('oclive', …)`** exposes the same **`invoke` / `events`** (still **`plugin_bridge_invoke`** underneath).
 
-- **`invoke(command, params)`**: manifest **`bridge.invoke`** is the allowlist — command names or permission aliases.  
+- **`invoke(command, params)`**: manifest **`bridge.invoke`** is the allowlist — command names or permission aliases.
 - **`listen(event, handler)`**: isolated frames currently forward only events in their own `<pluginId>:*` namespace. Host events fail closed until the identity-binding stage can validate declarations per plugin; unsafe DEV Vue can use the host event bus.
 
 **Deep integration**: commands in the sensitive table below also need root **`"type": "ocliveplugin"`** and caller must be **`shell.entry` HTML** or **`shell.vueEntry` page** — **not** `ui_slots` pages.
@@ -139,10 +138,10 @@ Supported **`slot`** values:
 
 Rules:
 
-- No **`shell`** segment → declare embeds in **`ui_slots`**: **`entry`** HTML (iframe fallback).  
+- No **`shell`** segment → declare embeds in **`ui_slots`**: **`entry`** HTML (iframe fallback).
 - Optional **`vueComponent`**: `.vue` path for explicit unsafe DEV debugging; releases always use `entry` HTML at `https://ocliveplugin.localhost/<id>/<entry>`.
-- Plugins **with `shell`** do **not** contribute slots (avoid duplicate UI).  
-- Slot pages calling the host: put **`bridge`** on the matching **`ui_slots[]`** entry. iframe injection only when asset URL matches **`entry`**; native Vue slots use **`inject('oclive')`**; `plugin_bridge_invoke` uses manifest **`entry`** as **`assetRel`**.  
+- Plugins **with `shell`** do **not** contribute slots (avoid duplicate UI).
+- Slot pages calling the host: put **`bridge`** on the matching **`ui_slots[]`** entry. iframe injection only when asset URL matches **`entry`**; native Vue slots use **`inject('oclive')`**; `plugin_bridge_invoke` uses manifest **`entry`** as **`assetRel`**.
 - Examples: `examples/directory-plugin-ui-slot/` (iframe only); **`examples/directory-plugin-ui-slot-vue/`** (Vue + HTML fallback).
 
 ### 4.2.1 Native Vue slots (`vueComponent`, unsafe DEV only)
@@ -154,10 +153,10 @@ Rules:
 
 **`oclive` object** (aligned with whole‑shell bridge, same `plugin_bridge_invoke` backend):
 
-- **`oclive.invoke(command, params?)`**  
-- **`oclive.pluginId` / `oclive.bridgeAssetRel`**  
-- **`oclive.events.emit` / `on` / `off`** — host **mitt** bus (§4.3); `on` listeners removed on unmount.  
-- **`oclive.events.request(event, data?, timeoutMs?)`** — request/response; event names **`pluginId:name`**; default timeout 15s; **`Promise.race`** if multiple handlers.  
+- **`oclive.invoke(command, params?)`**
+- **`oclive.pluginId` / `oclive.bridgeAssetRel`**
+- **`oclive.events.emit` / `on` / `off`** — host **mitt** bus (§4.3); `on` listeners removed on unmount.
+- **`oclive.events.request(event, data?, timeoutMs?)`** — request/response; event names **`pluginId:name`**; default timeout 15s; **`Promise.race`** if multiple handlers.
 - **`oclive.events.onRequest` / `offRequest`**
 
 You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `distros/shared/src/styles/theme.css`).
@@ -176,7 +175,7 @@ You may use host CSS variables (`--fluent-accent`, `--bg-primary`, … — `dist
 
 **Plugin `oclive.events` namespace rules**
 
-- **`emit`**: name must match `/^[a-zA-Z0-9.-]+:/`; namespace **before** `:` must equal **this** plugin’s `manifest.id`.  
+- **`emit`**: name must match `/^[a-zA-Z0-9.-]+:/`; namespace **before** `:` must equal **this** plugin’s `manifest.id`.
 - **`on` / `off`**: may listen **`otherPlugin:…`** or **`oclive:`** prefixed built‑ins (`oclive:message:sent` → bus `message:sent`).
 
 ### 4.3.1 Vue static scan (developer mode)
@@ -227,7 +226,7 @@ Front‑end `invoke` wraps args under **`req`** (same as other commands):
 
 ## 6. Developer mode (C1) recap
 
-- **`developer_mode`** or **`OCLIVE_DEVELOPER=1`**: `extra_plugin_roots` scanned.  
+- **`developer_mode`** or **`OCLIVE_DEVELOPER=1`**: `extra_plugin_roots` scanned.
 - Otherwise ignored — reduces accidental loading from arbitrary paths.
 
 ---
@@ -249,9 +248,9 @@ Front‑end `invoke` wraps args under **`req`** (same as other commands):
 
 ## 8. Minimal examples
 
-**`examples/directory-plugin-minimal/`** — includes **`Shell.vue`** + **`shell.vueEntry`**.  
-**`examples/directory-plugin-llamacpp/`** — LLM slot + local **llama.cpp** HTTP ([README.en.md](../../examples/directory-plugin-llamacpp/README.en.md) · [中文 README](../../examples/directory-plugin-llamacpp/README.md)).  
-**`examples/directory-plugin-ui-slot/`** — toolbar iframe.  
+**`examples/directory-plugin-minimal/`** — includes **`Shell.vue`** + **`shell.vueEntry`**.
+**`examples/directory-plugin-llamacpp/`** — LLM slot + local **llama.cpp** HTTP ([README.en.md](../../examples/directory-plugin-llamacpp/README.en.md) · [中文 README](../../examples/directory-plugin-llamacpp/README.md)).
+**`examples/directory-plugin-ui-slot/`** — toolbar iframe.
 **`examples/directory-plugin-ui-slot-vue/`** — Vue toolbar + HTML fallback.
 
 Scaffold:

@@ -1,8 +1,8 @@
 # Migrating role packs from v1 to v2 (A.I.Live)
 
-**A.I.Live** role packs use **`pipeline.ocblueprint`** as the v2 SSOT (engineering codename **oclive**).
+**A.I.Live** role packs have used **`pipeline.ocblueprint`** as their single configuration source since v2 (engineering codename **oclive**). This guide documents the existing migration command's **v2-compatible output**. That output remains supported, while new Stable packs target **v4**.
 
-**Already on v2?** Next: **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)** (`runtime_config`, optional dual-core; ~10 min manual upgrade).
+**Already on v2?** It can remain on v2. Use **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)** only when explicitly enabling the frozen dual-core Beta. For the current Stable configuration boundary, migrate to v4 following [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md): move engine fields from `meta` to top-level `runtime_config` and do not duplicate them.
 
 **Audience**: creators still on `manifest.json` + `settings.json`. Following this guide takes **about 10 minutes** including validation.
 
@@ -12,7 +12,7 @@
 
 ---
 
-## 1. v2 blueprint architecture (short)
+## 1. The v2 blueprint emitted by this migration
 
 **`pipeline.ocblueprint` is the single source of truth (SSOT)** for the pack: `schema_version: 2`, `meta` (former manifest + engine settings fields), and `slot_registry` (open multi-instance slots). **Do not** keep legacy twin files alongside the blueprint. **Do not** put `steps[]`, `entry`, or `module_relations` in the file (edges are derived at runtime from `slot_registry`).
 
@@ -66,7 +66,7 @@ Desktop chat orchestration remains **`process_message` → `co_present`**; the o
 | `prompt` | `prompt` | `plugin_backends.prompt` |
 | `llm` | `llm` | `plugin_backends.llm` |
 | `agent` | `agent` | `plugin_backends.agent` |
-| `complex_emotion` | `complex_emotion` | defaults to `builtin` if absent |
+| `complex_emotion` | `complex_emotion` | migration explicitly inserts `builtin` to preserve legacy behavior; a new blueprint with no facility entry resolves to Noop |
 
 Each entry needs `label`, `position`, and directory `plugin`/`plugins` when applicable.
 
@@ -94,7 +94,7 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint distros/chat-pro/roles/my_r
 cargo run -p oclive-cli -- pack validate distros/chat-pro/roles/my_role
 ```
 
-Default profile is **v2** (`default` / `blueprint-v2`). Use `--profile legacy` only for unmigrated packs.
+The default blueprint profile dispatches exactly by declared `schema_version`; this migration emits v2. Use `--profile legacy` only for unmigrated packs.
 
 **Sample pack**: `distros/chat-pro/roles/mumu/` (blueprint only).
 
@@ -106,13 +106,13 @@ Default profile is **v2** (`default` / `blueprint-v2`). Use `--profile legacy` o
 With default `--remove-legacy`, no — content is merged into `pipeline.ocblueprint`. Use Git history or backups to recover.
 
 **Can I roll back?**  
-There is no host “downgrade to v1” button. Restore the directory from Git or a zip. v2 and legacy files must not coexist (validation error).
+There is no host “downgrade to v1” button. Restore the directory from Git or a zip. Blueprint and legacy files must not coexist (validation error).
 
 **Do session module overrides still work?**  
-v2 uses **`slot_registry` + per-session `slot_key` overrides**. C1 `set_session_plugin_backend` maps module names to default keys and requires `slot_registry` on the pack.
+v2 uses **`slot_registry` + per-session `slot_key` overrides**. Use `set_session_slot_override`; the old C1 `set_session_plugin_backend` command remains only as a thin compatibility wrapper that maps module names to default keys and requires `slot_registry` on the pack.
 
 **What happened to `steps[]`?**  
-Removed from the runtime hot path; use plugins and `slot_registry` instead.
+Removed from the ordinary Stable hot path; the kernel does not treat the blueprint as an arbitrary step DSL. Use directory plugins and `slot_registry` instead. `PluginBackends` is only the folded six-slot runtime view; legacy `settings.json.plugin_backends` exists for migration compatibility.
 
 ---
 
@@ -130,4 +130,5 @@ Removed from the runtime hot path; use plugins and `slot_registry` instead.
 
 | date | note |
 |------|------|
+| 2026-09-04 | Clarified v2 migration output, Stable v4 target, and frozen-v3-only dual-core path. |
 | 2026-05-20 | initial v2 migration guide |

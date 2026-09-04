@@ -25,16 +25,16 @@ Do not conflate **build modes** with **runtime cores**.
 
 ## Summary
 
-- **Stable core**: Only six slot `type`s (`memory` … `agent`); **fixed** stage order (today’s co-present path).
+- **Stable core**: Only six slot `type`s (`memory` … `agent`); the authoritative executable path remains the host’s fixed co-present pre / middle / main-LLM / post lifecycle. `pipeline.stable` is not a second executable Stable pipeline.
 - **Experimental core**: Arbitrary `type`s (e.g. `intent_recognition`); order from `pipeline.experimental` + **`depends_on` DAG** (validated at load).
 - **One blueprint**: `slot_registry` is the **master table** (not split per core); `zone` is a string or **array** — an instance **may belong to both** stable and experimental.
-- **DualPipelineRunner**: Experimental first with **`SessionState` snapshot**; on failure, restore and run `pipeline.stable`; degradation **reuses** Remote→builtin fallback patterns (no new error framework).
+- **DualPipelineRunner**: Experimental first with a bounded snapshot of narrative hint, current emotion, and presence scene. On failure it restores the previously present cache/SQLite-backed values and calls the host’s fixed Stable `co_present`; runtime does not execute `pipeline.stable` as a second pipeline. Prior `NULL` emotion/scene is not currently cleared (`K-DUAL-ROLLBACK-02`).
 - **Shared backend pool**: No core-specific backends; register traits in `slot_registry`, both cores may use the same instance.
 - **Default off**: No `--dual-core` ⇒ zero behavior change.
-- **Monolith**: `--monolith` without dual-core = zero dual-pipeline overhead (shipping minimal kernel); `--monolith --dual-core` = welded pipelines + runner (dev high-perf lab).
+- **Monolith**: `--monolith` without dual-core = zero dual-pipeline overhead (shipping the single-pipeline runtime); `--monolith --dual-core` = welded pipelines + runner (dev high-perf lab).
 
-**Q15–Q20 (decided)**: `runtime_config.dual_core.enabled`; schema 2/3 split load; P1 registry-key-only; migration tool deferred; empty `pipeline.stable` → `co_present`; P4 seven PluginHost types only.
+**Q15–Q20 (decided)**: `runtime_config.dual_core.enabled`; exact v2/v3/v4 dispatch; P1 registry-key-only; migration tool deferred; `pipeline.stable` never executes and Stable always uses `co_present`; P4 supports the current seven `PluginHost` types (six slots plus the `complex_emotion` facility) only.
 
-**Progress**: P1 validation in `oclive_validation`; P2+ scheduler not wired. See [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md).
+**Progress**: P1–P5 are merged, including validation, `DualPipelineRunner`, host gating, the CLI scaffold, OOCP coverage, and the Monolith template. The feature remains a **frozen v3 Beta, default off**. See [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md).
 
-Current delivery stays on **v2 single stable path** until host integrates dual-core.
+Current delivery uses **Stable v4** for new packs, keeps v2 compatible, and reserves v3 for the opt-in dual-core Beta.

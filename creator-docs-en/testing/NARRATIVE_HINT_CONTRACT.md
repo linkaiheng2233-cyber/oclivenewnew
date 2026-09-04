@@ -3,6 +3,7 @@
 [中文](../../creator-docs/testing/NARRATIVE_HINT_CONTRACT.md)
 
 **Status**: Aligned with the co-present path in `oclive_kernel_host`, `oclive_kernel_runtime::PromptBuilder`, and desktop integration document v1.22.
+**Last updated**: 2026-09-04
 
 ## 1. Data shapes and storage
 
@@ -17,17 +18,17 @@ Length uses Unicode character count. The prompt asks the model to stay within 15
 
 ## 2. Backend gate matrix
 
-| Effective `complex_emotion` slot | Read / inject old hint | Write new hint | Emotion label source |
+| Effective `complex_emotion` facility instance | Read / inject old hint | Write new hint | Emotion label source |
 |----------------------------------|------------------------|----------------|----------------------|
-| Omitted or `none` | No | No | Valid `[EMO]` labels may still update the bot's six-slot emotion state |
+| Omitted or `none` | No | No | Valid `[EMO]` labels may still update reply-emotion state (`bot_emotion`) |
 | `builtin` | Yes | Yes | Prefer a valid `[EMO]`; retain degraded output when invalid |
-| `remote` / `directory` | Yes | Yes | Prefer a valid `[EMO]`; otherwise use plugin `labels[]` to update the bot's six-slot emotion state |
+| `remote` / `directory` | Yes | Yes | Prefer a valid `[EMO]`; otherwise use plugin `labels[]` to update reply-emotion state (`bot_emotion`) |
 
-Duplicate slot declarations retain the registry's last-wins semantics. `none` disables complex-emotion hint reads and writes; it does not discard valid emotion labels produced by the main LLM.
+Duplicate facility declarations retain the registry's last-wins semantics. `none` disables complex-emotion hint reads and writes; it does not discard valid emotion labels produced by the main LLM.
 
 ## 3. Single-turn call order (`process_message` / co-present)
 
-1. Determine the effective complex-emotion backend from the role's slots.
+1. Determine the effective complex-emotion facility instance and backend from the role's `slot_registry`.
 2. Read `stored_complex_emotion_narrative_hint(srid)` only for `builtin`, `remote`, or `directory`; treat expired data as empty.
 3. `build_prompt` uses the prior-turn snapshot from step 2 only to decide whether to emit a content-free continuity signal. Omitted or `none` always receives an empty value.
 4. The main dialogue LLM produces reply text and an optional `[EMO]` marker.
@@ -56,7 +57,7 @@ Duplicate slot declarations retain the registry's last-wins semantics. `none` di
 | Case | Location |
 |------|----------|
 | First-turn omission, redacted continuity from a prior hint, three-turn storage updates, and non-leakage for empty or special-character hints | `distros/desktop-tauri/tests/narrative_hint_contract_audit.rs`, `narrative_hint_prompt_roundtrip.rs` |
-| `none` does not read or write but labels still apply; remote labels drive six slots; plugin hint truncation | `distros/desktop-tauri/tests/complex_emotion_backend_contract.rs` |
+| `none` does not read or write but labels still apply; remote labels drive `bot_emotion`; plugin hint truncation | `distros/desktop-tauri/tests/complex_emotion_backend_contract.rs` |
 | Unclosed-marker stripping, last-valid-marker selection, Unicode 200-character cap | Unit tests in `kernel/crates/oclive_kernel_host/src/domain/emo_marker.rs` |
 | SQLite plus session cache, 24-hour TTL, defensive persistence cap | Unit tests in `kernel/crates/oclive_kernel_host/src/domain/complex_emotion_store.rs` |
 | Prompt structure for empty and special-character values | `oclive_kernel_runtime` `prompt_builder` unit tests |

@@ -1,6 +1,6 @@
 # 蓝图与系统配置参考（SETTINGS_REFERENCE）
 
-> **蓝图文件 `pipeline.ocblueprint`** 是系统配置的唯一来源（**不以** `steps[]` 作主路径调度）。下列字段通常为**蓝图 / 宿主管理员**专属；Stable v4 `inference_profile` 是唯一可由编写器以非技术表单暴露的创作者向例外。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
+> 对 v2/v3/v4 角色包，**蓝图文件 `pipeline.ocblueprint`** 是**包内运行配置**的唯一来源（**不以** `steps[]` 作 Stable 主路径调度）；宿主设置、发行版能力上限和会话内存覆盖属于包外层。下列字段通常为**蓝图 / 宿主管理员**专属；Stable v4 `inference_profile` 是唯一可由编写器以非技术表单暴露的创作者向例外。角色身份与人格见 **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · 职责边界 **[handoff/ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**。
 
 ## 零、蓝图专属字段（非角色包）
 
@@ -113,9 +113,9 @@
 
 ---
 
-## 一、六条宿主槽（`PluginBackends`）
+## 一、六种稳定槽类型与运行时 `PluginBackends`
 
-运行时结构体 **`PluginBackends`** 含下列 **6** 个字段（Serde 反序列化时**忽略未知字段**，故 JSON 中可存在额外键如脚手架用的 `complex_emotion`，宿主不报错）。
+当前蓝图在 `slot_registry` 实例的 `type` / `backend` 中表达后端选择；运行时再把六种稳定类型折叠为 **`PluginBackends`** 的 6 个字段。legacy `settings.json.plugin_backends` 反序列化时会忽略未知字段，因此旧脚手架里的 `complex_emotion` 扩展键不报错，但也不会由这六字段启用设施。
 
 | 字段 | 门面 trait（编排入口） | 常用内置实现（进程内） |
 |------|-------------------------|-------------------------|
@@ -126,38 +126,38 @@
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`**（默认本地客户端；**无 `builtin` 字面量**） |
 | `agent` | [`AgentProvider`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
-省略整段 `plugin_backends` 时：记忆 / 情绪 / 事件 / Prompt / Agent 为 **`builtin`**，**`llm` 为 `ollama`**（见 PLUGIN_V1 示例）。
+仅对 legacy v1：省略整段 `plugin_backends` 时，记忆 / 情绪 / 事件 / Prompt / Agent 为 **`builtin`**，**`llm` 为 `ollama`**。当前蓝图应显式保留至少一个 LLM 实例；健康共景路径还需要有效 Prompt。
 
-### 1.1 各槽可选值（v1 枚举摘要）
+### 1.1 各类型可选后端
 
 完整表与 JSON-RPC 方法名见 **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**。下面是操作者最常用的取值：
 
 | 槽位 | 常用值 | 选 `remote` / `directory` 时 |
 |------|--------|------------------------------|
-| memory | `builtin`（`builtin_v2` 读兼容 alias）/ `remote` / `directory` / `local` | `remote`：`OCLIVE_REMOTE_PLUGIN_URL`；`directory`：配置 `directory_plugins.memory` |
-| emotion | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
-| event | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
-| prompt | `builtin`（`builtin_v2` alias）/ `remote` / `directory` | 同上 |
-| llm | **`ollama`** / `remote` / `directory` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖；JSON-RPC vs OpenAI-compat、**本机第二本地选型**见 [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) **§2.0** |
-| agent | `builtin` / `remote` / `directory` / `none` | `remote`：侧车 `agent.process`（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；`directory`：配置 `directory_plugins.agent`；协议见 [AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
+| memory | `builtin`（`builtin_v2` 读兼容 alias）/ `remote` / `directory` / `local` / `none` | `remote`：`OCLIVE_REMOTE_PLUGIN_URL`；`directory`：实例 `plugin` |
+| emotion | `builtin`（`builtin_v2` alias）/ `remote` / `directory` / `none` | 同上 |
+| event | `builtin`（`builtin_v2` alias）/ `remote` / `directory` / `none` | 同上 |
+| prompt | `builtin`（`builtin_v2` alias）/ `remote` / `directory` / `none` | 同上；`none` 会使健康共景路径缺少必要能力 |
+| llm | **`ollama`** / `remote` / `directory` / `none` | **`remote`**：`OCLIVE_REMOTE_LLM_URL`；可用 **`OCLIVE_LLM_BACKEND`** 在加载时覆盖；`directory`：实例 `plugin`；`none` 无法生成正常回复 |
+| agent | `builtin` / `remote` / `directory` / `none` | `remote`：`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`；`directory`：实例 `plugin` / `plugins`；协议见 [AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 
-**不存在于 v1 枚举的字符串**（如字面量 `none`）会导致 **角色包解析失败**。若脚手架或文档写「none」，表示**逻辑上关闭/不声明**；写入主应用可加载的 JSON 时请 **省略该键**（回退默认）或改为合法枚举。
+`none` 是当前六类后端的合法显式关闭值；但 `prompt` / `llm` 关闭后不能形成健康共景回复。其它不在对应类型允许集合中的字符串会导致角色包解析或蓝图校验失败。
 
-### 1.2 `directory_plugins` 对象
+### 1.2 Directory 插件 id
 
-当任一槽为 **`directory`** 时，应在 `plugin_backends.directory_plugins` 中为对应槽填写 **`manifest.id`**（字符串）。详见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)。
+当前蓝图实例为 **`directory`** 时，用该实例的 `plugin` 或允许合并时的 `plugins[]` 填写 **`manifest.id`**。只有 legacy v1 才在 `plugin_backends.directory_plugins` 下按六槽填写 id。详见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)。
 
 ---
 
-## 二、复杂情感：`plugin_backends` 扩展键（非宿主第六/第七槽）
+## 二、复杂情感设施类型（非第七稳定槽）
 
 **架构定位**：**第 1 设施子模块**（规范全名：**复杂情感设施子模块**）。编号与命名见 **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**（[English](../../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)）。**专家模型**专名仅指 **第 2 设施子模块**（专家模型设施子模块 / 专家路由），见同文档 § 第 2 设施子模块。
 
-**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 将 `complex_emotion` 写在 **`plugin_backends` 对象内** 便于工厂预设与文档对齐；宿主 Serde **忽略**该键，不影响 `load_role`。主路径在 `co_present` 内经 **`PluginHost` / `SlotRunner`** 解析：蓝图 **`slot_registry`** 中 `type: complex_emotion` + `backend: builtin|remote|directory|none` 时 **last-wins**（`resolve_complex_emotion_winner`）。**省略（无条目）= 不启用**（跳过 provider、不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价）。
+**当前 `PluginBackends` 不含 `complex_emotion` 字段。** `oclive-cli` 的 legacy 脚手架仍把 `complex_emotion` 提示键写在 **`plugin_backends` 对象内**；宿主 Serde **忽略**该键，不影响 `load_role`，这不是当前包的启用方式。Stable 主路径从蓝图 **`slot_registry`** 经 **`PluginHost` / `SlotRunner`** 解析 `type: complex_emotion` + `backend: builtin|remote|directory|none`，并按 **last-wins** 选择有效设施实例。**省略或 `none` = 关闭 hint 读写**；显式 `builtin` = 启用跨轮 hint 与 Fast 本地强度；`remote` / `directory` = 在此基础上提供 post-LLM 降级 provider。有效主 LLM `[EMO]` 始终优先。
 
 | 项 | 说明 |
 |----|------|
-| 与 **emotion 后端模块** | emotion 产出 `EmotionResult`；本设施消费其推导指标，产出 `narrative_hint` 供 **prompt 后端模块** |
+| 与 **emotion 后端模块** | emotion 产出用户句 `EmotionResult`，仅作降级证据之一；本设施在 post 解析角色回复情绪和 `narrative_hint`，下一轮 **prompt 后端模块**只消费不含原文的余韵信号 |
 | 与 **后端模块插件模块** | 侧车方法 `complex_emotion.resolve_turn`（`OCLIVE_COMPLEX_EMOTION_URL` 或 `slot_registry` remote/directory）；**不**占第 7 模块号；**不**经 `plugin_backends.complex_emotion` 六槽键切换 |
 | 与 **Monolith** | 焊接键名 `complex_emotion`（七焊接键之一），≠ 宿主槽位 |
 
@@ -186,7 +186,7 @@
 
 **`--list-templates`**：列出五套模板；交互 `init` 默认含「不使用模板」项。
 
-**`robot-gateway`**：附带 `mcp_servers/` 与 `distros/chat-pro/roles/gateway/settings.json`（`agent` = builtin，`agent_mcp` 占位）。
+**`robot-gateway`**：在生成工程附带 `mcp_servers/` 与根级 `roles/gateway/settings.json`（当前仍是 legacy 脚手架；`agent` = builtin，`agent_mcp` 占位）。
 
 **`--quick` / `-q`**：full 预设、无 Monolith、无示例角色包。
 
@@ -222,7 +222,7 @@
 |------|---------|-------|------|
 | memory / emotion / event / prompt | builtin | builtin | builtin |
 | llm | ollama | ollama | remote |
-| agent | **省略键**（语义 none） | builtin | builtin |
+| agent | 逻辑预设为 none；非双核 legacy 输出会**省略键并实际回退 builtin**，v3 双核蓝图才显式写 `none` | builtin | builtin |
 | complex_emotion | none | builtin | remote |
 
 ---
@@ -231,14 +231,14 @@
 
 1. 准备侧车（HTTP JSON-RPC），实现 PLUGIN_V1 / REMOTE_PLUGIN_PROTOCOL 对应方法。
 2. 在运行环境中设置 URL，例如 **`OCLIVE_REMOTE_PLUGIN_URL`**（多子系统共用侧车时）与 **`OCLIVE_REMOTE_LLM_URL`**（仅 LLM）。
-3. 编辑 **`settings.json`** → `plugin_backends`：将目标槽改为 **`remote`**（`llm` 改为 **`remote`**，不是 `builtin`）。
+3. 编辑 **`pipeline.ocblueprint`** → `slot_registry`：将目标实例的 `backend` 改为 **`remote`**（LLM 用 `remote`，本地默认才是 `ollama`）。
 4. 重启宿主或重新加载角色；观察日志中降级/回退提示（未配置 URL 时可能回退内置实现）。
 
 ---
 
 ## 五、`monolith.toml`（编译期，非运行时）
 
-由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（**`cargo run -p oclive-cli -- --experimental build`** 读取并再生成 `process_message_monolith.rs`；亦可仅用手动 **`cargo build --features monolith`**）。与 **`settings.json` → `plugin_backends`** 正交：角色包加载**不**读取本文件。
+由 **`oclive-cli init`** 在启用 Monolith 时写入**项目根目录**；**仅编译期**消费（**`cargo run -p oclive-cli -- --experimental build`** 读取并再生成 `process_message_monolith.rs`；亦可仅用手动 **`cargo build --features monolith`**）。它与角色包的运行时 `slot_registry`（以及 legacy `plugin_backends`）正交：角色包加载**不**读取本文件。
 
 | 字段 | 说明 |
 |------|------|

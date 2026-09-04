@@ -1,6 +1,6 @@
 # Remote plugin protocol (host ↔ HTTP sidecar) — full reference
 
-**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`. When a pack sets a subsystem to `remote` and env URLs are set, requests go to the sidecar; on **network errors, non‑2xx HTTP, JSON‑RPC `error`, or result deserialization failure**, the host **falls back to built‑in implementations** and logs (`target: oclive_plugin`) — chat usually continues.
+**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`. Current packs declare remote instances in blueprint `slot_registry`; the host folds the six stable types into an effective `PluginBackends` view. When the effective subsystem is `remote` and env URLs are set, requests go to the sidecar; on **network errors, non‑2xx HTTP, JSON‑RPC `error`, or result deserialization failure**, the host **falls back to built‑in implementations** and logs (`target: oclive_plugin`) — chat usually continues.
 
 [中文](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
 
@@ -99,7 +99,7 @@ Prefer **HTTP 200** with machine‑readable errors in JSON‑RPC `error`. **4xx/
 | `OCLIVE_REMOTE_PLUGIN_URL` | When set, **one** HTTP endpoint for **memory / emotion / event / prompt** remote; distinguished by `method` |
 | `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS` | optional; default `8000` ms |
 | `OCLIVE_REMOTE_PLUGIN_TOKEN` | optional Bearer |
-| `OCLIVE_REMOTE_LLM_URL` | When set **and** pack `plugin_backends.llm = remote`, **LLM** calls use this URL |
+| `OCLIVE_REMOTE_LLM_URL` | When set and the **effective folded LLM backend** is `remote`, LLM calls use this URL; it does not rewrite the pack's `slot_registry` |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | optional; default `120000` |
 | `OCLIVE_REMOTE_LLM_TOKEN` | optional Bearer |
 
@@ -107,7 +107,7 @@ If the URL for a subsystem is missing, the host uses **built‑in placeholders**
 
 ---
 
-## 2. Security & product boundaries (current implementation)
+### 2.1 Security & product boundaries (current implementation)
 
 | Topic | Notes |
 |-------|--------|

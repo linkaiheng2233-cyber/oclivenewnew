@@ -54,7 +54,7 @@ Requires `tts_expansion_enabled`. Params:
     "energy": "soft",
     "emo_text": "用害羞轻柔的语气",
     "synth_profile": "bundled-cosyvoice2-zh",
-    "ref_audio": "D:/…/roles/mumu/assets/voice/ref_shy.wav",
+    "ref_audio": "D:/…/distros/chat-pro/roles/mumu/assets/voice/ref_shy.wav",
     "ref_text": "参考文本"
   }
 }

@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-01
+> **最后更新**：2026-09-04
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -31,7 +31,7 @@
 | 4 | [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) | `process_message` · DB · 错误码 **文件锚点** |
 | 5 | [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 
-**必背常量（勿查错字段）**：回复 DTO 字段 **`reply`**（不是 `response`）· 六槽键 `plugin_backends` / `slot_registry` · 蓝图 **`steps[]` 不参与首轮调度**。
+**必背常量（勿查错字段）**：回复 DTO 字段 **`reply`**（不是 `response`）· 当前包配置真源是蓝图 **`slot_registry`**，`PluginBackends` 是运行时折叠兼容视图，legacy 包才从 `settings.json.plugin_backends` 起步 · 蓝图 **`steps[]` 不参与首轮调度**。
 
 ---
 
@@ -73,10 +73,11 @@
 Vue invoke / HTTP --api
   → distros/desktop-tauri/src/api/*.rs
   → oclive_kernel_host::process_message
-  → Agent 短路或 turn_pipeline
+  → 角色包 + SessionCache override 合成 EffectiveSessionConfig
+  → PluginHost / SlotRunner 解析本轮六槽实现
+  → Agent 短路，或进入 turn_pipeline
   → pre → co_present/remote_life middle → LLM → post
-  → Event Ring 在 middle 内承接 event.impact 与记忆提案
-  → PluginHost 六槽
+  → Event Ring 只在 middle / 主动回合授权锚点承接事件，不是末尾阶段
 ```
 
 | 锚点 | 路径 |

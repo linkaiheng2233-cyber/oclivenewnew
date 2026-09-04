@@ -3,7 +3,7 @@
 > Full checklist (ZH): [`human-docs/modules/side-channels/reply-mode.md`](../../../human-docs/modules/side-channels/reply-mode.md)
 > Definition SSOT: [MODULE_MAP §11](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 
-**You plug in**: Registry `id` **`reply_mode`** (not a six-slot key) · role pack `config.json` → `reply_mode` · `turn_pipeline/post.rs` after `reply_post_process` · presentation-only post-processing.
+**You plug in**: Registry `id` **`reply_mode`** (not a six-slot key) · role pack `config.json` → `reply_mode` · `turn_pipeline/post/post_llm.rs` display phase after `reply_post_process` and before chat append · presentation-only post-processing.
 
 **Do**: Split LLM output on a line-only separator and strip the marker · persist one assistant message with `reply_segments` metadata · render multiple bubbles from segments · inject the separator protocol via the host prompt (never in persona text).
 

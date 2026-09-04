@@ -2,7 +2,7 @@
 
 Common **read/write** paths for the **oclivenewnew** desktop host: locations, purpose, important fields. Paths assume the **default desktop layout**; with a custom `roles` dir, resolve against your real **`roles` parent** and **Tauri app data dir**.
 
-**`{app_data}`** (below): from Tauri `path_resolver().app_data_dir()` (on Windows often under `%APPDATA%` for the app id), **sibling to `app.db`**. Directory‑plugin related files live here (**not** under `app_data/oclive/` as a subfolder name).
+**`{app_data}`** (below) means the effective `OCLIVE_APP_DATA`. Desktop/shared-kernel runs normally use the canonical brand directory (`%LOCALAPPDATA%/OCLive/data` on Windows); an explicit environment value may override it. The old Tauri `%APPDATA%/com.oclivenewnew.app` path is only a one-time migration source. `app.db`, user plugins, and host-plugin configuration are rooted in this effective directory; see [OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md).
 
 | File | Path |
 |------|------|
@@ -10,7 +10,7 @@ Common **read/write** paths for the **oclivenewnew** desktop host: locations, pu
 | Plugin UI state (v2) | `{app_data}/plugin_state.json` |
 | Host plugin options | `{app_data}/oclive_host_plugins.json` |
 | Last active role id | `{app_data}/oclive_last_role_id.txt` |
-| User plugin scan root | `{app_data}/distros/chat-pro/plugins/` |
+| User plugin scan root | `{app_data}/plugins/` |
 
 **Code**: `kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`, `directory_plugins/runtime/mod.rs`, `lib.rs` (`app_data_dir`).
 
@@ -57,7 +57,7 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 | `theme` | primary color, … (when defined in schema) |
 | `layout` | layout keys (when defined in schema) |
 
-**Split with `settings.json`**: **`ui.json`** = **front‑end & plugin layout**; **`settings.json`** = **back‑end capabilities** (`plugin_backends`, `directory_plugins` ids, …). See §5 below.
+**Split with backend configuration**: **`ui.json`** owns front-end/plugin layout; **`pipeline.ocblueprint.slot_registry`** owns backend capability instances. Legacy `settings.json` is migration-only. See §5 below.
 
 ---
 
@@ -70,19 +70,21 @@ First load of a role without a record can seed from pack **`ui.json`** (`RolePlu
 
 ## 4. `manifest.json` (directory plugin)
 
-- **Path**: each plugin root **`manifest.json`** (scan roots: `<roles parent>/distros/chat-pro/plugins/`, `./distros/chat-pro/plugins/`, `{app_data}/distros/chat-pro/plugins/`, … — [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1).
+- **Path**: each plugin root **`manifest.json`** (scan roots: `<roles parent>/plugins/`, `./plugins/`, `{app_data}/plugins/`, …; this monorepo uses `distros/chat-pro/plugins/` — [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1).
 - **Purpose**: id, version, whole shell, child process, UI slots, bridge allowlist, dependencies, …
 - **Detail**: [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §2; **versions** must be **SemVer** the host can parse (`load_from_dir`).
 
 ---
 
-## 5. `settings.json` (pack core)
+## 5. `pipeline.ocblueprint` (pack core)
 
-- **Path**: pack root.
-- **Purpose**: runtime behavior: scenes, personality, **`plugin_backends`**, Ollama/remote, … (full keys in [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)).
+- **Path**: pack root. New packs must not keep legacy `manifest.json` / `settings.json` beside it.
+- **Purpose**: `meta` stores role metadata, personality, and scenes; **`slot_registry`** stores open instances and their `type`, `backend`, `plugin` / `plugins`, model, and related fields. See [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) and [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md).
 - **vs `ui.json`**:
-  - **`settings.json`**: **back‑end** — e.g. `plugin_backends.memory = "directory"` and **`directory_plugins`** slot → `manifest.id`.
+  - **`pipeline.ocblueprint.slot_registry`**: **back-end** — e.g. a `type: memory` instance with `backend: directory` and `plugin` pointing to the directory-plugin `manifest.id`.
   - **`ui.json`**: **front‑end** — which plugins appear in toolbar/settings, plus **`theme` / `layout`** when used.
+
+Migration tooling can still read legacy `settings.json` `plugin_backends.directory_plugins`, but it is not the disk authority for v2/v3/v4 packs.
 
 ---
 

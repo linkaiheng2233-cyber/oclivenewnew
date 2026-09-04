@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：本文只登记活跃 handoff 的职责、分层和归档规则。
-**最后更新**：2026-09-01。
+**最后更新**：2026-09-04。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 ## 文档分层
@@ -41,7 +41,7 @@
 | [KERNEL_SCHEDULER_RESCOPE.md](KERNEL_SCHEDULER_RESCOPE.md) | 内核调度器当前边界 |
 | [THREE_DISTRO_KERNEL_CLOSURE.md](THREE_DISTRO_KERNEL_CLOSURE.md) | 三发行版内核结项约束；新能力以 HostProfile SSOT 为准 |
 | [EVENT_RING.md](../creator-docs/plugin-and-architecture/EVENT_RING.md) | Event Ring wire、注册、权威边界与主动回合授权公开契约 |
-| [RFC_RUNTIME_EVENT_STREAM.md](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) | 未来 Runtime Event Stream 的分层、事件分型、投递/恢复与权力边界；当前未实现 |
+| [RFC_RUNTIME_EVENT_STREAM.md](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) | 未来 Runtime Event Stream 的分层、事件分型、投递/恢复与权力边界；Production Stream 未实现，当前仅有默认关闭、不可读回行为的 B0 trace-only 影子 |
 
 ### 关键路径与验证
 
@@ -68,7 +68,7 @@
 | [GITHUB_PLUGIN_INDEX_LINE.md](GITHUB_PLUGIN_INDEX_LINE.md) | GitHub 插件索引线 |
 | [COMMENT_ENGLISH_MIGRATION_PLAN.md](COMMENT_ENGLISH_MIGRATION_PLAN.md) | 注释英文化计划 |
 | [GOOD_FIRST_ISSUES.md](GOOD_FIRST_ISSUES.md) | 新人 issue 策展 |
-| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 产品定位与差异化 |
+| [OCLIVE_POSITIONING_DIFFERENTIATION.md](OCLIVE_POSITIONING_DIFFERENTIATION.md) | 工具内核本质、产品定位与差异化 |
 
 ## 发行版工作区
 
@@ -88,4 +88,4 @@
 - 不新建第二份项目总览、模块表、状态页或发版清单；扩展现有 SSOT并从索引链接。
 - 根级新增 `handoff/*.md` 必须满足 [AI_CHANGE_BOUNDARIES G11–G16](AI_CHANGE_BOUNDARIES.md) 并登记到本页。
 
-门禁：`node scripts/check-doc-registry.mjs` · `node scripts/check-markdown-links.mjs` · `node scripts/check-stale-paths.mjs`。
+门禁：`node scripts/check-doc-registry.mjs` · `node scripts/check-markdown-links.mjs`（核心入口）· `node scripts/check-markdown-links.mjs --tracked`（全体受跟踪 Markdown）· `node scripts/check-stale-paths.mjs`。

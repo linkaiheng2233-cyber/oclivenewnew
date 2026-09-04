@@ -22,7 +22,7 @@
 
 - **文档**：`creator-docs/`、外仓 README / CHANGELOG 与本文、`personality-archive-notes` 保持互链；无害的旧表述可保留。
 - **契约与模板**：`settings.template.json` 等显式写出 **`personality_source`**，降低「只有七维」的误解。
-- **产品 UI**：提示文案区分 **用户关系身份**（`user_relations`）与 **性格档案**，避免「人设」一词多义。
+- **产品 UI**：提示文案明确区分 **用户关系**（蓝图 `meta.relations`）、**用户身份模板**（`user_identities/`）与 **角色性格档案**，避免把三者都叫成「身份」或「人设」。
 
 ## 相关入口
 

@@ -1,6 +1,6 @@
 # Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
-本仓库为 **A.I.Live / OCLive** —— 开源、可组装、隐私优先的 **AI 角色运行时与开发者平台**（**Tauri + Vue 3 + Rust**）。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，非产品上限。
+本仓库为 **A.I.Live / OCLive** —— 开源、本地优先、以稳定契约组织角色能力的 **可嵌入工具内核及其参考运行时**（**Rust + Tauri + Vue 3**）。最小概念核心是一套权威回合编排与 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` 六个稳定能力端口**；Event Ring、具体槽位实现、持久化、发行版与生态工具均是外围装配。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，不是项目本体或能力上限。定位 SSOT 见 [OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
 **人类开发者（不用 Cursor）**：请先 **[human-docs/README.md](human-docs/README.md)**（L0–L2 约 1 小时 · 排版面向人类认知）；**不要**从本文起步。
 
@@ -36,7 +36,7 @@
 |------|------|------|
 | **桌面宿主** | **0.5.2** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
 | **角色包编写器** | **0.5.1** | 姊妹仓 `oclive-pack-editor` |
-| **VS Code 扩展** | **0.4.1** | 姊妹仓 `oclive-vscode` |
+| **VS Code 扩展** | **0.5.0** | 姊妹仓 `oclive-vscode` |
 | **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
 | **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
 
@@ -50,7 +50,7 @@
 |------|------|
 | 模块注册表 · 记忆三套存储 · 六槽解耦 | [handoff/MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) |
 | 对外架构叙述 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
-| 六槽 DTO · 编排顺序 | [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| 六槽 DTO · Stable 阶段中的调用锚点 | [PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | 角色包 vs 蓝图 | [handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) |
 | 聊天 vs 记忆 | [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md) |
 | 发行版 HostProfile | [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |

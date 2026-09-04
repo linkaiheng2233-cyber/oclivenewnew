@@ -34,7 +34,7 @@ npm run check
 
 | 命令 | 作用 |
 |------|------|
-| `npm install` | 前端依赖；首次 `tauri:dev` 会驱动 `src-tauri` 构建 |
+| `npm install` | 前端依赖；首次 `tauri:dev` 会驱动 `distros/desktop-tauri` 构建 |
 | `npm run tauri:dev` | 桌面客户端 + 热重载 |
 | `npm run check` | 日常门禁：`vite build` + `cargo fmt` / `clippy` / `cargo test --lib` |
 

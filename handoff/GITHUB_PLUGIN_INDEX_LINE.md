@@ -66,7 +66,7 @@ Copy-Item D:\oclivenewnew\data\plugins.json $env:USERPROFILE\.oclive\plugin_inde
 
 ## 安装语义
 
-- **`git`**：浅克隆到临时目录，再按 `manifest.id` 移到 `{app_data}/distros/chat-pro/plugins/<id>/`。
+- **`git`**：浅克隆到临时目录，再按 `manifest.id` 移到 `{app_data}/plugins/<id>/`。
 - **`gitSubdir`**：克隆后进入子目录再校验 manifest 并移动（2026-05-20 起，桌面 + CLI 一致）。
 
 ## 维护命令

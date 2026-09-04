@@ -14,7 +14,7 @@
 | 防腐层完整（`domain/ports` 零 trait） | 核心 trait 独立于 Tauri，任意宿主可实现 |
 | `module_relations` 自动派生 | 禁止手写字段；从 `slot_registry` 推导边才可靠 |
 | 分组（`groups`） | 创作者 UI 归类，不改变执行顺序 |
-| 多实例合并策略 | memory 去重合并、llm last-wins、agent 在 PluginHost 合并工具集等 |
+| 多实例合并策略 | memory 去重；非流式 llm 支持 `ensemble` / `fastest` / `fallback`（流式仍串行）；多 Agent 工具并集尚未实现并登记 `K-AGENT-MERGE-01` |
 | C1 薄包装 | 旧 API 签名保留，内部委托 slot 覆盖，给下游过渡时间 |
 
 ---
@@ -88,7 +88,7 @@
 | P3 `oclive init --dual-core` | **已完成** |
 | P4 OOCP S13（可选 `--include-s13`） | **已完成** |
 | P5 Monolith `[dual_core]` 脚手架 | **已完成** |
-| 深化：七槽 experimental method + 快照回滚 + Method 注册表 + 架构图 + 开发者指南 | **已完成** |
+| 深化：当前七类 experimental method（六槽 + `complex_emotion` 设施）+ 快照回滚 + Method 注册表 + 架构图 + 开发者指南 | **已完成** |
 | 精修：`oclive_dual_core` 分级日志 + 性能结果解读文档 | **已完成** |
 
 文档：[DEVELOPER_GUIDE.md](../creator-docs/dual-core/DEVELOPER_GUIDE.md) · [METHOD_REGISTRY.md](../creator-docs/dual-core/METHOD_REGISTRY.md) · [历史对齐记录](archive/DUAL_CORE_ALIGNMENT.md)

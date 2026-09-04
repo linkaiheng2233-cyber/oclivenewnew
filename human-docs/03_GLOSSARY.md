@@ -23,14 +23,18 @@
 
 | 术语 | 含义 |
 |------|------|
+| **最小工具内核** | 唯一回合/生命周期编排、能力调用/合并、权威状态提交、错误/隔离边界，以及六个稳定能力端口；当前尚未物理抽成独立 crate |
+| **完整参考运行时** | 当前 `oclive_kernel_host::OcliveKernel` 门面及其 SQLite、Event Ring、具体槽实现、设施和 HTTP 依赖；可嵌入，但不等于最小 core |
 | **`PluginHost`** | 按角色包 + 会话覆盖解析六槽实现；入口 [`plugin_host/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/plugin_host/mod.rs) |
-| **`slot_registry`** | v2 蓝图多实例槽位表（`pipeline.ocblueprint`）；权威键 `type`: memory / emotion / … |
-| **`plugin_backends`** | legacy 六键折叠结构 + Rust 运行时类型名 `PluginBackends`；**非** v2 新 UI 首选名 |
+| **`slot_registry`** | v2/v3/v4 蓝图多实例槽位表（`pipeline.ocblueprint`）；新 Stable 包用 v4，权威键 `type`: memory / emotion / … |
+| **`plugin_backends`** | legacy 六键磁盘结构 + Rust 运行时折叠类型名 `PluginBackends`；**不是**当前蓝图 UI 的写盘真源 |
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
 | **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
 | **`co_present`** | Stable 核共景主路径实现模块 |
-| **Event Ring / 事件外环** | 内核进程内的有界事件路由与权威信封；不是第七槽，也不是数据库总线 |
-| **[Runtime Event Stream / 角色运行事件流（规划）](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)** | 跨回合、跨通道延续角色事实与派生事件的“河流”模型；当前未实现，不得与 Event Ring 的有界历史混称 |
+| **Event Ring / 事件外环** | 当前参考运行时中的有界事件路由与权威信封设施；不是最小核心必选项、第七槽或数据库总线 |
+| **显式 / 隐式装配** | 两种可混合策略：显式模块共享契约化状态；隐式装配让模型从语境推断。OCLive 不指定唯一正统 |
+| **状态候选** | 带来源、置信度、有效期与作用域的语义判断目标形态；当前并非所有 DTO 都已实现这些字段 |
+| **[Runtime Event Stream / 角色运行事件流（规划）](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)** | 跨回合、跨通道延续角色事实与派生事件的“河流”模型；Production Stream、读取与消费者尚未实现，当前只有默认关闭、不可读回行为的 B0 trace-only 影子，不得与 Event Ring 的有界历史混称 |
 | **Session（事件语境）** | 角色运行实例与隔离边界；可承载/投递属于该实例的事件，但不因此取得 Event 采纳或状态提交权 |
 | **legacy `event` 槽** | 第 3 后端模块，只估计对话事件类型/影响；不是整个 Event Ring |
 | **EventDraft** | 模块提出的事件草案；不含可信来源、注册权重和顺序 |
@@ -45,7 +49,7 @@
 | **Fast / Deep** | 本回合思考档位：Fast 跳过部分 LLM 与（在 `strong_only` 下）长时巩固；Deep 全量 |
 | **ephemeral_archive** | 规则写的临时局面摘要（TTL），Prompt 段 `【局面摘要】`；与 `mutable_personality` 独立 |
 | **第 3 设施（立绘）** | `portrait_catalog` · AI **表现导演** 选 `visual_state_id`（RFC 草案；v0.3 仍为文件名 + 七 tag） |
-| **第 4 设施（视觉表现）** | **角色舞台**：Live2D / 3D / 演算 adapter（RFC 草案；默认关） |
+| **第 4 设施（视觉表现）** | **角色舞台**：`visual_state_id` → `performance_directive` 与发行版 gating 已交付；Live2D / 3D / 演算 adapter 部分交付，默认关 |
 
 ---
 
@@ -74,7 +78,7 @@
 ## 验收
 
 - [ ] 能解释 `srid` 与 `mrid` 何时相同、何时不同
-- [ ] 能区分 `slot_registry`（v2 磁盘）与 `PluginBackends`（运行时折叠）
+- [ ] 能区分 `slot_registry`（v2/v3/v4 蓝图磁盘配置）与 `PluginBackends`（运行时六槽折叠）
 - [ ] 能区分 `event` 槽、Event Ring、Event 决策模块与 Rust 编排
 - [ ] 能说明当前 Event Ring 为什么不等于持久化 Runtime Event Stream
 

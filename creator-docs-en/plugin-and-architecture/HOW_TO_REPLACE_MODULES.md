@@ -1,4 +1,4 @@
-﻿# How to replace modules later (swappable stack cheat sheet)
+# How to replace modules later (swappable stack cheat sheet)
 
 Which **pieces the host already splits**, and **what to touch** to swap one. Contract detail stays in [PLUGIN_V1.md](PLUGIN_V1.md).
 
@@ -12,18 +12,18 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 
 ## 1. Swappable modules
 
-| Module | Role | Rust trait | `settings.json` (`plugin_backends`) | Default |
-|--------|------|------------|----------------------------------------|---------|
-| **Memory retrieval** | rank long‑term memory, context, keyword search | `MemoryRetrieval` | `memory`: `builtin` / `remote` / `directory` / `local` (`builtin_v2` read alias) | `BuiltinMemoryRetrieval`; **`directory`** needs `directory_plugins.memory` → `distros/chat-pro/plugins/<id>/` |
-| **User sentence emotion** | text → seven‑dim emotion | `UserEmotionAnalyzer` | `emotion`: … | same; **`directory`** → `directory_plugins.emotion` |
-| **Event impact** | LLM estimates event type & factor | `EventEstimator` | `event`: … | same; **`directory`** → `directory_plugins.event` |
-| **Prompt assembly** | main system/user strings | `PromptAssembler` | `prompt`: … | same; **`directory`** → `directory_plugins.prompt` |
-| **LLM** | model calls | `LlmClient` | `llm`: `ollama` / `remote` / `directory` | `ollama`: injected client; `remote`: `OCLIVE_REMOTE_LLM_URL` JSON‑RPC, falls back to default LLM if unset; **`directory`** → `directory_plugins.llm` (child URL, no `OCLIVE_REMOTE_LLM_URL`) |
-| **Agent** | tools / ReAct | `AgentProvider` | `agent`: `builtin` / `remote` / `directory` | `builtin`: `BuiltinReActAgent`; **`directory`** → `directory_plugins.agent`; MCP dir **`{app_data}/mcp-servers`** (same `app_data` as `PluginHost::new` arg 3) |
-| **Long‑term memory store** | SQLite rows | `MemoryRepository` | *(not on `plugin_backends`; swap via infra)* | `SqliteMemoryRepository` |
+| Module | Role | Rust trait | Current blueprint instance | Default |
+|--------|------|------------|----------------------------|---------|
+| **Memory retrieval** | rank long-term memory, context, keyword search | `MemoryRetrieval` | `type: memory`; `builtin` / `remote` / `directory` / `local` / `none` | `BuiltinMemoryRetrieval`; directory uses instance `plugin` |
+| **User sentence emotion** | text → seven-dim emotion | `UserEmotionAnalyzer` | `type: emotion`; `builtin` / `remote` / `directory` / `none` | `BuiltinUserEmotionAnalyzer` |
+| **Event impact** | estimate event type and factor | `EventEstimator` | `type: event`; `builtin` / `remote` / `directory` / `none` | `BuiltinEventEstimator` |
+| **Prompt assembly** | main system/user strings | `PromptAssembler` | `type: prompt`; `builtin` / `remote` / `directory` / `none` | `BuiltinPromptAssembler`; the healthy co-present path needs an effective prompt |
+| **LLM** | model calls | `LlmClient` | `type: llm`; `ollama` / `remote` / `directory` / `none` | `ollama`: injected client; `remote`: `OCLIVE_REMOTE_LLM_URL`; directory uses instance `plugin` |
+| **Agent** | tools / ReAct | `AgentProvider` | `type: agent`; `builtin` / `remote` / `directory` / `none` | `BuiltinReActAgent`; the folded single Agent is executable today, while `plugins[]` tool-union execution remains `K-AGENT-MERGE-01`; MCP under **`{app_data}/mcp-servers`** |
+| **Long-term memory store** | SQLite rows | `MemoryRepository` | *not a stable slot; swap via infrastructure* | `SqliteMemoryRepository` |
 | **Policies** | write gates, importance, … | `EmotionPolicy`, … | `config/policy.toml` scene profiles | `Default*` |
 
-**Aggregate**: [`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) wires concrete impls per enum; per turn use **`ResolvedRolePlugins`** from **`AppState::resolved_plugins_for`** for **memory / emotion / event / prompt / llm / agent**. `AppState.llm` remains the process‑wide default handle (same impl as `plugin_backends.llm = ollama`).
+**Aggregate**: the host first builds an effective session `slot_registry`, folds its six stable types into the `PluginBackends` compatibility view, then [`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) binds concrete implementations while `SlotRunner` retains instance semantics. `ResolvedRolePlugins` supplies all six facades for a turn.
 
 ---
 
@@ -36,9 +36,9 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
    - construct `Arc::new(YourMemoryRetrieval)` in `new()`;
    - add a `match` arm in `memory_retrieval()`.
 
-3. **Extend the enum** — in [`models/plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs) add a variant to `MemoryBackend` (or the right enum), **`serde(rename = "snake_case")`** aligned with JSON.
+3. **Extend enum and validation** — add the variant to the matching enum, then update `oclive_validation::allowed_backends_for_type`, resolution, degradation, and tests. Keep the wire in `snake_case`.
 
-4. **Pack** — `"plugin_backends": { "memory": "your_variant" }` matching the enum name.
+4. **Pack** — set `"type": "memory", "backend": "your_variant"` on the target `pipeline.ocblueprint.slot_registry` instance. Treat a public backend-enum expansion under the Breaking process.
 
 5. **Validate & docs** — update [PLUGIN_V1.md](PLUGIN_V1.md) tables; add tests if needed.
 
@@ -55,13 +55,13 @@ Which **pieces the host already splits**, and **what to touch** to swap one. Con
 
 ## 3b. **Directory** (`distros/chat-pro/plugins/` — same protocol as Remote)
 
-- Pack sets **`plugin_backends.* = directory`** and fills **`directory_plugins`** per used slot with the plugin **`manifest.json` `id`** (matches `distros/chat-pro/plugins/<id>/`).
-- Host scans `distros/chat-pro/plugins/`, spawns per manifest, reads JSON‑RPC **base URL** from stdout, then uses the same HTTP client as Remote (methods still in [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)).
+- Set the target registry instance to **`backend: directory`** and put the plugin's `manifest.id` in `plugin` or, for merge-capable types, `plugins[]`.
+- The host discovers configured plugin roots, spawns by manifest, reads the JSON-RPC **base URL** from stdout, then uses the same HTTP client as Remote.
 - Whole shell, `directory_plugin_invoke`, dev mode, minimal sample: **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**.
 
 ---
 
-## 4. Usually **not** switched via `plugin_backends`
+## 4. Usually **not** switched through stable-slot backends
 
 - **Process‑wide `LlmClient`**: swap gateway/cloud in [`infrastructure/llm.rs`](../../kernel/crates/oclive_kernel_host/src/infrastructure/llm.rs) + `AppState::new`, or use **`OCLIVE_REMOTE_LLM_URL`** ([REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)).
 - **`MemoryRepository`**: vector DB etc. lives in storage — abstract separately or add a repository impl before binding to manifest.

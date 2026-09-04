@@ -43,7 +43,7 @@ Full format: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md). Summary:
 
 | Category | Path | Notes |
 |----------|------|-------|
-| Entry | `pipeline.ocblueprint` (v2) | Identity, `meta`, blueprint `slot_registry` |
+| Entry | `pipeline.ocblueprint` (v2/v3/v4; new Stable packs use v4) | Identity, `meta`, blueprint `slot_registry` |
 | Behavior policy | `config.json` | `time` / `memory` / `relation` / `chat_storage`, etc. |
 | Prompts | `prompts/` | System prompt, openings |
 | Scenes | `scenes/{scene_id}/` | `scene.json`, descriptions, assets |
@@ -99,7 +99,7 @@ Full format: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md). Summary:
 ## 6. Single kernel, multiple roles (confirmed)
 
 - One kernel process can serve multiple **`role_id`** with natural isolation.
-- Multi-role scenes are solved by **blueprint / orchestration**, not “one kernel per role”.
+- Multi-role scenes should be composed by **host-owned multi-role orchestration** over each role's configuration, not by “one kernel per role”; an individual role blueprint does not own Stable stage order.
 - Bottleneck is **LLM**; multiple kernels writing one `app.db` causes SQLite conflicts — hence **single writer**.
 
 ---

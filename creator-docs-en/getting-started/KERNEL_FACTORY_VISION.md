@@ -16,8 +16,8 @@ Above the factory, Oclive uses **single-kernel, dual-mode build architecture**: 
 
 | Umbrella | Exo-mode | Macro-mode |
 |----------|----------|------------|
-| Single-kernel, dual-mode build | Standard `main.rs`, `plugin_backends` | `main_monolith.rs`, `feature monolith` |
-| Existing names | PLUGIN_V1, pure kernel, PluginHost | Monolith RFC, high coupling, `monolith.toml` |
+| Single-kernel, dual-mode build | Standard `main.rs`, `PluginHost` + `slot_registry` | `main_monolith.rs`, `feature monolith` |
+| Existing names | PLUGIN_V1, kernel boundary, PluginHost | Monolith RFC, high coupling, `monolith.toml` |
 | Full weld | — | `weld_modules = []` and `exclude = []`, or `--monolith-preset latency` |
 
 Full narrative and characteristics: **[OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)**. Exo/macro labels are **engineering analogies**, not OS taxonomy.
@@ -72,31 +72,33 @@ flowchart TB
     E["--with-example-plugin"]
   end
   subgraph impl["Implementation layer"]
-    PB["plugin_backends modules 1-6"]
+    BP["pipeline.ocblueprint<br/>slot_registry config SSOT"]
+    PB["EffectiveSessionConfig<br/>folded slots 1-6"]
+    LEG["legacy settings.json<br/>migration compatibility only"]
     M["monolith.toml compile-time weld"]
-    PL["distros/chat-pro/plugins/ directory · Remote sidecars"]
+    PL["plugins/ directory · Remote sidecars"]
   end
   subgraph code["Code layer (orchestration)"]
     PM["process_message fixed Rust order"]
-    BP["pipeline.ocblueprint optional; desktop hot path removed"]
   end
-  T --> PB
-  R --> PB
-  P --> PB
+  T --> BP
+  R --> BP
+  P --> BP
   T --> M
   P --> M
   E --> PL
+  BP --> PB
+  LEG -.compatibility fold.-> PB
   PB --> PM
   M --> PM
   PL --> PB
-  BP -.->|future / headless experiments| PM
 ```
 
 | Layer | Audience | Tools / artifacts | What changes |
 |-------|----------|-------------------|--------------|
-| **Recipe** | Platform / hardware devs | `oclive init --template …` | Project type, slot presets, Monolith on/off, sample `distros/chat-pro/roles/` |
-| **Implementation** | Integrators + authors | `settings.json`, `monolith.toml`, `distros/chat-pro/plugins/` | Per-slot **builtin / remote / directory / ollama**; which slots to weld |
-| **Code** | Kernel maintainers | `chat_engine` in `oclive_kernel_host` (`oclive_kernel_runtime` provides DTOs and pure resolution) | **Atomic step order** per turn (memory → emotion → event → prompt → LLM → …) |
+| **Recipe** | Kernel integrators / hardware developers | `oclive init --template …` | Project type, slot presets, Monolith on/off, sample root-level `roles/` |
+| **Implementation** | Integrators + advanced authors | `pipeline.ocblueprint.slot_registry`, `monolith.toml`, root-level `plugins/` | Per-slot **builtin / remote / directory / ollama / none**; which slots to weld. `settings.json.plugin_backends` is legacy only |
+| **Code** | Kernel maintainers | `chat_engine` in `oclive_kernel_host` (`oclive_kernel_runtime` provides DTOs and pure resolution) | **Authoritative turn phases:** entry/Agent short-circuit → pre → mode middle → main LLM → post. Slots are called where needed; they are not a mechanical six-slot sequence |
 
 ---
 
@@ -165,18 +167,18 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
 2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
 3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; run `cargo run -- --api` for `kernel_server`, or `cargo check` and call `OcliveKernel` from your own `main` for `library-embed`.
-4. **Swap soul**: edit `distros/chat-pro/roles/<id>/` or `oclive pack create`; `oclive dev` watches manifest/settings.
-5. **Swap implementations**: `plugin_backends`, `distros/chat-pro/plugins/<id>/`, or Remote sidecars ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)).
+4. **Swap soul**: edit generated-project `roles/<id>/` or use `oclive pack create`; new Stable packs use v4 `pipeline.ocblueprint`. Today `oclive dev` watches only legacy manifest/settings; see `D-CLI-BLUEPRINT-05`.
+5. **Swap implementations**: edit blueprint `slot_registry`, install `plugins/<id>/`, or run a Remote sidecar ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)). Only legacy packs edit `settings.json.plugin_backends`.
 6. **Need speed**: `robot-soul` / `robot-gateway` enable Monolith by default; edit `monolith.toml` then `oclive build`.
 
 ---
 
 ## Blueprint (`pipeline.ocblueprint`)
 
-- **Blueprints** describe **runtime** orchestration of atomic steps; **orthogonal** to Monolith (`monolith.toml` only).
-- **Desktop host**: entry blueprint **removed** from the hot path; use **`process_message`** ([AGENTS.md](../../AGENTS.md)).
-- **Factory (validation)**: `oclive blueprint validate <path>` checks JSON shape, known step types, and `next` references. Does **not** change the desktop host. Generated projects include **`docs/BLUEPRINT_REFERENCE.md`**.
-- **Custom orchestration**: extend the default through `OcliveKernel`, slot traits, and Event Ring instead of forking `process_message`; `monolith.toml` changes welded implementations only. A real stage-order change needs an explicit Breaking/RFC variant and is not the stable kernel interface.
+- **Current role-configuration SSOT:** v2/v3/v4 `slot_registry` selects six-slot instances and backends; new Stable packs use v4. The host loads and folds this configuration, but the blueprint does **not** own stage order.
+- **Kernel-owned orchestration:** `process_message` / `turn_pipeline` defines phases, calls, merges, commits, and fault boundaries. Removed `steps` / `entry` / `module_relations` DSL fields are rejected by validation.
+- **Validation:** `oclive pack validate <role root>` and experimental `oclive blueprint validate <pipeline.ocblueprint>` dispatch exact `schema_version`; both are read-only.
+- **Orthogonal to Monolith:** the blueprint selects runtime implementations, while `monolith.toml` selects compile-time welding. `init --pipeline` currently generates `docs/PIPELINE_CUSTOM.md` and an order constant; it is not a stable variable-orchestration contract for the full host.
 
 ---
 
@@ -198,7 +200,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 
 ## Quick mode
 
-**`oclive init --quick`**: `preset=full`, no Monolith, no `distros/chat-pro/roles/`. Interactive mode asks only **project name** and **output directory**. CLI flags already set skip duplicate prompts.
+**`oclive init --quick`**: `preset=full`, no Monolith, and no root-level `roles/`. Interactive mode asks only **project name** and **output directory**. CLI flags already set skip duplicate prompts.
 
 ---
 
@@ -218,7 +220,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes U�
 
 ## robot-gateway MCP
 
-Generates **`mcp_servers/`** (README + example JSON) and **`distros/chat-pro/roles/gateway/settings.json`** with `agent: builtin` and **`agent_mcp`** placeholders for smart-home sidecars.
+Generates **`mcp_servers/`** (README + example JSON) and the current legacy scaffold **`roles/gateway/settings.json`** with `agent: builtin` and **`agent_mcp`** placeholders for smart-home sidecars.
 
 ---
 
@@ -232,19 +234,19 @@ Generates **`mcp_servers/`** (README + example JSON) and **`distros/chat-pro/rol
 | `headless-api` | Headless API | full | off | kernel_server | none |
 | `library-embed` | Embedded library | minimal | off | library | none |
 
-`--with-role-pack`: `robot-soul-minimal` | `default`; `--skip-role-pack` forces empty `distros/chat-pro/roles/`.
+`--with-role-pack`: `robot-soul-minimal` | `default`; `--skip-role-pack` suppresses the root-level `roles/` directory.
 
 ---
 
 ## Orchestration reference (generated projects)
 
-`oclive init` writes **`docs/ORCHESTRATION_REFERENCE.md`** describing the six-stage pipeline, safe reorderings, hard constraints (`build_prompt` before `call_llm`), and skipping slots via `monolith.toml`. **Desktop host remains fixed**; for kernel developers only.
+`oclive init` writes **`docs/PIPELINE_CUSTOM.md`** and `src/oclive_pipeline_order.rs` for the selected `--pipeline` order, plus **`docs/BLUEPRINT_V2_POINTER.md`**, `WELD_BENCH_REPORT*`, and `DEBUG_REFERENCE.md`. These scaffold notes and experimental constants do **not** rewrite the full reference host's `process_message`.
 
 ---
 
 ## Example plugin
 
-`--with-example-plugin` (default off) copies **`examples/directory-plugin-llamacpp/`** to **`distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/`**. See **`distros/chat-pro/plugins/README.md`** in the generated tree.
+`--with-example-plugin` (default off) copies **`examples/directory-plugin-llamacpp/`** to **`plugins/com.oclive.example.llamacpp_llm/`**. See **`plugins/README.md`** in the generated tree.
 
 ---
 
@@ -256,7 +258,7 @@ Generates **`mcp_servers/`** (README + example JSON) and **`distros/chat-pro/rol
 
 ## Dev watch (`dev`)
 
-**`oclive dev`** recursively watches **`distros/chat-pro/roles/**/manifest.json`** and **`settings.json`** with **500ms debounce** and prints which role pack `<id>` changed.
+**`oclive dev`** recursively watches generated-project **`roles/**/manifest.json`** and **`settings.json`** with **500ms debounce**. It does not yet watch `pipeline.ocblueprint`; see `D-CLI-BLUEPRINT-05`.
 
 ---
 

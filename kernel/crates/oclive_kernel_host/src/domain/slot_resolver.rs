@@ -13,7 +13,7 @@
 //! | `llm` | `.llm` | `LlmBackend` | `Arc<dyn LlmClient>` | Ollama client | `RemoteLlmHttp` | per `directory_plugins.llm` | `NoopLlmClient` |
 //! | `agent` | `.agent` | `AgentBackend` | `Arc<dyn AgentProvider>` | `BuiltinReActAgent` | `AgentRpcProvider` | per `directory_plugins.agent` | `NoopAgentProvider` |
 //!
-//! Facility slot `complex_emotion` (not a six-slot host key) resolves via `pick_complex_emotion_winner` on the same registry.
+//! Facility type `complex_emotion` (not a six-slot host key) resolves via `pick_complex_emotion_winner` on the same registry.
 //! Session override may replace effective `llm` backend before instance bind ([`resolve_with_session_backends`]).
 
 use crate::domain::agent::AgentProvider;

@@ -3,7 +3,17 @@
 [中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 **Scope**: routing only. Architecture, contracts, status, and test facts stay in their topic SSOTs.
-**Last updated**: 2026-09-03.
+**Last updated**: 2026-09-04.
+
+## When documents appear to conflict
+
+1. Use [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) and the [positioning SSOT](../../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) for what OCLive is.
+2. Use [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for where slots, facilities, and side channels belong.
+3. Use [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md) plus the referenced Rust source for what executes today and who commits state.
+4. Use ROLE_PACK_SPEC, PLUGIN_V1, and SETTINGS_REFERENCE for on-disk and wire configuration.
+5. Use TECHNICAL_DEBT plus the relevant RFC for unfinished or frozen work.
+
+In short: positioning defines **what it is**; the module map defines **where it belongs**; code defines **what runs today**; contracts define **how to connect**; debt records **what is not finished**.
 
 ## Choose your role
 
@@ -24,6 +34,7 @@
 | Chat Pro adult role extension | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-adult-role-extension-adult_extensionjson-optional) |
 | Pack / blueprint boundary | [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) |
 | Module map and six slots | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
+| Event Ring, memory proposals, and proactive-turn authorization | [EVENT_RING](../plugin-and-architecture/EVENT_RING.md) |
 | Runtime Event Stream (contract and A.2.2.2-R6 private/no-trusted-history fail-closed policy; Production not implemented) | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) |
 | Plugin contract | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | Directory plugins | [DIRECTORY_PLUGINS](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |

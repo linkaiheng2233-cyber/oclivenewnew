@@ -1,6 +1,6 @@
 # 官方发行版 handoff 索引
 
-> **仓库叙事**：`oclivenewnew` = **内核平台**（`kernel/`）+ **官方发行版集合**（`distros/`）。对外品牌仍为 OCLive / oclivenewnew。
+> **仓库叙事**：`oclivenewnew` 同仓交付 **工具内核与完整参考运行时**（`kernel/`）以及 **官方发行版集合**（`distros/`）。发行版是宿主与默认装配，不定义 OCLive 的最小核心。对外品牌仍为 OCLive / oclivenewnew。
 
 | 发行版 | 目录 | 说明 |
 |--------|------|------|

@@ -1,20 +1,20 @@
 # 六槽 `none` 语义（Module None Semantics）
 
-**状态**：v0.3.x 运行时契约  
-**SSOT 枚举**：`kernel/crates/oclive_validation/src/plugin_backends.rs`（`*Backend::None`）  
+**状态**：当前运行时契约
+**SSOT 枚举**：`kernel/crates/oclive_validation/src/plugin_backends.rs`（`*Backend::None`）
 **Noop 实现**：`kernel/crates/oclive_kernel_host/src/domain/noop_slot_backends.rs`
 
 ---
 
 ## 1. 定位
 
-`plugin_backends.<slot> = none` 表示**该编排槽在本回合不参与业务逻辑**，由零成本 Noop 后端承接 trait 调用，而不是静默回退到 `builtin`。
+当前蓝图实例的 `backend: none` 表示**该编排槽在本回合不参与业务逻辑**，由 Noop 后端承接 trait 调用，而不是静默回退到 `builtin`。legacy `settings.json` 的 `plugin_backends.<slot> = none` 保留相同语义；`PluginBackends` 是当前蓝图解析后的六槽折叠视图，不是另一份磁盘真源。
 
 与发行版 **`host_flags.skip_agent`** 的关系：
 
 | 机制 | 作用域 | 效果 |
 |------|--------|------|
-| `plugin_backends.agent = none` | 角色包 / 会话有效后端 | Agent 槽 Noop；`process()` 返回未处理 |
+| 蓝图 Agent 实例 `backend: none`（折叠后 `plugin_backends.agent = none`） | 角色包 / 会话有效后端 | Agent 槽 Noop；`process()` 返回未处理 |
 | `host_flags.skip_agent = true` | 发行版 `distro.oclive.toml` | 运行时强制 `agent = none`（见 `apply_host_ceiling`） |
 
 二者目标一致；发行版应优先使用 `skip_agent`，角色包可直接声明 `agent: none`。
@@ -38,11 +38,11 @@
 
 ## 3. Agent `remote` / `directory`
 
-v0.3.x+ **已实现** host-orchestrated Agent remote/directory：
+当前已实现 host-orchestrated Agent remote/directory：
 
 - 协议：[AGENT_REMOTE_PROTOCOL.md](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md)
 - MCP 执行统一经 `AgentMcpBridge`；remote/directory 失败（grant 拒绝除外）降级 `BuiltinReActAgent`
-- 蓝图 / settings 允许 `agent` 为 `remote` / `directory` / `none`
+- 当前蓝图允许 Agent 实例为 `remote` / `directory` / `none`；legacy settings 保留同值兼容
 
 ---
 

@@ -58,7 +58,7 @@ distros/chat-pro/roles/{role_id}/
 | `slot_registry` | 槽位实例（管理员） |
 | `groups` | 架构图分组（可选） |
 | `runtime_config` | v4 Stable 引擎策略；v3 仅为双核 Beta 兼容；未知子键按严格契约拒绝 |
-| `pipeline` | v3 双核 `stable` / `experimental`（Proposed） |
+| `pipeline` | 仅 v3 冻结双核 Beta 的 `stable` / `experimental`；feature-gated，默认关闭，不进入 v4 |
 | `includes` | **拉取清单**（见 §4） |
 | `expert_overlay` | 可选指针：`active_revision`、`facility_path`（≤ 少量字段） |
 | `extensions` | **仅 v4**：最小声明外壳，载荷由安全 `config_ref` 外置；当前核心不执行未知 Provider |

@@ -1,6 +1,7 @@
 //! Dual-core `pipeline.*.steps[].action` parsing.
 
-/// Expert facility action supported by the experimental/stable pipeline.
+/// Expert facility action parsed by the frozen-v3 pipeline contract.
+/// Only `pipeline.experimental` is consumed by the current runtime.
 pub const PIPELINE_ACTION_EXPERT_INVOKE: &str = "slot.expert.invoke";
 
 /// A parsed pipeline action.

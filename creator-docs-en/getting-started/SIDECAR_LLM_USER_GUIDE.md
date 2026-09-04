@@ -10,7 +10,7 @@ The **full user-facing guide** (Chinese) is:
 
 - Run a **local HTTP sidecar** that speaks the Oclive remote-plugin JSON-RPC contract.
 - Use **your own API keys** (“BYOK”) for proprietary cloud models where allowed.
-- Align env vars with `plugin_backends` / `remote` slots per [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md).
+- Align env vars with `slot_registry` instances using the `remote` backend per [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md).
 
 See also: [remote_plugin_openai_compat example](../../examples/remote_plugin_openai_compat/README.md).
 

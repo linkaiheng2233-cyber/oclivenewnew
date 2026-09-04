@@ -1,4 +1,4 @@
-﻿# 内核集成方学习路径
+# 内核集成方学习路径
 
 面向 **无头 HTTP、嵌入式、硬件侧二次开发**：在自有设备上拉起与 **oclive 内核** 同契约的运行时。边界必读 [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)；脚手架见 **`oclive-cli`**（`cargo run -p oclive-cli -- …`）。
 
@@ -12,7 +12,7 @@
 | 2 | 理解「纯净内核」与 library / kernel_server 分工 | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | 生成最小无头/库骨架 | `cargo run -p oclive-cli -- init`（交互或 `--non-interactive`；见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)） |
 
-**验收**：能在本机 `cargo build` 生成的骨架工程，并找到生成的 `distros/chat-pro/roles/` 与 `settings.json` 形状说明。
+**验收**：能在本机 `cargo build` 生成的骨架工程，并能区分生成工程的根级 `roles/` / `plugins/` 与主仓 `distros/chat-pro/roles/` / `plugins/`。当前非双核 `init` 示例仍是 legacy `roles/default/settings.json`；新 Stable 角色包以 v4 `pipeline.ocblueprint` 为 SSOT。
 
 ---
 
@@ -22,7 +22,7 @@
 |------|--------|
 | **`process_message` 编排** | 宿主参考实现 **`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`** 与 **`turn_pipeline.rs`**（[handoff/BUS_FACTOR_NOTES.md](../../handoff/BUS_FACTOR_NOTES.md) 摘要） |
 | **`PluginHost` 第 1–6 模块** | **`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`** · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md) |
-| **`plugin_backends` 与兜底** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · 远端失败回退相关设置见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) / 设置页「兜底」 |
+| **`slot_registry`、legacy `plugin_backends` 与兜底** | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) · 远端失败回退相关设置见 [CONFIGURATION_FILES.md](../guides/CONFIGURATION_FILES.md) / 设置页「兜底」 |
 
 **验收**：能描述一条 `send_message` 从入口到 LLM 再持久化的大致阶段名（便于对齐日志）。
 

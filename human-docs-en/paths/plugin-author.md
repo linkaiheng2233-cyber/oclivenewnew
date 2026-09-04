@@ -35,7 +35,7 @@
 
 ## Debugging
 
-- Directory plugins: `{app_data}/distros/chat-pro/plugins/`, `high_risk_grants.json`
+- Directory plugins: `distros/chat-pro/plugins/` in the source tree, `{app_data}/plugins/` for user installs; grants live in `high_risk_grants.json`
 - Log target: `oclive_plugin` (see [05 debugging](../05_DEBUGGING.md))
 - Pack editor: sister repo **oclive-pack-editor**
 

@@ -2,7 +2,7 @@
 
 **读者**：准备修改 OCLive 主仓代码的 Rust / Vue 开发者。
 **目标**：30 分钟跑起来，1 小时找到所属模块，随后只读与任务有关的文档。
-**最后更新**：2026-08-31。
+**最后更新**：2026-09-04。
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
 

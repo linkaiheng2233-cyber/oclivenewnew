@@ -133,14 +133,6 @@ Validated by `oclive pack validate` when the section is present.
 | LTM content / `mention_count` | Decay/reinforce knobs | SQLite `long_term_memory` |
 | Virtual time anchors | `time.speed` etc. | `role_runtime.virtual_time_*` |
 
-### 9.11 `turn_thinking` (Wave F · co-present routing)
-
-**Full schema (Chinese SSOT):** [ROLE_PACK_SPEC.md §9.11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#911-turn_thinkingwave-f) · RFC [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
-
-Optional object for **when to route Deep**, **latch until reconciliation** (e.g. Quarrel → Apology), and **ephemeral_archive** (rule-written situation summary with TTL, injected as `【局面摘要】`). Host defaults OR-merge with pack rules; **no player UI toggle**.
-
-Validated by `oclive pack validate` (signal enums, TTL 1–8). Pack editor UI: **PE-TURN-01** (open in `oclive-pack-editor`).
-
 ### 9.7 `reply_post_processor` (Reply Post-Processor · off by default)
 
 Optional post-LLM reply shaping in **`config.json`**. **Independent channel** — not a six-slot entry and **not** configured in `slot_registry` or blueprints.
@@ -169,9 +161,17 @@ Host does **not** require this; VS Code / clients may inject attitude copy as a 
 
 RFC summary: [RFC_PORTRAIT_FACILITY_SUMMARY.md](../rfc/RFC_PORTRAIT_FACILITY_SUMMARY.md). `config.json` → `portrait_catalog.enabled` loads sibling `portrait_catalog.json`. **Condensed:** EN does not duplicate the full asset-field table — see [ZH §9.9](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#99-portrait_catalog立绘设施--v04--a2-磁盘).
 
-### 9.10 `visual_presentation` (visual stage · draft · off by default)
+### 9.10 `visual_presentation` (directive/gating delivered · render adapters partial · off by default)
 
-RFC summary: [RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md). Fields: `enabled`, `backend` (`none` \| `image` \| `live2d` \| `rig3d` \| `procedural` \| `directory`), `resources`. **No** second AI image-pick here; input is facility-3 `visual_state_id`. Full tables: [ZH §9.10](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#910-visual_presentation视觉表现设施--草案--默认关闭).
+RFC summary: [RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY_SUMMARY.md). Fields: `enabled`, `backend` (`none` \| `image` \| `live2d` \| `rig3d` \| `procedural` \| `directory`), `resources`. **No** second AI image-pick here; input is facility-3 `visual_state_id`. Full tables: [ZH ROLE_PACK_SPEC §9.10](../../creator-docs/role-pack/ROLE_PACK_SPEC.md).
+
+### 9.11 `turn_thinking` (Wave F · co-present routing)
+
+**Full schema (Chinese SSOT):** [ROLE_PACK_SPEC.md §9.11](../../creator-docs/role-pack/ROLE_PACK_SPEC.md#911-turn_thinkingwave-f) · RFC [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
+
+Optional object for **when to route Deep**, **latch until reconciliation** (e.g. Quarrel → Apology), and **ephemeral_archive** (rule-written situation summary with TTL, injected as `【局面摘要】`). Host defaults OR-merge with pack rules; **no player UI toggle**.
+
+Validated by `oclive pack validate` (signal enums, TTL 1–8). Pack editor UI: **PE-TURN-01** (open in `oclive-pack-editor`).
 
 ---
 
@@ -194,7 +194,7 @@ Role packs have two version layers — do not mix them:
 ### Portable Core (`--profile portable-core`)
 
 Portable Core is the cross-distro minimum, not a ceiling on distro features. A v2/v3/v4 pack validated with this profile must provide a non-empty `core_personality.txt`, enable `config.json` → `portrait_catalog.enabled`, and include local `image` assets for the seven stable IDs: `happy_default`, `sad_default`, `angry_default`, `neutral_default`, `excited_default`, `confused_default`, and `shy_default`. Hosts must be able to load the persona and run a basic turn; visual, voice, UI, agent, and hardware extensions remain distro `HostProfile` concerns. Validate with `oclive pack validate <role-dir> --profile portable-core`. Full capability parity is a separate distro conformance test.
-A minimal portable pack still needs a blueprint shell: host scanning only recognizes `pipeline.ocblueprint` (or legacy `manifest.json`) as a role entry, so the seven images plus `core_personality.txt` alone are not enough. The minimal shell is `schema_version` + `meta` (`id` equal to the role folder name, `name`, `version`, `author`, `description`, and at least one `relations` entry) + a `slot_registry` that must be non-empty with at least one `type: llm` instance (allowed backends: `ollama` / `remote` / `directory` / `none`); an empty `{}` is rejected by `pack validate` and host loading. The other five six-slot backends (`memory`, `emotion`, `event`, `prompt`, `agent`) are optional and fall back to builtin defaults at runtime (`PluginBackends::default()`). `complex_emotion` is a separate facility (not one of the six slots) with different semantics: **omitted (no entry) = complex emotion disabled** (provider skipped, no hint produced); explicit `builtin` = enabled; explicit `none` = explicitly disabled (equivalent to omitted, removing implicit ambiguity). This semantic lands with emotion-engine phase-B M1; until then, an absent entry still falls back to builtin at runtime. Full `slot_registry` entries in shipped packs such as `deepseek` / `mumu` reflect Chat Pro distro feature needs (remote models, emotion engine, agent), not minimum-format requirements. `pack create --format-blueprint-v2` scaffolds the fuller seven-slot template, which is a convenience default rather than the minimum.
+A minimal portable pack still needs a blueprint shell: host scanning only recognizes `pipeline.ocblueprint` (or legacy `manifest.json`) as a role entry, so the seven images plus `core_personality.txt` alone are not enough. The minimal shell is `schema_version` + `meta` (`id` equal to the role folder name, `name`, `version`, `author`, `description`, and at least one `relations` entry) + a `slot_registry` that must be non-empty with at least one `type: llm` instance (allowed backends: `ollama` / `remote` / `directory` / `none`); an empty `{}` is rejected by `pack validate` and host loading. The other five six-slot backends (`memory`, `emotion`, `event`, `prompt`, `agent`) are optional and fall back to builtin defaults at runtime (`PluginBackends::default()`). `complex_emotion` is a separate facility (not one of the six slots) with different semantics: **omitted (no entry) = disabled** (resolved to Noop, no hint produced); explicit `builtin` = enabled; explicit `none` = explicitly disabled (equivalent to omitted). This behavior is implemented by emotion-engine phase-B M1. Full `slot_registry` entries in shipped packs such as `deepseek` / `mumu` reflect Chat Pro distro feature needs (remote models, emotion engine, agent), not minimum-format requirements. `pack create --format-blueprint-v2` scaffolds seven entries—six stable slots plus the `complex_emotion` facility—which is a convenience default rather than the minimum or a seven-slot core contract.
 
 Portable state is split into two JSON documents. `.ocpersona` carries the immutable core identity plus an optional mutable-profile snapshot; import may restore only the mutable profile after matching the installed role id and core. `.ocmemory` carries optional creator-authored `memory_seed` entries and runtime long-term memories. Chat logs, short-term cache, and ephemeral situation state are excluded from both. Optional role-pack `memory_seed.json` is read-only at runtime, participates in retrieval without decay, and is never merged into user LTM. Validate with `oclive-cli pack validate-persona` and `validate-memory`; extension data belongs under the top-level `extensions` object.
 

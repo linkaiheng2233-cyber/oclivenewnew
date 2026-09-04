@@ -1,48 +1,52 @@
-# A.I.Live · Pure kernel: boundary, soul, and embedded scope
+# A.I.Live · Minimal tool kernel and current embedded-runtime boundary
 
-This page defines what **A.I.Live** means by a **pure kernel** (engineering codename **oclive**), and how it aligns with the desktop host, headless service, embedded library, and robot **“soul”** delivery. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md). Phases: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md).
+This page separates two meanings that older documents called “pure kernel”: the **minimal conceptual core** and today's embeddable **complete reference runtime** are not the same layer. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md).
 
 [中文](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
 
 ---
 
-## 1. What the pure kernel is
+## 1. Two boundaries
 
-The **pure kernel** is the runtime layer that is **independent of UI**, **independent of board BSP**, and **independent of any single proprietary model vendor**. It is responsible for:
-
-| Responsibility | Anchor in main repo |
-|----------------|---------------------|
-| **Turn orchestration** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
-| **Slot resolution** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → six-slot fold** |
-| **Stable in-process entry** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs`; reuses the same `AppState` / turn pipeline instead of copying orchestration |
-| **Contracts & persistence shape** | `oclive_kernel_types` / `oclive_kernel_contracts` / `oclive_kernel_runtime` · `migrations/001_init.sql` · `oclive_validation` |
-| **Headless entry (transition)** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
+### 1.1 Minimal conceptual core
 
 ```text
-User/device boundary   →  Vue / hardware drivers / sidecar processes (not “kernel”)
-Pure kernel            →  process_message + PluginHost + Repository contracts
-Supported Rust entry   →  OcliveKernel (roles, turns, Event Ring, explicit shutdown)
-Slot implementations   →  builtin / remote / directory / local / ollama …
-Soul data (customizable)→  role pack pipeline.ocblueprint (v2) + personality/knowledge files
+one turn/lifecycle orchestration path
+  + capability-call and merge rules
+  + authoritative state commits, errors, and failure isolation
+  + six stable ports: memory / emotion / event / prompt / llm / agent
 ```
 
-This is **not** the Linux kernel and **not** the full Tauri desktop app.
+The ports are capability interfaces, not six peer decision kernels. Concrete memory/affect algorithms, Prompt templates, model vendors, Event Ring, SQLite, HTTP, Tauri, and role-pack tooling compose around this core. The current co-present health path requires `prompt + llm`; other slots may become thinner through their defined `none` / Noop semantics.
+
+### 1.2 Current complete embedded runtime
+
+`oclive_kernel_host::OcliveKernel` is the supported Rust source-level facade. It reuses the single `process_message` path and exposes role loading, complete/streaming turns, SQLite, plugins, Event Ring, and shutdown lifecycle. It is UI/BSP/vendor independent enough to embed, but the host crate still contains HTTP and many default facilities. Do not call the whole host crate—or all five kernel crates—the physical size of the minimal core.
+
+| Layer | Current anchor | Boundary |
+|-------|----------------|----------|
+| **Minimal-core skeleton** | six traits in `oclive_kernel_contracts`, turn pipeline, core DTO/errors | Conceptually settled; not yet a separately compiled crate |
+| **Complete embedded-runtime facade** | `oclive_kernel_host::OcliveKernel` | Available; includes persistence, Event Ring, HTTP dependencies, and defaults |
+| **Transport/UI hosts** | kernel server, Tauri, Vue, VS Code | Outside the essence; must delegate to the same turn entry |
+
+Physical extraction is tracked by `K-CORE-BOUNDARY-01` in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 ---
 
-## 2. What the pure kernel explicitly excludes
+## 2. What the minimal tool kernel explicitly excludes
 
 - **Vue frontend**, Tauri `invoke`, windows, and themes.
 - **Vendor-specific LLM SDKs** (belong in the `llm` slot: ollama / remote / directory).
 - **Board BSP** (mic drivers, motors, RTOS); integrate via **directory plugins / sidecars / MCP**; the kernel consumes contract-shaped results only.
 - **Creator doc UI**, plugin market site, launcher install UX.
 - **Prompt body language** (pack/model content language); separate from **UI i18n**.
+- **Event Ring execution, SQLite repositories, resource coordination, and concrete slot implementations**; these belong to the reference assembly and collaborate through ports or controlled anchors.
 
 ---
 
-## 3. “Custom soul” delivery unit
+## 3. Role-pack delivery unit
 
-Externally: **soul = versioned data + configurable slot policy**, loaded at runtime by the kernel—not hard-coded in orchestration.
+Externally: a **role delivery unit = versioned data + configurable slot policy**, loaded by the reference runtime rather than hard-coded in orchestration. It is an important portable asset, not minimal-core code.
 
 | Part | Description |
 |------|-------------|
@@ -58,7 +62,7 @@ Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile
 
 ## 4. Where companion emotion sits
 
-Companion behavior is **backend modules + facility modules**, not one black-box “emotion module” (taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)):
+The default companion assembly uses backend modules plus facilities, not one black-box “emotion module”:
 
 - **emotion backend module** + **complex-emotion facility submodule** (facility submodule 1): user affect and cross-turn `narrative_hint`.
 - **expert-model facility submodule** (facility submodule 2): conditional expert sub-pipeline (expert routing); **sibling** of complex-emotion—see [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md).
@@ -66,11 +70,11 @@ Companion behavior is **backend modules + facility modules**, not one black-box 
 - **prompt / llm**: language and persona injection.
 - **agent** (optional): tools and external world (MCP, directory plugins).
 
-The kernel guarantees **call order and DTOs**; quality comes from slots and pack content.
+The kernel guarantees call order, ports, errors, and state-commit boundaries. Quality comes from the model, slot implementations, facilities, and role content. Strong-model assemblies may omit some explicit assistance; small-model assemblies may use thicker candidate generation and Prompt compilation without making helper output the unique semantic truth.
 
 ---
 
-## 5. Deployment shapes and “one steel plate”
+## 5. Deployment shapes of the complete reference runtime
 
 | Shape | Use | Monolith | Notes |
 |-------|-----|----------|-------|
@@ -79,7 +83,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 | **Embedded `library`** | In-process embed with your own `main` | **Not applicable** | Link host + contracts/runtime/types. **`OcliveKernel`** exposes role loading, complete and streaming turns, Event Ring, and persistence; generate it with `oclive-cli init --project-type library --kernel-source` ([KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5) |
 | **HTTP `--api`** | Dev, CI, editor try-chat | N/A | Transition — [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
-**Detachable or welded**: dev-time swappable slots; production optional Monolith weld into one binary—orthogonal to `settings.json`.
+**Detachable or welded**: dev-time swappable slots; production optional Monolith weld into one binary—orthogonal to role runtime configuration (current blueprint `slot_registry` / `runtime_config`, plus legacy `settings.json`).
 
 “Stable” here means the supported **Rust source-level facade**, not a stable C ABI. `AppState`, HTTP routes, and Tauri commands remain composition/transport details; integrators should not assemble a second turn pipeline around them. The facade currently lives in `oclive_kernel_host`: consumers do not start HTTP or Tauri, though that crate still contains the HTTP implementation and its dependencies and can be slimmed further.
 
@@ -91,7 +95,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 
 - Linux user space, devices/gateways with **hundreds of MB RAM** and up.
 - **Rust async**, HTTP/JSON-RPC, directory plugin subprocesses, SQLite persistence.
-- **Same role packs** and `plugin_backends` shape as desktop.
+- **Same current role-pack contract** (blueprint `slot_registry`) as desktop, folded into the same runtime `PluginBackends` six-slot view.
 - On the current desktop development target, an in-process integration test covers file SQLite, role loading, ordinary/streaming turns, Event Ring registration, and an authorized proactive turn.
 - Sidecar LLM (`remote`), local Ollama (`ollama`), hardware via directory plugins.
 
@@ -107,7 +111,7 @@ The kernel guarantees **call order and DTOs**; quality comes from slots and pack
 ## 7. Related links
 
 - Implementation plan: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)
-- Platform developer path: [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
+- Kernel integrator path: [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
 - Current engineering debt: [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) and [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)
 - Doll / hardware delivery pack: **oclive doll core** sibling directory (settings templates, hardware examples); contracts authoritative in this repo.
 - Monolith RFC: [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)

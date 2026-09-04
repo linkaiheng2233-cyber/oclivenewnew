@@ -35,7 +35,7 @@ fn pick_impl(slot: &str) -> Result<BackendImpl> {
             &[
                 "builtin (in-process default implementation)",
                 "remote (HTTP JSON-RPC; needs OCLIVE_REMOTE_PLUGIN_URL, etc.)",
-                "directory (directory plugin; configure plugin_backends.directory_plugins)",
+                "directory (directory plugin; blueprint plugin(s), or legacy directory_plugins)",
                 "none (disable this subsystem; some slots may affect the main chat path)",
             ],
         )
@@ -303,7 +303,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         }
         (None, Some(p)) => {
             let c = crate::init::preset_config(&project_name, p);
-            println!("\nUsing CLI preset={p}; skipping seven-slot multiselect.\n");
+            println!("\nUsing CLI preset={p}; skipping seven-backend multiselect (six slots + complex_emotion facility).\n");
             (c, false)
         }
         (None, None) => {

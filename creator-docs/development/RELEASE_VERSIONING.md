@@ -26,4 +26,4 @@
 - 仅当 **`oclive_kernel_runtime` 主版本** 升级时，同步检查 `min_runtime_version` 与 OOCP 套件。
 - Monolith / 嵌入式交付物版本跟随**生成该二进制的 CLI + 模板**版本记录于 `bench_history.json`（本地，不提交）。
 
-[English](../COMPATIBILITY.md) · [DOCUMENTATION_INDEX](../getting-started/DOCUMENTATION_INDEX.md)
+[English](../../creator-docs-en/development/RELEASE_VERSIONING.md) · [DOCUMENTATION_INDEX](../getting-started/DOCUMENTATION_INDEX.md)

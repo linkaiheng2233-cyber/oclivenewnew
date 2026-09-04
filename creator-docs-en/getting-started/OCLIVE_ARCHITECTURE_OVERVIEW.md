@@ -1,10 +1,10 @@
-# Oclive architecture overview (single-kernel, dual-mode build)
+# Oclive architecture overview: tool kernel, six ports, and reference assembly
 
 **SSOT scope:** public architecture narrative, module numbering, and layering terminology. Module definitions remain in MODULE_MAP; wire contracts remain in their focused contract pages.
 
-**Last updated:** 2026-08-31.
+**Last updated:** 2026-09-05.
 
-This page is the **authoritative public narrative** and **module numbering & taxonomy**: single-kernel dual-mode build, **backend modules (modules 1–6)**, **facility modules (umbrella term)**, **`{Name} facility submodule`** entries (**facility submodule 1, 2, …**), **side-channel capability enhancement modules**, plus **backend-module plugin modules** (not in the module-number series). Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), [RFC_OCLIVE_MONOLITH_MODE.md](../../creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md), [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md), and source.
+This page is the **authoritative public narrative** and module taxonomy. It first defines the minimal tool kernel, then describes the complete reference runtime's six backend modules, facilities, side channels, plugin implementations, and dual build modes. Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), and source.
 
 [中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -12,15 +12,19 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 ## Architecture in brief
 
-**Oclive** uses a **contract-first thin kernel**: turn orchestration (`process_message`), session state, authoritative Event Ring envelopes/routing, and cross-host errors; memory, emotion, event, prompt, LLM, and agent attach as **six PLUGIN_V1 host backend modules** (builtin / Remote / directory). The **complex-emotion facility submodule**, **expert-model facility submodule**, and other **in-orchestration facility modules** are **not** a seventh host slot.
+OCLive's minimal conceptual core is a **contract-first tool kernel**: one turn/lifecycle orchestration path, capability-call/merge rules, authoritative state commits, error semantics, and failure isolation. Memory, emotion, legacy event impact, prompt, LLM, and agent attach through **six stable PLUGIN_V1 capability ports**. Slots supply capabilities, evidence, candidates, context, or action results; they are not six peer authorities.
 
-**Event Ring** is a bounded in-process event perimeter around modules. It occupies no backend slot and does not replace the Stable turn pipeline. The legacy `event` slot estimates dialogue event impact; memory, sensors, and other registered sources may propose events, decision modules admit or reject them, and Rust orchestration remains authoritative over Prompt, reply, and persistence. See [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md).
+The current `oclive_kernel_host::OcliveKernel` is an embeddable **complete reference-runtime facade**. It still physically assembles session state, SQLite, Event Ring, HTTP dependencies, concrete slot implementations, and facilities. It reuses one `process_message`, but it is not yet a separately extracted minimal core. Complex emotion and expert-model facilities are useful reference components, not a seventh slot or a prerequisite for OCLive.
 
-**Delivery** follows distribution-style discipline: HTTP / **OOCP**, role packs, and **`oclive-cli` kernel factory** for headless or desktop hosts; `distros/chat-pro/roles/{roleId}/` is the integration surface.
+**Event Ring** is a reusable facility in the reference runtime. It occupies no backend slot and does not replace the Stable turn pipeline. The legacy `event` slot estimates dialogue event impact; memory, sensors, and other registered sources may propose events, decision modules admit or reject them, and Rust orchestration remains authoritative over Prompt, reply, and persistence. A thinner assembly can follow the six-port contract without Event Ring. See [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md).
+
+OCLive does not mandate fully explicit affect/state modeling or fully implicit model inference. The default reference runtime uses more explicit assistance for local small models; strong-model assemblies can stay thinner. The boundary rule is: **make facts explicit, keep interpretations as candidates, let the model express them**. Today `EmotionResult` is still mainly a seven-number distribution; source/confidence/TTL/scope metadata are a target principle and technical debt, not a shipped universal contract.
+
+**Delivery** uses HTTP / OOCP contracts, role packs, and the `oclive-cli` kernel factory for headless or desktop hosts. The main monorepo uses `distros/chat-pro/roles/{roleId}/`; standalone projects generated by `oclive init` use root-level `roles/{roleId}/`. Kernel integrators may use the Rust facade and six-port contracts directly.
 
 **Build** uses **single-kernel, dual-mode build architecture**: one orchestration contract; **exo-mode** (`PluginHost`) vs **macro-mode** (Monolith weld); dual `[[bin]]` artifacts—**not** two kernel products.
 
-**Open lab** product axis: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
+**Open experimentation** is one supported use of these contracts, not a mandatory product axis for every distro: [VISION_OPEN_LAB.md](../../creator-docs/roadmap/VISION_OPEN_LAB.md).
 
 **Blueprint extensions and resource coordination (phased implementation):** a blueprint keeps only a small namespaced capability declaration. The host now implements a Capability Registry, read-only `ExecutionPlan`, and a unified Resource Coordinator for GPU/RAM/CPU, finite scheduling intent, fair admission, reversible automatic preemption, real llama-server tiers, and owner-scoped third-party registration. The generic contract covers `render` / `compute`; concrete Live2D/3D runtimes remain Provider/distribution deliverables. The extension envelope is not a fifth module category, and resource coordination is not a seventh slot. See [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
 
@@ -30,37 +34,37 @@ This page is the **authoritative public narrative** and **module numbering & tax
 
 | Term | Meaning |
 |------|---------|
-| **Facility module** | **Umbrella term**: in-orchestration kernel capabilities that **do not** use the six `plugin_backends` keys (both unnumbered facilities and registered submodules). There is **no** separate mid-layer such as “expert-model facility module.” |
+| **Facility module** | **Umbrella term**: in-orchestration kernel capabilities that **do not enter the six-field `PluginBackends` fold** (both unnumbered facilities and registered submodules). A facility may still have its own blueprint declaration: `complex_emotion`, for example, may be a `slot_registry.type` without becoming a seventh stable slot. There is **no** separate mid-layer such as “expert-model facility module.” |
 | **`{Name} facility submodule`** | A **registered** item under facility modules (**facility submodule N**); full name = **`{Name}` + `facility submodule`**; each **Name** is independent—do **not** use “expert-model” as a family prefix on other names. |
 | **Expert model** (proper name) | Refers only to the **expert-model facility submodule** and its blueprint / experimental pipeline config—not complex emotion. |
 | **Expert routing** | Default implementation of the **expert-model facility submodule**: `blueprint/includes/expert_routing.json`, triggers + `steps`, optional **`slot.expert.invoke`** (v3 + `dual_core`). |
 
-**Extension (facility submodules):** new registered facilities take **facility submodule 3, 4, …** with full name **`{NewName} facility submodule`** (RFC + doc registry). Do **not** reuse the **expert-model** proper name.
+**Extension (facility submodules):** submodules 3 and 4 are already registered for portrait and visual presentation. New registered facilities therefore continue with **facility submodule 5, 6, …**, using the full name **`{NewName} facility submodule`** (RFC + doc registry). Do **not** reuse the **expert-model** proper name.
 
 ---
 
 ## Module numbering (normative)
 
-Capabilities inside the **pure kernel** split into **four categories**. Do not confuse with the kernel factory’s **recipe · implementation · code** layers ([KERNEL_FACTORY_VISION.md](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)).
+Extensions in the **complete reference runtime** split into four categories. Do not treat all four as minimal-core contents, and do not confuse them with the kernel factory's recipe · implementation · code layers.
 
-| Category | Numbering | In `plugin_backends`? |
-|----------|-----------|------------------------|
-| **Backend modules** | **Modules 1–6** (fixed table below) | **Yes** (six enum fields) |
-| **Facility modules** | **Umbrella**; registered items are **facility submodule N** (separate from modules 1–6) | **No** (orchestration calls) |
-| **Side-channel capability enhancement modules** | **No module or facility submodule number**; registry `id` in [RFC §2](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **No** (dedicated resolver + anchor / standalone API) |
-| **Backend-module plugin modules** | **No “module N” id** | Only an implementation of **module K** |
+| Category | Numbering | Relationship to the six-field `PluginBackends` fold |
+|----------|-----------|------------------------------------------------------|
+| **Backend modules** | **Modules 1–6** (fixed table below) | Declared by the six stable blueprint `slot_registry.type` values, then folded into six fields |
+| **Facility modules** | **Umbrella**; registered items are **facility submodule N** (separate from modules 1–6) | **Outside the six-slot fold**; may have a dedicated blueprint declaration or a direct orchestration call |
+| **Side-channel capability enhancement modules** | **No module or facility submodule number**; registry `id` in [RFC §2](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **Outside the fold**; dedicated resolver + anchor / standalone API |
+| **Backend-module plugin modules** | **No “module N” id** | Implement an existing module K and retain that slot's folded field |
 
 **Extension rules**
 
-- New **backend module** (RFC + host): **module 7**, **module 8**, …
-- New **`{Name} facility submodule`** (RFC + registry): **facility submodule 3, 4, …** (#3 portrait · #4 visual presentation registered in v0.4)
+- The six backend capability ports are the stable v1 taxonomy. New capability normally enters as an existing-slot implementation, facility, side channel, or host capability. Changing the six-port taxonomy requires a real use case, RFC, breaking migration, and compatibility window; it does not automatically become module 7 or 8.
+- New **`{Name} facility submodule`** (RFC + registry): continue with **facility submodule 5, 6, …** (#3 portrait and #4 visual presentation are already registered)
 - New **side-channel capability enhancement module** (RFC + registry): register `id`, anchor or standalone API, optional `provides`; **not** in six slots or facility submodule series ([RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md))
 - New **plugin delivery** (sidecar / directory): **“module K’s xxx plugin implementation”**—does **not** take module 7, a facility submodule number, or a side-channel registry slot.
 
 ### Modules 1–6 (backend modules, fixed)
 
-| No. | `plugin_backends` key | Role |
-|-----|------------------------|------|
+| No. | `slot_registry.type` (folded `PluginBackends` field) | Role |
+|-----|-------------------------------------------------------|------|
 | **Module 1** | `memory` | Memory retrieval/ranking |
 | **Module 2** | `emotion` | User-message emotion analysis |
 | **Module 3** | `event` | Event impact estimation |
@@ -72,8 +76,10 @@ Capabilities inside the **pure kernel** split into **four categories**. Do not c
 
 | No. | Normative full name | Notes |
 |-----|---------------------|-------|
-| **Facility submodule 1** | **Complex-emotion facility submodule** | `narrative_hint`; consumes **module 2**; see below |
+| **Facility submodule 1** | **Complex-emotion facility submodule** | Post-reply resolution and cross-turn `narrative_hint`; module 2 is only one fallback evidence source; see below |
 | **Facility submodule 2** | **Expert-model facility submodule** | Conditional expert sub-pipeline; default impl **expert routing**; see below |
+| **Facility submodule 3** | **Portrait facility submodule** | AI-facing `portrait_catalog` → selected `visual_state_id` |
+| **Facility submodule 4** | **Visual-presentation facility submodule** | Deterministic `visual_state_id` → `performance_directive`; host renders it |
 
 ### Unnumbered facility modules
 
@@ -110,12 +116,15 @@ flowchart TB
     subgraph sub["Facility submodule N ({Name} facility submodule)"]
       F1["① Complex-emotion facility submodule"]
       F2["② Expert-model facility submodule<br/>(expert routing)"]
+      F3["③ Portrait facility submodule"]
+      F4["④ Visual-presentation facility submodule"]
     end
   end
 
   ORCH --> M2
-  M2 --> F1
-  F1 --> M4
+  M2 -.->|fallback evidence| F1
+  M5 -->|post parses [EMO]| F1
+  F1 -.->|persisted carry-over for next turn| M4
   ORCH -.->|experimental + trigger| F2
   F2 -.-> M4 & M5
   ORCH --> back
@@ -130,11 +139,12 @@ flowchart TB
 
 | Item | Detail |
 |------|--------|
-| **Role** | Per-turn `narrative_hint` into Prompt |
-| **Orchestration** | `co_present`: after `emotion.analyze` + context load, before `build_prompt` |
-| **vs module 2** | module 2 = user affect; this submodule = narrative hint |
+| **Role** | Manage cross-turn `narrative_hint`: a valid main-LLM `[EMO]` is authoritative, plugins are fallback only, and the next prompt receives only a content-free carry-over signal |
+| **Orchestration** | `pre` loads the prior hint → `middle` computes deterministic local intensity only for Fast / distro-skip turns → `post_llm` parses and strips `[EMO]`, resolves the current result, and persists it under the contract |
+| **vs module 2** | module 2 analyzes **user-utterance** affect as possible fallback evidence; this facility handles **reply** emotion labels and cross-turn narrative carry-over |
 | **vs expert-model** | **Sibling** `{Name} facility submodule`; does **not** use expert routing |
-| **Today** | `BuiltinKeywordComplexEmotionProvider`; scaffold `complex_emotion` key **ignored** by host |
+| **Today** | Blueprint `slot_registry` may declare a `complex_emotion` facility instance; `PluginHost` / `SlotRunner` resolve it last-wins. `builtin` enables carry-over storage and deterministic Fast intensity; `remote` / `directory` may additionally provide post-LLM fallback; omitted or `none` disables hint reads and writes |
+| **Boundary** | Remote/directory `complex_emotion.resolve_turn` is supported, but the result remains outside the six-field `PluginBackends` fold |
 | **Monolith** | Weld key `complex_emotion` (one of **seven weld keys**), ≠ host slot |
 
 See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTRACT.md).
@@ -162,18 +172,25 @@ See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTR
 | **Dual-mode** | Exo-mode / macro-mode build tiers |
 | **Build** | Dual `[[bin]]`; **not** runtime hot-switch |
 
+| | **Exo-mode** | **Macro-mode** |
+|---|--------------|----------------|
+| **Resolution** | v2/v3/v4 blueprint `slot_registry`; legacy `settings.json` only for compatibility/migration | Statically welded slots from `monolith.toml` |
+| **Turn semantics** | `PluginHost` implementations | Same `process_message` contract; welded hot path remains an evolving factory target |
+
 ---
 
 ## Co-present main chain (numbered)
 
-1. **Facility module:** `PluginHost` resolves **modules 1–6**.
+1. **Host binding:** `PluginHost` resolves **modules 1–6**; this is configuration/assembly, not a seventh facility.
 2. **Module 6:** **agent** may short-circuit a normal, non-staged user turn.
-3. **Pre:** **module 2** `emotion.analyze`, **module 1** `memory.rank_memories`, then personality/relation/context loading.
-4. **Middle:** Turn Thinking, **facility submodule 1** complex emotion, optional knowledge, then **module 3** `event.estimate`.
+3. **Pre:** wave 1 concurrently obtains context/personality, **module 2** `emotion.analyze`, the effective model, prior hint, raw memories, and identity. Time/emotion/memory reinforcement follows, then **module 1** `memory.rank_memories` and relation state/transition loading.
+4. **Middle:** produce a rules-only event estimate first and use it with other evidence to resolve Turn Thinking; run deterministic Fast affect-intensity fallback and optional knowledge. Only when policy allows does **module 3** `event.estimate` invoke its LLM/plugin path and replace the initial estimate. Prompt receives only the content-free signal derived from the prior stored hint.
 5. **Event Ring:** legacy-event compatibility and optional memory-recollection proposal/admission.
 6. **Module 4:** `prompt.build` consumes the resolved context.
-7. **Module 5:** `llm.generate` produces the raw reply.
-8. **Post:** reply emotion, policy/persistence, visual state, reply post-processing, chat write, and response assembly.
+7. **Module 5:** `llm.generate` produces the raw reply and may emit `[EMO]` metadata.
+8. **Post:** strip `[EMO]`; resolve current reply emotion / complex emotion with a valid main marker authoritative and remote/directory used only for a missing/invalid marker. Feed the semantic reply to policy and emotion/relation/memory/portrait state consumers and persistence; save the next-turn hint; then run the single reply post-processor, ordinary co-present `reply_mode`, chat append, and response/visual-directive assembly.
+
+**Cross-turn invariant:** the current prompt can only observe whether a previously stored hint exists; it never receives that raw hint or the current turn's not-yet-produced hint. See [NARRATIVE_HINT_CONTRACT.md](../../creator-docs/testing/NARRATIVE_HINT_CONTRACT.md).
 
 **Experimental (optional):** when triggers match, **facility submodule 2** (**expert-model facility submodule** / expert routing) runs via `slot.expert.invoke`.
 
@@ -186,8 +203,9 @@ Normative Chinese: **独立通道能力增强模块**. Registry SSOT: [RFC_SIDE_
 | `id` | Anchor | `provides` |
 |------|--------|------------|
 | **`user_identity`** | pre-LLM → `build_prompt` | — (role pack `user_identities/`) |
-| **`reply_post_process`** | after built-in `post_llm` → `process_reply` | `reply_post_process` |
+| **`reply_post_process`** | inside `post_llm.rs`, after semantic/state consumers and before chat append → `process_reply` | `reply_post_process` |
 | **`theater_director`** | `generate_theater_scene` / `POST /theater/scene` (outside `process_message`) | `theater_director` (**shipped 2026-06**) |
+| **`voice.asr`** | host input before `send_message`; optional `voice.speak` output | `voice.asr` (**Windows shipped; Linux/macOS profile placeholders**) |
 
 See the Chinese page for diagrams and disambiguation vs Experimental `dual_core`, module 4 Prompt, and module 5 LLM.
 
@@ -208,7 +226,7 @@ See the Chinese page for diagrams and disambiguation vs Experimental `dual_core`
 | Topic | Doc |
 |-------|-----|
 | Slot enums & JSON-RPC | [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
-| `plugin_backends` & complex_emotion key | [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) |
+| Blueprint `slot_registry`, the six-slot fold, and legacy `plugin_backends` | [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) |
 | Expert routing & includes | [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) |
 | Diagram | [KERNEL_AND_MODULES_ARCHITECTURE.md](../../creator-docs/getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) |
 | Blueprint extension envelope / Resource Coordinator | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |

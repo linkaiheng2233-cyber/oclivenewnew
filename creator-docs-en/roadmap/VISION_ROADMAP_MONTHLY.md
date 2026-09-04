@@ -1,6 +1,6 @@
 # oclive vision delivery · monthly plan
 
-This document breaks down the platform vision—**open platform + dual apps + role packs + swappable memory/emotion + optional multilingual plugins**—into **monthly, shippable milestones**. Order may shift with staffing, but **contracts before implementation, default implementations before real plugins** stays fixed.
+This document breaks one product assembly—**minimal tool kernel + usable reference runtime and creator tools + portable role packs + swappable memory/emotion + optional multilingual plugins**—into **monthly, shippable milestones**. It does not define an open-lab platform or dual-app shape as OCLive's essence. Order may shift with staffing, but **contracts before implementation, default implementations before real plugins** stays fixed.
 
 **Product launch (P0)**: current desktop execution lives in **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)** and **[`handoff/TECHNICAL_DEBT_INVENTORY.md`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**; release sign-off follows **[CONTRIBUTING](../../CONTRIBUTING.en.md)** and CI.
 
@@ -13,9 +13,9 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | Pillar | Meaning | Plan items |
 |--------|---------|------------|
 | Open | Not chasing a single SOTA point—**replaceable, documented, versioned** subsystems | Contract docs, trait boundaries, open-source readiness |
-| Dual apps | **Runtime (player)** vs **creator tools**, **role pack** as the only handoff | Pack spec, editor, README split |
+| Dual apps | **Runtime (player)** vs **creator tools**; role packs are their primary portable artifact, while integrators may use the stable facade and six-port contracts directly | Pack spec, editor, README split |
 | Role as workflow | Each pack is declarative config + optional backends | manifest extensions, `min_runtime`, backend enums |
-| Swappable memory / emotion | Seven dimensions are **current defaults**, not platform limits | Memory/Emotion facades, second implementations, future sidecars/WASM |
+| Swappable memory / emotion | Seven dimensions are a **current default implementation**, not the only implementation allowed by the six-port contracts | Memory/Emotion facades, second implementations, future sidecars/WASM |
 | **Soul weight layer** | Speech habits and tone can ship as **LoRA/SFT adapters** alongside prompt/memory; **expert-model facility** switches them at runtime (`slot.lora.apply`), not a closed “personality engine” | Fine-tune workshop (standalone creator tool), pack satellite adapter files, `expert_routing.json`, directory inference plugins |
 
 ---
@@ -26,10 +26,10 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 
 | Deliverable | Notes |
 |-------------|-------|
-| `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | Subsystem DTOs, `settings.json` enums; orchestration order vs `chat_engine` / `PluginHost`. |
+| `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | Subsystem DTOs, blueprint `slot_registry`, and legacy `settings.json` enums; orchestration order vs `chat_engine` / `PluginHost`. |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | Pack version, `schema_version`, `min_runtime_version`, unknown-field policy. |
-| Rust facades | **`PluginHost`**: Memory, Emotion, Event, Prompt, LLM traits; orchestration only in the main path. |
-| `settings.json` | Nested **`plugin_backends`** (`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`); see `plugin_backends.rs`. |
+| Rust facades | The complete reference **`PluginHost`** binds six stable ports: memory, emotion, legacy event, prompt, LLM, and agent. The main path owns call, merge, commit, and isolation authority. |
+| `pipeline.ocblueprint` | Current v2/v3/v4 packs declare instances and backends in **`slot_registry`**; new Stable packs use v4. The host folds the effective registry into a six-key `PluginBackends` compatibility view. `settings.json.plugin_backends` is legacy migration input only. |
 
 **Acceptance**: Full `cargo test`, `npm run build`; dialogue and favor behavior unchanged unless explicitly documented.
 
@@ -42,7 +42,7 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | Deliverable | Notes |
 |-------------|-------|
 | Editor shape | Standalone app or in-app creator mode; prefer **standalone**. |
-| Scope | manifest + basic `settings.json`, **same validation as runtime**. |
+| Scope | Creator-facing `pipeline.ocblueprint` fields plus a bounded advanced blueprint view, using the same `oclive_validation` rules as the host; legacy twin files are import-only. |
 | Export | `distros/chat-pro/roles/{id}/` or zip per `distros/chat-pro/roles/README_MANIFEST.md`. |
 
 **Acceptance**: New/edit pack via editor loads in oclive and chats normally.
@@ -59,7 +59,7 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 | Editor | Optional picker for the second backend. |
 | Regression | Default backend unchanged; switch path tested. |
 
-**Acceptance**: Same pack, only `*_backend` changed → **measurable difference** (logs or fixed fixtures).
+**Acceptance**: Same pack, only the target `slot_registry` instance's `backend` changed → **measurable difference** (logs or fixed fixtures), with no parallel configuration key.
 
 ---
 
@@ -84,7 +84,7 @@ This document breaks down the platform vision—**open platform + dual apps + ro
 
 | Deliverable | Notes |
 |-------------|-------|
-| Pack layout | e.g. `knowledge/` + manifest reference. |
+| Pack layout | e.g. `knowledge/` + current blueprint `meta.knowledge`; legacy manifest references are migration-only. |
 | Runtime | Pre-turn retrieval/injection (keyword or vector—start lightweight). |
 | Editor | Knowledge block editing tied to pack version. |
 

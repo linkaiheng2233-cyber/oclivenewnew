@@ -10,7 +10,7 @@
 
 | # | 约束 | 违反后果 |
 |---|------|----------|
-| G1 | **角色包任务**不改蓝图 `slot_registry`、六槽 `plugin_backends`、发行版 `runtime_config` | 破坏管理员/蓝图边界 → 见 [ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) |
+| G1 | **纯角色内容任务**不改蓝图 `slot_registry` / `runtime_config`，也不改折叠后的六槽 `PluginBackends` 或发行版 `distro.oclive.toml` | 破坏内容作者、蓝图管理员与发行版策略边界 → 见 [ROLE_PACK_BOUNDARY.md](./ROLE_PACK_BOUNDARY.md) |
 | G2 | **不把 RFC Draft 当「未实现」**而删除已接线 wiring | 设施子模块 / 独立通道可能已进主路径 |
 | G3 | **不引用归档文档当 truth**（`handoff/archive/*`、`04_4.6` 快照、`WEEKLY_DEV_GUIDE`） | 路径与行为已与源码脱节 |
 | G4 | 改 **`Cargo.lock`** 后须 `cargo audit` 并更新 [KNOWN_VULNERABILITIES.md](../creator-docs/security/KNOWN_VULNERABILITIES.md) | 供应链门禁失败 |
@@ -162,7 +162,7 @@
 
 | 设施 | SSOT | 允许改动条件 | 禁止 |
 |------|------|--------------|------|
-| 复杂情感 `narrative_hint` | `complex_emotion.rs` · `turn_pipeline/pre` | 设施 bug、Prompt 段落公式 | 写入 `slot_registry` |
+| 复杂情感 `narrative_hint` | `complex_emotion.rs` · `turn_pipeline/pre.rs` · `co_present/run_middle.rs` · `post/post_llm.rs` · `complex_emotion_store.rs` · `NARRATIVE_HINT_CONTRACT.md` | 设施 bug、Prompt 连续性公式、`[EMO]` 解析/插件降级/TTL；蓝图 / backend 任务可配置 `slot_registry` 的 `type: complex_emotion` 设施实例 | 写入 `plugin_backends` 六键、冒充稳定第七槽，或让本轮 Prompt 读取本轮尚未产生的 hint |
 | 立绘 `portrait_catalog` | `config.json` · `persistence.rs` post_llm | 目录解析、规则/导演选择、DTO 回填的契约演进；改动须补设施/热路径测试 | 用文件名当 SSOT |
 | 视觉表现 `visual_presentation` | `config.json` · `visual_presentation` 模块 · RFC | 已交付 directive 物化与发行版 gating；渲染器仍由宿主/适配器负责 | 未经显式配置默认开启或二次 LLM 选图 |
 | 专家路由 `expert_routing.json` | **可选启用 · 默认关** · 见 TECHNICAL_DEBT §2 | 用户显式立项；按 G17 同步路由、插件、Stable 消费、回退、契约、样例与测试 | 扩大默认开启面；让未预声明/未授权的 adapter 绕过目录插件与权限边界 |
@@ -181,16 +181,16 @@
 | 项 | SSOT | 允许改动条件 | 禁止 |
 |----|------|--------------|------|
 | 身份 / 人格 / prompts | `distros/chat-pro/roles/<id>/` · [ROLE_PACK_SPEC.md](../creator-docs/role-pack/ROLE_PACK_SPEC.md) | 角色内容、立绘资源、`reply_quality_anchor` | 改 `slot_registry` / 蓝图 groups |
-| `manifest.json` / `settings.json` | 同上 + `oclive_validation` | 合法新键 + 校验同步 | 虚构表名 / 未文档化顶层键 |
+| legacy `manifest.json` / `settings.json` | `oclive_validation` + 迁移文档 | 只做旧包兼容、迁移与校验同步 | 在新包中继续扩展 legacy 顶层键，或与蓝图并存 |
 | Monorepo 角色目录 | **`distros/chat-pro/roles/`** only | 官方示例包 | 根级 `roles/` 作真源 |
 
 ### 5. 蓝图 / 发行版 profile
 
 | 项 | SSOT | 允许改动条件 | 禁止 |
 |----|------|--------------|------|
-| `pipeline.ocblueprint` | 角色包内 · v2 磁盘真源 | 管理员、架构图写盘路径 | 用 `steps[]` 作首轮调度 DSL |
+| `pipeline.ocblueprint` | 角色包内 · v2/v3/v4 磁盘真源；新包 Stable v4 | 管理员、架构图写盘路径 | 用 `steps[]` 作首轮调度 DSL |
 | `distro.oclive.toml` | [DISTRO_CAPABILITY_PROFILE.md](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) | 发行版差异化 | 在角色任务里改 profile |
-| `runtime_config.dual_core` | 蓝图 · **默认关** | 解冻后 | 默认开启 Experimental 核 |
+| `runtime_config.dual_core` | 冻结 v3 双核 Beta 蓝图 · **默认关** | 仅兼容/实验边界内 | 写入 v4 Stable，或默认开启 Experimental 核 |
 
 ### 6. Desktop 宿主（Tauri v2 capability ACL）
 

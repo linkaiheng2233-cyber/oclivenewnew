@@ -5,7 +5,7 @@
 | 状态 | **已落地**：`oclive-cli` 提供 **`init` / `build` / `bench`**、焊接计划校验、双入口 **`main.rs` + `main_monolith.rs`**；**七焊接键**静态入口以 **`vendor/oclive_monolith_builtin`**（模板见 `kernel/crates/oclive-cli/monolith_vendor/`）为权威来源，可替换为真实 `oclive_*_builtin`。 |
 | 入口 | **`oclive init`** 创建脚手架；**`cargo run -p oclive-cli -- --experimental build|bench`** 维护与对比 Monolith 产物 |
 | 编译配置 | **`monolith.toml`**：由 `init` 生成，**`oclive build`** 读取并再生成 `process_message_monolith.rs`；**不参与运行时**，与角色包/宿主加载路径无关 |
-| 与蓝图边界 | **`pipeline.ocblueprint`**（或 `*.ocblueprint`）描述 **运行时** 编排；**焊接范围不以蓝图字段承载**（避免与 `PIPELINE_SCHEMA` 运行时语义混淆）。Monolith 仅通过 **`monolith.toml` + Cargo feature** 生效。 |
+| 与蓝图边界 | **`pipeline.ocblueprint`** 描述角色运行配置与能力实例；普通 Stable 顺序仍由 `process_message` / `turn_pipeline` 掌握。只有冻结 v3 双核 Beta 的 `pipeline.experimental` 是受限实验 DAG，`pipeline.stable` 不执行。**焊接范围不以蓝图字段承载**；Monolith 仅通过 **`monolith.toml` + Cargo feature** 生效。 |
 | 受众 | **仅开发者**；普通用户只使用开发者构建的发行版，不接触终端 |
 | 本质 | **编译期**优化路径：以模块可替换性换取极限性能（可选、默认关闭），用于打破 **第 1–6 模块** 抽象在 **高频热路径** 上的性能天花板 |
 

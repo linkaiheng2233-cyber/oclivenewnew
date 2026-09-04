@@ -1,4 +1,4 @@
-﻿# Kernel integrator learning path
+# Kernel integrator learning path
 
 For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-compatible runtime. Read [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md). Scaffold with **`oclive-cli`**: `cargo run -p oclive-cli -- …`.
 
@@ -11,10 +11,10 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 | Step | Goal | Read |
 |------|------|------|
 | 1 | Kernel-in-the-middle picture | [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) |
-| 2 | “Pure kernel” scope | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
+| 2 | Minimal-kernel boundary | [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) |
 | 3 | Generate a minimal project | `cargo run -p oclive-cli -- init` ([OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)) |
 
-**Done when:** `cargo build` works in the generated tree and you can locate `distros/chat-pro/roles/` + `settings.json` conventions.
+**Done when:** `cargo build` works in the generated tree and you can distinguish its root-level `roles/` / `plugins/` from the monorepo's `distros/chat-pro/roles/` / `plugins/`. The current non-dual `init` example is still legacy `roles/default/settings.json`; new Stable packs use a v4 `pipeline.ocblueprint` SSOT.
 
 ---
 

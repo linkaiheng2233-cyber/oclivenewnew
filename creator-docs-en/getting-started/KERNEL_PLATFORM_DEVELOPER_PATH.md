@@ -1,6 +1,8 @@
-# Platform developer path: scaffold to deploy (single track)
+# Kernel integrator path: scaffold to deploy (single track)
 
 One minimal path for **integrators / hardware / gateways**, aligned with [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) and [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md).
+
+This path integrates the current **complete reference-runtime facade**, `OcliveKernel`. The filename remains for link compatibility; “platform” is not the definition of OCLive's minimal tool kernel. Physical extraction is tracked by `K-CORE-BOUNDARY-01`.
 
 [中文](../../creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)
 
@@ -20,11 +22,11 @@ One minimal path for **integrators / hardware / gateways**, aligned with [PURE_K
 |------|--------|---------|
 | 1 | `cargo build -p oclive-cli` | CLI ready |
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <repo root> -o <proj> …` | **kernel_server** or **library** with path deps |
-| 3 | Author **`distros/chat-pro/roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
+| 3 | Author a pack under the generated project's root-level **`roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | 4 | Directory plugins / sidecars (optional) | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md), [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <role root> [--profile robot-soul]` | Contract + RobotSoulPack |
 | 6 | Run | Cross-process: **`cargo run -p oclive_kernel_server -- --api`** or **`oclivenewnew-tauri --api`**; in-process: call **`OcliveKernel`** from the generated `library` |
-| 7 | Ship | Binary + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), … |
+| 7 | Ship | Binary + root-level `roles/` + `plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), …; only built-in monorepo examples live under `distros/chat-pro/` |
 
 ---
 
@@ -44,7 +46,7 @@ See [examples/headless-kernel-minimal/README.md](../../examples/headless-kernel-
 
 - **[examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)**
 
-Set `plugin_backends.llm = "remote"` and `OCLIVE_REMOTE_LLM_URL` ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)).
+Set the role blueprint's `type: llm` instance to `backend: remote` and configure `OCLIVE_REMOTE_LLM_URL` ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)).
 
 ---
 
@@ -110,7 +112,7 @@ See [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md) and **`ocl
 | Doc | Role |
 |-----|------|
 | [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) | `init` / `build` / `bench` / `pack` / `dev` |
-| [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) | `plugin_backends` |
+| [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) | Current `slot_registry`, folded backends, and legacy `plugin_backends` |
 | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) | Disk pack + **RobotSoulPack** |
 | [AGENTS.md](../../AGENTS.md) | Collaboration & tests |
 

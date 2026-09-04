@@ -13,7 +13,7 @@
 
 1. **与 `roles` 同级**：将本目录整体复制为  
    `<你的 roles 父目录>/plugins/com.oclive.example.minimal/`  
-   （例如仓库根若存在 `roles/`，则放到 `plugins/com.oclive.example.minimal/`）。
+   （在本 monorepo 中对应 `distros/chat-pro/plugins/com.oclive.example.minimal/`；独立脚手架项目仍可使用根级 `roles/` + `plugins/` 布局）。
 2. **开发者额外根（C1）**：在应用数据目录的 `oclive_host_plugins.json` 中设置  
    `"developer_mode": true`，并把本仓库的 **`examples/`** 或 **`examples/directory-plugin-minimal` 的父目录** 加入 `extra_plugin_roots`（插件根必须是该路径下的**一级子目录**；若直接把本文件夹加入 `extra_plugin_roots`，则路径应指向 **`…/examples/directory-plugin-minimal` 本身**）。
 
@@ -29,9 +29,9 @@
 
 重启应用后，发行构建会把 **`shell.entry`** HTML 挂载到不透明源全屏 iframe；HTML 页经 parent broker 提供的 **`OclivePluginBridge`** 调用 `get_directory_plugin_bootstrap` 并打印 JSON。只有 Vite DEV + `VITE_OCLIVE_UNSAFE_INLINE_PLUGIN_VUE=1` + `force_iframe_mode=false` 同时成立时才会在宿主页内执行 `shell.vueEntry`。`manifest.json` 含 **`"type": "ocliveplugin"`** 与 **`shell.bridge.invoke`**（含 `send_message`、`read:conversation`、`get_current_role` 等权限示例），用于接管主对话能力。
 
-## 与 `plugin_backends` 联调
+## 与六槽联调
 
-在角色包 `settings.json` 的 `plugin_backends` 中为某一模块设置 `directory`，并在 `directory_plugins` 对应槽位填入 **`com.oclive.example.minimal`**。本示例 RPC 实现了最小的 **`memory.rank`**（按输入 memories 原顺序返回 `ordered_ids`），可用于烟测；其它方法返回 JSON-RPC `method_not_found` 类错误属正常。
+在角色包 `pipeline.ocblueprint.slot_registry` 中，将一个 `type: memory` 实例设为 `backend: directory`，并令 `plugin` 为 **`com.oclive.example.minimal`**。本示例 RPC 实现了最小的 **`memory.rank`**（按输入 memories 原顺序返回 `ordered_ids`），可用于烟测；其它方法返回 JSON-RPC `method_not_found` 类错误属正常。legacy v1 包才使用 `settings.json → plugin_backends.directory_plugins`。
 
 ## 文件说明
 

@@ -1,12 +1,14 @@
 # 01 · 简架构
 
-> **最后更新**：2026-09-02
+> **最后更新**：2026-09-04
 > **读者**：已跑通主仓、要理解「一条消息怎么走」的工程师。  
-> **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和四层权力边界。
+> **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和权力边界。
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
 > **下一篇**：[03 术语表](03_GLOSSARY.md) · 逐槽细节 → [MODULE_MAP §4–§12](../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
 配套学习图：[OCLive 架构学习长图（SVG，可无限放大）](assets/oclive-architecture-learning-map.svg) · [PNG](assets/oclive-architecture-learning-map.png)。图是学习摘要，模块定义仍以 MODULE_MAP 与源码为准。
+
+先记住两层：**最小概念核心**只有唯一回合/生命周期编排、权威状态边界和六个稳定能力端口；下面的大图讲的是**当前完整参考运行时**，所以还会出现 Event Ring、SQLite、设施和宿主。它们很重要，但不等于全都属于最小 core。
 
 ---
 
@@ -47,9 +49,9 @@ flowchart TB
 | 阶段 | 文件 | 做什么 |
 |------|------|--------|
 | **pre** | `turn_pipeline/pre.rs` | 人格/关系/身份、用户情绪、STM/LTM 检索 |
-| **middle** | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking、复杂情感、知识、event 估计、Event Ring、关系预览、Prompt |
-| **LLM** | `turn_pipeline/post.rs` + `llm` 槽 | 生成原始 `reply` |
-| **post** | `turn_pipeline/post/post_llm.rs` · `persistence.rs` | 角色回复情绪、策略与状态落地、立绘、回复后处理、聊天写入 |
+| **middle** | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking、Fast 情绪强度降级、知识、event 估计、Event Ring、关系预览、Prompt；Prompt 只接收上一轮情绪余韵的去内容信号 |
+| **LLM** | `turn_pipeline/post.rs` + `llm` 槽 | 生成原始 `reply` 与可选 `[EMO]` |
+| **post** | `turn_pipeline/post/post_llm.rs` · `persistence.rs` | 剥离 `[EMO]`、解析本轮角色回复情绪与复杂情感、保存下一轮 hint，再做策略与状态落地、立绘、回复后处理、聊天写入 |
 
 入口：[`turn_pipeline/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) 的 `execute_turn`。
 
@@ -63,14 +65,16 @@ flowchart TB
 | 检索证据 | STM、LTM、近期对话、知识块 | memory/knowledge |
 | 本轮派生结果 | 用户情绪、事件影响、复杂情感、激活回想 | emotion/event/设施/Event Ring |
 
-第 4 模块 `prompt` 负责把**已经确定有效**的上下文组装成模型输入；第 5 模块 `llm` 消费它。回复后处理面对的是模型输出，不负责倒推或重做上下文决策。
+第 4 模块 `prompt` 负责把**本轮获准进入模型的事实、候选和已提交状态**组装成模型输入；第 5 模块 `llm` 消费它。获准进入不等于语义必然正确：场景/身份/工具结果可以是事实，情绪/意图/回忆意义通常仍应是候选。回复后处理面对模型输出，不负责倒推或重做上下文决策。
+
+复杂情感是一个容易画错的跨轮例子：本轮 Prompt 只能知道“上一轮存在情绪余韵”，看不到 hint 原文；本轮主模型回复后才解析 `[EMO]`，有效标记优先，remote/directory 只作兜底，解析出的 hint 留给下一轮。这样既保留模型判断权，也保留可追踪、可复用的状态契约。
 
 ### 谁能决定什么
 
 | 组件 | 一句话权力 |
 |------|------------|
 | Rust 编排 | 决定阶段、分支、结果何时应用和持久化 |
-| Event Ring | 签发事件身份、来源、注册权重、顺序和因果链 |
+| Event Ring（当前参考运行时设施） | 签发事件身份、来源、注册权重、顺序和因果链 |
 | Event 决策模块 | 决定自己负责的一类提案是否采纳 |
 | 六槽/设施 | 提供检索、分析、估计、组装或生成能力 |
 | 后处理 | 修改最终展示文本，不重做事件与记忆决策 |
@@ -127,11 +131,13 @@ flowchart TB
 
 **逐槽定义、trait、禁止项** → [MODULE_MAP §4–§9](../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
+六槽是稳定能力分类，不表示当前每轮一定调用全部六个实现。共景健康门槛目前是 `prompt + llm`；memory、emotion、event、agent 可以按已定义的 `none` / Noop 语义关闭或变薄。普通扩展也不会自动成为“第七槽”；真的改变六槽分类属于 Breaking 核心契约修订。
+
 ---
 
 ## Event Ring：外环，不是第七槽
 
-Event Ring 不按固定顺序强制所有模块运行。模块先注册自己订阅/允许发射的事件；可信宿主另行分配基础影响权重和失败策略。模块只能提交草案，Ring 负责签发真实来源、权重、顺序和因果链。
+Event Ring 是当前完整参考运行时的一项可复用设施，不是最小核心成立的前提。它不按固定顺序强制所有模块运行。模块先注册自己订阅/允许发射的事件；可信宿主另行分配基础影响权重和失败策略。模块只能提交草案，Ring 负责签发真实来源、权重、顺序和因果链。
 
 当前两条最重要的链：
 
@@ -179,26 +185,26 @@ memory 找到候选 → recall.candidate → event decision
 角色包内容（人设、场景）
   → 蓝图 slot_registry（六槽、引擎策略）
     → 发行版 distro.oclive.toml（HostProfile）
-      → 会话 DB 覆盖（临时）
+      → SessionCache 会话内存覆盖（临时、不写包、不进 SQLite）
 ```
 
-创作者 **只改** 角色包；**不要** 在「改 mumu 文案」任务里动 `slot_registry`。见 [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md)。
+这四层首先表示维护责任面，并非四份同名字段无条件互相覆盖；角色内容与包内蓝图在同一角色包中并列分责。发生重叠时才按有效配置解析链逐层合成，后层也不能突破宿主能力与安全上限。初级创作者只改角色内容层；蓝图由高级作者或宿主管理员维护。**不要**在「改 mumu 文案」任务里动 `slot_registry`。见 [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md)。
 
 ---
 
-## Crate 五层（依赖方向）
+## Crate 五层（主依赖方向）
 
 ```mermaid
-flowchart BT
+flowchart TB
   types[oclive_kernel_types\nDTO]
   contracts[oclive_kernel_contracts\ntrait]
   runtime[oclive_kernel_runtime\nPromptBuilder]
   host[oclive_kernel_host\nprocess_message]
   tauri[desktop-tauri\nIPC 薄壳]
-  types --> contracts --> runtime --> host --> tauri
+  tauri -->|依赖| host -->|依赖| runtime -->|依赖| contracts -->|依赖| types
 ```
 
-口诀：**Types 形状 · Contracts 接口 · Runtime 公式 · Host 流程 · Tauri 入口。**
+图只画主链，省略 host / tauri 对 types、validation 等直接依赖。口诀：**Types 形状 · Contracts 接口 · Runtime 公式 · Host 流程 · Tauri 入口。**
 
 ---
 

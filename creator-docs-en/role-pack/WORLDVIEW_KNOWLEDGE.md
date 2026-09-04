@@ -2,26 +2,28 @@
 
 [中文](../../creator-docs/role-pack/WORLDVIEW_KNOWLEDGE.md)
 
-How **co-present main dialogue** loads Markdown under `distros/chat-pro/roles/{role_id}/knowledge/`, injects into the prompt, and how **`event_hints`** augment [`EventDetector`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) keywords (unrelated to Remote plugin `plugin_backends`).
+How **co-present main dialogue** loads Markdown under `distros/chat-pro/roles/{role_id}/knowledge/`, injects it into the prompt, and how **`event_hints`** augment [`EventDetector`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) keywords (independent of six-slot backend selection).
 
 ## Directory and enable rules
 
-- **Directory name:** fixed **`knowledge/`** (role pack root, sibling to `manifest.json`).
-- **Auto-enable:** when `manifest.json` has **no** `knowledge` field and `knowledge/` exists, load all `.md` files (recursive).
-- **Explicit off:** `"knowledge": { "enabled": false }` in manifest or `settings.json` — no load even if directory exists.
+- **Directory name:** fixed **`knowledge/`** at the role-pack root, beside current `pipeline.ocblueprint`.
+- **Auto-enable:** when current blueprint `meta` has **no** `knowledge` field and `knowledge/` exists, load all `.md` files recursively.
+- **Explicit off:** put `"knowledge": { "enabled": false }` in current blueprint `meta`; legacy manifest/settings blocks remain readable through compatibility merge.
 - **Explicit on, no files:** `enabled: true` but no `.md` from glob → load fails (no silent half-pack).
 
-## Optional block in `manifest.json` / `settings.json`
+## Current blueprint `meta.knowledge` block
 
 ```json
-"knowledge": {
-  "enabled": true,
-  "glob": "knowledge/**/*.md"
+"meta": {
+  "knowledge": {
+    "enabled": true,
+    "glob": "knowledge/**/*.md"
+  }
 }
 ```
 
 - **`glob`:** must start with **`knowledge/`**; implementation recursively enumerates all `.md` under `knowledge/` (consistent with `**/*.md` convention).
-- **`settings.json` `knowledge`** **overrides** merged manifest fields (see [`DiskRoleSettings::apply_to_manifest`](../../kernel/crates/oclive_kernel_types/src/models/role_settings_disk.rs)).
+- **Legacy compatibility:** packs without `pipeline.ocblueprint` still read manifest/settings, where `settings.json.knowledge` overrides the legacy manifest field. New Stable v4 packs should not maintain a second copy.
 
 ## Markdown and YAML front matter
 

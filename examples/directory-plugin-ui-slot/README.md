@@ -4,7 +4,7 @@
 
 ## 使用
 
-1. 将本目录复制到仓库根下 `plugins/com.oclive.example.ui_slot_toolbar/`（或把本目录加入 `oclive_host_plugins.json` 的 `extra_plugin_roots`）。
+1. 在本 monorepo 中，将本目录复制到 `distros/chat-pro/plugins/com.oclive.example.ui_slot_toolbar/`（或把本目录加入 `oclive_host_plugins.json` 的 `extra_plugin_roots`）；独立脚手架项目可使用根级 `plugins/`。
 2. 启动 oclive 主界面（勿配置 `shell_plugin_id` 抢占整壳）。
 3. 对话页输入框上方应出现窄条 iframe；文案会调用 `OclivePluginBridge.invoke('list_roles')` 显示角色数量。
 

@@ -1,25 +1,27 @@
 # 世界观知识（角色包资源）
 
-本页说明 **共景主对话** 如何加载 `distros/chat-pro/roles/{role_id}/knowledge/` 下的 Markdown、注入 Prompt，以及 **`event_hints`** 如何补充 [`EventDetector`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) 的关键词（与 Remote 插件 `plugin_backends` **无关**）。
+本页说明 **共景主对话** 如何加载 `distros/chat-pro/roles/{role_id}/knowledge/` 下的 Markdown、注入 Prompt，以及 **`event_hints`** 如何补充 [`EventDetector`](../../kernel/crates/oclive_kernel_runtime/src/domain/event_detector.rs) 的关键词（与六槽后端选择无关）。
 
 ## 目录与启用规则
 
-- **目录名**：固定为 **`knowledge/`**（位于角色包根目录旁，与 `manifest.json` 同级）。
-- **自动启用**：`manifest.json` **未写** `knowledge` 字段时，若存在 `knowledge/` 目录，则加载其下所有 `.md`（递归）。
-- **显式关闭**：在 manifest 或 `settings.json` 中写 `"knowledge": { "enabled": false }`，即使存在目录也不加载。
+- **目录名**：固定为 **`knowledge/`**（位于角色包根目录，与当前 `pipeline.ocblueprint` 同级）。
+- **自动启用**：当前蓝图 `meta` **未写** `knowledge` 字段时，若存在 `knowledge/` 目录，则加载其下所有 `.md`（递归）。
+- **显式关闭**：在当前蓝图 `meta` 写 `"knowledge": { "enabled": false }`，即使存在目录也不加载。legacy manifest/settings 的同名块仍按兼容合并读取。
 - **显式启用且无文件**：若 `enabled: true` 但 glob 下没有 `.md`，加载失败（避免半包静默）。
 
-## `manifest.json` / `settings.json` 可选块
+## 当前蓝图 `meta.knowledge` 可选块
 
 ```json
-"knowledge": {
-  "enabled": true,
-  "glob": "knowledge/**/*.md"
+"meta": {
+  "knowledge": {
+    "enabled": true,
+    "glob": "knowledge/**/*.md"
+  }
 }
 ```
 
 - **`glob`**：须以 **`knowledge/`** 开头；当前实现递归枚举 `knowledge/` 下全部 `.md`（与 `**/*.md` 约定一致）。
-- **`settings.json`** 中的 `knowledge` 会 **覆盖** manifest 合并后的同名字段（见 [`DiskRoleSettings::apply_to_manifest`](../../kernel/crates/oclive_kernel_types/src/models/role_settings_disk.rs)）。
+- **legacy 兼容**：没有 `pipeline.ocblueprint` 的旧包仍读取 manifest/settings；其中 `settings.json.knowledge` 覆盖 legacy manifest 的同名字段。新 Stable v4 包不要同时维护第二份配置。
 
 ## Markdown 与 YAML front matter
 

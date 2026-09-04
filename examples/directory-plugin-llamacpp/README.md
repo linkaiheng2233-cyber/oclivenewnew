@@ -2,7 +2,7 @@
 
 [English](README.en.md)
 
-本示例把 **`plugin_backends.llm = directory`** 时宿主下发的 **`llm.generate` / `llm.generate_tag`**（JSON-RPC，契约见 [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §4.6）转发到你本机已启动的 **llama.cpp HTTP server**，从而在 **不经过 Ollama** 的情况下完成主对话与低温度标签类调用。
+本示例把角色蓝图 `slot_registry` 中 **LLM 实例 `backend: directory`** 时宿主下发的 **`llm.generate` / `llm.generate_tag`**（JSON-RPC，契约见 [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §4.6）转发到你本机已启动的 **llama.cpp HTTP server**，从而在 **不经过 Ollama** 的情况下完成主对话与低温度标签类调用。该实例在运行时折叠为 `PluginBackends.llm = directory`；后者不是当前角色包磁盘配置写法。
 
 ## 依赖
 
@@ -26,7 +26,7 @@ llama-server -m /path/to/model.gguf --host 127.0.0.1 --port 8080
 
 `<roles 父目录>/plugins/com.oclive.example.llamacpp_llm/`
 
-（与仓库内 `roles/` 同级时，即 `plugins/com.oclive.example.llamacpp_llm/`。）
+（在本 monorepo 中对应 `distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/`；独立脚手架项目仍可使用根级 `roles/` + `plugins/` 布局。）
 
 或使用 **开发者模式** 的 `extra_plugin_roots`（见 [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) §1）。
 
@@ -36,21 +36,19 @@ llama-server -m /path/to/model.gguf --host 127.0.0.1 --port 8080
 
 自动化环境可设 **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`**（勿用于面向用户的发行场景）。
 
-## 角色包 `settings.json` 示例
+## 角色包 `pipeline.ocblueprint` 示例
 
-在对应角色的 **`settings.json`** 中合并（`directory_plugins.llm` 的 id 须与 manifest 中 **`id`** 一致）：
+在对应角色的 **`slot_registry`** 中合并；`plugin` 须与 manifest 中 **`id`** 一致：
 
 ```json
 {
-  "plugin_backends": {
-    "memory": "builtin",
-    "emotion": "builtin",
-    "event": "builtin",
-    "prompt": "builtin",
-    "llm": "directory",
-    "agent": "builtin",
-    "directory_plugins": {
-      "llm": "com.oclive.example.llamacpp_llm"
+  "slot_registry": {
+    "llm": {
+      "type": "llm",
+      "label": "Local llama.cpp",
+      "backend": "directory",
+      "position": 0,
+      "plugin": "com.oclive.example.llamacpp_llm"
     }
   }
 }

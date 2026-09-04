@@ -86,7 +86,7 @@ VS Code `src/discovery.ts` mirrors numeric tiers (comment-linked to Rust). **Spa
 **Target order** (product; **K-SCHED-05** — `discover_spawn_kernel_candidates` still sorts by discovery score today):
 
 1. **Caller bundled** `oclive-kernel-server` (install root / extension `bin/` / Tauri `resources/bin/`)
-2. **Shared fallback** — `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` (full build; same `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` → plugins under `{app_data}/distros/chat-pro/plugins/` **reuse**, no copy)
+2. **Shared fallback** — `%LOCALAPPDATA%/OCLive/runtime/oclive-kernel-server` (full build; same `OCLIVE_APP_DATA` + `OCLIVE_DISTRO_PROFILE` + `OCLIVE_ROLES_DIR` → plugins under `{app_data}/plugins/` **reuse**, no copy)
 3. **Dev builds** — monorepo / `OCLIVE_KERNEL_BINARY` pin (developers only)
 
 If bundled spawn fails (crash, bad manifest, health timeout) → retry shared with **unchanged** distro env. **Fault attribution**: bundled fails but shared + same plugins works → suspect **distro binary**; both fail → suspect **plugins / config / app_data**.

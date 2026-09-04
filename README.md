@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
 
-**发版**：桌面宿主 **0.5.1** · 详见 [CHANGELOG.md](CHANGELOG.md)
+**发版**：桌面宿主 **0.5.2** · 详见 [CHANGELOG.md](CHANGELOG.md)
 
 ## 从哪里开始
 
@@ -25,15 +25,16 @@
 
 ## 这是什么？
 
-**A.I.Live（OCLive）** 不是「又一个定死的 AI 聊天 App」，而是一套 **AI 角色 / 智能体的组装—契约—打包—分发平台**：
+**A.I.Live（OCLive）** 不是“又一个定死的 AI 聊天 App”，也不以集中式平台为本体。它首先是一颗 **用稳定契约组织 AI 角色能力的可嵌入工具内核**：
 
-- 用 **六槽可替换模块**（记忆、情感、事件、Prompt、LLM、Agent）拼出你的角色内核
+- 内核守住唯一回合编排、状态提交、错误与故障隔离
+- **六个稳定能力端口**（记忆、情感、legacy 事件影响、Prompt、LLM、Agent）允许替换实现
 - 用 **角色包**（人设、场景、prompts）独立创作与分发内容
 - **本地优先**：对话与记忆默认在你机器上；云端 API 可选、BYOK
 
-内置角色（如 `distros/chat-pro/roles/mumu`）是 **官方示例**，展示平台能力——**社区角色包与模块生态才是上限**。
+当前仓库还提供一套完整参考运行时：具体六槽实现、SQLite、Event Ring、设施、HTTP/Tauri 与 Chat Pro。内置角色（如 `distros/chat-pro/roles/mumu`）只是官方示例。参考运行时、发行版、编写器和市场可以使用这颗内核，但都不是最小核心。
 
-> **一句话**：OCLive = AI 角色 / 智能体的 **cargo + docker-compose**——开源、本地优先的契约薄核；用可替换、可校验、可打包的模块，在约 30 分钟内组装并分发你自己的角色运行时；**能力上限 = 模块生态上限**（对手做得好的也能接成某一槽的 backend）。
+> **一句话**：OCLive = **一颗工具内核 + 六个稳定能力端口 + 可选参考装配**。你可以使用整套角色运行时，也可以只取接口、契约和需要的模块，做成自己的工具。“角色的 cargo + docker-compose”是组装与分发类比，不是平台锁定。
 >
 > 深度定位：[handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)
 
@@ -59,7 +60,7 @@
 
 ### 例子 4 · 模块作者：只写新能力，其余白送
 
-fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实现 **某一槽** 或 **独立通道**（如 TTS）——人设、UI、对话循环、校验与打包规范由平台提供。第三方目录插件声明 `process:spawn` / `network:*` / `mcp:*` 等能力时，须 **用户显式授权** 后才会执行（未授权则降级，不 silent 越权）。
+fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实现 **某一槽** 或 **独立通道**（如 TTS）——参考宿主与工具链可以提供人设、UI、对话循环、校验和打包规范。第三方目录插件声明 `process:spawn` / `network:*` / `mcp:*` 等能力时，须 **用户显式授权** 后才会执行（未授权则降级，不 silent 越权）。
 
 入门：[PLUGIN_AUTHOR_LEARNING_PATH](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · 权限：[PLUGIN_V1.md](creator-docs/plugin-and-architecture/PLUGIN_V1.md)
 
@@ -72,7 +73,7 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 | 你得到什么 | 积木 + 胶水，**写代码**搭链 | **一道做好的菜**——定死的记忆/情感实现 | **标准化厨房 + 装盘规范**——**组装并打包**你自己的引擎 |
 | 模块可替换 | 有，但无角色领域契约 | 基本不可换实现 | **六槽 + builtin/remote/directory** 统一契约 |
 | 角色内容分发 | 你自己搞 | 绑死在产品里 | **角色包 `.ocpak` / zip**，编写器导出、深链安装 |
-| 上限在哪 | 你的代码 | 厂商那一套实现 | **整个模块生态的并集**（对手做得好的也能接成模块） |
+| 上限在哪 | 你的代码 | 厂商那一套实现 | **不被单一内置实现焊死**；可按契约换模块与模型 |
 
 和 **SillyTavern** 等「前端壳 + 多后端」方案的对照（常问）：
 
@@ -91,8 +92,8 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 
 | 发行版 | `distro_id` | 形态 | 状态 |
 |--------|-------------|------|------|
-| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面（Release hero） | **0.5.1** 主路径 |
-| **VS Code Flash** | `vscode` | 姊妹仓 [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 渗透能力 **插件化**；核心只做聊天平台 |
+| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面（Release hero） | **0.5.2** 主路径 |
+| **VS Code Flash** | `vscode` | 姊妹仓 [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 渗透能力 **插件化**；核心只做轻量聊天宿主 |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | 打包预埋；模式 2 playtest **已解冻** |
 | **dev lab** | `desktop-chat` | 实验场 profile | 日常开发 / 低延迟试验 |
 
@@ -110,7 +111,7 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 | **`process_message` 主编排 + 六槽 `PluginHost`** | 回合语义稳定；换 backend 不换编排公式 |
 | **记忆三套存储解耦** | 聊天日志 / 短期 / 长期 职责分离（删聊天记录 ≠ 清空 AI 记忆） |
 | **G1–G16 改动边界 + CI 门禁** | OOCP S0–S12、Dimension 5 **15** 项、layering ratchet、doc registry——文档与代码 SSOT 绑定 |
-| **角色包 vs 蓝图分责** | 创作者改人设不会误触 `slot_registry`；管理员改编排不会污染内容包 |
+| **角色内容面 vs 包内蓝图配置面分责** | 创作者改人设不会误触 `slot_registry`；管理员改后端选择不会污染角色内容 |
 | **独立通道（如 voice.asr）** | 语音/TTS 等 **不进六槽**，不污染 `process_message` 主链 |
 
 闭源产品可以做一个好看的聊天窗，但很难同时复制：**可校验的分发包格式 + 可替换模块契约 + 四端共用 loader + 发版级测试矩阵**。详见 [架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md)。
@@ -121,12 +122,14 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 
 OCLive 的优化目标不是「把所有能力塞进一个 App」，而是 **正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
 
+**这张分类表描述当前完整参考运行时，不等于最小核心清单。** 最小核心只守编排/权威边界和六端口；Event Ring、设施、存储、宿主与具体实现均可在其外组合。OCLive 也不强制显式或隐式路线：默认实现偏向本地小模型的显式辅助，强模型装配可以更薄。原则是 **事实显式化，判断候选化，表达模型化**。
+
 ### 模块四大类（先建立地图）
 
-| 大类 | 占六槽 `plugin_backends`？ | 例子 |
-|------|---------------------------|------|
-| **第 1–6 后端模块（六槽）** | **是** | memory · emotion · event · prompt · llm · agent |
-| **第 N 设施子模块** | **否**（编排行内） | 复杂情感 hint · 专家路由 · 立绘 · 视觉舞台 |
+| 大类 | 与运行时六字段 `PluginBackends` 折叠的关系 | 例子 |
+|------|--------------------------------------------|------|
+| **第 1–6 后端模块（六槽）** | 当前蓝图按 `slot_registry.type` 声明，宿主折叠为六字段兼容视图 | memory · emotion · event · prompt · llm · agent |
+| **第 N 设施子模块** | **不进入六字段折叠**；可有自己的蓝图注册项 | 复杂情感 hint · 专家路由 · 立绘 · 视觉舞台 |
 | **独立通道能力增强** | **否**（自有 Resolver） | 用户身份 · 回复后处理 · **voice.asr** · 剧场导演 API |
 | **后端模块插件** | 挂在某槽的 `backend` | 第 5 槽的 directory 插件、Remote 侧车 |
 
@@ -136,8 +139,12 @@ OCLive 的优化目标不是「把所有能力塞进一个 App」，而是 **正
 flowchart TB
   PM[process_message 主编排]
   subgraph slots["六槽 · PluginHost"]
-    M1[memory] --- M2[emotion] --- M3[event]
-    M4[prompt] --- M5[llm] --- M6[agent]
+    M1[memory]
+    M2[emotion]
+    M3[event]
+    M4[prompt]
+    M5[llm]
+    M6[agent]
   end
   subgraph fac["设施子模块 · 编排行内"]
     F1[复杂情感] --- F2[专家路由]
@@ -147,7 +154,12 @@ flowchart TB
     S1[voice.asr]
     S2[用户身份 / 后处理]
   end
-  PM --> slots
+  PM --> M1
+  PM --> M2
+  PM --> M3
+  PM --> M4
+  PM --> M5
+  PM --> M6
   PM --> fac
   side -.->|侧钩或圈外 API| PM
 ```
@@ -156,22 +168,22 @@ flowchart TB
 
 | 层 | 做什么 |
 |----|--------|
-| **编译期** | 每槽 `trait` + `PluginHost`；`process_message` 顺序 **固定** |
+| **编译期** | 每槽 `trait` + `PluginHost`；`process_message` 的阶段、权威与提交顺序由 Rust 固定（**不是**按槽号 1→6 线性执行） |
 | **配置期** | 蓝图 `slot_registry` 声明多实例 → 折叠为 `PluginBackends`（memory 去重合并 · llm last-wins） |
 | **运行期** | 会话级 override 可临时换 backend（**不写盘**） |
 
 同一角色里可以把 **memory=builtin**、**llm=remote 侧车**、**emotion=directory 插件** 自由组合——编排公式仍在 `co_present`，不随厂商而变。
 
-### 蓝图 · 角色包 · 发行版（正交四层）
+### 角色内容 · 包内蓝图 · 发行版（正交四层）
 
 | 层 | 谁改 | 典型内容 |
 |----|------|----------|
-| **角色包** | 创作者 | `prompts/`、`core_personality`、场景文案、`voice_profile.json` |
-| **蓝图** | 管理员 | `pipeline.ocblueprint` → **`slot_registry`**、后端路由、`includes/` 卫星文件 |
+| **角色内容（角色包内容面）** | 创作者 | `prompts/`、`core_personality`、场景文案、`voice_profile.json` |
+| **包内蓝图配置** | 管理员 | 同一角色包内的 `pipeline.ocblueprint` → **`slot_registry`**、后端路由、`includes/` 卫星文件 |
 | **发行版** | 宿主 | `distro.oclive.toml` · HostProfile · Turn Thinking 持久化策略 |
-| **会话** | 运行时 | DB 临时 override、好感/记忆状态 |
+| **会话覆盖** | 运行时 | `SessionCache` 内的实例级 slot override（不写角色包、不写 SQLite） |
 
-**重要**：蓝图里的 **`steps[]` 不参与首轮调度**——回合顺序由 Rust `turn_pipeline` 保证，避免「JSON DSL 与代码双 SSOT」漂移。  
+**重要**：蓝图里的 **`steps[]` 不参与首轮调度**——回合顺序由 Rust `turn_pipeline` 保证，避免「JSON DSL 与代码双 SSOT」漂移。好感、情绪、关系和记忆等角色运行时状态另走各自持久化契约，不属于 slot override 配置层。
 分责 SSOT：[ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) · 蓝图目录：[BLUEPRINT_FOLDER_LAYOUT.md](handoff/BLUEPRINT_FOLDER_LAYOUT.md)
 
 ### 单核双态构建：外核 vs 宏核（Monolith）
@@ -182,7 +194,7 @@ flowchart TB
 |--|-------------------|------------------------|
 | 耦合 | 低 · 动态 `PluginHost` | 高 · `monolith.toml` **编译期焊接** |
 | 适用 | 桌面宿主、插件生态、日常开发 | 嵌入式/无头极致性能、工厂脚手架 |
-| 六槽 | `settings` / 蓝图可换 backend | 静态焊死指定实现 |
+| 六槽 | v2/v3/v4 蓝图可换 backend；legacy `settings.json` 仅迁移兼容 | 静态焊死指定实现 |
 
 Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——与运行时六宿主槽 **不是同一计数概念**。详见 [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 
@@ -191,7 +203,7 @@ Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——
 | 项 | 状态 |
 |----|------|
 | **Stable 核** | 当前 Chat Pro 主路径；`co_present` 共景链 |
-| **Experimental 核** | 蓝图 `dual_core.enabled` + **`expert_routing.json`** 条件触发子流程 |
+| **Experimental 核** | 冻结 v3 蓝图 `runtime_config.dual_core.enabled` + **`expert_routing.json`** 条件触发子流程 |
 | **Cargo feature `dual_core`** | **默认不编译**；opt-in 解冻 |
 | **blueprint v3 / 专家路由 UI** | 机制已预埋；产品叙事 **勿暗示「即将默开」** |
 
@@ -202,7 +214,7 @@ Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——
 | 能力 | 与六槽关系 |
 |------|------------|
 | **Turn Thinking（Fast/Deep）** | 编排行策略 · **不是第七槽** |
-| **复杂情感 `narrative_hint`** | 第 1 设施子模块 · 消费 emotion 产出 |
+| **复杂情感 `narrative_hint`** | 第 1 设施子模块 · 主 LLM `[EMO]` 优先、插件降级；本轮结果跨轮保存，下一轮 Prompt 只见去内容余韵信号 |
 | **voice.asr / TTS 扩展** | 独立通道 · **不进** `process_message` 六槽链 |
 | **Kernel 工厂三层** | 配方 / 实现 / 代码 正交 · 双态只动实现层解析 |
 
@@ -222,9 +234,9 @@ Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——
 
 ---
 
-## 路线图 · 开放实验场
+## 路线图 · 可选的开放实验工具
 
-产品主轴：**本地优先、模块可切换、角色包为唯一对接面** 的 **开放实验 harness**——研究者/开发者 **只写新模块**，插进对应槽即可在完整角色里试；人设、存储、UI、回合循环其余部分由平台提供。
+稳定端口可以组成 **开放实验 harness**：研究者/开发者只写新模块，接到对应槽后在同一角色、回合与测试基线上比较；人设、存储、UI 和回合循环可复用参考工具链。这是内核的一种用途，不要求所有下游都采用实验平台形态。
 
 | 阶段 | 要点 |
 |------|------|
@@ -248,11 +260,11 @@ npm run check        # 日常门禁（build + fmt + clippy + test --lib）
 
 | 前置 | 说明 |
 |------|------|
-| Node.js 18+、Rust stable | Windows 另需 **VS Build Tools（MSVC）** |
+| Node.js 22+、Rust stable | Windows 另需 **VS Build Tools（MSVC）** |
 | Ollama | **可选**；未安装也能编译通过，对话需本地 LLM |
 | Cargo 产物 | 默认在仓库外 `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
 
-**安装包说明**：GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) 目前以 **角色包** 等产物为主；桌面客户端需 **克隆本仓后本地构建**（`npm run tauri:dev` / 发版打包流程见 [CONTRIBUTING.md](CONTRIBUTING.md)）。预编译安装器随发行流程补充。
+**安装包说明**：GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) 已提供 **A.I.Live Chat Pro 0.5.0 内测版** Windows x64 MSI / NSIS 安装器（未代码签名、无自动更新）。主分支当前为 **0.5.2**，可能领先于已发布安装器；需要最新源码时请克隆本仓并按 [CONTRIBUTING.md](CONTRIBUTING.md) 本地构建。
 
 分步说明与验收：[human-docs/02_THIRTY_MINUTE_START.md](human-docs/02_THIRTY_MINUTE_START.md)
 

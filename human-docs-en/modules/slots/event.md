@@ -3,7 +3,7 @@
 > Full checklist (ZH): [`human-docs/modules/slots/event.md`](../../../human-docs/modules/slots/event.md)
 > Definition SSOT: [MODULE_MAP §6](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 
-**You plug in**: `plugin_backends` key `event` · trait `EventEstimator` · hook `co_present/run_middle.rs` `EventEstimate` → `publish_legacy_event_impact` → `PersonalityEngine::evolve_by_event`.
+**You plug in**: blueprint `slot_registry.type: event` → folded `PluginBackends.event` (legacy v1: `settings.json.plugin_backends.event`) · trait `EventEstimator` · hook `co_present/run_middle.rs` `EventEstimate` → `publish_legacy_event_impact` → `PersonalityEngine::evolve_by_event`.
 
 This slot estimates dialogue event impact only. It does not own Event Ring envelopes, decision modules, or proactive authorization. See [EVENT_RING](../../../creator-docs-en/plugin-and-architecture/EVENT_RING.md).
 

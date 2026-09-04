@@ -26,7 +26,7 @@ It is **not** a six-slot backend and **not** a numbered facility submodule. It h
 |------|----------|----------------|------|
 | 第 1–6 模块 | 是 | — | `PluginHost` → `process_message` |
 | 设施 ①–④ | 否 | 是 | `turn_pipeline` 编排行内 |
-| **`reply_mode`** | **否** | **否** | `turn_pipeline/post.rs` · post_llm 之后 · 自有 resolver |
+| **`reply_mode`** | **否** | **否** | `turn_pipeline/post/post_llm.rs` · semantic 预处理 + 后处理后的 display 阶段 · 自有 resolver |
 
 归类依据与 `reply_post_process` 一致：两者都是“LLM 输出后、用户看到前”的回复加工，但职责不同。`reply_post_process` 负责文本润色，`reply_mode` 负责分段与展示节奏，因此注册为新的独立通道 id，而不是复用或吞并后处理通道。
 

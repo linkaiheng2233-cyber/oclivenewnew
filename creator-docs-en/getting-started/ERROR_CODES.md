@@ -122,13 +122,13 @@ The host logs `code` / `message` / `data` and may fall back to built-ins. Sugges
 
 ## 3) Minimum info for an issue
 
-1. `error.code`, `error.message`, `error.hint` (if any)  
-2. What you were doing (API probe / send message / auto-start)  
-3. Environment variable **names** only (no secrets):  
-   - `OCLIVE_LLM_BACKEND` (`ollama` / `remote`; launcher may override pack `plugin_backends.llm`)  
-   - `OCLIVE_REMOTE_PLUGIN_URL`  
-   - `OCLIVE_REMOTE_LLM_URL`  
-   - `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS`  
+1. `error.code`, `error.message`, `error.hint` (if any)
+2. What you were doing (API probe / send message / auto-start)
+3. Environment variable **names** only (no secrets):
+   - `OCLIVE_LLM_BACKEND` (`ollama` / `remote`; launcher injection overrides the process-effective LLM backend without rewriting the pack `slot_registry`)
+   - `OCLIVE_REMOTE_PLUGIN_URL`
+   - `OCLIVE_REMOTE_LLM_URL`
+   - `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS`
    - `OCLIVE_REMOTE_LLM_TIMEOUT_MS`
    - `OCLIVE_PLUGIN_INDEX_URL` (community `plugins.json` mirror; offline notes in **§1.6**)
 4. Short log excerpt (`oclive_chat` / `oclive_plugin`)

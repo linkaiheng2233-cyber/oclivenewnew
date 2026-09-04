@@ -11,7 +11,7 @@
 - **oclive_kernel_host**（完整宿主与进程内门面 crate）：**`0.2.0`**；受支持的 Rust 集成入口为 `OcliveKernel`，内部 `AppState` 不是兼容契约。
 - **oclive-cli**（脚手架 CLI）：**`0.1.0`**（`kernel/crates/oclive-cli/Cargo.toml`；**独立 semver**，不强制与桌面宿主同号；`init --kernel-source` 接主仓时以 path 依赖对齐契约）。**默认构建**仅依赖 `oclive_kernel_runtime` + `oclive_validation`（`cargo tree -p oclive-cli --no-default-features` **无** `libsqlite3-sys` / `axum`）。**`doctor config-resolve`** 默认走 runtime 纯解析；**`--via-host`**（feature `diagnostics-host`）可选 in-memory `AppState` 深度诊断。
 - **oclive-pack-editor**（编写器，姊妹仓）：**`0.5.1`**（该仓 `package.json`；与主程序 **0.5.x** 对拍 `ui.json`）
-- **oclive-vscode**（VS Code 扩展，姊妹仓）：**`0.4.1`**（独立 semver；spawn/attach 契约对齐主程序 **≥0.4.0**，推荐 **0.5.2**）
+- **oclive-vscode**（VS Code 扩展，姊妹仓）：**`0.5.0`**（独立 semver；spawn/attach 契约对齐主程序 **≥0.4.0**，推荐 **0.5.2**）
 
 ---
 
@@ -29,15 +29,15 @@
 
 ## 升级与降级行为
 
-1. **主程序版本低于编写器目标**  
-   - **`ui.json`** 中主程序 **不认识的字段**：若 Rust/TS 模型使用 **`serde` 默认 + 可选字段**，通常 **静默忽略**；若某版本改为 **拒绝未知字段**，以该版本 `CHANGELOG` 为准。  
+1. **主程序版本低于编写器目标**
+   - **`ui.json`** 中主程序 **不认识的字段**：若 Rust/TS 模型使用 **`serde` 默认 + 可选字段**，通常 **静默忽略**；若某版本改为 **拒绝未知字段**，以该版本 `CHANGELOG` 为准。
    - **已声明但宿主未实现的插槽**：该插槽在 UI 中可能 **不显示** 或 **无操作**，需升级主程序。
 
-2. **编写器版本低于主程序**  
+2. **编写器版本低于主程序**
    - 主程序 **新插槽 / 新主题键** 可能无法在旧编写器中编辑；可 **手动编辑 `ui.json`** 并参照 [ui.json.schema.json](role-pack/ui.json.schema.json)。
 
-3. **角色包 `settings.json` 与 `plugin_backends`**  
-   - 兼容性与 **`min_runtime_version`**、宿主 `load_role` 校验相关，见 [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、[CHANGELOG.md](../CHANGELOG.md)。
+3. **角色包蓝图与旧配置兼容层**
+   - 当前 Stable v4 以 `pipeline.ocblueprint` 的 `slot_registry`（及可选 `runtime_config` / `extensions`）为磁盘真源；`settings.json` / `plugin_backends` 仅是 legacy 迁移输入。兼容性与 **`min_runtime_version`**、宿主 `load_role` 校验相关，见 [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、[CHANGELOG.md](../CHANGELOG.md)。
 
 ---
 
@@ -73,7 +73,7 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 | **oclive_kernel_host** | `kernel/crates/oclive_kernel_host/Cargo.toml` | HTTP、Tauri 与 `OcliveKernel` 共用完整 `process_message` / SQLite / 插件 / Event Ring 编排 | 当前 **0.2.0**；对外用 `OcliveKernel`，不直接装配 `AppState` |
 | **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | 无 `--kernel-source` 生成 serde 占位；带该参数的 `library` 生成完整 `OcliveKernel` path 依赖与门面 | 与主程序契约对齐见 [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md)、模板 `CONFIG_REFERENCE.md` |
 | **oclive-pack-editor（编写器）** | 另仓 `package.json` | 产出 `distros/chat-pro/roles/{id}/`；**`ui.json`** 与主程序见上文「兼容性表」 | `HOST_RUNTIME_VERSION` 应对齐主程序 `version`（编写器 README） |
-| **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.4.1**；推荐主程序 **0.5.2** |
+| **oclive-vscode（VS Code 扩展）** | 另仓 `package.json` | spawn/attach **`kernel_server --api`**；`distro.oclive.toml` 镜像主仓 `examples/distro-profiles/vscode.oclive.toml` | 当前 **0.5.0**；推荐主程序 **0.5.2** |
 | **oclive-launcher（启动器）** | 另仓 `package.json` | 注入 **`OCLIVE_ROLES_DIR`**、可选模型名与 zip 安装；**不替代**主程序契约 | [启动器 README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **角色包** | `manifest.json`（`schema_version`、`min_runtime_version`） | 低版本主程序可能拒载或降级能力 | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md)、`RoleStorage::load_role` |
 | **宿主 SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | 仅随 **主程序** 发版迁移；**不可**用旧主程序打开新迁移写过的 DB 再降级（除非 CHANGELOG 明确支持） | 破坏性迁移须在 **CHANGELOG 双语** + 本表「破坏性」段写明 |
@@ -82,7 +82,7 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 ### 发版审阅（维护者自检）
 
-1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。  
+1. 核对本节「快照」三处 semver：**根 `package.json`**、**`distros/desktop-tauri/Cargo.toml`**、**`oclive_kernel_runtime`**（发版 bump 时常需同改）。
 2. 按 [CONTRIBUTING](../CONTRIBUTING.md) 与 [版本规则](development/RELEASE_VERSIONING.md) 更新 **对外说明**：若 bump 了契约或姊妹仓依赖，更新本页表格或快照句。
 3. **HTTP / OOCP**：若 `API_VERSION` 或 `RUNTIME_API_VERSION` 变更，必须同步测试套件与文档（见 `creator-docs/testing/OOCP_TEST_SUITE.md`）。
 

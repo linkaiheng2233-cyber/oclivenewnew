@@ -1,8 +1,8 @@
-"# Application Scenario Matrix (Kernel Capability Proof)
+# Application Scenario Matrix (Tool-Kernel Assembly Hypotheses)
 
-This document enumerates concrete product forms that the oclive kernel (`process_message` + six host slots + facility sub-modules + OOCP/MCP) can support. **The goal is to prove: one kernel, infinite scenarios. Role packs are kernel capability.**
+This document explores product forms that OCLive's minimal tool kernel—one orchestration/authority boundary plus six stable capability ports—and its reference runtime may support. The goal is to state which contracts can be reused and which adapters and evidence are still missing. Roadmap ideas are not shipped claims; role packs are portable assets, not kernel code.
 
-Alongside [VISION_OPEN_LAB.md](VISION_OPEN_LAB.md), this is a pillar of the \"open lab\" thesis. It aligns with the monthly roadmap in [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) without binding to specific delivery dates.
+This page expands open experimentation as one optional use of the kernel. It aligns with [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) without binding to delivery dates.
 
 [中文](../../creator-docs/roadmap/APPLICATION_SCENARIOS.md)
 
@@ -11,15 +11,17 @@ Alongside [VISION_OPEN_LAB.md](VISION_OPEN_LAB.md), this is a pillar of the \"op
 ## Core Principle
 
 ```
-One kernel + Different role packs + Different surface shells = Radically different products
+Stable kernel contracts + Scenario-specific capability assembly + Role assets + Host adapters = Different tools
 ```
 
 | What changes | What stays the same |
 |-------------|---------------------|
-| Surface form (desktop window / VS Code extension / voice speaker / mobile app / smart home panel) | `chat_engine::process_message` orchestration |
-| Personality (role pack manifest.json + prompts/ + personality archive) | PluginHost six slots |
-| Interaction protocol (Tauri IPC / OOCP HTTP / MCP stdio) | Complex emotion facility sub-module |
-| External tools (file ops / game engine / home control) | Role pack contract (manifest + pipeline.ocblueprint) |
+| Surface form (desktop / VS Code / speaker / mobile / home panel) | Turn/lifecycle and authoritative state boundary |
+| Persona and content | Semantics of the six stable capability ports |
+| Module thickness (small-model assistance vs thin strong-model assembly) | Distinction among facts, candidates, and committed results |
+| Protocols and external tools | Do not duplicate a second `process_message` authority path |
+
+Not every scenario needs all six concrete implementations, complex emotion, or Event Ring. The current co-present health gate requires at least `prompt + llm`; other capabilities are selected by scenario. “Same kernel” first means the same stable ports and authority boundary, not that today's entire host crate already runs unchanged on every device.
 
 ---
 
@@ -27,15 +29,15 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 | # | Scenario | Form | Key Kernel Capabilities |
 |---|----------|------|------------------------|
-| S1 | **Coding Companion** | VS Code distribution (official shell) | emotion slot monitors editing behavior / personality engine adjusts tone |
+| S1 | **Coding Companion** | VS Code distribution (official shell) | Host supplies opt-in editor context; prompt/LLM generate the role reply; proactive observation needs a separate authorization path |
 | S2 | **Character Casino** | Multi-character game desktop | CoPresent multi-character / agent slot game rules engine / memory for game history |
-| S3 | **AI Theatre** | Multi-character story generator | scene mode / complex emotion facility sub-module / blueprint groups |
-| S4 | **All-Day Embedded Companion** | Smart speaker / robot / wearable | Full six slots + MCP device control + `--template robot-soul` |
+| S3 | **AI Theatre** | Multi-character story generator | scene mode / complex-emotion candidates / a separate future multi-character scheduler; blueprint `groups` only groups instances |
+| S4 | **All-Day Embedded Companion** | Smart speaker / robot / wearable | Resource-aware slot profile + device adapters + `--template robot-soul` |
 | S5 | **Desktop Character Chat** (existing) | Tauri desktop app | Standard 1v1 CoPresent |
 | S6 | **Headless HTTP API** (existing) | Server deployment | `--api` + `POST /chat` + OOCP |
 | S7 | **Mobile Companion** | Mobile app (Tauri mobile / PWA) | Same as S5, different shell |
 | S8 | **Smart Home Hub** | Gateway / home hub | `--template robot-gateway` + MCP home toolchain |
-| S9 | **Robot Emotion Kernel** | Embedded in robot OS | `library-embed` mode / agent slot sensor input |
+| S9 | **Robot Role Runtime** | Embedded in robot OS | Rust `OcliveKernel` facade / typed external observations / agent outputs |
 | S10 | **AI NPC Engine** | Game NPC dialogue backend | CoPresent + scene mode + low-latency Monolith build |
 
 ---
@@ -54,9 +56,9 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 | Kernel capability | What it does in this scenario |
 |-------------------|------------------------------|
-| **Slot 2 (emotion)** | MCP server reads VS Code diagnostics (error count, code change frequency, editing duration), produces `emotion_output` |
-| **Personality engine** | Decides tone direction (mock/care/encourage) based on emotion output + role pack personality archive |
-| **Slot 4 (prompt)** | Injects current file context + errors + personality tone instructions |
+| **Host context adapter** | Reads bounded file/language/selection/diagnostic facts only after user opt-in; it does not impersonate user emotion |
+| **Slot 2 (emotion)** | Provides candidates from user text; it is not the general classifier for editor behavior |
+| **Slot 4 (prompt)** | Injects admitted editor facts, persona material, and candidate hints |
 | **Slot 6 (agent)** | Optional: autonomously suggest refactoring, auto-run tests, operate terminal |
 
 **New adapter layer needed**:
@@ -91,20 +93,21 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 ### S3 · AI Theatre (Multi-Character Story)
 
-**Surface**: Multi-character scene performance, characters take turns speaking according to blueprint `groups`.
+**Surface**: Multi-character scene performance. Turn-taking requires a separate multi-character host/scheduler; blueprint `groups` only organizes same-type slot instances for the architecture view and is not a speaking-order DSL.
 
-**Example**: Three characters meet in a tavern, complex emotion facility drives plot direction.
+**Example**: Three characters meet in a tavern; the complex-emotion facility offers traceable state/narrative candidates, while the model and multi-character host still decide expression and turn order.
 
 **How the kernel does it**:
 
 | Kernel capability | What it does in this scenario |
 |-------------------|------------------------------|
 | **scene mode** | Defines tavern scene, time, character list |
-| **blueprint groups** | Defines inter-character relationships (who knows whom, initial affinity) |
-| **Complex emotion facility** | Generates narrative hints (\"the atmosphere grows tense\", \"she hesitates to speak\"), guiding plot development |
+| **blueprint `groups`** | Groups same-type slot instances for architecture/management UI only; it defines neither character relationships nor execution order |
+| **Character relations / multi-character scheduling** | Role-pack relation data describes who knows whom; a dedicated host decides who speaks when (still a separate implementation) |
+| **Complex emotion facility** | Forms a traceable hint from model output and fallback evidence (for example, lingering tension) as a next-turn/presentation candidate, not a plot authority |
 | **Slot 1 (memory)** | Cross-character shared tavern memory (\"what did that bartender just say\") |
 
-**New adapter layer needed**: Theatre-specific frontend UI (multi-character bubbles, scene background). Kernel capabilities are ready.
+**New adapter layer needed**: Theatre-specific UI (multi-character bubbles, scene background) plus multi-character turn scheduling and isolation policy. The six-port/state contracts are reusable, but `groups` cannot stand in for a delivered multi-character executor.
 
 ---
 
@@ -114,7 +117,7 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 > In the morning, the voice assistant wakes you up. On the subway, you chat on your phone. At work, it keeps you company in VS Code. At night, the smart home reminds you to go to bed.
 
-**One role pack**, running on different devices at different times. One kernel, different surfaces.
+One compatible role pack may be loaded by hosts on different devices. They reuse contracts and role assets; whether they share one process, database, or synchronization service is a deployment choice.
 
 | Time | Device | Surface | What the kernel does |
 |------|--------|---------|---------------------|
@@ -127,7 +130,7 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 | Kernel capability | What it does in cross-device scenario |
 |-------------------|--------------------------------------|
-| **Slot 1 (memory)** | STM shared across devices (via unified SQLite / optional cloud sync), LTM records long-term habits |
+| **Slot 1 (memory)** | LTM may be shared under the cross-host contract; STM is a session buffer and is not advertised as a cross-device source of truth |
 | **Slot 3 (event)** | \"User finished today's coding\" injected as event into memory |
 | **OOCP** | Devices call the same kernel instance via HTTP (or sync database) |
 | **MCP** | Speaker TTS/alarm, phone notifications, home lighting control—all are MCP tools |
@@ -156,7 +159,7 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 **Surface**: Mobile app (Tauri mobile or PWA), role packs usable across desktop and mobile.
 
-**Kernel difference**: Zero. Shares the same kernel with desktop (compiled via `library-embed` mode as `.so`/`.dylib` for mobile invocation, or calling desktop/server kernel instance via OOCP HTTP).
+**Target boundary**: stable ports and turn semantics stay the same, but the mobile host, permissions, storage, and resource budget still need adaptation. The current project exposes a Rust source-level `OcliveKernel` facade, not a stable C ABI; OOCP HTTP is the available integration route until a mobile library delivery is actually verified.
 
 ---
 
@@ -177,21 +180,22 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 ---
 
-### S9 · Robot Emotion Kernel
+### S9 · Robot Role Runtime
 
-**Surface**: Emotion processing unit for physical robots (humanoid/desktop type).
+**Surface**: Role runtime embedded in a physical robot or its gateway.
 
 **How the kernel does it**:
 
 | Kernel capability | What it does in a robot |
 |-------------------|------------------------|
-| **Slot 2 (emotion)** | Sensor input (vision/audio/touch) → emotion analysis |
-| **Complex emotion facility** | Body language narrative hints (\"she tilts her head slightly, fingers unconsciously twisting together\") → corresponding servo motor actions |
-| **Slot 3 (event)** | Physical events (being touched, face recognized, falling) as event estimation |
+| **Input adapter / ExternalObservation** | Types vision/audio/touch facts without impersonating a user message or directly committing character state |
+| **Slot 2 (emotion)** | May provide candidates about human input; it is not the universal classifier for every sensor fact |
+| **Event Ring (optional facility)** | Assigns trusted source and causation to physical-event proposals; decisions and a permit gate proactive turns |
+| **Presentation/device adapter** | Maps committed expression or action intent to servos, panels, and speech; failures must not write false facts back |
 | **Slot 6 (agent)** | MCP controls motors, plays speech, switches expression panel |
-| **`library-embed`** | Compiled as `.so`, embedded in robot main controller ROS/RTOS |
+| **Rust `OcliveKernel` facade** | Supports current in-process Rust integration; ROS/other-language bindings, RTOS support, and a stable ABI remain separate deliverables |
 
-**Difference from typical \"AI robots\"**: Most robots just attach a generic LLM + voice. oclive provides a **six-slot deep-processing emotion pipeline**: sensor input → emotion analysis → narrative hint → memory storage → prompt assembly → response generation → motor action, fully replaceable throughout.
+**Differentiation hypothesis**: OCLive can coordinate input facts, state candidates, model expression, and device actions through stable contracts instead of one unstructured prompt. A robot does not have to enable a thick six-slot emotion pipeline; strong-model and low-resource deployments should both be able to choose thinner assemblies.
 
 ---
 
@@ -236,7 +240,7 @@ One kernel + Different role packs + Different surface shells = Radically differe
 
 | Document | Relationship |
 |----------|-------------|
-| [VISION_OPEN_LAB.md](VISION_OPEN_LAB.md) | This document is its scenario-based expansion: the open lab is not an abstract slogan, but the sum of these concrete product forms |
+| [VISION_OPEN_LAB.md](VISION_OPEN_LAB.md) | This document expands open experimentation as one optional use, not the definition of every product form |
 | [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) | Monthly roadmap focuses on kernel engineering milestones; this document focuses on product-level application narrative |
 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | Terms used here (\"six slots\", \"facility sub-modules\", \"OOCP/MCP\") are authoritatively defined in that document |
 | [KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md) | S8/S9/S10 corresponding templates (`robot-gateway`/`robot-soul`/`library-embed`) are already implemented by factory CLI |

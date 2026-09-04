@@ -1,6 +1,6 @@
-# 纯净内核 / 平台目标 — 实施计划（内核优先）
+# 可嵌入参考运行时 — 实施留痕（最小内核边界优先）
 
-**当前状态（2026-08-31）**：本文保留 K0–K5 的实施留痕；K0–K5 的代码路径已收口，K4 已通过 **`OcliveKernel`** 对称暴露完整进程内编排。**V-EMBED-01 仍为 Partial**：尚缺 Linux/ARM 或真实硬件靶、资源预算与长时 soak；当前状态与后续排期只以 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
+**当前状态（2026-09-03）**：本文保留 K0–K5 的完整参考运行时实施留痕；K0–K5 的代码路径已收口，K4 已通过 **`OcliveKernel`** 对称暴露完整进程内编排。这不表示最小工具内核已经物理抽成独立 crate；该边界只看 `K-CORE-BOUNDARY-01`。**V-EMBED-01 仍为 Partial**：尚缺 Linux/ARM 或真实硬件靶、资源预算与长时 soak；当前状态与后续排期只以 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
 **权威契约**：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 
@@ -12,10 +12,10 @@
 
 | 目标 | 可验收表述 |
 |------|------------|
-| **机器人自定义灵魂** | 仅更换角色包 + `settings.plugin_backends`（在 `min_runtime_version` 内）即可改变陪伴人格与后端策略，**无需改编排代码** |
-| **情感陪伴协作** | 单轮 `process_message` 内 memory / emotion / event / prompt / llm / agent 按契约顺序执行；可替换槽实现 |
+| **机器人自定义灵魂** | 仅更换角色包 + `pipeline.ocblueprint.slot_registry`（在运行时版本契约内）即可改变陪伴人格与后端策略，**无需改编排代码**；legacy 双文件只用于兼容 |
+| **情感陪伴协作** | 单轮 `process_message` 守住调用、合并、提交、错误与隔离边界；仅执行本路径适用的槽实现。当前共景健康门槛是 `prompt + llm`，其余槽可按契约 Noop |
 | **嵌入式与无头** | 硬件方可在 **无 Vue** 条件下联调、部署；`--api` / `kernel_server` 与 `library` 的 **`OcliveKernel`** 共用完整宿主编排；真实硬件证明见 V-EMBED-01 |
-| **AI 软硬件平台基座** | 第三方按 **单线文档** 完成：脚手架 → 角色包 → 插件/侧车 → 校验 → 部署 |
+| **AI 软硬件集成工具** | 第三方按 **单线文档** 完成：脚手架 → 角色包 → 插件/侧车 → 校验 → 部署；无需接受某一种集中式平台形态 |
 
 ---
 
@@ -27,18 +27,18 @@ flowchart LR
   K1 --> K2[K2 runtime lib]
   K2 --> K3[K3 灵魂包]
   K2 --> K4[K4 稳定library门面]
-  K3 --> K5[K5 平台路径]
+  K3 --> K5[K5 集成路径]
   K4 --> K5
 ```
 
 | 阶段 | 目标 | 主要产出 | 清单 |
 |------|------|----------|------|
-| **K0** | 边界定稿 | `PURE_KERNEL_BOUNDARY.md`、本计划 | B1、B3 |
+| **K0** | 职责边界定稿 | `PURE_KERNEL_BOUNDARY.md`、本计划 | B1、B3 |
 | **K1** | 无头可联调 | `examples/headless-kernel-minimal/`、`--api` | B3 过渡 |
-| **K2** | 真内核接榫 | `oclive_kernel_runtime` + `oclive_kernel_host` + `oclive-cli --kernel-source` | B3 |
+| **K2** | 完整参考运行时接榫 | `oclive_kernel_runtime` + `oclive_kernel_host` + `oclive-cli --kernel-source` | B3 |
 | **K3** | 灵魂交付单元 | RobotSoulPack profile + 示例包 | B1 |
 | **K4** | 嵌入式门面 | `OcliveKernel` + 完整 library 生成/编译示例 | B3 |
-| **K5** | 平台一条路径 | `KERNEL_PLATFORM_DEVELOPER_PATH.md` | B4、B5 |
+| **K5** | 集成者一条路径 | `KERNEL_PLATFORM_DEVELOPER_PATH.md` | B4、B5 |
 
 ---
 
@@ -72,7 +72,7 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K2 — 脚手架 → 真内核（核心工程）✅
+## K2 — 脚手架 → 完整参考运行时（核心工程）✅
 
 **目标**：工作区提供可 `path` 依赖的 **`oclive_kernel_runtime`**（DTO / 纯解析基础）与 **`oclive_kernel_host`**（`process_message`、持久化及宿主服务）；桌面 Tauri 与无头 `oclive_kernel_server` 共用 `oclive_kernel_host` 的完整编排。
 
@@ -106,12 +106,12 @@ cd examples/oocp-test-suite && node run.mjs
 **完成标准**
 
 - [x] 在 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 增加 **RobotSoulPack**（`--profile robot-soul`）
-- [x] 最小字段集（草案）：
+- [x] 当时验收的 legacy 最小字段集（历史草案；当前新 Stable 包见 ROLE_PACK_SPEC 的 v4）：
   - `manifest.json`：`id`、`name`、`version`、`min_runtime_version`
   - `settings.json`：`plugin_backends`（六槽显式 + 可选扩展键）、`interaction_mode`、`remote_presence`（可选）
   - `core_personality.txt` 或 `default_personality` 七维（二选一）
 - [x] `oclive-cli pack validate --profile robot-soul`
-- [x] `examples/robot-soul-minimal/distros/chat-pro/roles/default/` 示例目录
+- [x] `examples/robot-soul-minimal/roles/default/` 示例目录
 
 ---
 
@@ -132,7 +132,7 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K5 — 平台开发者一条路径
+## K5 — 内核集成者一条路径
 
 - [x] 撰写 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)（中英）
 - [x] 撰写 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)（中英）：配方 / 实现 / 代码三层与蓝图、Monolith 边界

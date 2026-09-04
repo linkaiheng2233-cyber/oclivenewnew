@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-This example forwards host **`llm.generate` / `llm.generate_tag`** calls (JSON-RPC; see [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §4.6) to a **local llama.cpp HTTP server**, so chat and low-temperature tag tasks can run **without Ollama** when the role pack uses **`plugin_backends.llm = directory`**.
+This example forwards host **`llm.generate` / `llm.generate_tag`** calls (JSON-RPC; see [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §4.6) to a **local llama.cpp HTTP server**, so chat and low-temperature tag tasks can run **without Ollama** when the role blueprint has an LLM `slot_registry` instance with **`backend: directory`**. Runtime folds that instance to `PluginBackends.llm = directory`; the folded view is not the current pack’s disk syntax.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Copy this folder to:
 
 `<roles parent>/plugins/com.oclive.example.llamacpp_llm/`
 
-(e.g. next to repo `roles/` → `plugins/com.oclive.example.llamacpp_llm/`).
+(in this monorepo: `distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/`; standalone scaffold projects may still use root-level `roles/` + `plugins/`).
 
 Or use **developer mode** `extra_plugin_roots` ([DIRECTORY_PLUGINS.md](../../creator-docs-en/plugin-and-architecture/DIRECTORY_PLUGINS.md) §1).
 
@@ -36,21 +36,19 @@ Or use **developer mode** `extra_plugin_roots` ([DIRECTORY_PLUGINS.md](../../cre
 
 For automation only: **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** (not for end-user production builds).
 
-## Role pack `settings.json` (excerpt)
+## Role pack `pipeline.ocblueprint` (excerpt)
 
-`directory_plugins.llm` must match manifest **`id`**:
+Merge this entry into `slot_registry`; `plugin` must match manifest **`id`**:
 
 ```json
 {
-  "plugin_backends": {
-    "memory": "builtin",
-    "emotion": "builtin",
-    "event": "builtin",
-    "prompt": "builtin",
-    "llm": "directory",
-    "agent": "builtin",
-    "directory_plugins": {
-      "llm": "com.oclive.example.llamacpp_llm"
+  "slot_registry": {
+    "llm": {
+      "type": "llm",
+      "label": "Local llama.cpp",
+      "backend": "directory",
+      "position": 0,
+      "plugin": "com.oclive.example.llamacpp_llm"
     }
   }
 }

@@ -86,7 +86,7 @@ Copy `MANIFEST.json` + `voice_model_pack.json` from [`tts/cosyvoice2-0.5b/`](tts
 
 ### Python runtime (CosyVoice2 sidecar)
 
-Inference deps SSOT: [`examples/voice-loop-minimal/requirements-cosyvoice-inference.txt`](../../../../examples/voice-loop-minimal/requirements-cosyvoice-inference.txt).
+Inference deps SSOT: [`examples/voice-loop-minimal/requirements-cosyvoice-inference.txt`](../../../../../examples/voice-loop-minimal/requirements-cosyvoice-inference.txt).
 
 ```powershell
 cd examples/voice-loop-minimal
@@ -170,7 +170,7 @@ $warmJson | .\.venv-cosyvoice\Scripts\python.exe -m tts.synthesize
 
 **Latency tip (optional):** install `onnxruntime-gpu` in `.venv-cosyvoice` if ONNX frontend CPU warnings appear during warm — often reduces first-chunk synthesis time on NVIDIA GPUs.
 
-**Piper** is **not** a product fallback. Dev-only: [`examples/voice-loop-minimal/models/tts/sherpa-piper-zh/`](../../../../examples/voice-loop-minimal/models/tts/sherpa-piper-zh/).
+**Piper** is **not** a product fallback. Dev-only: [`examples/voice-loop-minimal/models/tts/sherpa-piper-zh/`](../../../../../examples/voice-loop-minimal/models/tts/sherpa-piper-zh/).
 
 
 

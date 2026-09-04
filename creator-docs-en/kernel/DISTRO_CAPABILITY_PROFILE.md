@@ -4,7 +4,7 @@
 
 **Status**: P1 contract (schema + examples) **Done**; P4 profile scheduling (`HostProfile` load & merge) **Done** (`host_profile.rs` / `OCLIVE_DISTRO_PROFILE` on spawn).  
 **Audience**: Desktop, VS Code, launcher, hardware distro integrators.  
-**SSOT module shape**: Aligned with role-pack `settings.json` → `plugin_backends`; see [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) and `kernel/crates/oclive_validation/src/plugin_backends.rs`.
+**Runtime module shape**: HostProfile `[plugin_backends]` reuses the folded six-slot `PluginBackends` shape. The role-pack disk SSOT is `pipeline.ocblueprint` → `slot_registry`; legacy `settings.json` is migration-only. See [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) and `kernel/crates/oclive_validation/src/plugin_backends.rs`.
 
 ---
 
@@ -13,10 +13,10 @@
 | Layer | File | Role |
 |-------|------|------|
 | **Distro** | `distro.oclive.toml` at distro root (next to bundled `bin/`) | **HostProfile** at spawn: prompt/memory/post_process, `host_flags`, optional **`[plugin_backends]` full-table replace** |
-| **Role pack** | `pipeline.ocblueprint` → `slot_registry` (v2); legacy `settings.json` | Six-slot defaults; may be **fully replaced** by distro profile when `[plugin_backends]` is declared |
-| **Session** | Host DB / session override | Temporary field overrides on effective backends |
+| **Role pack** | `pipeline.ocblueprint` → `slot_registry` (v2/v3/v4 exact dispatch); legacy `settings.json` | Six-slot defaults; may be **fully replaced** by distro profile when `[plugin_backends]` is declared |
+| **Session** | In-process `SessionCache` / `set_session_slot_override` | Temporary field overrides on effective backends; no pack write and no SQLite persistence |
 
-**Not in**: blueprint `runtime_config` (v3 frozen). **Not** Monolith `monolith.toml` (compile-time only). Post-process chain RFC: [RFC_OCLIVE_POST_PROCESS_CHAIN.md](../../creator-docs/rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) (ZH).
+**HostProfile is not stored in** blueprint `runtime_config`: HostProfile is distro policy, while `runtime_config` is in-pack configuration (Stable v4; frozen v3 dual-core Beta). It is also **not** Monolith `monolith.toml` (compile-time only). Post-process chain RFC: [RFC_OCLIVE_POST_PROCESS_CHAIN.md](../../creator-docs/rfc/RFC_OCLIVE_POST_PROCESS_CHAIN.md) (ZH).
 
 **Kernel binary**: Config describes expected module matrix at spawn — **not** binary trimming. Process selection: [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md).
 
@@ -112,9 +112,9 @@ Same as role pack (`snake_case`): memory, emotion, event, prompt, llm, agent —
 ### 3.2 `host_flags` and `slots`
 
 - **`skip_agent`**: Force `agent = none` at runtime.
-- **`skip_complex_emotion`**: Skip co-present complex emotion.
+- **`skip_complex_emotion`**: Skip Deep/plugin complex-emotion provider work. Co-present middle still retains deterministic local intensity for downstream consumers; prior-hint continuity and main-LLM `[EMO]` parsing follow [NARRATIVE_HINT_CONTRACT](../testing/NARRATIVE_HINT_CONTRACT.md).
 - **`event_impact_llm = false`**: Skip event LLM `estimate_event_impact` globally; rules path still runs. `OCLIVE_EVENT_IMPACT_LLM=0` equivalent.
-- **`slots.complex_emotion = off`**: Same as `skip_complex_emotion` (either off → closed).
+- **`slots.complex_emotion = off`**: Sets the same host skip flag. This is a provider/cost ceiling, not a seventh slot and not a replacement for the pack-level `slot_registry` hint-read/write gate.
 
 ### 3.2.1 `[turn_thinking]` (orchestration · not a six-slot)
 
@@ -173,7 +173,7 @@ The implementation covers NVIDIA, system-RAM, and CPU snapshots; atomic pending 
 | `visual_presentation.mode` | Pack default | `off` / `image_only` / `stage_full` |
 | `[theater].director_plugin` | unset | official theater director plugin id |
 
-**Merge (reply post-process)**: `chain=minimal` → effective `builtin.profile=minimal`. **User identity**: DB override → profile `default_id` → catalog default.
+**Merge (reply post-process)**: `chain=minimal` → effective `builtin.profile=minimal`. **User identity is persistent SQLite role runtime state, not a six-slot SessionCache override**: global resolution is explicit DB id → profile `default_id` only in the compatibility state where manifest-default is disabled but the DB id is absent → catalog default → legacy; per-scene resolution is scene DB id → catalog default → legacy. See debt `K-UID-DEFAULT-02`.
 
 ---
 
@@ -198,7 +198,7 @@ In `effective_plugin_backends_for_session` (`host_backends.rs`):
 | Scenario | Behavior |
 |----------|----------|
 | Cold start | Spawn **distro bundled** `oclive-kernel-server` first |
-| Bundled fails | Spawn **shared** fallback with same `OCLIVE_APP_DATA` + profile + roles; plugins under `{app_data}/distros/chat-pro/plugins/` reused |
+| Bundled fails | Spawn **shared** fallback with same `OCLIVE_APP_DATA` + profile + roles; plugins under `{app_data}/plugins/` reused |
 | `promote` | Developer maintenance — not default end-user path |
 
 See [DISTRO_KERNEL_LIFECYCLE.md](DISTRO_KERNEL_LIFECYCLE.md).

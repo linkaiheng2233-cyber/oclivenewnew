@@ -1,12 +1,12 @@
-//! # Role pack disk loading (including blueprint v2)
+//! # Role pack disk loading (blueprint v2/v3/v4 plus legacy)
 //!
 //! ## Blueprint → kernel executable state (data flow)
 //!
 //! ```text
 //! roles/{id}/pipeline.ocblueprint
-//!   → read file + JSON parse (oclive_validation::load_blueprint_v2_for_role_dir)
-//!   → schema / business validation (slot_registry, groups, interaction_mode…)
-//!   → Role { slot_registry, plugin_backends, slot_groups, … }
+//!   → read schema_version and dispatch to the matching oclive_validation loader
+//!   → schema / business validation (slot_registry, groups, runtime_config, extensions…)
+//!   → Role { slot_registry, folded plugin_backends, slot_groups, runtime_config, extensions, … }
 //!   → PluginHost::resolve_for_role / resolve_for_effective_backends
 //!   → SlotResolver::resolve → ResolvedRoleSlots
 //!   → process_message / co_present → SlotRunner merge execution by slot type

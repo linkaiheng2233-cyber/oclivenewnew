@@ -2,7 +2,7 @@
 
 **用途**：统一项目内核心概念的**权威名称**、crate 职责边界、canonical import 路径，以及禁止使用的别名。  
 **读者**：Rust / 前端贡献者、Cursor / Agent、姊妹仓集成方。  
-**状态**：2026-06-06 首版；2026-08-31 补充 Event Ring 权威术语；与 [AGENTS.md](../AGENTS.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) 对齐。
+**状态**：2026-06-06 首版；2026-09-04 拆分最小工具内核与完整参考运行时，并校正蓝图折叠、调用顺序与依赖方向；与 [AGENTS.md](../AGENTS.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) 对齐。
 **范围**：文档与术语；**不**触发 crate 重命名或运行时代码变更。
 
 [English summary in §0](#0-english-summary)
@@ -13,13 +13,15 @@
 
 This page is the **naming SSOT** for OCLive. Key rules:
 
-1. **Six host slots** = `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` (v2: `slot_registry`; legacy: `plugin_backends`).
-2. **Facility modules** = in-orchestration kernel extensions **not** in the six slots (e.g. complex emotion, expert routing).
-3. **Kernel crates** are **not** renamed in v0.2.x; use the [crate quick-reference](#3-crate-层级速查表) instead.
-4. **`pipeline.ocblueprint`** is a **frozen filename**; conceptually call it **blueprint file** — it is **not** a step-scheduling DSL.
-5. **`dual_core`** = feature/config gate; **`dual_pipeline`** = Rust orchestrator + blueprint `pipeline.{stable,experimental}` section.
-6. **Canonical imports**: DTOs → `oclive_kernel_types`; traits → `oclive_kernel_contracts`; orchestration → `oclive_kernel_host::domain::…`.
-7. **Normative creator docs**: Chinese under `creator-docs/`; English mirrors under `creator-docs-en/`. Crate / module READMEs: **English body**, Chinese notes optional.
+1. **Minimal tool kernel** = one turn/lifecycle orchestration and authority boundary + six stable capability ports.
+2. **Six host slots** = `memory` / `emotion` / legacy `event` / `prompt` / `llm` / `agent` (v2: `slot_registry`; legacy: `plugin_backends`).
+3. **Complete reference runtime** = the current embeddable `OcliveKernel` facade plus persistence, Event Ring, facilities, concrete implementations, and transport dependencies; it is not the physical minimal core.
+4. **Facility modules** = reference-runtime extensions **not** in the six slots (e.g. complex emotion, expert routing).
+5. **Kernel crates** are **not** renamed in v0.2.x; use the [crate quick-reference](#3-crate-层级速查表) instead.
+6. **`pipeline.ocblueprint`** is a **frozen filename**; conceptually call it **blueprint file** — it is **not** a step-scheduling DSL.
+7. **`dual_core`** = feature/config gate; **`dual_pipeline`** = Rust orchestrator + blueprint `pipeline.{stable,experimental}` section.
+8. **Canonical imports**: DTOs → `oclive_kernel_types`; traits → `oclive_kernel_contracts`; orchestration → `oclive_kernel_host::domain::…`.
+9. **Normative creator docs**: Chinese under `creator-docs/`; English mirrors under `creator-docs-en/`. Crate / module READMEs: **English body**, Chinese notes optional.
 
 ---
 
@@ -31,32 +33,34 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 权威名（中文） | Authoritative English | 定义 | 典型实例 / 路径 |
 |----------------|----------------------|------|-----------------|
-| **内核** | **kernel** | 负责回合编排、会话状态、DB、HTTP API 的无 UI 逻辑 | `oclive_kernel_host`、`oclive-kernel-server --api` |
+| **最小工具内核** | **minimal tool kernel** | 唯一回合/生命周期编排、能力调用/合并、权威状态提交、错误/隔离边界 + 六个稳定能力端口；当前是职责边界，尚未独立成 crate | `oclive_kernel_contracts` 六 trait + `process_message` 核心骨架 |
+| **完整参考运行时** | **complete reference runtime** | 当前可嵌入门面及其会话、SQLite、Event Ring、具体实现、设施与传输依赖 | `oclive_kernel_host::OcliveKernel` |
+| **内核** | **kernel** | 未加限定时优先指最小工具内核；描述现有部署物时必须写“完整参考运行时”或具体 crate | 见上两行 |
 | **内核宿主 crate** | **kernel host crate** | 编排 + 持久化 + HTTP 的 Rust 库 crate 名 | `oclive_kernel_host`（**不是**「发行版宿主」） |
 | **发行版** | **distro** | 面向用户的前端壳 + 集成逻辑 | 桌面 `oclivenewnew-tauri`、VS Code 扩展、未来游戏壳 |
 | **宿主进程** | **host process** | 运行某发行版的 OS 进程；可 attach 或 spawn 内核 | Tauri 桌面进程、VS Code extension host |
 | **单写者内核** | **single-writer kernel** | 同一时刻一个 `:8420` 进程写 `app.db` | [DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
 | **角色包** | **role pack** | 身份、人格、关系、`prompts/` 等内容 | `distros/chat-pro/roles/{id}/` |
 | **蓝图** | **blueprint** | 槽位实例、后端路由、模型、交互/记忆策略、双核开关等系统配置 | `pipeline.ocblueprint` 内 `slot_registry`、`runtime_config` 等 |
-| **契约型薄核** | **contract-type thin kernel** | 内核拥有编排、状态、Event Ring 权威字段与跨宿主错误语义；领域能力经槽位/模块接入 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **契约型薄核** | **contract-first thin kernel** | 最小工具内核拥有编排、提交和错误边界；领域能力经六端口接入。Event Ring 是可选参考运行时设施，不在该词的必要定义内 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
 
 > **消歧**：中文「宿主」在口语中可能指「发行版进程」或 `oclive_kernel_host` crate。文档中应写全：**发行版宿主进程** vs **内核宿主 crate（`oclive_kernel_host`）**。
 
 ### 1.2 模块分类（与六槽正交）
 
-| 权威名（中文） | Authoritative English | 是否写入 `plugin_backends` / `slot_registry` | 说明 |
-|----------------|----------------------|---------------------------------------------|------|
-| **后端模块（第 1–6 模块）** | **backend module (slots 1–6)** | **是**（v2：`slot_registry.type`） | 六宿主语义槽 |
-| **六槽 / 六宿主槽** | **six host slots** | 同上 | 与「第 1–6 模块」同义；**优先在架构文档用「第 N 模块」** |
-| **设施模块** | **facility module** | **否** | 编排行内、不占六键的统称 |
-| **第 N 设施子模块** | **facility submodule N** | **否** | 已登记编号；全名 = `{专名}` + `设施子模块` |
-| **第 1 设施子模块（复杂情感）** | **complex emotion facility submodule** | 否 | 代码：`complex_emotion`、`narrative_hint` |
-| **第 2 设施子模块（专家模型）** | **expert model facility submodule** | 否 | 默认实现：**专家路由** `expert_routing.json` |
-| **第 3 设施子模块（立绘）** | **portrait facility submodule** | 否 | 代码：`portrait_catalog`、`visual_state_id`；实现口语：**表现导演** |
-| **第 4 设施子模块（视觉表现）** | **visual presentation facility submodule** | 否 | 代码：`visual_presentation`、`performance_directive`；产品口语：**角色舞台** |
+| 权威名（中文） | Authoritative English | 与六槽折叠 / 蓝图的关系 | 说明 |
+|----------------|----------------------|--------------------------|------|
+| **后端模块（第 1–6 模块）** | **backend module (slots 1–6)** | 六种稳定 `slot_registry.type` → 六字段 `PluginBackends` 折叠 | 六宿主语义槽 |
+| **六槽 / 六宿主槽** | **six host slots** | 同上 | 与「第 1–6 模块」同义；稳定 v1 分类，普通扩展不顺延为第七槽 |
+| **设施模块** | **facility module** | **不进入六槽折叠**；可有自有蓝图声明 | 编排行内、不占六键的统称 |
+| **第 N 设施子模块** | **facility submodule N** | **不进入六槽折叠** | 已登记编号；全名 = `{专名}` + `设施子模块` |
+| **第 1 设施子模块（复杂情感）** | **complex emotion facility submodule** | 可用 `slot_registry.type: complex_emotion`；不进入六槽折叠 | 代码：`complex_emotion`、`narrative_hint` |
+| **第 2 设施子模块（专家模型）** | **expert model facility submodule** | v3 实验核自有声明；不进入六槽折叠 | 默认实现：**专家路由** `expert_routing.json` |
+| **第 3 设施子模块（立绘）** | **portrait facility submodule** | 不进入六槽折叠 | 代码：`portrait_catalog`、`visual_state_id`；实现口语：**表现导演** |
+| **第 4 设施子模块（视觉表现）** | **visual presentation facility submodule** | 不进入六槽折叠 | 代码：`visual_presentation`、`performance_directive`；产品口语：**角色舞台** |
 | **后端模块插件模块** | **backend module plugin** | 插件 manifest，非模块号 | 例：「第 5 模块的 directory 插件实现」 |
-| **无编号设施模块** | **unnumbered facility module** | 否 | `PluginHost`、`PersonalityEngine`、好感、`Repository` 等 |
-| **独立通道能力增强模块** | **side-channel capability enhancement module** | **否** | 统称；注册表 SSOT：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
+| **无编号设施模块** | **unnumbered facility module** | 不进入六槽折叠 | `PluginHost`、`PersonalityEngine`、好感、`Repository` 等 |
+| **独立通道能力增强模块** | **side-channel capability enhancement module** | **不进入六槽折叠**；走自有 Resolver/锚点 | 统称；注册表 SSOT：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
 | **用户身份 Prompt 模板** | **User Identity Prompt Template** | 否 | 独立通道 **`user_identity`**；角色包 `user_identities/`；pre-LLM 注入 |
 | **回复后处理插件** | **Reply Post-Processor Plugin** | 否 | 独立通道 **`reply_post_process`**；`config.json` → `reply_post_processor`；trait `ReplyPostProcessor` |
 | **剧场场景导演** | **Theater Scene Director** | 否 | 独立通道 **`theater_director`**；`generate_theater_scene` / `POST /theater/scene`；`provides: theater_director`（**已交付 2026-06**） |
@@ -79,7 +83,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 |--------|------|------|
 | **单核双态构建** | 编译期 | 外核态（`PluginHost`） vs 宏核态（Monolith）；见 RFC Monolith |
 | **双核双态 / 运行时双核** | 运行时 | Stable 核 vs Experimental 核；`dual_core` feature + 蓝图开关 |
-| **Stable 核（稳定核）** | 运行时 | 固定六槽顺序；默认 `co_present` / `process_message` 主路径 |
+| **Stable 核（稳定核）** | 运行时 | 固定回合阶段与六槽契约；默认 `co_present` / `process_message` 主路径，**不表示六槽按编号依次调用** |
 | **Experimental 核（实验核）** | 运行时 | `pipeline.experimental` DAG；`DualPipelineRunner` |
 
 **禁止**把 Monolith 称为「双核」；**禁止**把 `dual_pipeline` 模块称为「蓝图 pipeline 文件」。
@@ -88,7 +92,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 权威名 | Authoritative English | 含义 | 禁止混用 |
 |--------|-----------------------|------|----------|
-| **事件外环** | **Event Ring** | 内核进程内有界事件路由与权威信封；不是第七槽 | `event` 槽、数据库事件总线、固定 pipeline |
+| **事件外环** | **Event Ring** | 当前参考运行时中的进程内有界事件路由与权威信封设施；不是最小内核必选项或第七槽 | `event` 槽、数据库事件总线、固定 pipeline |
 | **事件草案** | **EventDraft** | 模块提交的不可信 kind/payload/metadata | EventEnvelope |
 | **权威事件信封** | **EventEnvelope** | Ring 签发身份、来源、权重、顺序与因果后的事件 | 模块自造事件 |
 | **来源绑定发射器** | **source-bound EventEmitter** | 注册成功后返回，只能以已登记来源和发射范围提交草案 | 通用 event bus emitter |
@@ -104,7 +108,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 1. **命名即文档**：crate / 文件名应能回答「改什么去哪」；做不到时必须在本文 + [kernel/crates/README.md](../kernel/crates/README.md) 补速查表。
 2. **概念统一**：权威名唯一；别名列入 §6 禁止列表。
-3. **层级自解释**：依赖方向 `types → contracts → runtime → host → {server, tauri}` 不变。
+3. **层级自解释**：主依赖方向写作 `{server, tauri} → host → runtime → contracts → types`（箭头表示“依赖”）；直接依赖与 validation 等支撑 crate 另行标注。
 4. **职责匹配**：磁盘名 / JSON 键 / Rust 模块名不一致时，以**职责**为准并在本文标注，不强行重命名已冻结产物。
 5. **理清而非推翻**：v0.2.x 不 rename crate；通过文档与 canonical import 收口 re-export。
 
@@ -144,7 +148,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 改磁盘 blueprint 文件名/顶层键？ → 冻结（v2/v3/v4）；仅 RFC 可动
 ```
 
-### 3.1 Schema 类型例外（`oclive_validation` vs `oclive_kernel_types`）
+### 3.3 Schema 类型例外（`oclive_validation` vs `oclive_kernel_types`）
 
 §0 写「DTOs → `oclive_kernel_types`」指 **HTTP / IPC / 编排载荷**（`SendMessageRequest`、`KernelErrorBody` 等）。**磁盘 schema 与蓝图校验结构**以 **`oclive_validation`** 为 SSOT（如 `SlotRegistryEntry`、蓝图 `groups` 规则、`PIPELINE_BLUEPRINT_FILENAME`）。
 
@@ -156,7 +160,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 物理迁移 `SlotRegistryEntry` → `kernel_types` 属 breaking 范围，见 [TECHNICAL_DEBT_INVENTORY.md](../handoff/TECHNICAL_DEBT_INVENTORY.md) **D-SSOT-01** 后续项。
 
-### 3.3 六个 kernel crate 是否 rename？
+### 3.4 六个 kernel crate 是否 rename？
 
 **结论（v0.2.x）：不 rename crate。** 理由与影响：
 
@@ -173,7 +177,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 **后续可选（非 v0.2）**：在 **不 rename crate** 前提下，于 `Cargo.toml` `[package.metadata.docs.rs]` 或 docs.rs 增加 `display-name` 描述；或 v0.3 评估 **crate alias**（Rust 1.77+）仅用于新代码。
 
-### 3.4 `oclive_runtimed` 说明（已删除）
+### 3.5 `oclive_runtimed` 说明（已删除）
 
 - 实验性 scheduler daemon 原型，**已于 2026-06-10 删除**（技术债 D-ORPHAN-01，从未接入产品路径）
 - 恢复方式：`git log --diff-filter=D -- kernel/crates/oclive_runtimed`
@@ -181,7 +185,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 ---
 
-## 3.5 运行时缩写（人类文档对齐）
+### 3.6 运行时缩写（人类文档对齐）
 
 代码与日志中常见缩写；全名见 [human-docs/03_GLOSSARY.md](../human-docs/03_GLOSSARY.md)。
 
@@ -260,7 +264,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 |------|----------|
 | `resolve_kernel_action` | 跨宿主内核 attach/spawn/replace 策略（VS Code / 桌面共享） |
 | `resolve_effective_ollama_model` | 会话 → 云端 → 包 → env 模型链 |
-| `resolve_active_user_identity` | 会话身份 → catalog → legacy 优先级 |
+| `resolve_active_user_identity` | SQLite 角色运行态身份 → catalog → legacy；HostProfile `default_id` 仅窄兼容回退 |
 | `resolve_reply_post_processor` | 角色包 + HostProfile 后处理链合并 |
 | `resolve_for_role` / `resolve_for_effective_backends` | `PluginHostPort` 六槽策略 |
 | `resolve_turn` | `ComplexEmotionProvider` trait 回合策略 |
@@ -290,7 +294,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **`slot_registry`** | 多实例后端配置总表 | 执行顺序表 | 键名冻结 |
 | **蓝图 JSON 键 `pipeline`** | v3 双核下的 `{ stable, experimental }` 步骤 DAG | 与文件名 `pipeline.` 前缀同义 | v3 冻结 |
 | **`dual_pipeline.rs`** | Rust 模块：`DualPipelineRunner` 运行时编排 | 蓝图文件 | 代码模块；见 §5.3 |
-| **主编排路径 `co_present`** | Stable 核固定六槽顺序的实现 | 读 blueprint `steps[]` | 代码名保留 |
+| **主编排路径 `co_present`** | Stable 核固定回合阶段与六槽调用/合并契约的实现；不是按槽号线性执行 | 读 blueprint `steps[]` | 代码名保留 |
 
 **权威表述**：
 
@@ -313,13 +317,13 @@ This page is the **naming SSOT** for OCLive. Key rules:
 | **`runtime_config.dual_core.enabled`** | 蓝图配置 | 角色是否请求实验核 |
 | **`dual_core_gated()`** | Rust 谓词 | feature **且** 蓝图均开才进实验路径 |
 | **`dual_pipeline` / `DualPipelineRunner`** | Rust 模块 | 实验核 DAG 执行 + 快照降级 Stable |
-| **`pipeline.experimental`** | 蓝图 JSON | 实验核步骤定义（action + depends_on） |
-| **`pipeline.stable`** | 蓝图 JSON | Stable 步骤表（可省略由宿主注入默认） |
+| **`pipeline.experimental`** | 冻结 v3 蓝图 JSON | feature 与蓝图均启用时执行的实验核步骤定义（action + depends_on） |
+| **`pipeline.stable`** | 冻结 v3 蓝图 JSON | 描述 / Monolith 焊接输入；当前运行时**不执行**，Stable 恒走 `co_present` |
 | **`dual_core_degraded`** | DTO 字段 | 蓝图要双核但宿主未编 `dual_core` feature |
 
-**命名关系（一句话）**：`dual_core` = **开关**；`dual_pipeline` = **开关打开后的运行时_runner**；蓝图 **`pipeline.*`** = **开关的配置数据**。
+**命名关系（一句话）**：`dual_core` = **开关**；`dual_pipeline` = **开关打开后的 Experimental runner**；蓝图 `pipeline.experimental` 是其可执行数据，`pipeline.stable` 不是第二条 Stable 主链。
 
-### 5.5 发行版内核与调度（文档层）
+### 5.4 发行版内核与调度（文档层）
 
 | 术语 | 含义 | 禁止混淆 |
 |------|------|----------|
@@ -333,7 +337,7 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 SSOT：[DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNEL_SCHEDULER_RESCOPE.md](../handoff/KERNEL_SCHEDULER_RESCOPE.md) · [DISTRO_DEFAULT_PLUGINS.md](kernel/DISTRO_DEFAULT_PLUGINS.md)
 
-### 5.6 术语调整方案（文档层，不改冻结名）
+### 5.5 术语调整方案（文档层，不改冻结名）
 
 | 问题 | 建议 | 改动类型 |
 |------|------|----------|
@@ -351,6 +355,7 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNE
 | `memory_backend` / `affect_backend` | `plugin_backends.memory` / `.emotion` 或 `slot_registry type: memory` | 早期愿景草案 |
 | `Joy` / `Fearful` 等未定义 Emotion 变体 | [emotion.rs](../kernel/crates/oclive_kernel_types/src/models/emotion.rs) 枚举 | DTO 契约 |
 | 「第 7 模块」指 directory 插件 | **第 K 模块的 xxx 插件实现** | 插件不占模块号 |
+| 「第 7 槽」指普通新增能力 | 先归入既有槽实现、设施、独立通道或宿主能力；改变六槽分类须走 Breaking RFC | 六槽是稳定核心契约，不按功能数量自然增长 |
 | 「专家模型设施模块」（中间大类） | **专家模型设施子模块** 或 **专家路由** | 架构规定 |
 | `mcp_http` / `directory_plugin_process_spawn`（权限键） | `mcp:http` / `process:spawn` / `network:*` | Breaking 2026 Unreleased |
 | 「pipeline 调度 steps」指 v2 主路径 | **`process_message` 代码编排** | 蓝图 steps 已禁止 |
@@ -371,7 +376,7 @@ SSOT：[DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) · [KERNE
 |----|------|
 | **定义** | LLM 生成 **`reply` 之后**、写入会话 / 返回用户 **之前** 的可插拔修饰链 |
 | **不是什么** | 不是六槽模块；不是设施子模块；**不是** Experimental 核 |
-| **与现有代码** | `turn_pipeline/post.rs` 保留内置副作用；`resolve_reply_post_processor` 在显示回复写入前执行可选 builtin / remote / directory 后处理 |
+| **与现有代码** | `turn_pipeline/post/post_llm.rs` 先让状态消费者使用去协议标记的 semantic reply，再由 `resolve_reply_post_processor` 生成 display reply，随后写聊天并组装响应 |
 | **未落地部分** | 任意多阶段链的 step schema、独立 step 权限与逐步降级仍需 RFC 后续实现 |
 
 ---

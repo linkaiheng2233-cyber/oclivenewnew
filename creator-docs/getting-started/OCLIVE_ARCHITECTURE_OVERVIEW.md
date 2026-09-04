@@ -1,9 +1,9 @@
-# Oclive 架构总览（单核双态构建架构）
+# Oclive 架构总览：工具内核、六槽与外围装配
 
 **SSOT 范围**：对外架构叙述、模块编号与分层术语；模块定义见 MODULE_MAP，wire 契约见专题文档。
-**最后更新**：2026-08-31。
+**最后更新**：2026-09-05。
 
-本文是 **对外架构叙述** 与 **模块编号与分层术语** 的权威页：单核双态构建、**后端模块（第 1–6 模块）**、**设施模块（统称）** 与 **第 N 设施子模块（`{专名}设施子模块`）**、**独立通道能力增强模块**，以及 **后端模块插件模块**（不归入第几模块序列）。
+本文是 **对外架构叙述** 与 **模块编号和分层术语** 的权威页：先定义最小工具内核，再说明当前完整运行时中的单核双态构建、**后端模块（第 1–6 模块）**、设施、独立通道和插件实现。
 
 **模块定义 · 六槽/设施关系 · 改动约束（维护 SSOT）**：[`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md) — 本文侧重对外叙述与编号脚注，**不**与注册表双写长表。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 与源码为准。
 
@@ -13,17 +13,21 @@
 
 ## 架构简述
 
-**Oclive** 采用 **契约型薄核** 架构：内核负责回合编排（`process_message`）、会话状态、Event Ring 权威信封/路由与跨宿主错误语义；记忆、情感、事件、Prompt、LLM、Agent 等能力以 **PLUGIN_V1 六宿主后端模块** 形式接入（内置 / Remote / 目录插件）；**复杂情感设施子模块**、**专家模型设施子模块** 等 **编排行内设施模块** 消费后端产出并服务 Prompt，**不是** 第七个宿主槽。
+**Oclive** 的最小概念核心是一颗 **契约型工具内核**：它拥有唯一回合/生命周期编排、能力调用与合并规则、权威状态提交、错误语义和故障隔离；记忆、情感、事件、Prompt、LLM、Agent 通过 **PLUGIN_V1 六个稳定能力端口**接入。六槽提供能力、证据、候选、上下文或动作结果，不是六个平级权威。
 
-**Event Ring** 是围绕模块的进程内有界事件外环，不占六槽位置，也不替代 Stable 回合管线。legacy `event` 槽只估计对话事件影响；memory、传感器等来源可提出事件，由注册的决策模块采纳或拒绝，最终仍由 Rust 编排决定如何进入 Prompt、回复与持久化。公开契约见 [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md)。
+当前 `oclive_kernel_host::OcliveKernel` 是可直接嵌入的**完整参考运行时门面**，仍物理装配会话状态、SQLite、Event Ring、HTTP 依赖、具体六槽实现和设施。它复用唯一 `process_message`，但不等于已经物理抽离的最小 core；拆薄状态见 `K-CORE-BOUNDARY-01`。**复杂情感设施子模块**、专家模型设施子模块等可以服务 Prompt，却不是第七槽，也不是 OCLive 成立的必要条件。
 
-在 **交付** 上借鉴 **发行版纪律**：通过稳定 HTTP / **OOCP** 黑盒契约、**角色包** 规范与 **`oclive-cli` 内核工厂**，产出可独立部署的 **无头内核**（`--api` / `kernel_server`）或 **桌面宿主**（Tauri + Vue），角色内容以 `distros/chat-pro/roles/{角色id}/` 为唯一对接面。
+**Event Ring** 是当前参考运行时中的可复用事件设施：它形成进程内有界事件外环，不占六槽位置，也不替代 Stable 回合管线。legacy `event` 槽只估计对话事件影响；memory、传感器等来源可提出事件，由注册的决策模块采纳或拒绝，最终仍由 Rust 编排决定如何进入 Prompt、回复与持久化。没有 Event Ring 的更薄装配仍可以遵守六槽契约；公开契约见 [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md)。
+
+OCLive 不规定情绪、关系等语义必须全部显式化或全部交给模型隐式推断。默认参考实现偏向本地小模型，使用较多显式辅助；强模型装配可以更薄。推荐边界是：**事实显式化，判断候选化，表达模型化**。当前 `EmotionResult` 仍主要是七维数值；`source / confidence / TTL / scope` 等候选元数据是目标原则与技术债，不能写成已完成契约。
+
+在 **交付** 上借鉴 **发行版纪律**：通过稳定 HTTP / **OOCP** 黑盒契约、角色包规范与 **`oclive-cli` 内核工厂**，产出可独立部署的 **无头内核**（`--api` / `kernel_server`）或 **桌面宿主**（Tauri + Vue）。主仓 Chat Pro 的角色内容面是 `distros/chat-pro/roles/{角色id}/`；`oclive init` 生成的独立工程使用根级 `roles/{角色id}/`。内核集成方仍可直接使用 Rust 门面和六槽契约。
 
 在 **构建** 上采用 **单核双态构建架构**：**同一套**编排语义与 DTO 契约（单核），构建期两档——**外核态**（低耦合、`PluginHost`）与 **宏核态**（Monolith 焊接）。二者经 `oclive init` 生成双 `[[bin]]`，**按构建产物选择**，非两套内核产品。
 
 **运行时双核双态（Opt-in · 默认关）**：在**同一蓝图**内划分 **Stable 核**（固定六槽编排）与 **Experimental 核**（自定义 `pipeline.experimental`）。**机制已预埋，默认关闭**（`dual_core` Cargo feature；`dual_pipeline*` 默认不参与编译）。解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) §冻结决定；现行设计见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)，历史对齐记录不作为 truth。
 
-**开放实验场** 为产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
+**开放实验**是这套稳定契约可以支持的一种用法，不是对所有发行版的强制产品主轴（见 [VISION_OPEN_LAB.md](../roadmap/VISION_OPEN_LAB.md)）。
 
 **蓝图扩展与资源协调（分阶段实现）**：蓝图只保存最小、命名空间化的能力声明；宿主已实现 Capability Registry、只读 `ExecutionPlan`，以及统一 Resource Coordinator（GPU/RAM/CPU、有限调度意图、公平准入、可逆自动抢占、真实 llama-server 档位与 owner-scoped 第三方注册入口）。通用契约已覆盖 `render` / `compute`，但具体 Live2D/3D runtime 仍由相应 Provider/发行版交付。扩展外壳不是第五类模块，资源协调也不是第七槽。详见 [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)。
 
@@ -33,7 +37,7 @@
 
 | 术语 | 含义 |
 |------|------|
-| **设施模块** | **统称**：编排行内、**不**占用 `plugin_backends` 六键的内核延伸能力（含无编号设施与已登记子模块）。**不存在**「专家模型设施模块」等中间大类。 |
+| **设施模块** | **统称**：编排行内、**不进入六槽 `PluginBackends` 折叠**的内核延伸能力（含无编号设施与已登记子模块）。设施可以有自己的蓝图声明；例如 `complex_emotion` 可作为 `slot_registry.type`，但不会因此成为第七槽。**不存在**「专家模型设施模块」等中间大类。 |
 | **`{专名}设施子模块`** | 在设施模块中**登记编号**（**第 N 设施子模块**）的项；全名 = **`{专名}` + `设施子模块`**；各专名**独立**，不得把「专家模型」当作整族前缀套在其它专名上。 |
 | **专家模型**（专名） | 仅指 **专家模型设施子模块** 及其蓝图/实验核配置（条件触发子流程）；**不**包含复杂情感。 |
 | **专家路由** | **专家模型设施子模块** 的默认实现：`blueprint/includes/expert_routing.json`（**与 `dual_core` 同 feature，默认不编译**）。 |
@@ -44,26 +48,26 @@
 
 ## 模块编号约定（规定）
 
-纯净内核能力划分为 **四大类**；**不要** 与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
+当前完整参考运行时的扩展能力划分为 **四大类**；**不要**把四类全部等同为最小工具内核，也不要与「内核工厂配方层·实现层·代码层」混淆（后者见 [KERNEL_FACTORY_VISION.md](KERNEL_FACTORY_VISION.md)）。
 
-| 大类 | 编号系列 | 是否写入 `plugin_backends` |
-|------|----------|---------------------------|
-| **后端模块** | **第 1–6 模块**（固定，见下表） | **是**（六枚举字段） |
-| **设施模块** | **统称**；其中已登记项为 **第 N 设施子模块**（与 1–6 **独立序号**） | **否**（编排行内调用） |
-| **独立通道能力增强模块** | **无模块号、无设施子模块号**；注册表 `id` 见 [RFC §2](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **否**（自有 Resolver + 锚点 / 独立 API） |
-| **后端模块插件模块** | **不使用「第 N 模块」编号** | 仅表示某 **第 K 后端模块** 的外挂实现 |
+| 大类 | 编号系列 | 与六槽折叠 `PluginBackends` 的关系 |
+|------|----------|------------------------------------|
+| **后端模块** | **第 1–6 模块**（固定，见下表） | 蓝图按六种稳定 `slot_registry.type` 声明，运行时折叠为六字段 |
+| **设施模块** | **统称**；其中已登记项为 **第 N 设施子模块**（与 1–6 **独立序号**） | **不进入六槽折叠**；可有自有蓝图声明或由编排直接调用 |
+| **独立通道能力增强模块** | **无模块号、无设施子模块号**；注册表 `id` 见 [RFC §2](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md#2-注册表-v1) | **不进入六槽折叠**；自有 Resolver + 锚点 / 独立 API |
+| **后端模块插件模块** | **不使用「第 N 模块」编号** | 仅实现某 **第 K 后端模块**，沿用该槽的折叠字段 |
 
 **扩展规则**
 
-- 新增 **后端模块**（须 RFC + 宿主）：依次为 **第 7 模块**、**第 8 模块**…
+- 六个后端能力端口是当前稳定分类。新能力优先作为既有槽实现、设施、独立通道或宿主能力接入，**不**自动顺延为第 7、第 8 槽。改变六槽分类须有真实用例、RFC、Breaking 迁移与兼容窗口
 - 新增 **`{专名}设施子模块`**（须 RFC + 文档登记）：第 3–4 已登记（立绘 · 视觉表现）；其后依次为 **第 5、第 6…**
 - 新增 **独立通道能力增强模块**（须 RFC + 注册表）：登记 `id`、锚点或独立 API、可选 `provides`；**不** 占六槽、**不** 领设施子模块号（见 [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md)）
 - 新增 **后端模块插件**（侧车 / 目录包）：写作 **「第 K 模块的 xxx 插件实现」**，**不** 占用第 7、第 8 模块号，也 **不** 占用设施子模块号或独立通道注册表位。
 
 ### 第 1–6 模块（后端模块，固定）
 
-| 编号 | `plugin_backends` 键 | 职责 |
-|------|------------------------|------|
+| 编号 | `slot_registry.type`（折叠后 `PluginBackends` 字段） | 职责 |
+|------|---------------------------------------------------------|------|
 | **第 1 模块** | `memory` | 记忆检索排序 |
 | **第 2 模块** | `emotion` | 用户句情绪分析 |
 | **第 3 模块** | `event` | 事件影响估计 |
@@ -77,7 +81,7 @@
 
 | 编号 | 规范全名 | 说明 |
 |------|----------|------|
-| **第 1 设施子模块** | **复杂情感设施子模块** | `narrative_hint`；消费 **第 2 模块** 产出；详见 [§ 第 1 设施子模块](#第-1-设施子模块复杂情感设施子模块) |
+| **第 1 设施子模块** | **复杂情感设施子模块** | 回复后解析与跨轮 `narrative_hint`；第 2 模块输出仅是降级证据之一；详见 [§ 第 1 设施子模块](#第-1-设施子模块复杂情感设施子模块) |
 | **第 2 设施子模块** | **专家模型设施子模块** | 条件触发专家子流程；默认实现为 **专家路由**；详见 [§ 第 2 设施子模块](#第-2-设施子模块专家模型设施子模块) |
 | **第 3 设施子模块** | **立绘设施子模块** | `portrait_catalog` · **表现导演** AI 选 `visual_state_id`；详见 [§ 第 3 设施子模块](#第-3-设施子模块立绘设施子模块) |
 | **第 4 设施子模块** | **视觉表现设施子模块** | `visual_state_id` → `performance_directive` · Live2D / 3D / 演算舞台；**无 AI 选图**；详见 [§ 第 4 设施子模块](#第-4-设施子模块视觉表现设施子模块) |
@@ -131,8 +135,9 @@ flowchart TB
   end
 
   ORCH --> M2
-  M2 --> F1
-  F1 --> M4
+  M2 -.->|降级证据| F1
+  M5 -->|post 解析 [EMO]| F1
+  F1 -.->|持久化余韵供下一轮| M4
   ORCH -.->|experimental 且触发| F2
   F2 -.-> M4 & M5
   ORCH -.->|post_llm| F3
@@ -149,12 +154,12 @@ flowchart TB
 
 | 项 | 说明 |
 |----|------|
-| **职责** | 共景回合内产出 `narrative_hint`，经 `PromptInput` 进入 Prompt（「复杂情感叙事提示」） |
-| **编排位置** | `co_present`：`emotion.analyze` 与上下文加载之后，`build_prompt` 之前 |
-| **与第 2 模块** | 第 2 模块 = 测用户情绪；本子模块 = 叙事级 hint（关键词规则 / remote / directory） |
+| **职责** | 管理跨回合 `narrative_hint`：当前主 LLM 的有效 `[EMO]` 为权威，插件仅在标记缺失/无效时兜底；下一轮 Prompt 只接收“不含 hint 原文”的余韵连续性信号 |
+| **编排位置** | `pre` 读取上一轮 hint → `middle` 仅为 Fast / 发行版 skip 计算本地确定性强度 → `post_llm` 解析并剥离 `[EMO]`、解析本轮结果并按契约持久化 |
+| **与第 2 模块** | 第 2 模块分析**用户句**情绪，可作为降级证据；本设施处理**角色回复**的情绪标签与跨轮叙事余韵，不把用户情绪当成唯一结论 |
 | **与专家模型** | **并列**的另一 `{专名}设施子模块`；**不**使用「专家模型」专名，**不**走 `expert_routing.json` |
-| **现状** | 主路径默认 `BuiltinKeywordComplexEmotionProvider`；蓝图 `slot_registry` 可声明 `complex_emotion` 实例，经 `SlotRunner` last-wins 解析 |
-| **路线图** | **`slot_registry` remote/directory 已可用**（`complex_emotion.resolve_turn`）；可选将来与六槽同级 `plugin_backends` 键 |
+| **现状** | 蓝图 `slot_registry` 可声明 `complex_emotion` 设施实例，经 `PluginHost` / `SlotRunner` last-wins 解析；`builtin` 启用跨轮 hint 读写并为 Fast 路径提供确定性强度，`remote` / `directory` 还可作 post 降级 provider；省略或 `none` 关闭 hint 读写 |
+| **边界** | **`slot_registry` remote/directory 已可用**（`complex_emotion.resolve_turn`）；它不进入六键 `plugin_backends`，若未来改变六槽分类必须走 Breaking RFC |
 | **Monolith** | 编译焊接键名 `complex_emotion`（**七焊接键**之一），≠ 宿主第六/第七槽 |
 
 集成说明：[NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md)、[AGENTS.md](../../AGENTS.md)「复杂情感 `narrative_hint`」。
@@ -163,9 +168,9 @@ flowchart TB
 
 | 概念 | 个数 | 用途 |
 |------|------|------|
-| **后端模块（宿主槽）** | **6** | 运行时 `plugin_backends` + `PluginHost` |
+| **后端模块（宿主槽）** | **6** | 蓝图六种稳定 `slot_registry.type` → 运行时 `PluginBackends` 折叠视图 → `PluginHost` |
 | **Monolith `SLOT_IDS` 焊接键** | **7** | 编译期 `monolith.toml` / 演示管线；含 `complex_emotion` |
-| **脚手架 `plugin_backends` 示例 JSON** | 6 + 扩展键 | `complex_emotion` 为 **文档/工厂用扩展键**，宿主 Serde **忽略** |
+| **legacy 脚手架 `plugin_backends` 示例 JSON** | 6 + 扩展键 | `complex_emotion` 为 **旧工厂文档扩展键**，宿主的六槽 Serde 折叠会忽略；当前蓝图应声明独立 `complex_emotion` 实例 |
 
 ---
 
@@ -205,7 +210,7 @@ flowchart TB
 | **编排位置** | post_llm 轻量 materialize；**帧循环 / GPU 在 UI**，不在 `process_message` |
 | **AI** | **禁止**二次 LLM 选图 |
 | **默认** | `config.json` → `visual_presentation.enabled: false` |
-| **发行版** | `distro.oclive.toml` `[visual_presentation].mode` 草案：VS Code off · Theater stage_full |
+| **发行版** | `distro.oclive.toml` `[visual_presentation].mode` 已接入 HostProfile：VS Code off · Theater stage_full |
 | **RFC** | [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
 
 ---
@@ -221,7 +226,7 @@ flowchart TB
 | | **外核态** | **宏核态** |
 |---|-----------|-----------|
 | **实现名** | 低耦合、`PluginHost` | Monolith、`monolith.toml` |
-| **六宿主槽** | `settings.json` 可换 backend | 已焊槽静态调用；`weld_modules=[]` 且 `exclude=[]` → 六槽 + `complex_emotion` 焊接键全焊 |
+| **六宿主槽** | v2/v3/v4 用蓝图 `slot_registry` 切换 backend；legacy `settings.json` 仅兼容/迁移 | 已焊槽静态调用；`weld_modules=[]` 且 `exclude=[]` → 六槽 + `complex_emotion` 焊接键全焊 |
 | **桌面宿主默认** | **是** | 工厂脚手架；真 `process_message` 同构全焊热路径演进中（RFC §9） |
 
 与内核工厂 **配方·实现·代码** 三层正交：双态只改变 **实现层解析方式**（动态 trait vs 静态焊），**代码层语义**不变。
@@ -230,18 +235,20 @@ flowchart TB
 
 ## 共景主链（编号对照 · Stable 主路径）
 
-Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_present` 为准；**不是**按模块编号线性排列。编号仍对照 **第 1–6 模块** 与 **设施子模块**。
+Stable 主路径以 `process_message` 完成预取与可选 Agent 短路后，进入 `turn_pipeline` 的 **pre → co-present middle → 主 LLM → post**；**不是**按模块编号线性排列。编号仍对照 **第 1–6 模块** 与 **设施子模块**。
+
+这张表描述的是**当前默认参考装配**，不是所有 OCLive 内核必须实现同样厚度的认知模型。当前代码要求共景健康路径至少有 `prompt + llm`；memory、emotion、event、agent 可以按各自 `none` / Noop 契约变薄。任何未来的强模型装配都应复用同一端口与权威边界，而不是复制第二套 `process_message`。
 
 | 阶段 | 代码锚点 | 顺序 |
 |------|----------|------|
 | **预取** | `turn_prefetch.rs` | 用户身份、近期上下文 |
 | **0 · Agent 短路**（可选） | `process_message.rs` | **LLM 之前** 可选短路（第 6 模块） |
-| **pre_llm** | `turn_pipeline/pre.rs` | 第 2 模块 `emotion.analyze` → 设施 `PersonalityEngine`（用户情绪）→ **第 1 模块** memory 加载/衰减/`rank_memories` → 设施 好感/关系 |
-| **co_present middle** | `turn_pipeline/co_present/run_middle.rs` | Turn Thinking → 复杂情感/知识 → 第 3 模块 `event.estimate` → Event Ring 兼容桥与记忆提案 → 人格/关系预览 → 第 4 模块 `prompt.build` |
-| **主 LLM** | `turn_pipeline/post.rs` | 第 5 模块 `llm.generate` / stream → 原始 `reply` |
-| **post_llm** | `turn_pipeline/post/post_llm.rs` | 角色回复情绪、持久化策略、立绘/视觉状态、回复后处理、聊天写入与 DTO 组装 |
+| **pre_llm** | `turn_pipeline/pre.rs` | wave 1 并发取得上下文/人格、第 2 模块 `emotion.analyze`、有效模型、上一轮 hint、原始记忆与身份；随后时间/用户情绪/记忆强化 → **第 1 模块** `memory.rank_memories` → 关系快照/转移提示 |
+| **co_present middle** | `turn_pipeline/co_present/run_middle.rs` | 规则事件初估 → Turn Thinking → Fast 本地情绪强度降级 / 知识 → 按策略可选调用第 3 模块 `event.estimate` 替换初估 → Event Ring 兼容桥与记忆提案 → 人格/关系预览 → 第 4 模块 `prompt.build`；Prompt 只消费上一轮 hint 的去内容连续性信号 |
+| **主 LLM** | `turn_pipeline/post.rs` | 第 5 模块 `llm.generate` / stream → 原始 `reply` + 可选 `[EMO]` |
+| **post_llm** | `turn_pipeline/post/post_llm.rs` | 剥离 `[EMO]` → 解析本轮角色回复情绪/复杂情感（有效主 LLM 标记权威，remote/directory 仅缺失/无效时兜底）→ 语义回复参与策略与情绪/关系/记忆/立绘状态计算和持久化 → 保存下一轮 hint → 单一回复后处理器 → 普通共景 `reply_mode` → 聊天写入与 DTO/视觉指令组装 |
 
-**复杂情感锚点**：在 **pre_llm 情绪分析之后**、**`build_prompt` 之前**（`co_present` 内）；上一轮 `narrative_hint` 经 `SessionCache` / DB 注入 `PromptInput.previous_complex_emotion_narrative_hint`。
+**复杂情感跨轮不变量**：`pre` 只读取上一轮已存 hint；`build_prompt` 只据此输出去内容连续性信号，不注入原文，也不能看见本轮尚未产生的 hint。主 LLM 返回后，`post_llm` 才解析/剥离 `[EMO]`、按“有效标记 → remote/directory 兜底 → 保持/降级”解析本轮结果，并在设施启用时把 hint 持久化给下一轮。完整矩阵见 [NARRATIVE_HINT_CONTRACT.md](../testing/NARRATIVE_HINT_CONTRACT.md)。
 
 **实验核（可选）**：匹配触发条件时，**第 2 设施子模块**（**专家模型设施子模块** / 专家路由）经 `slot.expert.invoke` 插入子步骤链，再汇合 Prompt / LLM 等（见 `dual_core` 文档）。Experimental 核 preview **尚未** 接线 relation transition / 复杂情感 hint。
 
@@ -249,7 +256,7 @@ Stable 主路径以 `process_message` → `turn_prefetch` → `pre_llm` → `co_
 
 ## 独立通道能力增强模块（非六槽 · 非设施子模块编号）
 
-与 [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 对齐：**不占** `plugin_backends` 六键，**不**登记为「第 N 设施子模块」；经 **自有 Resolver** 接入 Stable 主链固定锚点，或经 **独立 API** 在 `process_message` 圈外运行。
+与 [NAMING_CONVENTIONS.md](../NAMING_CONVENTIONS.md) §1.2、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 对齐：**不进入六槽 `PluginBackends` 折叠**，**不**登记为「第 N 设施子模块」；经 **自有 Resolver** 接入 Stable 主链固定锚点，或经 **独立 API** 在 `process_message` 圈外运行。
 
 **两类锚点**
 
@@ -269,13 +276,19 @@ flowchart TB
   subgraph slots [第 1–6 模块 · process_message]
     LLM[llm.generate → raw reply]
   end
-  subgraph builtin_post [post_llm · turn_pipeline/post.rs]
-    PERSIST[记忆/好感/chat_storage 等内置持久化]
+  subgraph builtin_post [post_llm · turn_pipeline/post/post_llm.rs]
+    SEMANTIC[剥离协议标记 · semantic reply]
+    STATE[情绪/记忆/好感/视觉等状态消费与持久化]
+    SEMANTIC --> STATE
   end
   subgraph pp [reply_post_process]
     PROC[ReplyPostProcessor.process_reply]
+    DISPLAY[reply_mode · display/transcript reply]
+    CHAT[chat_storage append]
     OUT[SendMessageResponse.reply]
-    PROC --> OUT
+    PROC --> DISPLAY
+    DISPLAY --> CHAT
+    CHAT --> OUT
   end
   subgraph theater [theater_director · 圈外 API]
     API[generate_theater_scene / POST /theater/scene]
@@ -283,8 +296,8 @@ flowchart TB
     API --> SD
   end
   PB --> slots
-  LLM --> PERSIST
-  PERSIST --> PROC
+  LLM --> SEMANTIC
+  STATE --> PROC
 ```
 
 ### 注册表 v1（摘要）
@@ -292,7 +305,7 @@ flowchart TB
 | `id` | 规范名 | 配置落点 | 锚点 | 插件 `provides` |
 |------|--------|----------|------|-----------------|
 | **`user_identity`** | 用户身份 Prompt 模板 | 角色包 `user_identities/`；发行版 `[user_identity]` | pre → `build_prompt` | 无（角色包内容） |
-| **`reply_post_process`** | 回复后处理 | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | post_llm → `process_reply` | `reply_post_process` |
+| **`reply_post_process`** | 回复后处理 | 角色包 `config.json` → `reply_post_processor`；发行版 `[post_process].chain` | post_llm 内 semantic/state 消费后 → `process_reply` → chat append | `reply_post_process` |
 | **`theater_director`** | 剧场场景导演 | `[theater].director_plugin`；fallback 内置 | `generate_theater_scene` | `theater_director`（**已交付**） |
 | **`voice.asr`** | 语音识别输入 + 可选 TTS | 插件 `models/` + 设置；官方 `com.oclive.voice.asr` | 宿主 UI → `send_message` / `voice.speak` | `voice.asr`（**Windows 已交付**） |
 
@@ -311,7 +324,8 @@ RFC 与验收：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CH
 
 ## 特点（摘要）
 
-- **契约型薄核** + **六宿主槽** + **设施模块**（无编号设施 + **`{专名}设施子模块`**）
+- **最小工具内核**：唯一编排与权威边界 + 六个稳定能力端口
+- **参考运行时装配**：六槽实现 + 可选设施、Event Ring、持久化与宿主适配
 - **后端模块插件模块**：按第 K 模块挂 Remote / 目录插件，**不占第 N 模块号**
 - **发行版式交付**：OOCP、角色包、`oclive-cli` 工厂、Breaking 流程
 - **单核双态**：标准二进制 + 可选 Monolith；`bench` 对比
@@ -325,7 +339,7 @@ RFC 与验收：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CH
 | 主题 | 文档 |
 |------|------|
 | 六槽枚举与 JSON-RPC | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) |
-| `plugin_backends` 与复杂情感键 | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
+| 蓝图 `slot_registry`、六槽折叠与 legacy `plugin_backends` | [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) |
 | 专家路由文件与 includes | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [BLUEPRINT_FOLDER_LAYOUT.md](../../handoff/BLUEPRINT_FOLDER_LAYOUT.md) |
 | 插件扩展方式 | [CREATOR_PLUGIN_ARCHITECTURE.md](../plugin-and-architecture/CREATOR_PLUGIN_ARCHITECTURE.md) |
 | 蓝图扩展外壳 / Resource Coordinator | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |

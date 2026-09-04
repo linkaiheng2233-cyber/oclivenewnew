@@ -57,7 +57,9 @@ fn run_loop(
             );
             f.render_widget(
                 Paragraph::new(Line::from(vec![
-                    Span::raw("Ring: memory → emotion → event → complex_emotion → prompt → llm → agent"),
+                    Span::raw(
+                        "Six slots: memory · emotion · event · prompt · llm · agent | facility: complex_emotion",
+                    ),
                 ]))
                 .block(Block::default().title(title).borders(Borders::ALL)),
                 chunks[0],

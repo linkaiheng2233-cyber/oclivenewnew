@@ -15,7 +15,9 @@ Stable core **does not** interpret `pipeline.stable`; the host always uses the h
 
 ---
 
-## Seven-slot method overview
+## Current seven method types (six slots + the `complex_emotion` facility)
+
+These are the method types currently executable through `PluginHost`, not seven stable slots. The Stable core contract still has six slots.
 
 | `type` | `method` | Co-present stage | Description |
 |--------|----------|------------------|-------------|
@@ -25,7 +27,7 @@ Stable core **does not** interpret `pipeline.stable`; the host always uses the h
 | `prompt` | `assemble` | `build_prompt` | Assemble main dialogue prompt string (no LLM call) |
 | `llm` | `generate` | `llm_generate` | Marks turn for generation; after experimental chain, full `co_present` runs (with LLM) |
 | `agent` | `process` | `agent_process` | Invoke Agent; if `handled`, return Agent reply directly |
-| `complex_emotion` | `resolve_turn` | `complex_emotion_resolve_turn` | Resolve complex-emotion `narrative_hint` (session cache) |
+| `complex_emotion` | `resolve_turn` | `complex_emotion_resolve_turn` | Invoke the provider as an experimental executability/failure-boundary check; current output is not committed, while Stable completion owns formal post-LLM resolution and persistence |
 
 ---
 
@@ -71,7 +73,7 @@ Stable core **does not** interpret `pipeline.stable`; the host always uses the h
 ### `resolve_turn`
 
 - **Input:** `ComplexEmotionInput` (prior turn dialogue, `previous_narrative_hint`, seven-dimension affect metrics, etc.).
-- **Output:** `ComplexEmotionOutput`; updates session `narrative_hint` in `AppState` (rollback on failure via snapshot).
+- **Output:** The provider returns `ComplexEmotionOutput`, but the frozen v3 Beta runner currently discards that value and this method does **not** write a hint. When the experiment requests `generate`, the complete Stable `co_present` path reruns formal `[EMO]` / plugin-fallback resolution and persistence. Treat this as a current limitation, not a state-authority contract.
 - **Example:** `slot.complex_emotion.resolve_turn`
 
 ---

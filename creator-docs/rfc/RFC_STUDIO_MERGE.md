@@ -4,12 +4,12 @@
 |--------|-----|
 | 状态 | **已落地**：独立仓库 **[oclive-studio](https://github.com/linkaiheng2233-cyber/oclive-studio)**；原 **oclive-launcher**、**oclive-pack-editor** 归档为 Deprecated |
 | 配置 SSOT | **`studio-config.json`**（`rolesDir` → `OCLIVE_ROLES_DIR`，LLM 与运行时路径） |
-| 角色包 SSOT | **v2** `pipeline.ocblueprint`；见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
+| 角色包 SSOT | `pipeline.ocblueprint`；新建包用 **Stable v4**，导入 v2 无损保留，v3 仅冻结双核 Beta；见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) |
 | 用户文档 | [`handoff/studio/USER_GUIDE.md`](../../handoff/studio/USER_GUIDE.md) · [CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md) |
 
 ## 1. 目标
 
-- 单一安装物内提供 **启动模式**（环境诊断、拉起 `oclivenewnew`）与 **创作模式**（编辑 v2 蓝图、校验、试聊、导出）。
+- 单一安装物内提供 **启动模式**（环境诊断、拉起 `oclivenewnew`）与 **创作模式**（编辑蓝图、校验、试聊、导出；新建 Stable v4，兼容导入 v2）。
 - 与运行时仅通过磁盘 **roles 根** 对接，无复杂 IPC。
 
 ## 2. 非目标
@@ -20,7 +20,7 @@
 
 - 可配置 roles 根并导入/导出与 `distros/chat-pro/roles/{id}/` 一致的包树。
 - 创作模式可编辑 **`pipeline.ocblueprint`** 并通过 `oclive pack validate` 等价规则校验。
-- 试聊注入 `OCLIVE_ROLES_DIR` 与 LLM 环境变量（可覆盖 legacy `plugin_backends.llm` 运行时行为，见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
+- 试聊注入 `OCLIVE_ROLES_DIR` 与 LLM 环境变量（覆盖该进程的有效 LLM 后端，但不改写角色包 `slot_registry`；见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
 
 ---
 

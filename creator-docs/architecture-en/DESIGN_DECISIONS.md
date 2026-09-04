@@ -1,4 +1,4 @@
-﻿# oclive architecture decision record (ADR summary)
+# oclive architecture decision record (ADR summary)
 
 Key trade-offs distilled for contributors and host integrators. Layering rules: [`handoff/ARCHITECTURE_LAYERING.md`](../../handoff/ARCHITECTURE_LAYERING.md).
 
@@ -8,7 +8,7 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 
 | Decision | Rationale |
 |----------|-----------|
-| **No executable DSL from `pipeline.ocblueprint`** | Keeps on-disk flow and [`process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) / [`co_present`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) **in sync**; blueprint supplies `slot_registry` / `groups` only. |
+| **No ordinary Stable execution DSL from `pipeline.ocblueprint`** | Keeps disk configuration and [`process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) / [`co_present`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs) **in sync**. Blueprints provide `slot_registry`, read-only `groups`, and Stable-v4 `runtime_config` / `extensions`; only frozen-v3 dual-core Beta `pipeline.experimental` is a bounded experimental DAG. |
 
 ---
 
@@ -41,9 +41,9 @@ Key trade-offs distilled for contributors and host integrators. Layering rules: 
 | Slot | Strategy | Rationale |
 |------|----------|-----------|
 | memory | Serial merge + dedupe by id | Union of recalls, no duplicate injection |
-| llm | Serial last-wins | One user-visible reply per turn |
+| llm | Non-streaming: default `ensemble` serial last-wins, `fastest`, or ordered `fallback`; streaming currently serial last-wins | Trade resource use against availability without interleaving streamed tokens |
 | emotion / event / prompt / complex_emotion | Serial last-wins | State / final text semantics |
-| agent (directory) | Merged in `PluginHost` | Combine tool sets when plugins are independent |
+| agent (directory) | Execution merge not implemented | The host currently records merged directory ids for diagnostics, while `wrap_agent_if_merged` returns the original provider; see `K-AGENT-MERGE-01` |
 
 See [`slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs).
 
@@ -60,7 +60,7 @@ See [`slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_ru
 ## 7. Blueprint load pipeline
 
 ```text
-pipeline.ocblueprint → validate → Role.slot_registry → PluginHost → SlotResolver → SlotRunner
+pipeline.ocblueprint → exact v2/v3/v4 dispatch → Role configuration → PluginHost → SlotResolver → SlotRunner
 ```
 
 See the [`storage` module](../../kernel/crates/oclive_kernel_host/src/infrastructure/storage/mod.rs) docs.

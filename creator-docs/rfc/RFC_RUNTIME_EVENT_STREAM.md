@@ -1,7 +1,7 @@
 # RFC：Runtime Event Stream（角色运行事件流）
 
 **SSOT 范围**：本文只定义未来 Runtime Event Stream 的分层、权力边界、事件分型、投递/恢复语义与分阶段准入条件；现有 Event Ring wire、注册策略和主动 Permit 仍以 [`EVENT_RING.md`](../plugin-and-architecture/EVENT_RING.md) 为准，实施进度只在 [`K-EVENT-STREAM-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 维护。
-**最后更新**：2026-09-03。
+**最后更新**：2026-09-05。
 **状态**：**草案 v0.17 · Stage A.1、A.2.1、A.2.2.1、A.2.2.2-R0～R6 已落地 · R1 固化真实同步成功 ACK，R2 固化真实提交后超时与显式对账撤回，R3 固化探针级加密私有 locator 跨进程对账，R4 固化一次 NapCat 群历史扩展下的受控 ACK→locator 窗口恢复，R5 固化单宿主跨进程 SQLite owner lease/fencing 合成证据，R6 冻结私聊/无可信历史能力时的失败关闭策略 · 私聊自动恢复、宿主级密钥恢复与多宿主 owner lease 仍未验证 · B0 Trace-only 的 S0/S1 合成证据阶段已收口 · Production Stream 未实现**。
 **读者**：内核维护者、输入/输出适配器作者、Event/记忆/Agent 模块作者与多通道集成方。
 
@@ -448,6 +448,8 @@ npm run event:onebot-live-probe -- --confirm-live A2.2.2_TEST_ACCOUNT
 - 首次真实启动暴露 CLI liveness 缺陷：上游 ACK 后进程提前退出，留下零字节锁和一条固定探针消息。维护者先从测试群历史中严格按“当前测试账号 + 固定探针前缀”定位唯一候选，撤回成功并复核候选归零，再删除精确 stale lock；正式 R2 样本只在 `8f033207` 修复与合成回归通过后运行。该事故不被计入正式 R2 成功证据，但保留在文档中作为失败恢复记录。
 - 提交 `dfe1da33` 将正式脱敏结果固化为 [`runtime_event_stream_stage_a2_onebot_timeout_evidence.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_timeout_evidence.v1.json)。原始证据与夹具字节一致；两者均不含端点、账号/群号、正文、token 或 provider `message_id`。
 - provider locator 只短暂存在探针进程内存，没有落盘。R2 因而只关闭“真实提交后超时 + 零重试 + 同进程显式对账撤回”子证据，不证明适配器私有加密持久 store、进程崩溃/重启后人工对账、跨进程或多宿主 owner lease/fencing、Production Stream、消费者恢复或 checkpoint 实现；`K-EVENT-STREAM-01` 继续保持 OPEN。
+
+> **证据范围与完整流量审计（2026-09-04）**：R1～R6 的版本化 evidence 是各阶段选定的正式样本，不是完整真实调用历史。对保留的本地日志、NapCat 日志、探针调用路径与时间戳进行只读交叉审计后，可确认整个 R1～R6 活动共发生 **5 次真实群发送等价请求和 5 次真实撤回请求**：R1 一组，R2 首次 liveness 事故及其人工清理一组、修复后的正式样本一组，R3 一组，R4 一组；R5/R6 为纯 synthetic，真实流量为 0。该总数解释了 provider 侧可见撤回痕迹为何会多于正式 evidence 样本数。本文不保存账号、目标、正文、token 或 provider locator；无法从现存证据可靠恢复的逐条 UI 展示时间仍保持 unknown。
 
 ### 7.1.7 Stage A.2.2.2-R3 · 加密私有恢复存储与跨进程对账样本
 

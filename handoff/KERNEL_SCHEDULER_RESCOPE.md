@@ -1,6 +1,6 @@
 # 内核调度系统 — 范围重划（Rescope · 2026-06-11）
 
-**状态**：架构决策 · **不删代码** · 产品面 **收窄 + 封存扩展**  
+**状态**：架构决策 · **不删代码** · 产品面 **收窄 + 封存扩展**
 **最后更新**：2026-07-29（统一资源协调首个 LLM/Voice 切片已实现）
 **关联**：[DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 
@@ -57,7 +57,7 @@ flowchart TB
 | **全能兜底** | `%LOCALAPPDATA%/OCLive/runtime/` shared 全量构建 | bundled 启动失败 / crash / manifest 不兼容 |
 | **开发覆盖** | monorepo dev build（score 89–95） | 仅开发者；**不**作为终端用户默认 |
 
-**插件复用（兜底时）**：目录插件在 `{app_data}/distros/chat-pro/plugins/`；策略在 `distro.oclive.toml` + 角色蓝图。**换兜底内核 ≠ 换插件目录** — 新进程继承相同 `OCLIVE_APP_DATA`、`OCLIVE_DISTRO_PROFILE`、`OCLIVE_ROLES_DIR` 即可。
+**插件复用（兜底时）**：用户目录插件在 `{app_data}/plugins/`；策略在 `distro.oclive.toml` + 角色蓝图。**换兜底内核 ≠ 换插件目录** — 新进程继承相同 `OCLIVE_APP_DATA`、`OCLIVE_DISTRO_PROFILE`、`OCLIVE_ROLES_DIR` 即可。
 
 **新模块问题**：
 
@@ -101,7 +101,7 @@ flowchart TB
 
 ## 3. 对 `resolve_kernel_action` 的裁定
 
-实现：`kernel/crates/oclive_kernel_runtime/src/kernel_strategy.rs`  
+实现：`kernel/crates/oclive_kernel_runtime/src/kernel_strategy.rs`
 文档：[DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 
 ### 3.1 保留（产品仍依赖）
@@ -220,8 +220,8 @@ flowchart TD
 
 **插件复用**：不拷贝插件。兜底 spawn 沿用同一组 env：
 
-- `OCLIVE_APP_DATA` → `{app_data}/distros/chat-pro/plugins/` 不变  
-- `OCLIVE_DISTRO_PROFILE` → 同一 HostProfile / `[plugin_backends]`  
+- `OCLIVE_APP_DATA` → `{app_data}/plugins/` 不变
+- `OCLIVE_DISTRO_PROFILE` → 同一 HostProfile / `[plugin_backends]`
 - `OCLIVE_ROLES_DIR` → 同一蓝图 `slot_registry` / `directory_plugins`
 
 即：**换二进制，不换插件装备**。
@@ -240,8 +240,8 @@ flowchart TD
 
 用本地历史「拼出真正全能核」**鸡肋**（记录 ≠ 二进制）。若需支持排障，仅保留 **轻量 last event**（可选）：
 
-- 路径：`{app_data}/kernel_fallback_last.json`  
-- 字段：`at` · `from_tier: bundled` · `to_tier: shared` · `distro_id` · `bundled_path` · `fallback_path` · `health_error`  
+- 路径：`{app_data}/kernel_fallback_last.json`
+- 字段：`at` · `from_tier: bundled` · `to_tier: shared` · `distro_id` · `bundled_path` · `fallback_path` · `health_error`
 
 **不**做聚合统计、不据此自动 promote；shared runtime 仍由官方 release / `oclive-cli kernel promote` 维护。
 

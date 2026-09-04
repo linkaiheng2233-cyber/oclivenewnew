@@ -4,7 +4,7 @@
 
 **源码**：[`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)  
 **契约参考**（正式宿主）：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
-**`plugin_backends` 字段级权威说明**：[SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
+**蓝图 `slot_registry` / 运行时六槽折叠说明**：[SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
 
 ---
 
@@ -18,11 +18,11 @@ cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
-`init --help` **末尾**附有 **预设与 `plugin_backends` 矩阵**（与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。
+`init --help` **末尾**附有 **预设与六槽后端矩阵**（当前 `init` legacy 脚手架写 `plugin_backends`；与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。新 Stable 角色包仍以 v4 蓝图 `slot_registry` 为准。
 
 **角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
 
-**5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话纯内核脚手架)。
+**5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话无头参考运行时脚手架)。
 
 **与实现对齐**：顶层子命令以 `kernel/crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准。默认帮助只展示稳定入口；试验命令仍可通过已知名称调用，但必须显式传全局 `--experimental`。旧工程归档 `template` 保持兼容可调用但默认隐藏。
 
@@ -223,7 +223,7 @@ cargo run -p oclive-cli -- profile -o ./my-kernel --json
 |--------|------|
 | `market search <kw>` | 搜索插件、模板、角色包（复用 `OCLIVE_PLUGIN_INDEX_URL` / `OCLIVE_MARKET_INDEX_URL`） |
 | `market browse` | TUI：左侧分类、右侧列表与详情；**Enter** 安装，**Esc** 退出 |
-| `market install <id>` | 安装条目（插件→`distros/chat-pro/plugins/`；模板→`init`；角色包→`distros/chat-pro/roles/`） |
+| `market install <id>` | 安装条目（默认：插件→当前目录 `plugins/`；模板→`--template-output`；角色包→`<template-output>/roles/`） |
 | `market info <id>` | 查看详情 |
 
 离线缓存：`~/.oclive/plugin_index_cache.json`（在线拉取失败时自动回退）。默认索引与桌面一致：`awesome-oclive-plugins` 的 `plugins.json`；官方示例草稿见主仓 `data/plugins.json`（可用 `OCLIVE_PLUGIN_INDEX_URL` 指向其 raw URL）。
@@ -411,7 +411,7 @@ cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memo
 cargo run -p oclive-cli -- plugin create my-plugin
 ```
 
-**`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为 `./distros/chat-pro/plugins/`；最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
+**`--provides`**：`llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion`（可重复）。输出目录默认为当前工程的 `./plugins/`；在主仓开发官方示例时可显式传 `-o ./distros/chat-pro/plugins/`。最终包路径为 `<output>/<plugin_id>/`（`id` 由名称 slug 为 `com.oclive.plugin.<name>`）。
 
 生成 manifest 经 **`oclive_validation`** 权限校验（目录插件）。快速上手见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)。
 
@@ -424,7 +424,7 @@ cargo run -p oclive-cli -- plugin create my-plugin
 主应用默认**不**展示架构图；开发者用本子命令组管理 **`slot_registry`**。
 
 ```bash
-# 列出槽位（默认 ./distros/chat-pro/roles/ 下唯一包，或 --role）
+# 列出槽位（默认当前工程 ./roles/ 下唯一蓝图包，或显式 --role）
 cargo run -p oclive-cli -- plugin manage list
 cargo run -p oclive-cli -- plugin manage list --role distros/chat-pro/roles/mumu --json
 
@@ -454,11 +454,13 @@ cargo run -p oclive-cli -- plugin manage --tui --role distros/chat-pro/roles/mum
 
 ## `dev`：角色包目录监听
 
-在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。使用 **notify 递归模式**监听 **`distros/chat-pro/roles/**/manifest.json`** 与 **`distros/chat-pro/roles/**/settings.json`**（任意子目录角色包）；**500ms 防抖**后打印：
+在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。默认使用 **notify 递归模式**监听 **`roles/**/manifest.json`** 与 **`roles/**/settings.json`**（可用 `--roles` 改根目录）；**500ms 防抖**后打印：
 
 `[oclive dev] 检测到角色包 '<id>' 变更，已重载`
 
 **`--reload-cmd`** 可在变更后执行一条 shell 命令（如通知侧车重载）。
+
+**当前限制**：`dev` 尚未监听当前 SSOT `pipeline.ocblueprint`，因此修改 v2/v3/v4 蓝图不会触发上述提示；这是已登记的 `D-CLI-BLUEPRINT-05`，不要把它误解为宿主不加载蓝图。
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project
@@ -476,13 +478,13 @@ cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
 cargo run -p oclive-cli -- init -o ./out/my-kernel
 ```
 
-流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin` / `remote` / `directory` / `none`（`llm` 槽另有 **`ollama`**）选择、可选插件开关、是否生成示例 `distros/chat-pro/roles/default`；**无头服务（kernel_server）** 末尾另有 **开发者编译选项**（默认关闭）。
+流程包括：项目名、类型（无头可执行 / 库）、后端槽位多选、`builtin` / `remote` / `directory` / `none`（`llm` 槽另有 **`ollama`**）选择、可选插件开关、是否生成示例 `roles/default`；**无头服务（kernel_server）** 末尾另有 **开发者编译选项**（默认关闭）。
 
 ### 非交互 + 预设
 
 | 预设 | 说明 |
 |------|------|
-| `minimal` | 六槽全 `builtin` 语义；`llm` 写 **`ollama`**；`agent` **省略 JSON 键**；`complex_emotion` 为 `none`；插件占位关 |
+| `minimal` | memory/emotion/event/prompt 为 `builtin`，`llm` 写 **`ollama`**；逻辑 Agent 预设为 none，但当前非双核 legacy 输出**省略键并实际回退 builtin**；`complex_emotion` 扩展提示键会被 legacy 解析忽略；插件占位关 |
 | `mixed` | 与矩阵一致：`llm=ollama`，`agent`/`complex_emotion` 为 `builtin`；部分插件说明开启 |
 | `full` | `llm=remote`，`complex_emotion=remote`，其余槽 `builtin`；插件说明全开 |
 
@@ -491,7 +493,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /t
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --skip-role-pack -o /tmp/my-kernel-no-roles
 ```
 
-`--skip-role-pack`：不生成 `distros/chat-pro/roles/`（空白内核工程）。
+`--skip-role-pack`：不生成根级 `roles/`（空白内核工程）。
 
 ### 环境推荐（`--smart`）
 
@@ -524,16 +526,16 @@ cargo run -p oclive-cli -- --experimental init --non-interactive --template head
 cargo run -p oclive-cli -- init --non-interactive --template library-embed --kernel-source . -o ./out/embed
 ```
 
-**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `distros/chat-pro/roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。
+**`--with-role-pack`**：`robot-soul-minimal`（七维 + `prompts/system.md`）| `default`（通用 `roles/default`）。未指定且未用模板时，非交互仍生成 **default** 示例包（与历史一致）。
 
-**`--with-example-plugin`**：复制 `com.oclive.example.llamacpp_llm/` 到 `distros/chat-pro/plugins/`（源自主仓 `examples/directory-plugin-llamacpp/`；默认关闭）。
+**`--with-example-plugin`**：复制 `com.oclive.example.llamacpp_llm/` 到生成工程的根级 `plugins/`（源自主仓 `examples/directory-plugin-llamacpp/`；默认关闭）。
 
-生成工程含 **`distros/chat-pro/plugins/README.md`**、**`docs/BLUEPRINT_REFERENCE.md`**、**`docs/ORCHESTRATION_REFERENCE.md`**（中英编排参考）。
+生成工程含 **`plugins/README.md`**、**`docs/BLUEPRINT_V2_POINTER.md`**、**`docs/PIPELINE_CUSTOM.md`**、**`docs/WELD_BENCH_REPORT.md`**（含英文版）与 **`docs/DEBUG_REFERENCE.md`**。
 
 **蓝图校验**（`[experimental/legacy]`，不改变桌面宿主主路径；新工程优先 `init --pipeline`）：
 
 ```bash
-cargo run -p oclive-cli -- --experimental blueprint validate ./distros/chat-pro/roles/myrole/pipeline.ocblueprint
+cargo run -p oclive-cli -- --experimental blueprint validate ./roles/myrole/pipeline.ocblueprint
 cargo run -p oclive-cli -- --experimental blueprint validate ./path.json --json
 ```
 
@@ -567,10 +569,10 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--monolith-preset` | 仅 Monolith 启用时：`latency`（七焊接键全焊）\| `memory` \| `embedded`；预填 `monolith.toml` 的 `weld_modules` |
 | `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
 | `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
-| `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无 `distros/chat-pro/roles/`；交互仅问项目名与输出目录 |
+| `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无根级 `roles/`；交互仅问项目名与输出目录 |
 | `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
-| `--with-example-plugin` | 附带 llamacpp 目录插件示例到 `distros/chat-pro/plugins/` |
+| `--with-example-plugin` | 附带 llamacpp 目录插件示例到根级 `plugins/` |
 | `--kernel-source` | 指向 oclivenewnew 根目录，生成 path 依赖与真实 HTTP 入口 |
 | `--author` | 写入生成 `Cargo.toml` 的 `[package].authors` |
 | `--license` | SPDX 许可证（默认 **MIT**） |
@@ -637,7 +639,7 @@ cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 ## 生成物说明
 
 - **未传 `--kernel-source` 的占位 `Cargo.toml`**：仅依赖 **`serde` / `serde_json`**，用于验证目录/配置形状。传入 `--kernel-source <主仓根>` 后，`kernel_server` 链接真实无头入口，`library` 则链接 host/contracts/runtime/types 并直接重导出稳定 **`OcliveKernel`** 完整进程内门面。
-- **`distros/chat-pro/roles/default/settings.json`**：含 **`_comment_*`** 与完整 **`plugin_backends`**（含第 7 键 `complex_emotion`）；与主应用完全对齐时请以 [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) 为准裁剪非法键（如主应用不接受的 `none` 字符串）。
+- **`roles/default/settings.json`**（当前非双核 `init` 的 legacy 示例）：含 `_comment_*` 与六槽 `plugin_backends`，另有会被 legacy `PluginBackends` 忽略的 `complex_emotion` 设施提示键；`none` 已是六槽合法 Noop 后端，但关闭 prompt / llm 会破坏健康主链。新 Stable 角色包应改用 v4 蓝图。
 - **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 还包含 `OcliveKernel::start → load_role → process_message → shutdown` 示例。
@@ -714,7 +716,7 @@ cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-d
 
 ## 后续路线（建议）
 
-1. 在 workspace 中落地 **`oclive_kernel_runtime`** 后，为 CLI 增加 **`--kernel-source path`**，自动写入 `Cargo.toml` 依赖。  
+1. 当前 **`--kernel-source path`** 已能写入完整参考运行时依赖；待 **K-CORE-BOUNDARY-01** 完成最小内核物理抽离后，再为 CLI 增加仅依赖该 core 的生成模式，并保持现有完整运行时模式兼容。
 2. 与 `MODULE_NONE_SEMANTICS` 对齐时，为「逻辑 none」与「可加载 JSON」生成 **自动校验** 或 `cargo oclive-validate-settings` 子命令。
 
 ---

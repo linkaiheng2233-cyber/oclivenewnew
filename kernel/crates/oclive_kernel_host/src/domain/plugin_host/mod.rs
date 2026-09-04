@@ -49,7 +49,7 @@ pub struct ResolvedRolePlugins {
     pub prompt: Arc<dyn PromptAssembler>,
     pub llm: Arc<dyn LlmClient>,
     pub agent: Arc<dyn AgentProvider>,
-    /// Blueprint `complex_emotion` slot last-wins resolve (builtin when no registry).
+    /// Blueprint `complex_emotion` facility last-wins resolve (Noop when no registry entry).
     pub complex_emotion: Arc<dyn ComplexEmotionProvider>,
     /// Per-instance multi-slot view (P3; P4 orchestration serial merge).
     pub slots: Option<ResolvedRoleSlots>,

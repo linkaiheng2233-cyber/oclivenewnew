@@ -72,11 +72,11 @@
 ```powershell
 cargo build -p oclive-kernel-server
 $env:OCLIVE_USE_CANONICAL_APP_DATA = "1"
-$env:OCLIVE_ROLES_DIR = "D:\oclivenewnew\roles"
+$env:OCLIVE_ROLES_DIR = "D:\oclivenewnew\distros\chat-pro\roles"
 $env:RUST_LOG = "info"
 # 联调可先 mock；量产接 Ollama 时去掉下一行
 $env:OCLIVE_HTTP_API_MOCK_LLM = "1"
-.\target\debug\oclive-kernel-server.exe --api
+cargo run -p oclive-kernel-server -- --api
 ```
 
 **Linux / 设备**
@@ -87,7 +87,7 @@ export OCLIVE_USE_CANONICAL_APP_DATA=1
 export OCLIVE_ROLES_DIR=/path/to/roles
 export RUST_LOG=info
 export OCLIVE_HTTP_API_MOCK_LLM=1   # 联调；量产去掉
-./target/debug/oclive-kernel-server --api
+cargo run -p oclive-kernel-server -- --api
 ```
 
 - 默认端口：**8420**（`OCLIVE_API_PORT` 或 `--port` 可改）。  
@@ -347,7 +347,7 @@ OClive **不自带模型权重**；`llm` 槽可换：
 |------|------|
 | 无头最小闭环 | [`examples/headless-kernel-minimal/README.md`](examples/headless-kernel-minimal/README.md) |
 | 纯净内核边界 | [`creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md`](creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md) |
-| 平台开发者路径 | [`creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md`](creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md) |
+| 内核集成者路径 | [`creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md`](creator-docs/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md) |
 | 角色包规范 | [`creator-docs/role-pack/ROLE_PACK_SPEC.md`](creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 | 六槽与插件 | [`creator-docs/plugin-and-architecture/PLUGIN_V1.md`](creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | 目录插件 | [`creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md`](creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |

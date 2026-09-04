@@ -1,8 +1,20 @@
 # A.I.Live 文档索引
 
 **SSOT 范围**：本文只负责“去哪里读”，不复制架构、契约、进度或测试表。
-**最后更新**：2026-09-03。
+**最后更新**：2026-09-04。
 **原则**：先按身份选择一条入口；遇到具体问题再查专题文档。
+
+## 发生冲突时按什么顺序判断
+
+| 顺序 | 问题 | 只查这里 |
+|------|------|----------|
+| 1 | OCLive 的本质与最小边界是什么 | [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) · [定位 SSOT](../../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) |
+| 2 | 六槽、设施、独立通道分别属于哪里 | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
+| 3 | 当前一轮实际怎样执行、谁提交状态 | [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md) · 对应 Rust 源码 |
+| 4 | 配置和 wire 怎样写 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE](../cli/SETTINGS_REFERENCE.md) |
+| 5 | 哪些只是计划或未完成能力 | [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) · 对应 RFC |
+
+简化为一句话：**定位文档定义“是什么”，模块表定义“属于哪里”，代码定义“今天怎样运行”，契约文档定义“怎样接入”，债务表定义“还没做到什么”。**
 
 ## 先选择你的身份
 
@@ -24,7 +36,7 @@
 | 人格、记忆种子与身份文件 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) · [角色包创作流程](CREATOR_WORKFLOW.md) |
 | Chat Pro 成人角色扩展 | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-成人角色扩展adult_extensionjson--可选) |
 | 世界观与知识文件 | [WORLDVIEW_KNOWLEDGE](../role-pack/WORLDVIEW_KNOWLEDGE.md) |
-| 包版本与迁移 | [PACK_VERSIONING](../role-pack/PACK_VERSIONING.md) · [v1→v2](../role-pack/V1_TO_V2_MIGRATION.md) · [v2→v3](../role-pack/V2_TO_V3_MIGRATION.md) |
+| 包版本与迁移 | [PACK_VERSIONING](../role-pack/PACK_VERSIONING.md) · [legacy→v2 兼容产物](../role-pack/V1_TO_V2_MIGRATION.md) · [v2→冻结双核 v3](../role-pack/V2_TO_V3_MIGRATION.md)；普通新 Stable 包用 v4 |
 | 编写器兼容 | [COMPATIBILITY](../COMPATIBILITY.md) |
 
 ## 开发者专题

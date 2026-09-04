@@ -64,7 +64,7 @@ rg 'target: "oclive' kernel/crates distros/desktop-tauri
 
 | Item | Notes |
 |------|-------|
-| **Path** | `{app_data}/app.db` (Windows often under `%APPDATA%` app id) |
+| **Path** | `{app_data}/app.db` (desktop/shared-kernel canonical default on Windows: `%LOCALAPPDATA%/OCLive/data/app.db`; old `%APPDATA%/com.oclivenewnew.app` is migration-only) |
 | **Doc** | [CONFIGURATION_FILES.md](../creator-docs-en/guides/CONFIGURATION_FILES.md) |
 | **Open** | [DB Browser for SQLite](https://sqlitebrowser.org/) or `sqlite3` |
 | **Migrations SSOT** | [`kernel/crates/oclive_kernel_host/migrations/`](../kernel/crates/oclive_kernel_host/migrations/) |

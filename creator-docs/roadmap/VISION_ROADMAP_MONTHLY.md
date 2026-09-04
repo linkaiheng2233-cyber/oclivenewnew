@@ -1,6 +1,6 @@
 # oclive 愿景落实 · 按月计划
 
-本文把「开放平台 + 双软件 + 角色包 + 可替换记忆/情感 + 可选多语言插件」拆成**按月可交付**的里程碑。顺序可随人力微调，但**契约先于实现、默认实现先于真插件**的原则不变。
+本文把「最小工具内核 + 可用参考运行时与创作者工具 + 可携带角色包 + 可替换记忆/情感 + 可选多语言插件」拆成**按月可交付**的里程碑。它记录的是一种产品装配路线，不把开放实验平台或双软件形态写成 OCLive 的本体。顺序可随人力微调，但**契约先于实现、默认实现先于真插件**的原则不变。
 
 **产品首发（P0）**：桌面宿主当前执行视图见 **[`handoff/PRODUCT_LINE_TASK_BUCKETS.md`](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)**、**[`handoff/TECHNICAL_DEBT_INVENTORY.md`](../../handoff/TECHNICAL_DEBT_INVENTORY.md)**；发版按 **[CONTRIBUTING](../../CONTRIBUTING.md)** 与 CI 勾选。
 
@@ -11,9 +11,9 @@
 | 支柱 | 含义 | 计划中对应项 |
 |------|------|----------------|
 | 开放 | 不追单点 SOTA，追**可替换、可文档化、可版本化** | 契约文档、trait 边界、开源准备 |
-| 双软件 | **运行时（玩家）** 与 **创作者工具** 分离，**角色包**为唯一纽带 | 包规范强化、编写器、README 分工说明 |
+| 双软件 | **运行时（玩家）** 与 **创作者工具** 分离；角色包是二者之间的主要可携带资产，内核集成方仍可直接使用稳定门面与六槽契约 | 包规范强化、编写器、README 分工说明 |
 | 角色即工作流 | 每个角色包是一套可声明的配置 + 可选后端 | manifest 扩展、`min_runtime`、后端枚举 |
-| 记忆 / 情感可换 | 七维等只是**当前默认模块**，非平台上限 | Memory/Emotion 门面、第二套实现、远期侧车/WASM |
+| 记忆 / 情感可换 | 七维等只是**当前默认实现**，不是六槽契约所允许的唯一实现 | Memory/Emotion 门面、第二套实现、远期侧车/WASM |
 | **灵魂权重层** | 口癖、节奏、直播态等可沉淀为 **LoRA/SFT adapter**，与 prompt / 记忆并列；运行时由 **专家模型设施子模块** 按条件切换（`slot.lora.apply`），而非再做一个封闭「性格引擎」 | 微调工坊（独立创作者工具）、角色包 adapter 卫星文件、`expert_routing.json`、directory 推理插件 |
 | **TTFT · 双档思考** | 闲聊 **Fast**（规则 event · 裁剪上下文）保首字；高价值轮 **Deep** 保质量；Deep 侧用 **离线 persona capsule + 稳定前缀 KV 延续** 压 prefill | Turn Thinking · `handoff/TTFT_BENCHMARK.md` · `handoff/DEEP_PROMPT_DISTILLATION.md` |
 | **具身互动 · 性格驱动的「手脚」** | 角色不只会说：按人设 **被动调工具** 与 **idle 自发动作**；沙盒 playroom + 用户授权 + 频率/撤销策略；聊天仍走 co-present | 第 6 槽 agent/MCP · 拟 **独立通道** 行为导演 · [APPLICATION_SCENARIOS.md](APPLICATION_SCENARIOS.md) **S12** |
@@ -26,10 +26,10 @@
 
 | 交付物 | 说明 |
 |--------|------|
-| `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | 各子系统 DTO、`settings.json` 枚举；**已补充**「`send_message` 编排顺序」与 `chat_engine` / `PluginHost` 对照。 |
+| `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | 各子系统 DTO、蓝图 `slot_registry` 与 legacy `settings.json` 枚举；**已补充**「`send_message` 编排顺序」与 `chat_engine` / `PluginHost` 对照。 |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | 包版本、`schema_version`、`min_runtime_version`（预留）、未知字段策略；**已补充**第 1 月与 `plugin_backends` 的对照。 |
-| Rust 门面 | 以 **[`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)** 为宿主：[`MemoryRetrieval`](../../kernel/crates/oclive_kernel_runtime/src/domain/memory_retrieval.rs)、[`UserEmotionAnalyzer`](../../kernel/crates/oclive_kernel_runtime/src/domain/user_emotion_analyzer.rs)、[`EventEstimator`](../../kernel/crates/oclive_kernel_host/src/domain/event_estimator.rs)、[`PromptAssembler`](../../kernel/crates/oclive_kernel_runtime/src/domain/prompt_assembler.rs)、[`LlmClient`](../../kernel/crates/oclive_kernel_host/src/infrastructure/llm.rs)；主流程只做编排。 |
-| `settings.json` | 使用嵌套对象 **`plugin_backends`**（`memory` / `emotion` / `event` / `prompt` / `llm`），见 [`plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)。**不再**使用独立字段名 `memory_backend` / `affect_backend`（早期愿景草案）；情感分析对应键 **`emotion`**。`builtin` / `remote`（及 `llm`: `ollama` / `remote`）为已实现枚举；`builtin_v2` 仅为读兼容 alias（等同 `builtin`）；`remote` 需环境变量时，加载角色时会 **记警告日志**（仍回退内置，与既有行为一致）。 |
+| Rust 门面 | 以 **[`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)** 为完整参考宿主，绑定 memory / emotion / legacy event / prompt / llm / agent 六个稳定端口；主流程拥有调用、合并、提交与隔离权。具体 trait 与 DTO 见 PLUGIN_V1。 |
+| `pipeline.ocblueprint` | 当前 v2/v3/v4 包以 **`slot_registry`** 声明六槽实例与 backend，新 Stable 包使用 v4；宿主把有效注册表折叠成六键 `PluginBackends` 兼容视图。legacy `settings.json.plugin_backends` 仅作旧包迁移；`builtin_v2` 仅为读兼容 alias。 |
 
 **验收**：全量 `cargo test`、`npm run build`；对话与好感等行为与本月前**无回归**（或仅有可说明的显式变更）。
 
@@ -42,7 +42,7 @@
 | 交付物 | 说明 |
 |--------|------|
 | 编写器形态 | 独立应用或 oclive 内「创作者模式」二选一；优先**独立**，避免与玩家端耦合过重。 |
-| 功能范围 | `manifest.json` 门面字段、`settings.json` 基础段、**与后端同一套校验**（或调用/复用校验逻辑）。 |
+| 功能范围 | `pipeline.ocblueprint` 的创作者门面与受限高级蓝图视图、**与宿主同一套 `oclive_validation` 校验**；legacy 双文件仅用于导入迁移。 |
 | 导出 | 生成 `distros/chat-pro/roles/{id}/` 目录或 zip，结构与 [distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md) 一致。 |
 | 文档 | 创作者路径：`creator-docs/getting-started/` 等 |
 
@@ -60,7 +60,7 @@
 | 编写器 | 可选到第二套 backend（若该实现面向创作者开放）。 |
 | 回归 | 默认 backend 仍为线上默认；切换路径有测试覆盖。 |
 
-**验收**：同一角色包仅改 `*_backend` 字段，可观察到**可测差异**（日志或固定用例）。
+**验收**：同一角色包仅改目标 `slot_registry` 实例的 `backend`，可观察到**可测差异**（日志或固定用例）；不另造平行配置键。
 
 ---
 
@@ -85,7 +85,7 @@
 
 | 交付物 | 说明 |
 |--------|------|
-| 包结构 | 如 `knowledge/`（Markdown 分块或 JSON FAQ）+ manifest 引用。 |
+| 包结构 | 如 `knowledge/`（Markdown 分块或 JSON FAQ）+ 当前蓝图 `meta.knowledge` 引用；legacy manifest 只作迁移兼容。 |
 | 运行时 | 对话前 **检索/注入**（关键词或向量二选一先做轻量）；与现有 prompt 管线衔接。 |
 | 编写器 | 知识块编辑与版本展示；与包版本联动。 |
 

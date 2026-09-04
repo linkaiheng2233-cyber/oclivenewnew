@@ -28,14 +28,14 @@
 ### 2.2 角色包（C 站式展示栏）
 
 - **列表 + 筛选**：标签、兼容 oclive 版本、`schema_version`、题材等。
-- **详情页**：立绘/截图轮播、作者、**配置要点**（manifest/settings 关键项说明）、**剧情触发说明**（与游戏内 `scene`/事件链对应，以文档为准）。
+- **详情页**：立绘/截图轮播、作者、**配置要点**（Stable v4 的 `pipeline.ocblueprint`：`meta` / `slot_registry` / 可选 `runtime_config` 与 `extensions`；旧包再显示 manifest/settings 迁移提示）、**剧情触发说明**（与游戏内 `scene`/事件链对应，以文档为准）。
 - **下载**：指向对象存储或 GitHub Release；校验可选 `sha256`。
 - 与 [MARKET_LAUNCHER_INTEGRATION.md](./MARKET_LAUNCHER_INTEGRATION.md) 中的 **catalog / 静态索引** 可合并为同一站点的「数据层」，或论坛与目录分服务、域名统一入口。
 
 ### 2.3 插件区
 
 - 明确 **插件 = Remote HTTP 侧车**（或将来官方列出的二进制工具），**不是**宿主内动态插件。
-- 内容：侧车 README 摘要、环境变量示例、与角色包 `plugin_backends` 的搭配说明、**讨论帖链接**。
+- 内容：侧车 README 摘要、环境变量示例、与角色包蓝图 `slot_registry` 的搭配说明（运行时会折叠成 `PluginBackends` 六槽视图）、**讨论帖链接**。
 - 重度实现仍建议链到 **仓库 / Release**，网站做 **索引与发现**。
 - **落地页结构、`plugins.json` 字段、路由示例**：见 **[PLUGIN_WEB_SECTION.md](./PLUGIN_WEB_SECTION.md)**。
 

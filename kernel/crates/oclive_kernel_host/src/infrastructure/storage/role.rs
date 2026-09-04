@@ -208,9 +208,9 @@ impl RoleStorage {
 
     /// v3 blueprint pack: loads `runtime_config` and `pipeline.experimental`.
     ///
-    /// FROZEN-DRAFT (2026-06-01, see the freeze-decision section in
-    /// handoff/TECHNICAL_DEBT_INVENTORY.md): v2 remains SSOT. Do not grow the v3
-    /// schema / migration surface until v2 genuinely cannot express a real need.
+    /// FROZEN dual-core Beta (see handoff/TECHNICAL_DEBT_INVENTORY.md): new
+    /// Stable packs use v4 and v2 remains compatible. Do not grow the v3 schema
+    /// or migration surface; v3 exists only for the opt-in dual-core contract.
     fn load_role_from_blueprint_v3_dir(&self, role_dir: &Path) -> Result<Role> {
         let loaded = load_blueprint_v3_for_role_dir(role_dir, env!("CARGO_PKG_VERSION")).map_err(
             |errs| {

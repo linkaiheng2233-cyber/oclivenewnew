@@ -45,7 +45,7 @@
   <text x="120" y="105" class="title">OCLive 架构学习长图</text>
   <text x="120" y="160" class="subtitle">依赖层级 · process_message · turn_pipeline · 六槽 Hook · Event Ring · 持久化 · 独立通道</text>
   <rect x="120" y="205" width="355" height="48" rx="24" fill="#eef6ff" stroke="#a7c7e8"/>
-  <text x="298" y="237" text-anchor="middle" class="small">现行源码快照 · 2026-08-31</text>
+  <text x="298" y="237" text-anchor="middle" class="small">现行源码快照 · 2026-09-05</text>
   <rect x="495" y="205" width="270" height="48" rx="24" fill="#eefaf6" stroke="#a5d8c9"/>
   <text x="630" y="237" text-anchor="middle" class="small">白底 · 可编辑矢量母版</text>
   <rect x="785" y="205" width="360" height="48" rx="24" fill="#fff6e9" stroke="#edc497"/>
@@ -172,8 +172,8 @@
   <text x="1250" y="1790" text-anchor="middle" class="node-title">process_message::run</text>
   <text x="1140" y="1840" class="node-text">① role/session/scene</text>
   <text x="1140" y="1880" class="node-text">② preflight_turn</text>
-  <text x="1140" y="1920" class="node-text">③ TurnContext</text>
-  <text x="1140" y="1960" class="node-text">④ correlation_id</text>
+  <text x="1140" y="1920" class="node-text">③ 可选 Agent 短路</text>
+  <text x="1140" y="1960" class="node-text">④ TurnContext / correlation</text>
   <text x="1140" y="2000" class="node-text">⑤ dispatch_turn</text>
   <line x1="1140" y1="2030" x2="1360" y2="2030" stroke="#b8c8d8"/>
   <text x="1140" y="2070" class="small">流式版本共享同一结构，</text>
@@ -314,7 +314,7 @@
   <circle cx="180" cy="4800" r="34" fill="#2463a8"/><text x="180" y="4803" class="number">4</text>
   <rect x="420" y="4745" width="1180" height="300" class="node-core"/>
   <text x="470" y="4795" class="node-title">run_main_llm / run_main_llm_stream · ⑤ llm 槽</text>
-  <text x="470" y="4845" class="node-text">选择主 LLM（多实例 last-wins）· 可选专家 LoRA / dual pipeline</text>
+  <text x="470" y="4845" class="node-text">选择主 LLM（非流式多策略；流式串行）· 可选专家 LoRA / dual pipeline</text>
   <text x="470" y="4890" class="node-text">非流式 generate 或流式 token sink；首 token 前失败才允许 fallback</text>
   <text x="470" y="4935" class="node-text">回复契约检查 → 必要时 repair → 安全 fallback；已出 token 后不重跑</text>
   <text x="470" y="4990" class="small">输出 MainLlmOutput：reply · raw/fallback · timing</text>
@@ -455,7 +455,7 @@
   <rect x="1420" y="7965" width="410" height="150" class="node-core"/>
   <text x="1625" y="8007" text-anchor="middle" class="node-title">SlotRunner</text>
   <text x="1625" y="8043" text-anchor="middle" class="small">memory 去重合并</text>
-  <text x="1625" y="8075" text-anchor="middle" class="small">llm last-wins · agent 工具并集</text>
+  <text x="1625" y="8075" text-anchor="middle" class="small">llm 多策略 · agent 多实例合并未实现</text>
   <rect x="2050" y="7965" width="210" height="150" class="node-core"/>
   <text x="2155" y="8007" text-anchor="middle" class="node-title">Pipeline</text>
   <text x="2155" y="8043" text-anchor="middle" class="small">固定 Hook</text>

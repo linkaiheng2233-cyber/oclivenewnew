@@ -12,7 +12,7 @@
 
 ## 1. Position in the architecture
 
-Event Ring is a bounded, in-process, non-persistent event perimeter owned by each `AppState`. Registered modules may propose, enrich, and transform events. The ring assigns trusted identity, source, base influence, ordering, correlation, and causation.
+Event Ring is a reusable facility in the current complete reference runtime, not a prerequisite of the minimal tool kernel. It is a bounded, in-process, non-persistent event perimeter owned by each `AppState`. Registered modules may propose, enrich, and transform events. The ring assigns trusted identity, source, base influence, ordering, correlation, and causation.
 
 “Perimeter” means the routing boundary of one dispatch, and “authority” covers envelope identity and registry policy only. Event Ring is not a scheduler that continuously polls modules, does not determine whether an external claim is absolutely true, and does not own proposal admission or character-state commits.
 

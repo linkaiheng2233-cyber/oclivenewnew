@@ -8,7 +8,7 @@
 
 以下数据摘自 **`creator-docs/development/LIGHTWEIGHT_PROFILE.md` §6.7**（**Windows x86_64**，**Release**，采样日期 **2026-05-20**；`cargo bloat --release -n 8`，可执行文件为 `oclivenewnew-tauri.exe`，`target-dir` 以外置配置为准）。
 
-**v2 蓝图角色包**（如 `distros/chat-pro/roles/mumu/pipeline.ocblueprint`）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
+**v2 兼容样例角色包**（当前 `mumu`：`distros/chat-pro/roles/mumu/pipeline.ocblueprint`；新 Stable 包用 v4）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
 
 | 指标 | 数值 |
 |------|------|
@@ -56,43 +56,6 @@ cargo run -p oclive-cli -- --experimental bench --release -o /path/to/kernel-pro
 | **CPU 推理下的首 token 延迟** | 未配置 GPU / 未使用流式端点时，首包时间可能**明显长于**轻量云端 API；属模型与硬件范畴，非应用「卡顿」缺陷定义。 |
 
 更细的工程基线（历史 perf handoff、CI 策略）见 **`handoff/PERF_*`** 与根目录 **`AGENTS.md`** 中性能文档索引。
-
----
-
-## 6. 热路径 stage 分布（K-PERF-02）
-
-`turn_stage` / `process_message_stage`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/staged.rs`）在 target **`oclive_turn`** 下输出 per-stage 耗时（`elapsed_ms`）。
-
-**采样环境**：Windows x86_64 · Release · `OCLIVE_HTTP_API_MOCK_LLM=1` · 单轮 `POST /chat`（角色 `mumu`）· **`RUST_LOG=oclive_turn=debug`** · 2026-06-08。
-
-| Stage（降序 Top-10） | elapsed_ms（约） |
-|----------------------|------------------|
-| `build_prompt` | 12.4 |
-| `bot_reply_emotion_analyze` | 8.1 |
-| `load_memories` | 6.3 |
-| `memory_rank` | 4.9 |
-| `load_recent_context` | 3.2 |
-| `apply_chat_turn_atomic` | 2.8 |
-| `ensure_role_loaded` | 2.1 |
-| `complex_emotion_resolve_turn` | 1.6 |
-| `startup_health` | 1.2 |
-| `ensure_role_runtime` | 0.9 |
-
-**解读**：Mock LLM 下 Prompt 构建与情绪分析占主导；DB 写（K-PERF-01 批处理后）未进 Top-3。真实 Ollama 路径下 **`llm` 调用** 预期远超上表其余 stage — 以本机 `RUST_LOG=oclive_turn=debug` 复测为准。
-
-**K-PERF-14 · `pre_llm` Wave 1（2026-06-11）**：`turn_pipeline/pre.rs` 以 `tokio::try_join!` 并行 `prefetch_context`、`resolve_user_emotion_for_turn`、`resolve_effective_ollama_model`、`load_prev_narrative_hint`、`load_memories_and_relation_key`；`apply_time_evolution` 及后续依赖链保持原序。`oclive_turn` 额外输出 `stage=pre_llm_wave1` 汇总行（五路中最慢路径墙钟，非五段之和）。Mock LLM 下单轮 Wave 1 典型 **~4–8 ms**（视 emotion 远程槽与 DB 缓存而定），较串行累加情绪+记忆+模型读可节省约 **30–50%** 墙钟；真实 Ollama 路径收益主要在 LLM 等待前的 pre 段。
-
-复现：
-
-```bash
-cargo build -p oclivenewnew-tauri --release
-$env:RUST_LOG='oclive_turn=debug'
-$env:OCLIVE_HTTP_API_MOCK_LLM='1'
-./target/release/oclivenewnew-tauri.exe --api
-# 另终端 POST /chat 一次，查看 stderr 中 oclive_turn elapsed_ms 行
-```
-
----
 
 ## 5. 用 `oclive bench` 做性能调优（实战闭环）
 
@@ -196,6 +159,41 @@ cargo run -p oclive-cli -- --experimental bench --soak --soak-real-time --soak-d
 不带 `--soak-real-time` 时仍为加速冒烟（墙钟约 **2s × 名义小时数**，最短 8s、上限 120s），不得作为 72h 泄漏证据。真长稳必须显式使用 `--soak-real-time`；支持小数小时，例如 `--soak-duration 0.01 --soak-sample-interval 5` 可做 36s 的真实时钟校准。构建、API 冷启动和一次基线热身不计入请求的 soak 时长。
 
 若 **最终 RSS > 首样本 × 1.2**，终端输出 ⚠️ 警告。
+
+---
+
+## 6. 热路径 stage 分布（K-PERF-02）
+
+`turn_stage` / `process_message_stage`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/staged.rs`）在 target **`oclive_turn`** 下输出 per-stage 耗时（`elapsed_ms`）。
+
+**采样环境**：Windows x86_64 · Release · `OCLIVE_HTTP_API_MOCK_LLM=1` · 单轮 `POST /chat`（角色 `mumu`）· **`RUST_LOG=oclive_turn=debug`** · 2026-06-08。
+
+| Stage（降序 Top-10） | elapsed_ms（约） |
+|----------------------|------------------|
+| `build_prompt` | 12.4 |
+| `bot_reply_emotion_analyze` | 8.1 |
+| `load_memories` | 6.3 |
+| `memory_rank` | 4.9 |
+| `load_recent_context` | 3.2 |
+| `apply_chat_turn_atomic` | 2.8 |
+| `ensure_role_loaded` | 2.1 |
+| `complex_emotion_resolve_turn` | 1.6 |
+| `startup_health` | 1.2 |
+| `ensure_role_runtime` | 0.9 |
+
+**解读**：Mock LLM 下 Prompt 构建与情绪分析占主导；DB 写（K-PERF-01 批处理后）未进 Top-3。真实 Ollama 路径下 **`llm` 调用** 预期远超上表其余 stage — 以本机 `RUST_LOG=oclive_turn=debug` 复测为准。
+
+**K-PERF-14 · `pre_llm` Wave 1（2026-06-11）**：`turn_pipeline/pre.rs` 以 `tokio::try_join!` 并行 `prefetch_context`、`resolve_user_emotion_for_turn`、`resolve_effective_ollama_model`、`load_prev_narrative_hint`、`load_memories_and_relation_key`；`apply_time_evolution` 及后续依赖链保持原序。`oclive_turn` 额外输出 `stage=pre_llm_wave1` 汇总行（五路中最慢路径墙钟，非五段之和）。Mock LLM 下单轮 Wave 1 典型 **~4–8 ms**（视 emotion 远程槽与 DB 缓存而定），较串行累加情绪+记忆+模型读可节省约 **30–50%** 墙钟；真实 Ollama 路径收益主要在 LLM 等待前的 pre 段。
+
+复现：
+
+```bash
+cargo build -p oclivenewnew-tauri --release
+$env:RUST_LOG='oclive_turn=debug'
+$env:OCLIVE_HTTP_API_MOCK_LLM='1'
+./target/release/oclivenewnew-tauri.exe --api
+# 另终端 POST /chat 一次，查看 stderr 中 oclive_turn elapsed_ms 行
+```
 
 ---
 

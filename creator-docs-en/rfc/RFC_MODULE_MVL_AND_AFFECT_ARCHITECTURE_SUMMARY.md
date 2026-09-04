@@ -4,7 +4,7 @@
 
 Full RFC (Chinese SSOT): [RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../../creator-docs/rfc/RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md).
 
-**Status:** **Draft** (`display_metrics` and domain port layering landed; before finalization, trust source and [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)).
+**Status:** **Draft**, revised 2026-09-03 for model-intelligence preservation (`display_metrics` and domain port layering landed; otherwise trust source and [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)).
 
 ## Core ideas
 
@@ -15,10 +15,10 @@ Full RFC (Chinese SSOT): [RFC_MODULE_MVL_AND_AFFECT_ARCHITECTURE.md](../../creat
 
 **Affect split (target architecture):**
 
-- **Simulation** (drives **`reply`**): `core_personality.txt` + `mutable_personality` (profile SSOT) + emotion engine T2 character-affect text in prompt — **not** numeric favor / trait scores
+- **Simulation evidence** (advises **`reply`**): `core_personality.txt` + `mutable_personality` + optional emotion T2 candidates in prompt — **not** numeric favor / trait scores and not a unique emotional truth
 - **Display** (UI only): `display_metrics` JSON (`favor`, `traits[7]`, `relation_summary`) — **must not** be read by `PromptBuilder` mechanics
 
-Legacy kernel favor formulas and numeric `PersonalityEngine` evolution in prompt are **deprecated**, not the long-term platform ceiling.
+The reply model keeps semantic interpretation and natural expression. Target candidates carry source, confidence, TTL, and scope; the current `EmotionResult` remains mainly a seven-number distribution and does not yet implement those semantics uniformly. Legacy favor formulas and numeric `PersonalityEngine` evolution in prompt are **deprecated**, not the long-term kernel boundary.
 
 ## Whole-machine minimal path
 
@@ -50,6 +50,7 @@ See [MODULE_NONE_SEMANTICS.md](../kernel/MODULE_NONE_SEMANTICS.md).
 2. **Replaceable:** plugins meet T0 trait to integrate; T1+ via optional capabilities
 3. **Future-proof:** display metrics decoupled from prompt mechanics; numeric favor never T0-hard-required
 4. **Author freedom:** remote / directory / stronger LLM / custom UI within minimal contract
+5. **Preserve model intelligence:** explicit facts, candidate interpretations, model-owned expression. Rules and helper models do not become a second authoritative mind.
 
 ## Breaking note (§8 in full RFC)
 

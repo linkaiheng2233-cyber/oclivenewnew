@@ -612,7 +612,7 @@ mod tests {
     use crate::domain::dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS;
 
     #[test]
-    fn registry_covers_seven_slot_types() {
+    fn registry_covers_six_slots_plus_complex_emotion_facility() {
         let types: std::collections::HashSet<_> = EXPERIMENTAL_METHOD_SPECS
             .iter()
             .map(|s| s.slot_type)

@@ -2,22 +2,26 @@
 
 Rust 贡献者与 Agent：各 kernel crate 职责、依赖方向、改 X 去哪。
 
-**Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.1](../../creator-docs/NAMING_CONVENTIONS.md#31-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
+**Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.3](../../creator-docs/NAMING_CONVENTIONS.md#33-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
 
 ## 依赖方向
 
 ```mermaid
-flowchart BT
+flowchart TB
   types[oclive_kernel_types]
   contracts[oclive_kernel_contracts]
   runtime[oclive_kernel_runtime]
   host[oclive_kernel_host]
   server[oclive_kernel_server]
   tauri[oclivenewnew-tauri]
-  types --> contracts --> runtime --> host
-  host --> server
-  host --> tauri
+  server -->|depends on| host
+  tauri -->|depends on| host
+  host -->|depends on| runtime
+  runtime -->|depends on| contracts
+  contracts -->|depends on| types
 ```
+
+The diagram shows the principal chain. Direct dependencies such as host/runtime → types/validation and distro → runtime/types are intentionally omitted; `Cargo.toml` remains authoritative.
 
 ## Crate 速查表
 

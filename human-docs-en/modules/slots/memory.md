@@ -3,7 +3,7 @@
 > Full checklist (ZH): [`human-docs/modules/slots/memory.md`](../../../human-docs/modules/slots/memory.md)
 > Definition SSOT: [MODULE_MAP §4](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
 
-**You plug in**: `plugin_backends` key `memory` · trait `MemoryRetrieval` · hooks `pre.rs` retrieve · `post_llm` STM/LTM writes.
+**You plug in**: blueprint `slot_registry.type: memory` → folded `PluginBackends.memory` (legacy v1: `settings.json.plugin_backends.memory`) · trait `MemoryRetrieval` · `pre.rs` retrieval. Kernel orchestration performs STM/LTM writes in `post_llm`; those writes are not authority granted by the retrieval trait.
 
 **Three stores** (do not confuse): chat log (`chat_*`) ≠ `short_term_memory` ≠ `long_term_memory`. Deep dive: [CHAT_STORAGE_ARCHITECTURE](../../../handoff/CHAT_STORAGE_ARCHITECTURE.md).
 

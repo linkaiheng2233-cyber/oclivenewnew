@@ -2,50 +2,53 @@
 
 本文是 **oclive 可替换子系统**的创作者向说明：如何在**不改宿主**或**fork 宿主**的前提下扩展能力；如何配置 **HTTP 侧车**；以及「本地替换模块」「线上更新逻辑」在工程上的**真实含义**。
 
-**文档索引（全库导航）**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)  
-**JSON-RPC 字段与完整示例**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)  
-**settings 枚举契约**：[PLUGIN_V1.md](PLUGIN_V1.md)  
-**目录式进程插件**（`distros/chat-pro/plugins/`、`manifest`、整壳、`directory_plugin_invoke`）：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)  
-**Rust 替换步骤**：[HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
+**文档索引（全库导航）**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)
+**JSON-RPC 字段与完整示例**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)
+**槽位与后端契约**：[PLUGIN_V1.md](PLUGIN_V1.md)
+**目录式进程插件**（`distros/chat-pro/plugins/`、`manifest`、整壳、`directory_plugin_invoke`）：[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)
+**Rust 替换步骤**：[HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)
 **本地桥接规范（schema/min_runtime_version）**：[LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)
 
 ---
 
 ## 第一部分：架构在解决什么问题
 
-oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、主对话 LLM、Agent 编排（工具 / MCP）**。角色包通过 `settings.json` → `plugin_backends` 声明每块用 **builtin / remote / directory / local（memory）/ ollama** 等（`builtin_v2` 为已废弃读兼容 alias，等同 `builtin`；见 PLUGIN_V1）。
+oclive 把对话管线拆成可替换块：**记忆检索、用户句情绪、事件估计、Prompt 组装、主对话 LLM、Agent 编排（工具 / MCP）**。当前角色包通过 `pipeline.ocblueprint` → `slot_registry` 声明实例及 **builtin / remote / directory / local（memory）/ ollama / none** 等后端；legacy v1 才使用 `settings.json` → `plugin_backends`（`builtin_v2` 仅为已废弃读兼容 alias）。
 
 **以宿主六槽为准的总览图**（与 [PLUGIN_V1.md](PLUGIN_V1.md)「架构图」一致）：
 
 ```mermaid
 flowchart TB
   subgraph pack["角色包 / 会话覆盖"]
-    PB["plugin_backends<br/>六槽 + 可选 directory_plugins"]
+    BP["pipeline.ocblueprint → slot_registry<br/>实例 type · backend · plugin(s)"]
+    SO["会话实例覆盖<br/>set_session_slot_override"]
   end
   subgraph resolve["解析与绑定"]
-    RPF["resolved_plugins_for"]
-    PH["PluginHost"]
+    EFF["EffectiveSessionConfig"]
+    PH["PluginHost / SlotRunner"]
   end
   subgraph orch["编排"]
     CE["chat_engine"]
   end
-  PB --> RPF --> PH --> CE
+  BP --> EFF
+  SO --> EFF
+  EFF --> PH --> CE
   PH --> S["memory · emotion · event · prompt · llm · agent"]
   S --> CE
   S -.-> I["builtin / remote / directory …"]
 ```
 
-- **builtin**：逻辑编译在宿主内，稳定、离线友好。  
-- **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。  
-- **directory**：逻辑在 **`distros/chat-pro/plugins/<id>/` 子进程**中实现，wire 与 **remote 相同**，槽位 id 写在 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。  
-- **llm: ollama**：使用应用启动时注入的本地/兼容 **Ollama** 客户端。  
-- **llm: remote**：使用 **`OCLIVE_REMOTE_LLM_URL`** 指向的 JSON-RPC（`llm.generate` / `llm.generate_tag`）。  
-- **llm: directory**：使用 **`directory_plugins.llm`** 指向的插件进程 URL（同 JSON-RPC）。
+- **builtin**：逻辑编译在宿主内，稳定、离线友好。
+- **remote**：逻辑可在**独立 HTTP 服务（侧车）**中实现，宿主只发 JSON-RPC，按约定解析结果（环境变量 `OCLIVE_REMOTE_*` URL）。
+- **directory**：逻辑由扫描到的目录插件子进程实现，wire 与 **remote 相同**；蓝图实例的 `plugin` / `plugins` 写 `manifest.id`（扫描根见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+- **llm: ollama**：使用应用启动时注入的本地/兼容 **Ollama** 客户端。
+- **llm: remote**：使用 **`OCLIVE_REMOTE_LLM_URL`** 指向的 JSON-RPC（`llm.generate` / `llm.generate_tag`）。
+- **llm: directory**：使用该 LLM 实例 `plugin` 指向的插件进程 URL（同 JSON-RPC）。
 
-这样创作者可以：  
-- 只写**角色包**（剧本、场景、核心性格档案等）；或  
-- 自建**侧车**（Python/Node/Go 等）实现自定义记忆排序、网关大模型、自定义 Prompt 策略；或  
-- 分发**目录插件包**（manifest + 可选整壳 UI），用户放入 `distros/chat-pro/plugins/` 或开发者额外根目录；或  
+这样创作者可以：
+- 只写**角色包**（剧本、场景、核心性格档案等）；或
+- 自建**侧车**（Python/Node/Go 等）实现自定义记忆排序、网关大模型、自定义 Prompt 策略；或
+- 分发**目录插件包**（manifest + 可选整壳 UI），用户放入 `distros/chat-pro/plugins/` 或开发者额外根目录；或
 - **Fork 仓库**改 Rust，在 `PluginHost` 注册新的编译期后端。
 
 ---
@@ -54,16 +57,16 @@ flowchart TB
 
 | 方式 | 你需要准备什么 | 何时生效 | 「热更新」在工程上的含义 |
 |------|----------------|----------|---------------------------|
-| **A. 角色包** | `distros/chat-pro/roles/{角色id}/` 下 manifest、settings、场景、文案等 | 保存后由应用 **`load_role`**（或你们提供的重载）加载 | 更新内容**无需重编译宿主**；对话逻辑仍由**内置引擎**执行，除非该角色显式使用 remote / directory |
-| **B. HTTP 侧车** | 可访问的 URL + 实现 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 中的 **method** | 启动应用**前**设置环境变量；角色包 `plugin_backends.* = remote` | **更新侧车进程/容器**即可换新逻辑，**桌面应用可不重新编译**；需保持 JSON-RPC **向后兼容** |
+| **A. 角色包** | `distros/chat-pro/roles/{角色id}/` 下 `pipeline.ocblueprint`、场景、文案等 | 保存后由应用 **`load_role`**（或你们提供的重载）加载 | 更新内容**无需重编译宿主**；对话逻辑仍由**内置引擎**执行，除非该角色显式使用 remote / directory |
+| **B. HTTP 侧车** | 可访问的 URL + 实现 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) 中的 **method** | 启动应用**前**设置环境变量；目标蓝图实例设为 `backend: remote` | **更新侧车进程/容器**即可换新逻辑，**桌面应用可不重新编译**；需保持 JSON-RPC **向后兼容** |
 | **D. 目录式进程插件** | `distros/chat-pro/plugins/<manifest.id>/`（扫描规则见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）+ 子进程打印 **`OCLIVE_READY`**；可选整壳 HTML | 用户安装/替换磁盘目录后**重启应用**（或首次访问时懒启动子进程） | 换逻辑**无需重编译宿主**；与 B 类似，契约为同一 JSON-RPC；**未签名路径**仅在开发者模式下通过 `extra_plugin_roots` 加载 |
 | **C. Fork 改宿主（Rust）** | Rust 工具链；在 `domain` / `PluginHost` / `plugin_backends` 注册新枚举与实现 | `cargo build` / 发布**新安装包** | **不是**进程内动态换 `.dll`/插件；发新版 exe 才算替换宿主模块 |
 
 **选型建议**
 
-- 只想写剧本与角色档案 → **A**。  
-- 希望「线上改 AI 策略/网关/记忆算法、用户不用下新版桌面端」→ **B**（集中 URL + 环境变量）。  
-- 希望「随应用分发或用户手动拷贝的插件目录、可选接管整壳 UI」→ **D**。  
+- 只想写剧本与角色档案 → **A**。
+- 希望「线上改 AI 策略/网关/记忆算法、用户不用下新版桌面端」→ **B**（集中 URL + 环境变量）。
+- 希望「随应用分发或用户手动拷贝的插件目录、可选接管整壳 UI」→ **D**。
 - 要改引擎内核、性能路径、新枚举分支 → **C**。
 
 ---
@@ -77,26 +80,25 @@ flowchart TB
 | `OCLIVE_REMOTE_PLUGIN_URL` | 想用 **memory/emotion/event/prompt** 的 remote 时 **必填** | 单个 **POST** 端点 URL；四类共用，靠 `method` 区分 |
 | `OCLIVE_REMOTE_PLUGIN_TIMEOUT_MS` | 否 | 默认 `8000`（毫秒） |
 | `OCLIVE_REMOTE_PLUGIN_TOKEN` | 否 | `Authorization: Bearer …` |
-| `OCLIVE_REMOTE_LLM_URL` | `plugin_backends.llm = remote` 时 **必填**（否则回退进程内 LLM 并警告） | **LLM** 专用端点 |
+| `OCLIVE_REMOTE_LLM_URL` | LLM 实例为 `backend: remote` 时 **必填**（否则按策略回退或报错） | **LLM** 专用端点 |
 | `OCLIVE_REMOTE_LLM_TIMEOUT_MS` | 否 | 默认 `120000` |
 | `OCLIVE_REMOTE_LLM_TOKEN` | 否 | Bearer |
 
 端点必须是**完整 URL**（含 `http://`/`https://` 与路径），例如：`http://127.0.0.1:8765/rpc`。
 
-### 3.2 角色包 `settings.json`
+### 3.2 角色包 `pipeline.ocblueprint`
 
-在 `plugin_backends` 中为要交给侧车的子系统设为 **`remote`**，其余可保持 `builtin` 或 `ollama`：
+在 `slot_registry` 中把要交给侧车的实例设为 **`remote`**，其余可保持 `builtin` 或 `ollama`。以下只是蓝图中的字段节选，不是完整角色包：
 
 ```json
 {
-  "schema_version": 1,
-  "plugin_backends": {
-    "memory": "remote",
-    "emotion": "remote",
-    "event": "remote",
-    "prompt": "remote",
-    "llm": "remote",
-    "agent": "builtin"
+  "slot_registry": {
+    "memory": { "type": "memory", "label": "Memory", "backend": "remote", "position": 0 },
+    "emotion": { "type": "emotion", "label": "Emotion", "backend": "remote", "position": 0 },
+    "event": { "type": "event", "label": "Event", "backend": "remote", "position": 0 },
+    "prompt": { "type": "prompt", "label": "Prompt", "backend": "remote", "position": 0 },
+    "llm": { "type": "llm", "label": "LLM", "backend": "remote", "position": 0 },
+    "agent": { "type": "agent", "label": "Agent", "backend": "builtin", "position": 0 }
   }
 }
 ```
@@ -105,8 +107,8 @@ flowchart TB
 
 ### 3.3 与「目录插件」的关系（**D**）
 
-- **同一套 method / params / result**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。目录插件与侧车的差别在于：**URL 来自子进程 stdout 握手**，而非 `OCLIVE_REMOTE_*` 环境变量。  
-- **配置方式**：角色包 **`plugin_backends.* = directory`** + **`directory_plugins.<槽> = manifest.id`**；详见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)。  
+- **同一套 method / params / result**：[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。目录插件与侧车的差别在于：**URL 来自子进程 stdout 握手**，而非 `OCLIVE_REMOTE_*` 环境变量。
+- **配置方式**：蓝图实例写 **`backend: directory`**，并以 `plugin` / `plugins` 指定 `manifest.id`；详见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)。
 - **整壳 UI**、**`directory_plugin_invoke`**、开发者模式与 **`examples/directory-plugin-minimal/`** 亦见该文档。
 
 ### 3.4 JSON-RPC 方法清单（侧车 / 目录插件需实现的方法名）
@@ -131,14 +133,14 @@ flowchart TB
 
 ## 第四部分：联调步骤（从 0 到通）
 
-1. **启动参考侧车**（仓库内仅用于开发演示）：  
+1. **启动参考侧车**（仓库内仅用于开发演示）：
    - 目录：[examples/remote_plugin_minimal/README.md](../../examples/remote_plugin_minimal/README.md)
-   - 默认监听示例 URL（以该 README 为准）。  
+   - 默认监听示例 URL（以该 README 为准）。
 
-1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `distros/chat-pro/plugins/` + manifest）：  
+1b. **目录插件最小示例**（无需 `OCLIVE_REMOTE_*`，改用 `distros/chat-pro/plugins/` + manifest）：
    - [examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)
 
-2. **设置环境变量**后再启动 oclive（**侧车 B** 路径；**目录 D** 路径可跳过本步，仅配置 `plugin_backends` 与磁盘目录）：
+2. **设置环境变量**后再启动 oclive（**侧车 B** 路径；**目录 D** 路径可跳过本步，仅配置蓝图实例与插件目录）：
 
 **PowerShell（Windows）示例**
 
@@ -155,7 +157,7 @@ export OCLIVE_REMOTE_PLUGIN_URL="http://127.0.0.1:8765/rpc"
 export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 ```
 
-3. 将测试角色 `settings.json` 中需要走侧车的项设为 `remote`，**加载角色**后发一条消息。  
+3. 将测试角色 `pipeline.ocblueprint.slot_registry` 中需要走侧车的实例设为 `remote`，校验并**加载角色**后发一条消息。
 
 4. 观察侧车日志与宿主日志（过滤 `oclive_plugin`）确认请求到达。
 
@@ -166,7 +168,7 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 | 说法 | 实际做法 |
 |------|----------|
 | **替换内置 Rust 模块** | Fork 仓库 → 实现 trait → 在 `PluginHost` / `plugin_backends` 注册 → **重新编译发布宿主** |
-| **不编译宿主，只换业务逻辑** | 实现 HTTP 侧车 → 配置环境变量 + `plugin_backends` → **滚动发布侧车** |
+| **不编译宿主，只换业务逻辑** | 实现 HTTP 侧车 → 配置环境变量 + 蓝图实例后端 → **滚动发布侧车** |
 
 ---
 
@@ -185,9 +187,9 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 | 现象 | 可能原因 |
 |------|----------|
 | 仍走内置、日志提示 remote 未连接 | 未设置 `OCLIVE_REMOTE_*` URL，或 URL 拼写错误 |
-| **`directory` 仍回退 builtin / Ollama** | **`directory_plugins` 槽位未填**、插件未扫描到、子进程未打印 **`OCLIVE_READY`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) §9） |
+| **`directory` 仍回退 builtin / Ollama** | 实例未填 `plugin` / `plugins`、插件未扫描到、未获 `process:spawn` 授权，或子进程未打印 **`OCLIVE_READY`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
 | `event.estimate` 总回退内置 | `result.event_type` 用了裸字符串，应为 `{"Ignore": null}` 等形式 |
-| LLM 仍像本机 Ollama | `llm` 仍为 `ollama`，或未设 `OCLIVE_REMOTE_LLM_URL`（remote）；或为 `directory` 但 **`directory_plugins.llm`** 未配置或 RPC 失败 |
+| LLM 仍像本机 Ollama | 有效 LLM 实例仍为 `ollama`，或未设 `OCLIVE_REMOTE_LLM_URL`（remote）；或为 `directory` 但 `plugin` 未配置 / RPC 失败 |
 | 请求未到侧车 | 防火墙、HTTPS 证书、URL 非 POST 可达、侧车未监听同机地址 |
 
 更细的 HTTP/JSON 形状见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)。
@@ -208,7 +210,7 @@ export OCLIVE_REMOTE_LLM_URL="http://127.0.0.1:8765/rpc"
 
 ## 第九部分：与相关文档的关系
 
-- **角色包怎么写**： [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)、[distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)  
-- **枚举与默认值**： [PLUGIN_V1.md](PLUGIN_V1.md)、[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)  
-- **目录式插件（manifest、整壳、invoke）**： [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)、[../examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)  
-- **只关心替换 Rust 模块步骤**： [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)  
+- **角色包怎么写**： [../getting-started/CREATOR_WORKFLOW.md](../getting-started/CREATOR_WORKFLOW.md)、[distros/chat-pro/roles/README_MANIFEST.md](../../distros/chat-pro/roles/README_MANIFEST.md)
+- **枚举与默认值**： [PLUGIN_V1.md](PLUGIN_V1.md)、[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)
+- **目录式插件（manifest、整壳、invoke）**： [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)、[../examples/directory-plugin-minimal/README.md](../../examples/directory-plugin-minimal/README.md)
+- **只关心替换 Rust 模块步骤**： [HOW_TO_REPLACE_MODULES.md](HOW_TO_REPLACE_MODULES.md)

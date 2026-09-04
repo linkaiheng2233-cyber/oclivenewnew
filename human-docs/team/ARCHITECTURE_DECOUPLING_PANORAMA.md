@@ -2,8 +2,8 @@
 
 > **读者**：要把「六槽、设施、独立通道、目录插件、正交轴」一次看清的工程师或产品讨论参与者。  
 > **先读**：**§1 核心术语**（六槽 · 独立通道 · 正交 的含义与边界）。  
-> **SSOT 分工**：**模块定义与关系** → [`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md)；**六槽 DTO 与顺序** → [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)；**本文** = **脉络展开 + 插件清单 + 正交轴索引**（不替代 MODULE_MAP 定义条文）。  
-> **最后更新**：2026-07-14（六槽纯解析 runtime SSOT · CLI 默认去 host）
+> **SSOT 分工**：**模块定义与关系** → [`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md)；**六槽 DTO 与固定 stage 中的调用** → [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)；**本文** = **脉络展开 + 插件清单 + 正交轴索引**（不替代 MODULE_MAP 定义条文）。
+> **最后更新**：2026-09-05（内核权威 · 六槽非线性调用 · Agent 短路）
 
 ---
 
@@ -23,7 +23,7 @@
         │                           │                           │
         └───────────────────────────┼───────────────────────────┘
                                     ▼
-                    process_message → co_present → … → post_llm
+                 process_message → 内核路由 / 固定 stage → response
                                     │
         ┌───────────────────────────┼───────────────────────────┐
         │                           │                           │
@@ -49,7 +49,7 @@
 
 - 宿主 **`PluginBackends`** 上的 **六个固定键**：`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`。
 - v2 角色包通过 **`slot_registry`** 声明多实例，折叠成上述六键后，由 **`PluginHost::resolve_for_role`** 绑定到各槽 **trait** 实现（builtin / ollama / remote / directory 等）。
-- 每一轮 **`send_message`** 的主路径：`process_message` → **`co_present`** → pre → event → build prompt → **llm generate** → post_llm；六槽按固定 **stage** 被调用（见本文 §4 表）。
+- 当前 Stable 参考装配的普通、未被 Agent 接管的共景回合：`process_message` → **`co_present`** → pre → middle → **llm generate** → post_llm；六槽能力由内核在固定 **stage** 中按需调用（见本文 §4 表），**不是六个槽依次流过的线性管道**。普通用户回合会先尝试 Agent；`handled=true` 时走最小响应并跳过共景链。这不表示所有 OCLive 装配都必须启用六个具体实现；共景健康门槛目前是 `prompt + llm`。
 
 **意味着什么**
 
@@ -64,7 +64,7 @@
 
 - ❌ **不是** UI 上的 `ui_slots`（chat_toolbar 等）— 那是目录插件插槽名，与六键无关。
 - ❌ **不是** 设施 ①–④（复杂情感、立绘等）— 设施 **无** `plugin_backends` 键，但在 **同一条** turn_pipeline 里 hook。
-- ❌ **不是** 独立通道 — 六槽 **必** 在 Stable 主链调度内（agent 短路是分支，仍属第 6 模块能力）。
+- ❌ **不是** 独立通道 — 六槽是 Stable 主链的固定能力分类（agent 短路是分支，仍属第 6 模块能力）；某槽可按已定义 `none` / Noop 语义不执行具体能力。
 - ❌ **不是** 正交轴 — 改 emotion 后端会改变 **pre** 阶段行为，与「只换皮肤」不同。
 
 **代码锚点**：`process_message.rs` · `co_present.rs` · `slot_runner.rs` · `plugin_host.rs`。
@@ -95,7 +95,7 @@
 | `id` | 进主链？ | 锚点 |
 |------|----------|------|
 | `user_identity` | **是**（pre 多一段 Prompt） | `user_identities/` |
-| `reply_post_process` | **是**（post_llm 后改 `reply`） | `config.json` chain |
+| `reply_post_process` | **是**（普通共景 post_llm 内：状态消费后、reply_mode/chat append 前改 display `reply`；Agent 最小响应绕过） | `config.json` → `reply_post_processor` |
 | `theater_director` | **否** | `POST /theater/scene` |
 | `voice.asr` / TTS / director·synth | **否** | 侧车 RPC → 文本或音频；**文本** 仍走既有 `send_message` |
 
@@ -157,35 +157,39 @@
 | # | 解耦形式 | 占六槽？ | 配置落点 | 典型切换方式 | SSOT |
 |---|----------|----------|----------|--------------|------|
 | **A** | **六槽后端模块**（第 1–6 模块） | **是** | `slot_registry` / legacy `plugin_backends` | 蓝图实例 · backend 枚举 · 会话 override | MODULE_MAP §3–§9 |
-| **B** | **设施子模块**（第 1–4 设施） | **否** | 角色 `config.json` · HostProfile · 编排行开关 | skip 标志 · catalog enabled | MODULE_MAP §10 · 各 RFC |
+| **B** | **设施子模块**（第 1–4 设施） | **否** | 蓝图设施实例（如 `complex_emotion`）· 角色 `config.json` · HostProfile | provider 选择 · skip 标志 · catalog enabled | MODULE_MAP §10 · 各 RFC |
 | **C** | **独立通道** | **否** | 角色包目录 · 发行版 `[theater]` · 插件 config | `provides` 解析 · env 覆盖 | MODULE_MAP §11 · [RFC_SIDE_CHANNEL](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
 | **D** | **目录插件**（实现层） | 视 `provides` | `{app_data}/plugins/` · 角色 `ui.json` | 启用/禁用 · slot_order | [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | **E** | **编排行策略** | **否** | `distro` HostProfile · 包 `turn_thinking` | Fast/Deep/Auto · concise prompt | MODULE_MAP §12 |
-| **F** | **配置四层** | — | 包 → 蓝图 → 发行版 → 会话 DB | 见 §3 | MODULE_MAP §14 · ROLE_PACK_BOUNDARY |
+| **F** | **配置四层** | — | 角色内容 → 包内蓝图 → 发行版 → SessionCache 会话覆盖 | 见 §3 | MODULE_MAP §14 · ROLE_PACK_BOUNDARY |
 | **G** | **六槽三层解耦** | — | 编译 trait · 配置折叠 · 运行时 override | last-wins / 合并 | MODULE_MAP §3.1 |
 | **H** | **宿主 UI 正交轴** | **否** | localStorage / env / `html[data-*]` | 用户设置 · 彩蛋 | MODULE_MAP §13.1–§13.2 |
 | **I** | **voice profile 双注册**（规划中） | **否** | 插件 `*_profiles.json` · 角色 `voice_profile.json` | director + synth 各选 profile | [TRACK_VOICE §架构](./TRACK_VOICE_RECOGNITION.md) · 本文 §7 |
 
 ---
 
-## 3. 配置四层（谁覆盖谁）
+## 3. 配置四层（职责与有效值合成）
+
+这四层首先是**维护责任面**，不是四份相同字段的无条件覆盖表。角色内容与包内蓝图在同一角色包中并列分责；只有字段发生重叠时，才按 `MODULE_MAP §3.2` 的解析链与宿主安全上限合成有效值。
 
 ```text
-角色包（core_personality · scenes · 可选 voice_profile）
+角色内容层（core_personality · scenes · 可选 voice_profile）
     ↓ 合并
-蓝图 pipeline.ocblueprint（slot_registry · runtime_config）
+包内蓝图配置层 pipeline.ocblueprint（slot_registry · runtime_config）
     ↓ 合并
 发行版 HostProfile（distro 能力 · turn_thinking · theater.director_plugin）
     ↓ 合并
-会话（role_runtime · PluginBackendsOverride · 不写盘）
+SessionCache 会话配置覆盖（SlotOverridePatch · 仅进程内存）
 ```
 
 | 层 | 改什么 | 不改什么 |
 |----|--------|----------|
-| 角色包 | 人设、立绘 catalog、reply 锚点 | `slot_registry`（角色任务边界 G1） |
-| 蓝图 | 六槽多实例、directory 插件 id | 内核编排顺序 |
+| 角色内容 | 人设、立绘 catalog、reply 锚点 | `slot_registry`（角色任务边界 G1） |
+| 包内蓝图 | 六槽多实例、directory 插件 id | 内核编排顺序 |
 | 发行版 | 默认 agent 关、concise、剧场导演 id | 角色文本 |
-| 会话 | 临时 backend override | 磁盘上的包内容 |
+| 会话配置覆盖 | 临时 backend / plugin / model override | 磁盘上的包内容；SQLite |
+
+关系、记忆、`role_runtime` 等角色状态可以按各自契约持久化，但它们不是槽位配置覆盖；“同属一个 session”不代表“共用一个配置数据库层”。
 
 ### 3.1 六槽解析纯函数（runtime · CLI 共用）
 
@@ -193,7 +197,7 @@
 
 | 消费方 | 路径 | 说明 |
 |--------|------|------|
-| 内核 host | `effective_session_config.rs` | 每回合快照；DB 层只负责读 override，解析调 runtime |
+| 内核 host | `effective_session_config.rs` | 每回合读取 `SessionCache` 覆盖快照，解析委托 runtime；槽位 override 不经过 DB |
 | **oclive-cli** | `doctor config-resolve`（**默认**） | 读盘 role pack + distro file；`cargo tree -p oclive-cli --no-default-features` 无 sqlite/axum |
 | 深度诊断 | `doctor config-resolve --via-host` | feature `diagnostics-host` 可选 in-memory `AppState` parity |
 
@@ -205,12 +209,12 @@
 
 | # | 键 | Trait | 合法 backend | 合并策略 | 主链 stage |
 |---|-----|-------|--------------|----------|------------|
-| 1 | `memory` | `MemoryRetrieval` | builtin · remote · directory · local · none | 去重合并 | pre 检索 · post 写入 |
+| 1 | `memory` | `MemoryRetrieval` | builtin · remote · directory · local · none | 去重合并 | pre 检索；权威写入由内核持久化负责 |
 | 2 | `emotion` | `UserEmotionAnalyzer` | builtin · remote · directory · none | last-wins | pre |
 | 3 | `event` | `EventEstimator` | builtin · remote · directory · none | last-wins | co_present EventEstimate |
 | 4 | `prompt` | `PromptAssembler` | builtin · remote · directory · none | last-wins | co_present BuildPrompt |
-| 5 | `llm` | `LlmClient` | ollama · remote · directory · none | **last-wins** | co_present generate |
-| 6 | `agent` | `AgentProvider` | builtin · remote · directory · none | 工具集并集 | 可短路整链 |
+| 5 | `llm` | `LlmClient` | ollama · remote · directory · none | 非流式按 `ensemble` / `fastest` / `fallback`；流式当前串行 last-wins | co_present generate |
+| 6 | `agent` | `AgentProvider` | builtin · remote · directory · none | 兼容折叠 last-wins；多实例执行合并未实现 | preflight 后可短路普通共景链 |
 
 **有效 backends 解析链**：`slot_registry` → 用户 LLM 设置 / env → 发行版整表替换 → host_flags → 会话 override → health → `PluginHost::resolve_for_role`。
 
@@ -222,7 +226,7 @@
 
 | # | 名称 | 输入 → 输出 | 锚点 | 默认 | RFC / 代码 |
 |---|------|-------------|------|------|------------|
-| 1 | **复杂情感** | emotion + 上下文 → `narrative_hint` | pre | on | `complex_emotion.rs` |
+| 1 | **复杂情感** | 旧 hint / 降级证据 / 主 LLM `[EMO]` → 回复情绪 + 下一轮 hint | pre 读旧值 · middle 仅连续性/Fast 强度 · post_llm 解析与写入 | 省略/none 关；builtin 或插件显式开 | `NARRATIVE_HINT_CONTRACT.md` · `complex_emotion.rs` · `post_llm.rs` |
 | 2 | **专家模型** | 条件 → 专家子流程 | dual_core / routing | **冻结关** | TECHNICAL_DEBT |
 | 3 | **立绘** | reply + 上下文 → `visual_state_id` | post_llm | off | [RFC_PORTRAIT](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) |
 | 4 | **视觉表现** | `visual_state_id` → `performance_directive` | UI 帧循环 | off | [RFC_VISUAL_PRESENTATION](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) |
@@ -240,7 +244,7 @@
 | 注册表 `id` | 规范名 | 进 `process_message`？ | 锚点 / API | 官方目录插件 | 状态 |
 |-------------|--------|------------------------|------------|--------------|------|
 | `user_identity` | 用户身份 Prompt 模板 | **是**（pre 段落） | `user_identities/` | 无（内容在角色包） | 已交付 |
-| `reply_post_process` | 回复后处理 | **是**（post_llm 后） | `config.json` → chain | 例：`examples/reply-post-process-polish/` | 已交付 |
+| `reply_post_process` | 回复后处理 | **是**（普通共景 post_llm 内：状态消费后、reply_mode/chat append 前；Agent 最小响应绕过） | `config.json` → `reply_post_processor` | 例：`examples/reply-post-process-polish/` | 已交付（单处理器） |
 | `theater_director` | 剧场场景导演 | **否** | `POST /theater/scene` · RPC `theater.build_prompt` | `com.oclive.theater_director_official` | 已交付 |
 | **`voice.asr`** | 语音输入（ASR）+ 可选情感 TTS 扩展 | **否** | `chat_toolbar` → `com.oclive.voice.asr:submit` → `send_message`；`message:sent` → `voice.speak` | `com.oclive.voice.asr` v0.4 | Windows 已交付 |
 | **`voice.director`** | 声音导演（`rules-v1`） | **否** | `voice.build_directive` · 合入 `voice.asr` | 同插件 | **已交付**（规则导演） |
@@ -342,42 +346,61 @@ flowchart TB
 
   subgraph kernel [内核 :8420]
     PM[process_message]
-    CO[co_present]
-    PRE[pre + ①memory ②emotion]
-    F1[设施① complex_emotion]
-    EV[③ event]
-    BP[④ prompt]
-    LLM[⑤ llm]
-    PST[post_llm]
+    AG{⑥ agent handled?}
+    MIN[最小响应]
+    CO[co_present 固定 stage]
+    PRE[pre]
+    MEM[① memory]
+    EM[② emotion]
+    MID[middle 规则估计 + Turn Thinking]
+    EV[③ event 可选估计]
+    ER[Event Ring 提案 / 采纳]
+    BP[④ prompt 组装]
+    LLM[⑤ llm 原始回复]
+    PST[post_llm 语义 / 状态消费]
+    F1[设施① complex_emotion<br/>pre 读旧 hint · post 解析本轮结果]
     F3[设施③ portrait]
     F4[设施④ visual → directive]
     PP[独立通道 reply_post_process]
+    RM[reply_mode 展示协议]
+    CHAT[chat append]
+    RESP[SendMessageResponse]
     UID[独立通道 user_identity]
   end
 
   VOICE -->|text only| SEND
   UI -.->|events only| host_ui
-  SEND --> PM --> CO --> PRE
-  PRE --> F1 --> EV --> BP
+  SEND --> PM --> AG
+  AG -->|handled| MIN --> RESP
+  AG -->|continue| CO --> PRE --> MID
+  PRE --> MEM
+  PRE --> EM
+  PRE -.读取上一轮 hint.-> F1
+  MID --> EV --> ER --> BP
+  MEM -.回忆候选.-> ER
+  PRE --> BP
   UID -.-> BP
+  F1 -.无内容连续性信号.-> BP
   BP --> LLM --> PST
-  PST --> PP
-  PST --> F3 --> F4
+  PST -.解析本轮情感 / 写下一轮 hint.-> F1
+  PST --> PP --> RM --> CHAT --> RESP
+  PST --> F3 --> F4 --> RESP
 
   subgraph after [圈外 · message:sent 后]
     TTS[voice.speak · 规划 + director]
   end
 
-  PST --> SEND
+  RESP --> SEND
   SEND --> TTS
 ```
 
 | 能力 | 触发时机 | 归类 |
 |------|----------|------|
 | ASR | 按住说话 | 独立通道 · 插件 RPC |
-| 主回复 `reply` | post_llm 返回 | 六槽 ⑤ llm |
+| 原始回复候选 | ⑤ `llm.generate` | 六槽 ⑤ llm |
+| 最终主回复 `reply` | 语义/状态消费 → 后处理 → reply_mode/chat → 响应组装；Agent 可走最小响应 | **内核权威结果**，不是某一槽独占 |
 | 立绘 / directive | 同响应 DTO | 设施 ③④ |
-| 润色 | post_llm 链内 | 独立通道 post_process |
+| 润色 | 普通共景 post_llm 内的单一处理器；Agent 最小响应绕过 | 独立通道 `reply_post_process` |
 | TTS | 前端收 `reply` 后 | 独立通道 · 插件（规划加 director） |
 | 剧场场景 | 独立 HTTP | 独立通道 theater · 不进 chat 主链 |
 
@@ -443,7 +466,7 @@ SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语�
 | **Prompt 三区块** | 系统 / 角色 Tier0 / 用户 + 页脚 |
 | **架构四大类** | 六槽 · 设施 · 独立通道 · 插件实现 |
 | **集成三层** | UI → HTTP/Tauri → 内核 |
-| **配置四层** | 角色包 · 蓝图 · 发行版 · 会话 |
+| **配置四层** | 角色内容 · 包内蓝图 · 发行版 · SessionCache 会话配置覆盖 |
 | **六槽三层解耦** | 编译 trait · 配置折叠 · 运行时 override |
 | **无编号设施** | MODULE_MAP §12 编排行策略等 · **≠ 正交** · **≠ 独立通道** |
 
@@ -464,7 +487,7 @@ SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语�
 
 ---
 
-## 15. 前端 ↔ 内核契约边界（脉络 · 2026-07-13）
+## 14. 前端 ↔ 内核契约边界（脉络 · 2026-07-13）
 
 > **定义条文 SSOT** → [`MODULE_MAP_AND_HANDOFF.md` §12.5](../../handoff/MODULE_MAP_AND_HANDOFF.md) · 本文只保留 **解耦全景** 视角。
 
@@ -487,12 +510,12 @@ SSOT：[TRACK_VOICE](./TRACK_VOICE_RECOGNITION.md) · [§7 语音侧车](#7-语�
 
 ---
 
-## 14. 相关链接
+## 15. 相关链接
 
 | 文档 | 用途 |
 |------|------|
 | [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) | 模块注册表 SSOT |
-| [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) | 六槽顺序 · DTO |
+| [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) | 固定 stage 中的槽位调用 · DTO |
 | [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) | 目录插件 · ui_slots · bridge |
 | [RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) | 独立通道注册表 |
 | [human-docs/modules/README.md](../modules/README.md) | 按类选开工包 |

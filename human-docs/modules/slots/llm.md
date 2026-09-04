@@ -1,10 +1,10 @@
 # 六槽开工包 · `llm`
 
-> **读者**：开发 Ollama / remote / directory LLM 后端的插件作者。  
-> **读完能做什么**：在不读 `process_message` 全文的前提下，接入或调试 `llm` 槽。  
-> **耗时**：约 **45 min**  
+> **读者**：开发 Ollama / remote / directory LLM 后端的插件作者。
+> **读完能做什么**：在不读 `process_message` 全文的前提下，接入或调试 `llm` 槽。
+> **耗时**：约 **45 min**
 > **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §8](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
-> **最后更新**：2026-07-14
+> **最后更新**：2026-09-05
 > **下一篇**：[agent](agent.md) · [plugin-author 路径](../../paths/plugin-author.md)
 
 ---
@@ -12,8 +12,8 @@
 ## 1. 你插在哪
 
 - **MODULE_MAP**：[§8 第 5 模块 · `llm`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#8-第-5-模块--llm)
-- **`plugin_backends` 键**：`llm`  
-- **Trait**：`LlmClient`（`oclive_kernel_contracts`）  
+- **当前配置 / 运行时折叠**：蓝图 `slot_registry.type: llm` → `PluginBackends.llm`；legacy v1 才是 `settings.json.plugin_backends.llm`
+- **Trait**：`LlmClient`（`oclive_kernel_contracts`）
 - **主链 hook**：`co_present` generate / stream（经 `slot_runner`）
 
 ---
@@ -24,7 +24,7 @@
 |------|------|
 | Ollama 适配、`directory` RPC、remote JSON-RPC、TTFT 客户端选项 | UI 内二次调 LLM 选立绘；共景路径 `none` backend |
 | 蓝图 `slot_registry` 中 `type: llm` 的 backend 声明 | 角色任务改 `slot_registry` 结构（G1） |
-| 多 `llm` 实例时理解 **last-wins** 合并 | 把 LLM 逻辑写进 `distros/desktop-tauri/src/api/*.rs` |
+| 多 `llm` 实例时理解非流式 `ensemble` / `fastest` / `fallback` 与流式串行限制 | 把 LLM 逻辑写进 `distros/desktop-tauri/src/api/*.rs` |
 
 ---
 
@@ -40,20 +40,20 @@
 
 ## 4. 开发流程
 
-- [ ] L0–L3 + [02 跑通](../../02_THIRTY_MINUTE_START.md)  
-- [ ] 选定 backend：`ollama` · `remote` · `directory`（BYOK / 用户 LLM 设置见 HostProfile）  
-- [ ] 实现 `LlmClient` 或目录插件 manifest 声明 `llm` capability  
-- [ ] 蓝图或 legacy `plugin_backends` 指向你的 backend  
-- [ ] 目录插件：`{app_data}/distros/chat-pro/plugins/` · 权限 `network:*` 须授权  
+- [ ] L0–L3 + [02 跑通](../../02_THIRTY_MINUTE_START.md)
+- [ ] 选定 backend：`ollama` · `remote` · `directory`（BYOK / 用户 LLM 设置见 HostProfile）
+- [ ] 实现 `LlmClient` 或目录插件 manifest 声明 `llm` capability
+- [ ] 蓝图或 legacy `plugin_backends` 指向你的 backend
+- [ ] 目录插件：源码仓 `distros/chat-pro/plugins/` / 用户安装 `{app_data}/plugins/` · 权限 `network:*` 须授权
 - [ ] `npm run check` 绿；可选 `cargo test` 相关 invoke 热路径
 
 ---
 
 ## 5. 验收
 
-- [ ] 一轮共景对话能 stream / 非 stream 拿到 **`reply`** 字段  
-- [ ] 多 llm 实例时行为符合 last-wins（见 MODULE_MAP §3.3）  
-- [ ] 未在 Vue 层绕过槽位直连接模型 API  
+- [ ] 一轮共景对话能 stream / 非 stream 拿到 **`reply`** 字段
+- [ ] 多 llm 实例时，非流式行为符合最后一个 LLM 实例声明的 `policy`；流式行为符合当前串行 last-wins 限制（见 MODULE_MAP §3.3）
+- [ ] 未在 Vue 层绕过槽位直连接模型 API
 - [ ] PR 描述链 MODULE_MAP §8，未粘贴 24 格矩阵全文
 
 ---

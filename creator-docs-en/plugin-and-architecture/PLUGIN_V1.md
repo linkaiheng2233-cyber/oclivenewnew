@@ -1,18 +1,18 @@
-﻿# PLUGIN_V1 — Orchestration contract & backend enums (v2 blueprint · legacy six slots)
+# PLUGIN_V1 — Orchestration contract & backend enums (v2/v3/v4 blueprints · legacy six slots)
 
-**SSOT scope:** six-slot DTOs, backend enums, resolution, and slot invocation order in the Stable turn. Event Ring wire has a separate contract.
+**SSOT scope:** six-slot DTOs, backend enums, resolution, and slot calls inside Stable's fixed stages. Event Ring wire has a separate contract.
 
-**Last updated:** 2026-08-31.
+**Last updated:** 2026-09-05.
 
 **Plugin author learning path:** [PLUGIN_AUTHOR_LEARNING_PATH.md](PLUGIN_AUTHOR_LEARNING_PATH.md)
 
-**Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English page is **condensed** (not a quiet 1:1 of ZH). It covers host orchestration contracts, facade traits, and **v2 instance resolution**; **legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese SSOT):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
+**Current authority:** role-pack **`pipeline.ocblueprint` → `slot_registry`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)). This English page is **condensed** (not a quiet 1:1 of ZH). It covers host orchestration contracts, facade traits, and **v2/v3/v4 instance resolution**; new Stable packs use v4. **Legacy** `settings.json` → `plugin_backends` sections are **v1 (deprecated)** for migration only. **Full tables (Chinese SSOT):** [../../creator-docs/plugin-and-architecture/PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md). Rust anchors: `slot_resolver.rs`, `plugin_host.rs`, `plugin_backends.rs`.
 
 **Index (ZH):** [DOCUMENTATION_INDEX.md](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md) · **Architecture overview:** [../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · **Kernel diagram:** [../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) · **Event Ring:** [EVENT_RING.md](EVENT_RING.md) · **Pack versioning:** [PACK_VERSIONING.md](../../creator-docs/role-pack/PACK_VERSIONING.md) · **Remote JSON-RPC:** [REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) · **Directory plugins:** [DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md).
 
 | ZH section (normative) | EN coverage |
 |------------------------|-------------|
-| Blueprint v2 / design rules / six slots / `send_message` order | Condensed below |
+| Blueprint v2/v3/v4 / design rules / six slots / `send_message` order | Condensed below |
 | Per-slot input/output facet tables | Backend enum table only → [ZH](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | Plugin Manager V2 `ui_template` / `ui_schema` / `provides` | Pointer → [ZH §前端 UI](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | `reply_post_process` / `theater_director` / `voice.asr` / `com.user.tts.*` side channels | Permission + pointer; full RPC in ZH |
@@ -20,55 +20,67 @@
 
 ---
 
-## Blueprint v2 role packs (`pipeline.ocblueprint`)
+## Blueprint role packs (`pipeline.ocblueprint`)
 
-**`schema_version: 2`** packs use [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) **`slot_registry`** as SSOT (open instance keys), not fixed six keys in `settings.json`. The host resolves via **`SlotResolver` / `SlotRunner`**; folding to `PluginBackends` uses **last-wins** per `type`. **`complex_emotion`** is a first-class `slot_registry` `type`; directory plugins declare **`provides: ["complex_emotion"]`** when serving that slot. Persist pack edits: Tauri **`save_role_slot_registry`** (toolbar add/remove slots; **at least one `llm`**; **last `llm` cannot be removed**); then **`invalidate_role_cache`** + **`load_role`**. Session overrides: **`set_session_slot_override`** (in-memory only).
+Supported **v2/v3/v4** packs use [`pipeline.ocblueprint`](../role-pack/ROLE_PACK_SPEC.md) **`slot_registry`** as SSOT (open instance keys), not fixed six keys in `settings.json`; new Stable packs use v4 and v3 remains the frozen dual-core Beta. The host resolves via **`SlotResolver` / `SlotRunner`**; folding to `PluginBackends` uses **last-wins** per `type`. **`complex_emotion`** is a first-class facility `type` in the open `slot_registry`, but not one of the six stable host slots; directory plugins declare **`provides: ["complex_emotion"]`** when serving that facility. Persist pack edits: Tauri **`save_role_slot_registry`** (toolbar add/remove instances; **at least one `llm`**; **last `llm` cannot be removed**); then **`invalidate_role_cache`** + **`load_role`**. Session overrides: **`set_session_slot_override`** (in-memory only).
 
 ---
 
 ## Design rules
 
-- **Backends = compile-time enums**: legacy via `settings.json`; v2 via **`slot_registry`**. No dynamic `cdylib` loading.
+- **Backends = compile-time enums**: legacy via `settings.json`; v2/v3/v4 via **`slot_registry`**. No dynamic `cdylib` loading.
 - **Default implementations** are the built-in Rust paths; switching backend **does not rename API fields** (especially **`SendMessageResponse.reply`**).
 - **Remote:** the host speaks **HTTP JSON-RPC** ([REMOTE_PLUGIN_PROTOCOL.md](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)). Missing `OCLIVE_REMOTE_*` URLs → fall back to builtin / in-process LLM with logs.
-- **Directory:** `distros/chat-pro/plugins/*/manifest.json` child processes; same JSON-RPC wire as Remote; slot ids in `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
+- **Directory:** child processes discovered under the host's plugin roots; same JSON-RPC wire as Remote. Current blueprint instances select `manifest.id` through `plugin` / `plugins`; only legacy v1 uses `plugin_backends.directory_plugins` ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
 - **Auto-attachment:** `slot_attachment.backend` must be legal for its declared slot type and survive the same final-blueprint validation. OpenAI-compatible LLMs use the `remote` backend; `openai_compatible` is an implementation mode, not a blueprint backend token.
 
 ---
 
 ## `PluginBackends` host slots
 
-Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. Optional **`directory_plugins`** maps each slot to a manifest **`id`** when that slot is **`directory`**. Resolution: **`PluginHost::resolve_for_role`** → **`Arc<dyn …>`** per facade, then **`chat_engine`** calls them in the **`send_message` order** (see below). **`complex_emotion`** scaffold keys are ignored by Serde; runtime maps to the **complex-emotion facility submodule** (facility submodule 1) ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
+Runtime struct **`PluginBackends`** has **six** enum fields: **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**. For current packs it is a folded compatibility view of the effective `slot_registry`; optional **`directory_plugins`** carries directory ids after that fold and is not the pack SSOT. **`PluginHost`** binds each stable facade to **`Arc<dyn …>`**, while `SlotRunner` retains instance semantics. **`complex_emotion`** is resolved as a facility type in the open registry, not as a seventh stable slot ([OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md) §II).
 
 ### Module numbering (aligned with architecture overview)
 
-| # | `plugin_backends` key | Kind |
-|---|------------------------|------|
+| # | `slot_registry.type` (legacy key) | Kind |
+|---|-----------------------------------|------|
 | Module 1 | `memory` | Backend module |
 | Module 2 | `emotion` | Backend module |
 | Module 3 | `event` | Backend module |
 | Module 4 | `prompt` | Backend module |
 | Module 5 | `llm` | Backend module |
 | Module 6 | `agent` | Backend module |
-| Facility submodule 1 | *(no key; in orchestration)* | Complex-emotion facility submodule |
-| Facility submodule 2 | *(no key; in orchestration)* | Expert-model facility submodule (expert routing) |
+| Facility submodule 1 | `complex_emotion` *(no legacy six-slot key)* | Complex-emotion facility submodule |
+| Facility submodule 2 | *(no stable slot type; in orchestration)* | Expert-model facility submodule (expert routing) |
 
 **Backend-module plugin modules** (Remote / directory, etc.) attach to **module K**; they do **not** consume a “module 7” host slot. Full rules: [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md).
 
+### Multi-instance execution truth
+
+Same-type **last-wins folding into `PluginBackends` is only a compatibility view**; it is not the execution merge rule for every slot.
+
+| Type | Current execution policy |
+|------|--------------------------|
+| `memory` | Serial retrieval, dedupe by memory id, then re-sort/truncate |
+| `emotion` / `event` / `prompt` / `complex_emotion` | Serial last-wins |
+| non-streaming `llm` | The last LLM entry's `policy`: default `ensemble` = serial last-wins, `fastest` = first concurrent success, `fallback` = first ordered success |
+| streaming `llm` | All three policies currently normalize to serial last-wins; only the final instance emits tokens, avoiding mixed streams |
+| `agent` | The folded single provider executes. Multiple entries / `plugins[]` only populate `merged_agent_directory_plugin_ids` diagnostics; `wrap_agent_if_merged` is a no-op. Tool-union execution remains `K-AGENT-MERGE-01` |
+
 ---
 
-## `send_message` order (co-present path)
+## `send_message` fixed stages and slot calls (co-present path)
 
-Stable entry: [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) → [`dispatch_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/dispatch.rs) → remote stub, remote-life, or [`turn_pipeline::execute_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs). Co-present middle lives in [`co_present/run_middle.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present/run_middle.rs). The actual six-slot sequence is:
+Stable entry: [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) → [`dispatch_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/dispatch.rs) → remote stub, remote-life, or [`turn_pipeline::execute_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs). Co-present middle lives in [`co_present/run_middle.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present/run_middle.rs). The list below describes slot calls inside kernel-owned fixed stages, **not** a linear pipe in which all six slots call one another:
 
-1. **`PluginHost`**: `resolved_plugins_for` → **`PluginHost::resolve_for_role`** binds six **backend modules** (host needs app-data root for **`mcp-servers/*.json`**).
-2. **Agent (module 6):** attempted only for a normal user, non-staged turn; `handled=true` returns a minimal response and short-circuits Stable chat.
+1. **Effective config and `PluginHost`:** `EffectiveSessionConfig` merges the pack registry with session instance overrides, folds the six stable types into the `PluginBackends` compatibility view, and binds the six **backend modules** through `PluginHost`; `SlotRunner` keeps instance semantics. Legacy v1 starts directly from `role.plugin_backends`.
+2. **Agent (module 6):** after preflight but before ordinary co-present pre, attempted only for a normal user, non-staged turn. `handled=true` returns through `build_minimal_response` and short-circuits Stable chat. That branch independently invokes the emotion slot and persists minimal state/chat, but bypasses ordinary reply post-processing and `reply_mode`.
 3. **Pre:** module 2 `emotion.analyze` for user input and module 1 `memory.rank_memories`, plus personality, relation, identity, and recent-context loading.
-4. **First half of middle:** Turn Thinking, complex-emotion facility, and knowledge retrieval; module 3 `event.estimate` produces `EventImpactEstimate`.
+4. **First half of middle:** a rules-only event estimate is produced first and helps resolve Turn Thinking; deterministic Fast affect-intensity fallback and knowledge retrieval also run here. Only when policy allows does module 3 `event.estimate` invoke an LLM/plugin and replace the rules estimate. Module 4 later receives only a content-free signal from the prior stored hint, never the current turn's not-yet-produced hint.
 5. **Event Ring:** the dialogue estimate crosses `kernel.chat.event_impact.estimated`; memory may propose `kernel.memory.recall.candidate`, with one-turn `kernel.memory.recollection.activated` on admission. See [EVENT_RING.md](EVENT_RING.md).
 6. **Prompt (module 4):** `top_topic_hint` + `build_prompt` / `build_prompt_segments` consume resolved character, affect, event, relation, memory, and external-observation context.
-7. **Main LLM (module 5):** `generate` / `generate_stream` produces the raw reply.
-8. **Post:** reply-emotion analysis, policy and persistence, reply post-processing, chat write, and `SendMessageResponse` assembly. Post-processing is a side channel, not a seventh slot.
+7. **Main LLM (module 5):** `generate` / `generate_stream` produces the raw reply and optional `[EMO]` metadata.
+8. **Post:** strip `[EMO]`; resolve current reply emotion / complex emotion with a valid main marker authoritative and remote/directory used only when the marker is missing or invalid. The semantic reply first feeds emotion, relation, memory, portrait, and other state consumers and persistence; when enabled, the next-turn hint is stored. Then the single reply post-processor, ordinary co-present `reply_mode`, chat append, and `SendMessageResponse` assembly run in that order. Post-processing is a side channel, not a seventh slot; an arbitrary multi-processor chain is not currently implemented.
 
 ---
 
@@ -87,7 +99,7 @@ Remote / directory failures generally **fall back** to builtin / ollama as docum
 
 ---
 
-## `settings.json` minimal example
+## Legacy v1 `settings.json` example (migration reference only)
 
 ```json
 {
@@ -103,15 +115,15 @@ Remote / directory failures generally **fall back** to builtin / ollama as docum
 }
 ```
 
-If `plugin_backends` is omitted: memory / emotion / event / prompt / **agent** default to **builtin**, **`llm`** defaults to **`ollama`**. Invalid enum strings fail pack parsing.
+For legacy v1 only, omitting `plugin_backends` defaults memory / emotion / event / prompt / **agent** to **builtin** and **`llm`** to **`ollama`**. New packs must use `pipeline.ocblueprint.slot_registry`; do not copy this as the current pack format.
 
 ---
 
-## Session overrides (Tauri)
+## Session slot overrides (Tauri)
 
-**`set_session_plugin_backend`** persists per **role + optional session** namespace; **does not rewrite the pack**. `get_role_info` / `load_role` return **`plugin_backends_effective`** and **`plugin_backends_effective_sources`** (pack vs session vs env precedence).
+**`set_session_slot_override`** applies an in-memory patch by **role + optional session + `slot_key`** and does **not** rewrite the pack or survive a host restart. It can patch `backend`, `plugin`, `plugins`, `model`, and `local_memory_provider_id`, so directory ids can be selected per session. `get_role_info` / `load_role` expose `slot_registry_pack`, `slot_registry_effective`, and `slot_session_overridden_keys`; folded six-slot diagnostics remain under `plugin_backends_effective` and `plugin_backends_effective_sources`.
 
-`backend` field semantics: **omit** = no change; **`null`** = clear override for that slot; **string** = set backend (invalid → error). **`directory_plugins` ids** for `directory` still come from the pack unless a future API exposes session-level directory maps ([DIRECTORY_PLUGINS.md](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)).
+Later non-empty fields merge into an existing patch. An all-empty patch clears the complete override for that instance; prefer **`clear_session_slot_override`** for explicit clearing and **`clear_all_session_slot_overrides`** for the session namespace. The old **`set_session_plugin_backend`** command remains a thin wrapper for the six default instance keys, requires a blueprint registry, and cannot select arbitrary instance keys or directory plugin ids.
 
 ---
 

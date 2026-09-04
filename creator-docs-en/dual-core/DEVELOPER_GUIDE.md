@@ -30,7 +30,7 @@ Otherwise **zero difference** from dual-core off.
 cargo run -p oclive-cli -- init --dual-core --preset full -o ./my-kernel
 ```
 
-Generates `distros/chat-pro/roles/default/pipeline.ocblueprint` (`schema_version: 3`, with `runtime_config` and `pipeline`).
+Generates `roles/default/pipeline.ocblueprint` at the generated-project root (`schema_version: 3`, with `runtime_config` and `pipeline`). v3 is the frozen dual-core Beta, not the Stable default for new ordinary packs; those use v4.
 
 ### Hand-written blueprint
 
@@ -42,8 +42,10 @@ Generates `distros/chat-pro/roles/default/pipeline.ocblueprint` (`schema_version
 Validate:
 
 ```bash
-cargo run -p oclive-cli -- pack validate --profile creator ./distros/chat-pro/roles/your_role
+cargo run -p oclive-cli -- pack validate ./roles/your_role
 ```
+
+Do not use `--profile creator` here: that profile intentionally skips `slot_registry`, `runtime_config`, and `pipeline`, so it cannot verify dual-core configuration.
 
 ---
 
@@ -110,11 +112,11 @@ Filter example:
 
 | Field | Description |
 |-------|-------------|
-| `narrative_hint` | Complex-emotion narrative cache |
-| `emotion_state` | `get_current_emotion` |
-| `active_scene_id` | `get_user_presence_scene` / `set_user_presence_scene` |
+| `narrative_hint` | SessionCache + SQLite-backed complex-emotion cache; empty can be restored |
+| `emotion_state` | SQLite `get_current_emotion`; currently written back only when the prior value was `Some` |
+| `active_scene_id` | SQLite `get_user_presence_scene` / `set_user_presence_scene`; currently written back only when the prior value was `Some` |
 
-If experimental steps mutate these and then fail, state rolls back before stable core runs.
+On Experimental failure, runtime restores this bounded state before fixed Stable `co_present`. This is not a general transaction. A prior `NULL` emotion/scene is not currently cleared if Experimental wrote a new value; see `K-DUAL-ROLLBACK-02`.
 
 ---
 

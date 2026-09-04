@@ -28,7 +28,7 @@ AND pipeline.experimental 非空
 cargo run -p oclive-cli -- init --dual-core --preset full -o ./my-kernel
 ```
 
-生成 `distros/chat-pro/roles/default/pipeline.ocblueprint`（`schema_version: 3`，含 `runtime_config` 与 `pipeline`）。
+在生成工程根级生成 `roles/default/pipeline.ocblueprint`（`schema_version: 3`，含 `runtime_config` 与 `pipeline`）。v3 是冻结的双核 Beta，不是新角色包的 Stable 默认；普通新包使用 v4。
 
 ### 手写蓝图
 
@@ -40,8 +40,10 @@ cargo run -p oclive-cli -- init --dual-core --preset full -o ./my-kernel
 校验：
 
 ```bash
-cargo run -p oclive-cli -- pack validate --profile creator ./distros/chat-pro/roles/your_role
+cargo run -p oclive-cli -- pack validate ./roles/your_role
 ```
+
+不要在这里使用 `--profile creator`：该 profile 有意跳过 `slot_registry`、`runtime_config` 与 `pipeline`，无法验收双核配置。
 
 ---
 
@@ -108,11 +110,11 @@ $env:RUST_LOG = "info,oclive_dual_core=info"
 
 | 字段 | 说明 |
 |------|------|
-| `narrative_hint` | 复杂情感叙事缓存 |
-| `emotion_state` | `get_current_emotion` |
-| `active_scene_id` | `get_user_presence_scene` / `set_user_presence_scene` |
+| `narrative_hint` | SessionCache + SQLite 双写的复杂情感叙事缓存；空值也可恢复为空 |
+| `emotion_state` | SQLite `get_current_emotion`；当前仅在快照原值为 `Some` 时写回 |
+| `active_scene_id` | SQLite `get_user_presence_scene` / `set_user_presence_scene`；当前仅在快照原值为 `Some` 时写回 |
 
-实验步修改上述内存态后若失败，回滚再跑稳定核。
+实验步失败后，运行时先恢复上述有限状态，再跑固定 Stable `co_present`。这不是通用事务回滚；若 emotion / scene 原值为 `NULL`，当前 rollback 没有清空新值，缺口见 `K-DUAL-ROLLBACK-02`。
 
 ---
 

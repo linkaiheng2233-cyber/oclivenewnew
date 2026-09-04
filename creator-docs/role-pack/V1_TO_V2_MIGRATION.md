@@ -1,8 +1,8 @@
 # 从 v1 迁移到 v2 角色包（A.I.Live）
 
-**A.I.Live** 角色包自 v2 起以 **`pipeline.ocblueprint`** 为唯一配置中枢（工程代号 **oclive**）。
+**A.I.Live** 角色包自 v2 起以 **`pipeline.ocblueprint`** 为唯一配置中枢（工程代号 **oclive**）。本文记录现有迁移命令生成的 **v2 兼容产物**；它仍受支持，但新建 Stable 包的当前目标是 **v4**。
 
-**已升级到 v2？** 下一步见 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**（`runtime_config`、可选双核；约 10 分钟手动升级）。
+**已升级到 v2？** 可以继续使用。只有明确启用冻结双核 Beta 时才进入 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**；普通包若要采用当前 Stable 配置边界，应按 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 升为 v4，并把引擎字段从 `meta` 移到顶层 `runtime_config`，不得双写。
 
 **目标读者**：仍使用 `manifest.json` + `settings.json` 的创作者。按本文操作，**约 10 分钟**可完成迁移与校验。
 
@@ -12,7 +12,7 @@
 
 ---
 
-## 1. v2 蓝图架构（一句话）
+## 1. 本迁移命令生成的 v2 蓝图（一句话）
 
 **`pipeline.ocblueprint` 是角色包的唯一配置中枢（SSOT）**：`schema_version: 2`、`meta`（原 manifest + 引擎 settings 字段）、`slot_registry`（开放多实例槽位）。**不得**与 legacy 双文件并存；**禁止**在蓝图文件中写 `steps[]`、`entry`、`module_relations`（运行时由 `slot_registry` 派生）。
 
@@ -68,7 +68,7 @@ CLI 迁移与 `oclive_validation::plugin_backends_to_slot_registry` 使用下列
 | `prompt` | `prompt` | `plugin_backends.prompt` |
 | `llm` | `llm` | `plugin_backends.llm` |
 | `agent` | `agent` | `plugin_backends.agent` |
-| `complex_emotion` | `complex_emotion` | 若 legacy 未配置则 `builtin` |
+| `complex_emotion` | `complex_emotion` | 迁移工具显式补 `builtin` 以保留 legacy 行为；新蓝图运行时若省略该设施条目则为 Noop |
 
 每条实例还需：`label`、`position`（同 type 从 0 递增）、directory 时的 `plugin`/`plugins`。
 
@@ -80,7 +80,7 @@ CLI 迁移与 `oclive_validation::plugin_backends_to_slot_registry` 使用下列
 
 ```powershell
 cd D:\oclivenewnew
-cargo run -p oclive-cli -- pack migrate-to-blueprint roles\my_role
+cargo run -p oclive-cli -- pack migrate-to-blueprint distros\chat-pro\roles\my_role
 ```
 
 | 参数 | 默认 | 说明 |
@@ -89,7 +89,7 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint roles\my_role
 | `--remove-legacy` | **true** | 写入 `pipeline.ocblueprint` 后删除 `manifest.json` 与 `settings.json` |
 | （省略 `--remove-legacy`） | — | 加 `--no-remove-legacy` 可保留旧文件（**不推荐**；`pack validate` 默认蓝图 profile 会拒绝双轨并存） |
 
-成功输出示例：`Migrated to roles\my_role\pipeline.ocblueprint (legacy files removed)`。
+成功输出示例：`Migrated to distros\chat-pro\roles\my_role\pipeline.ocblueprint (legacy files removed)`。
 
 **手工步骤（可选）**：用编写器「架构图」导出或编辑 `pipeline.ocblueprint`；自动迁移已覆盖常见字段，复杂 `directory_plugins` 请在编写器中核对实例键与 `plugin` id。
 
@@ -98,11 +98,11 @@ cargo run -p oclive-cli -- pack migrate-to-blueprint roles\my_role
 ## 4. 迁移后校验
 
 ```powershell
-cargo run -p oclive-cli -- pack validate roles\my_role
+cargo run -p oclive-cli -- pack validate distros\chat-pro\roles\my_role
 ```
 
 - 默认 profile 为蓝图目录校验（按 `schema_version` 精确分派；本迁移产物为 v2）。
-- 仅维护未迁完的 legacy 包时使用：`pack validate roles\legacy_role --profile legacy`。
+- 仅维护未迁完的 legacy 包时使用：`pack validate distros\chat-pro\roles\legacy_role --profile legacy`。
 
 **编写器**：打开包 →「运行全部检查」。**主应用**：设置页环境自检 → 加载角色 → 试聊一条。
 
@@ -120,7 +120,7 @@ cargo run -p oclive-cli -- pack validate roles\my_role
 ### 可以回退吗？
 
 - **无**宿主「一键回退 v1」；请用 Git 还原角色包目录，或保留迁移前的备份 zip。
-- v2 与 legacy **不能** 同时存在同一角色根目录（校验失败）。
+- 蓝图与 legacy **不能** 同时存在同一角色根目录（校验失败）。
 
 ### 会话里改的「模块后端」还有效吗？
 
@@ -129,7 +129,7 @@ cargo run -p oclive-cli -- pack validate roles\my_role
 
 ### 编排 `steps[]` 去哪了？
 
-- 已移除；对话主路径不读蓝图步骤 DSL。扩展逻辑请用目录插件、`plugin_backends` / `slot_registry` 与内核模块文档。
+- 已从普通 Stable 主路径移除；内核不会把蓝图当成任意步骤 DSL。扩展逻辑请用目录插件与 `slot_registry`；`PluginBackends` 只是运行时折叠出的六槽视图，legacy `settings.json.plugin_backends` 仅供迁移兼容。
 
 ---
 
@@ -149,4 +149,5 @@ cargo run -p oclive-cli -- pack validate roles\my_role
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-04 | 明确迁移命令输出 v2 兼容包；新 Stable 目标为 v4，v3 仅限冻结双核 Beta。 |
 | 2026-05-20 | 初版：v2 SSOT、`pack migrate-to-blueprint`、校验与 FAQ。 |

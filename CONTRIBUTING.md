@@ -14,15 +14,15 @@
 
 ## 获取帮助
 
-- **一般问题、安装与配置**：请使用仓库 [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)，并选用 **Bug / Feature / Support** 模板；标题建议 `[bug]:` / `[feat]:` / `[support]:` 前缀（见根目录 [README.md](README.md)「支持」小节）。维护者通常在 **3–5 个工作日** 内做首轮分类（非 SLA）。  
-- **自助材料**：[FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。  
+- **一般问题、安装与配置**：请使用仓库 [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)，并选用 **Bug / Feature / Support** 模板；标题建议 `[bug]:` / `[feat]:` / `[support]:` 前缀（见根目录 [README.md](README.md)「支持」小节）。维护者通常在 **3–5 个工作日** 内做首轮分类（非 SLA）。
+- **自助材料**：[FAQ](creator-docs/FAQ.md) · [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md)。
 - **安全漏洞**：**勿**在公开 issue 披露细节 — 见 [SECURITY.md](SECURITY.md)。
 
 ## 开发环境
 
 - **本仓库**：**Node.js**（**≥ 22**，见根 `package.json` `engines`；可选 `.nvmrc`）、**npm**、**Rust** stable、**Ollama**（本地对话默认路径，可选）。
 - **Windows**：需 **Visual Studio Build Tools**（MSVC 链接器）。快速检查脚本：[`scripts/setup-dev.ps1`](scripts/setup-dev.ps1)；详解 [`human-docs/10_SETUP_WINDOWS.md`](human-docs/10_SETUP_WINDOWS.md)。
-- **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `src-tauri` 构建。
+- **克隆后**：在仓库根目录执行 **`npm install`**；首次 **`npm run tauri:dev`** 会拉取前端依赖并由 Tauri 驱动 `distros/desktop-tauri` 构建。
 - **仅验证 Rust workspace**（含 `oclive_validation`、`oclive-cli`、`oclivenewnew-tauri`）：在根目录执行 **`cargo test --workspace`**，或 **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** 仅桌面宿主。
 - **Cargo 产物目录**：根目录 [`.cargo/config.toml`](.cargo/config.toml) 将 **`target-dir`** 指到仓库外 **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`**；与源码分离，便于清理。
 
@@ -69,9 +69,9 @@ npm run build
 
 | 场景 | 命令 |
 |------|------|
-| 日常开发（与 `npm run check` 对齐） | **`npm run check`**（`vite build` + **`cargo fmt` / `clippy` / `cargo test --lib`**，manifest 指向 `src-tauri`） |
+| 日常开发（与 `npm run check` 对齐） | **`npm run check`**（`vite build` + **`cargo fmt` / `clippy` / `cargo test --lib`**，manifest 指向 `distros/desktop-tauri`） |
 | 发版或改引擎 / 契约前 | **`npm run check:release`**（含 **`cargo test`** 全量，即 **`tests/`** 集成与单元） |
-| 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `kernel/crates/*` 与 `src-tauri`） |
+| 仅 Rust workspace | **`cargo test --workspace`**（根目录；含 `kernel/crates/*` 与 `distros/desktop-tauri`） |
 | 仅前端单元 | **`npm run test:unit`**（Vitest） |
 | **核心 HTTP 重启烟测（A1.1a）** | **`npm run test:e2e:core-api-restart`**（需已 `cargo build -p oclivenewnew-tauri`；默认 `OCLIVE_HTTP_API_MOCK_LLM=1`） |
 | **三发行版 smoke（Pro / Flash）** | **`npm run test:distro:smoke`**（profile mirror · distro kernel · Tauri bundled-first）；发版前另跑 **`npm run bundle-kernel:tauri`**（`tauri:build` 已含） |
@@ -130,7 +130,7 @@ npm run build
 
 | 场景 | 建议改动位置 | 还需同步 |
 |------|----------------|----------|
-| 新增槽位类型或合并策略 | `slot_runner.rs`、`slot_resolver.rs`、`oclive_validation`（schema + 校验） | `ROLE_PACK_SPEC.md`、前端 `slotRegistry` / 架构图 |
+| 修改既有槽合并策略；或经 Breaking RFC 改变六槽分类 | `slot_runner.rs`、`slot_resolver.rs`、`oclive_validation`（schema + 校验） | `ROLE_PACK_SPEC.md`、前端 `slotRegistry` / 架构图；普通扩展不得自动新增“第七槽” |
 | 新增插件后端种类 | `plugin_host.rs`（`BackendRegistry`）、`models` 枚举、`PLUGIN_V1.md` | `settings.json` / 蓝图 `slot_registry` 文档 |
 | 调整共景阶段顺序 | `turn_pipeline.rs`（**慎重**；属主编排） | `DESIGN_DECISIONS.md`、OOCP / 集成测 |
 | 新持久化字段 | `kernel/crates/oclive_kernel_host/migrations/`、`infrastructure/repositories.rs` | 禁止虚构表名；更新 handoff 清单 |
@@ -186,8 +186,8 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 
 摘要：
 
-1. **先开 issue**（或对大面变更开 RFC），说明对角色包、`plugin_backends`、HTTP OOCP / `invoke` DTO 的迁移影响；PR 描述中显式标注 **BREAKING**。  
-2. **PR 须带**：`kernel/crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。  
+1. **先开 issue**（或对大面变更开 RFC），说明对角色包蓝图 `slot_registry` / `runtime_config`、运行时折叠 `PluginBackends`、legacy `settings.json`、HTTP OOCP / `invoke` DTO 的迁移影响；PR 描述中显式标注 **BREAKING**。
+2. **PR 须带**：`kernel/crates/oclive_validation` 更新（若 manifest / `settings` 键变更）、**`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** 等触及项、**`creator-docs/`** / **`creator-docs-en/`** 镜像，以及 **`CHANGELOG.md` / `CHANGELOG.en.md`** 双语条目。
 3. **审阅**：至少一名维护者确认 **兼容层与迁移路径**、CI、CHANGELOG 与兼容表。
 
 ## 文档约定

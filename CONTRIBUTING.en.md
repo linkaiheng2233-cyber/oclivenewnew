@@ -1,4 +1,4 @@
-﻿# Contributing to A.I.Live
+# Contributing to A.I.Live
 
 [中文](CONTRIBUTING.md)
 
@@ -12,15 +12,15 @@ After merges to the default branch, **Dependabot** opens PRs per [`.github/depen
 
 ## Getting help
 
-- **General questions, install, and configuration:** use [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) with the **Bug / Feature / Support** templates; prefer `[bug]:` / `[feat]:` / `[support]:` title prefixes (see root [README.en.md](README.en.md) **Support**). First triage is usually within **3–5 business days** (best effort, not an SLA).  
-- **Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md).  
+- **General questions, install, and configuration:** use [**GitHub Issues**](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) with the **Bug / Feature / Support** templates; prefer `[bug]:` / `[feat]:` / `[support]:` title prefixes (see root [README.en.md](README.en.md) **Support**). First triage is usually within **3–5 business days** (best effort, not an SLA).
+- **Self-serve:** [FAQ](creator-docs/FAQ.md) · [Documentation index](creator-docs/getting-started/DOCUMENTATION_INDEX.md) · [ERROR_CODES](creator-docs/getting-started/ERROR_CODES.md).
 - **Security vulnerabilities:** do **not** disclose in public issues — see [SECURITY.md](SECURITY.md).
 
 ## Development environment
 
 - **This repo:** **Node.js ≥ 22** (see root `package.json` engines; optional `.nvmrc`), **npm**, **Rust** stable, **Ollama** (optional for local dialogue).
 - **Windows:** **Visual Studio Build Tools** (MSVC linker).
-- **After clone:** run **`npm install`** at the repo root; **`npm run tauri:dev`** drives the Tauri + `src-tauri` build.
+- **After clone:** run **`npm install`** at the repo root; **`npm run tauri:dev`** drives the Tauri build in `distros/desktop-tauri`.
 - **Rust workspace only** (`oclive_validation`, `oclive-cli`, `oclivenewnew-tauri`): **`cargo test --workspace`** from the root, or **`cargo test --manifest-path distros/desktop-tauri/Cargo.toml`** for the desktop crate only.
 - **Cargo `target-dir`:** [`.cargo/config.toml`](.cargo/config.toml) points to **`../oclive-dev-artifacts/oclivenewnew-cargo-target/`** outside the clone.
 
@@ -53,7 +53,7 @@ npm run build
 
 | Scenario | Command |
 |----------|---------|
-| Day-to-day (matches `npm run check`) | **`npm run check`** (`vite build` + **`cargo fmt` / `clippy` / `cargo test --lib`** for `src-tauri`) |
+| Day-to-day (matches `npm run check`) | **`npm run check`** (`vite build` + **`cargo fmt` / `clippy` / `cargo test --lib`** for `distros/desktop-tauri`) |
 | Release or engine/contract changes | **`npm run check:release`** (full **`cargo test`** including `tests/`) |
 | Rust workspace only | **`cargo test --workspace`** |
 | Frontend unit only | **`npm run test:unit`** (Vitest) |
@@ -93,7 +93,7 @@ See **[`handoff/BUS_FACTOR_NOTES.md`](handoff/BUS_FACTOR_NOTES.md)** for entry p
 
 | Scenario | Touch | Also update |
 |----------|-------|-------------|
-| New slot type or merge policy | `slot_runner.rs`, `slot_resolver.rs`, `oclive_validation` | `ROLE_PACK_SPEC.md`, frontend graph |
+| Change an existing slot merge policy, or revise the six-port taxonomy through a Breaking RFC | `slot_runner.rs`, `slot_resolver.rs`, `oclive_validation` | `ROLE_PACK_SPEC.md`, frontend graph; ordinary extensions must not silently become “slot 7” |
 | New plugin backend | `plugin_host.rs`, model enums, `PLUGIN_V1.md` | blueprint / settings docs |
 | Co-present stage order | `turn_pipeline.rs` (careful) | `DESIGN_DECISIONS.md`, OOCP tests |
 | New DB column | `distros/desktop-tauri/migrations/`, repositories | documented table names only |
@@ -141,8 +141,8 @@ Dimension 5 is defined by `node scripts/dimension5-acceptance.mjs --ci`. **Re-ru
 
 Summary:
 
-1. **Open an issue** (or RFC for large surface) describing migration impact on role packs, `plugin_backends`, HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.  
-2. **PR must include:** updates to **`kernel/crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.  
+1. **Open an issue** (or RFC for large surface) describing migration impact on role blueprint `slot_registry` / `runtime_config`, folded runtime `PluginBackends`, legacy `settings.json`, and HTTP OOCP / `invoke` DTOs; label the PR **BREAKING**.
+2. **PR must include:** updates to **`kernel/crates/oclive_validation`** (if manifest/settings keys change), **`PLUGIN_V1.md` / `ERROR_CODES.md` / `COMPATIBILITY.md`** as applicable, **`creator-docs/`** / **`creator-docs-en/`** mirrors, and **`CHANGELOG.md` + `CHANGELOG.en.md`** entries.
 3. **Review:** at least one maintainer confirms compatibility shims, migration paths, CI, CHANGELOG, and compatibility docs.
 
 ## Documentation

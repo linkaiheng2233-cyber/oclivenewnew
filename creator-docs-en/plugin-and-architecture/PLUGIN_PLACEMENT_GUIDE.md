@@ -2,7 +2,7 @@
 
 [中文](../../creator-docs/plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)
 
-Physical install path: `{app_data}/distros/chat-pro/plugins/<manifest.id>/` (directory plugins). During development, plugins may also be scanned from `distros/chat-pro/plugins/` next to roles and the working tree (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)).
+Physical user-install path: `{app_data}/plugins/<manifest.id>/`. During development, the scanner also checks `plugins/` next to the role-pack root—`distros/chat-pro/plugins/` in this monorepo, or root-level `plugins/` in a standalone scaffold (see [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)).
 
 ## Three-question decision tree
 

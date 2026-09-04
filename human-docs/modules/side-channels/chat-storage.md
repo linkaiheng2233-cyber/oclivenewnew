@@ -61,5 +61,5 @@
 | 相关模块 | 数据关系 |
 |----------|----------|
 | [memory](../slots/memory.md) | ②③ 独立表；pre/post 写入 |
-| `reply_post_process` | post 阶段润色 **reply**，不写 chat 结构 |
+| `reply_post_process` | 在 chat append 前生成 display/transcript **reply**；不拥有 chat 表结构或写入事务 |
 | Turn Thinking | Fast 档仍写聊天 turns；可能跳过部分 LTM |

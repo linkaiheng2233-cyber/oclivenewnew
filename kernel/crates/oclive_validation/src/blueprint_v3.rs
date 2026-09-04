@@ -33,7 +33,8 @@ use crate::validate::{validate_disk_manifest, validate_min_runtime_version};
 
 pub const BLUEPRINT_V3_SCHEMA_VERSION: u32 = 3;
 
-/// Instances referenced by the stable core `pipeline.stable`; their `type` must be one of the six slots.
+/// Instances referenced by the frozen `pipeline.stable` description section;
+/// their `type` must be one of the six slots even though the host does not execute this section.
 pub const STABLE_PIPELINE_SLOT_TYPES: &[&str] =
     &["memory", "emotion", "event", "prompt", "llm", "agent"];
 

@@ -6,7 +6,7 @@
 
 - 统一本地 provider 的发现、注册与能力声明。
 - 在运行时加载前完成版本门禁，避免旧 runtime 误读新规范。
-- 与现有 `settings.json -> plugin_backends` 兼容；未启用本地 provider 时行为不变。
+- 与当前蓝图 `type: memory` + `backend: local` 及 legacy `settings.json.plugin_backends` 均兼容；未启用本地 provider 时行为不变。
 
 ## 2. Provider 描述结构
 
@@ -50,7 +50,7 @@
 
 ## 4.1 文件清单发现（已实现：`file_manifest`）
 
-- 目录：`<roles 根目录>/_local_distros/chat-pro/plugins/`（与 `RoleStorage` 使用的 `roles_dir` 一致；开发时多为仓库内 `distros/chat-pro/roles/_local_distros/chat-pro/plugins/`）。
+- 目录：`<roles 根目录>/_local_plugins/`（与 `RoleStorage` 使用的 `roles_dir` 一致；本仓开发时为 `distros/chat-pro/roles/_local_plugins/`）。
 - 扫描该目录下扩展名为 `.json`（大小写不敏感）的文件；每个文件反序列化为一个 `LocalPluginProviderDescriptor`。
 - 解析失败或读文件失败：跳过该文件并打 `oclive_plugin` 警告日志，不阻塞启动。
 - 启动时由宿主将发现结果依次 `register_provider`；**同一 `provider_id` 若多次出现，后注册的覆盖先注册的**（目录遍历顺序依赖平台，**请勿依赖覆盖顺序**，每个 id 建议只配置一次）。
@@ -61,11 +61,11 @@
 - 本地 provider 先以“注册骨架”接入 registry（不改变默认解析）。
 - 未来会在 resolver 层引入 provider 选择策略，并保持 remote/builtin 回退语义。
 
-## 5.1 与 `plugin_backends.memory`
+## 5.1 与 memory 槽位
 
-- 当角色包或会话覆盖将 `plugin_backends.memory` 设为 **`local`** 时，宿主从 `LocalPluginRegistry` 中选取具备 `memory` 能力的 provider。
-- 可选字段 **`plugin_backends.local_memory_provider_id`**（与 `memory` 同级）：非空时精确匹配已注册 `provider_id`；未命中则回退字典序并打 `warn`。
+- 当角色包或会话覆盖将有效 memory 实例设为 **`backend: local`** 时，宿主从 `LocalPluginRegistry` 中选取具备 `memory` 能力的 provider。legacy v1 等价于 `plugin_backends.memory = local`。
+- 可选字段 **`local_memory_provider_id`** 当前写在 memory 实例上（legacy 与 `memory` 六键同级）：非空时精确匹配已注册 `provider_id`；未命中则回退字典序并打 `warn`。
 - 未指定 `local_memory_provider_id` 且存在多个 memory provider 时：按 **`provider_id` 字典序取第一个**，并打歧义 `warn`（建议在角色包中写明 id）。
 - **当前实现**：记忆排序仍委托 **`builtin`**（`local` 路径经 registry 选中 provider 后仍走内置排序）；宿主侧 `MemoryRetrieval::diagnostic_local_provider_id` 可观测选中 id。
-- **会话级**：与 `SendMessageRequest.session_id` 对齐时，可用 Tauri **`set_session_plugin_backend`**（`module = memory` 且可选 **`local_memory_provider_id`**）写入覆盖；用 **`get_role_info`** 的同名 **`session_id`** 读回合并后的 `plugin_backends_effective`（详见 [PLUGIN_V1.md](PLUGIN_V1.md)「会话级覆盖」）。
+- **会话级**：用 Tauri **`set_session_slot_override`** 按 memory 实例键覆盖 `backend` / `local_memory_provider_id`；用同一 `session_id` 的 **`get_role_info`** 读取 `slot_registry_effective`。旧 `set_session_plugin_backend(module=memory)` 只是默认实例键的薄封装。
 

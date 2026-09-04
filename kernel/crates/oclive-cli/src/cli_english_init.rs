@@ -3,7 +3,7 @@
 pub const PRESET_MATRIX_HELP: &str = r#"Preset and plugin_backends (logical slots)
 
 ┌───────────────────┬─────────┬─────────┬────────┐
-│ Slot              │ minimal │ mixed   │ full   │
+│ Backend key       │ minimal │ mixed   │ full   │
 ├───────────────────┼─────────┼─────────┼────────┤
 │ memory            │ builtin │ builtin │ builtin│
 │ emotion           │ builtin │ builtin │ builtin│
@@ -14,7 +14,8 @@ pub const PRESET_MATRIX_HELP: &str = r#"Preset and plugin_backends (logical slot
 │ complex_emotion   │ none    │ builtin │ remote │
 └───────────────────┴─────────┴─────────┴────────┘
 
-* agent = none: omit the agent key in settings.json (host falls back to builtin).
+* `complex_emotion` is a facility preset key, not a seventh stable slot.
+* agent = none: the non-dual legacy example omits the key and therefore falls back to builtin; a v3 blueprint writes explicit none.
 
 llm = ollama uses the in-process local client; use remote + OCLIVE_REMOTE_LLM_URL if no local model (see PLUGIN_V1).
 

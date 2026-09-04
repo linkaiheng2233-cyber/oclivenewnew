@@ -94,7 +94,7 @@ npm run test:unit          # PR 前
 npm run build              # PR 前
 ```
 
-**不需要**：`cargo test --workspace`、OOCP 全套件（除非改了 `src-tauri`）。
+**不需要**：`cargo test --workspace`、OOCP 全套件（除非改了 `distros/desktop-tauri`）。
 
 ---
 

@@ -1,7 +1,7 @@
 # OCLive 用户、创作者与插件文档
 
 **SSOT 范围**：公开使用说明、角色包契约、插件契约与集成规范。
-**最后更新**：2026-07-19。
+**最后更新**：2026-09-04。
 **主仓开发者**从 [human-docs](../human-docs/README.md) 开始；维护者 / AI 从 [handoff](../handoff/README.md) 开始。
 
 ## 按身份开始
@@ -32,6 +32,8 @@
 
 | 主题 | 文档 |
 |------|------|
+| OCLive 本质与最小工具内核边界 | [PURE_KERNEL_BOUNDARY](getting-started/PURE_KERNEL_BOUNDARY.md) · [架构总览](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| 六槽、设施与独立通道归类 | [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | 角色包 vs 蓝图 | [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md) |
 | 角色包磁盘格式 | [ROLE_PACK_SPEC](role-pack/ROLE_PACK_SPEC.md) |
 | 六槽与 DTO | [PLUGIN_V1](plugin-and-architecture/PLUGIN_V1.md) |

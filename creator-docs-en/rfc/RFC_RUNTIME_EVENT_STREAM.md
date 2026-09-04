@@ -4,7 +4,7 @@
 
 **Scope:** architecture and authority summary for the future Runtime Event Stream. The Chinese RFC is the contract SSOT. Current Event Ring wire and proactive authorization remain defined by [EVENT_RING](../plugin-and-architecture/EVENT_RING.md).
 
-**Last updated:** 2026-09-03.
+**Last updated:** 2026-09-05.
 
 **Status:** **Draft v0.17 · Stage A.1, A.2.1, A.2.2.1, and A.2.2.2-R0 through R6 implemented · R1 preserves one real synchronous success path, R2 one real post-submission timeout/explicit-reconciliation path, R3 one probe-scoped encrypted private-locator cross-process path, R4 one controlled ACK-to-locator-window recovery through NapCat group history, R5 one single-host cross-process SQLite owner-lease/fencing synthetic sample, and R6 the fail-closed policy for private targets or providers without trusted history · private-target automatic recovery, host-level key recovery, and multi-host owner lease remain open · the B0 trace-only S0/S1 synthetic-evidence stage is closed · Production Stream not implemented**.
 
@@ -224,6 +224,8 @@ Commit `fdca4cc3` adds the standalone `npm run event:onebot-timeout-probe` comma
 - The first real launch exposed the liveness defect: the process exited after the upstream ACK, leaving a zero-byte lock and one fixed probe message. The maintainer strictly matched the sole recent candidate by current test account plus fixed probe prefix, recalled it successfully, verified zero candidates, removed only the exact stale lock, and ran the official sample only after `8f033207` and the synthetic regressions passed. This incident is recovery evidence, not part of the official R2 success sample.
 - Commit `dfe1da33` preserves the byte-identical sanitized [`runtime_event_stream_stage_a2_onebot_timeout_evidence.v1.json`](../../kernel/crates/oclive_kernel_types/tests/fixtures/runtime_event_stream_stage_a2_onebot_timeout_evidence.v1.json). It contains no endpoint, account/group ID, body, token, or provider message ID.
 - The provider locator existed only in process memory. R2 therefore proves only one real post-submission timeout, zero-retry, and same-process explicit-reconciliation path. It does not prove an encrypted durable adapter store, crash/restart reconciliation, cross-process or multi-host owner lease/fencing, Production Stream, consumer recovery, or checkpoints. `K-EVENT-STREAM-01` remains OPEN.
+
+> **Evidence scope and complete traffic audit (2026-09-04):** The versioned R1–R6 evidence files are selected official samples for each stage, not a complete ledger of real provider calls. A read-only cross-check of retained local logs, NapCat logs, probe call paths, and timestamps confirms **five real group-send-equivalent requests and five real recall requests** across the whole R1–R6 campaign: one pair in R1; one pair for the initial R2 liveness incident and its manual cleanup; one pair for the fixed official R2 sample; one pair in R3; and one pair in R4. R5 and R6 were synthetic-only and produced no real traffic. This total explains why provider-visible recall traces can outnumber the formal evidence samples. This document stores no account, destination, body, token, or provider locator; per-request UI display times that cannot be recovered reliably from retained evidence remain unknown.
 
 ## Stage A.2.2.2-R3 encrypted private recovery store and cross-process reconciliation sample
 

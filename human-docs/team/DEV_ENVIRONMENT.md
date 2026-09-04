@@ -160,7 +160,7 @@ npm run tauri:dev
 cd D:\oclivenewnew
 cargo build -p oclive-kernel-server
 
-$env:OCLIVE_ROLES_DIR = "D:\oclivenewnew\roles"
+$env:OCLIVE_ROLES_DIR = "D:\oclivenewnew\distros\chat-pro\roles"
 $env:OCLIVE_USE_CANONICAL_APP_DATA = "1"
 $env:RUST_LOG = "info"
 # Week 1 快速联调可开 mock（无 Ollama 也能回 reply）：
@@ -176,7 +176,7 @@ $env:RUST_LOG = "info"
 ```powershell
 cd D:\oclivenewnew\examples\voice-loop-minimal
 .\.venv\Scripts\Activate.ps1
-$env:OCLIVE_ROLE_PATH = "D:\oclivenewnew\roles\mumu"
+$env:OCLIVE_ROLE_PATH = "D:\oclivenewnew\distros\chat-pro\roles\mumu"
 python loop.py
 ```
 
@@ -194,7 +194,7 @@ curl.exe -s http://127.0.0.1:8420/health
 
 | 变量 | 典型值 | 谁需要 | 作用 |
 |------|--------|--------|------|
-| `OCLIVE_ROLES_DIR` | `D:\oclivenewnew\roles` | 语音 / 无头 | 角色包根目录 |
+| `OCLIVE_ROLES_DIR` | `D:\oclivenewnew\distros\chat-pro\roles` | 语音 / 无头 | monorepo 的角色包根目录 |
 | `OCLIVE_USE_CANONICAL_APP_DATA` | `1` | 无头 API | 数据写到 `%LOCALAPPDATA%\OClive\data` |
 | `OCLIVE_APP_DATA` | 自定义路径 | 可选 | 覆盖数据目录 |
 | `OCLIVE_HTTP_API_MOCK_LLM` | `1` | 仅快速联调 | 假 LLM；**测记忆/延迟须关闭** |
@@ -203,7 +203,7 @@ curl.exe -s http://127.0.0.1:8420/health
 | `OCLIVE_DISTRO_PROFILE` | `...\desktop.oclive.toml` | 可选 | 发行版能力 profile |
 | `OLLAMA_MODEL` / 应用内设置 | `hermes3:3b` | 对话 | 与 `ollama pull` 一致 |
 | `OCLIVE_API_BASE` | `http://127.0.0.1:8420` | voice-loop | Python 脚本用 |
-| `OCLIVE_ROLE_PATH` | `...\roles\mumu` | voice-loop | HTTP `role_path` |
+| `OCLIVE_ROLE_PATH` | `...\distros\chat-pro\roles\mumu` | voice-loop | HTTP `role_path` |
 | `OCLIVE_SESSION_ID` | 固定 UUID | voice-loop | **勿每轮随机** |
 
 数据目录详解：[OCLIVE_APP_DATA.md](../../creator-docs/kernel/OCLIVE_APP_DATA.md)

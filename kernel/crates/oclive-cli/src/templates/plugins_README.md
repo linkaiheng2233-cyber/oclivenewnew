@@ -19,9 +19,9 @@
 
 ## 文档
 
-- 契约与模块编号：[PLUGIN_V1.md](../../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](../../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
-- 插件作者学习路径：[PLUGIN_AUTHOR_LEARNING_PATH.md](../../../creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
-- 目录插件详解：[DIRECTORY_PLUGINS.md](../../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
+- 契约与模块编号：[PLUGIN_V1.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
+- 插件作者学习路径：[PLUGIN_AUTHOR_LEARNING_PATH.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)
+- 目录插件详解：[DIRECTORY_PLUGINS.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
 
 ## 示例插件（可选）
 

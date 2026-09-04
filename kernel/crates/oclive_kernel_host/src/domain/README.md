@@ -1,8 +1,8 @@
-﻿# `oclive_kernel_host/src/domain` dependency rules
+# `oclive_kernel_host/src/domain` dependency rules
 
-Orchestration and business-policy layer. New code should follow these directions (aligned with [ARCHITECTURE_LAYERING.md](../../../../handoff/ARCHITECTURE_LAYERING.md)).
+Orchestration and business-policy layer. New code should follow these directions (aligned with [ARCHITECTURE_LAYERING.md](../../../../../handoff/ARCHITECTURE_LAYERING.md)).
 
-Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md).
+Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../../handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md).
 
 ## Allowed / forbidden
 
@@ -14,7 +14,7 @@ Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../handoff/C
 
 ## Layering ratchet (D-LAYER-05)
 
-`node scripts/check-domain-layering.mjs` enforces two counters under `domain/**/*.rs` (baseline: [LAYERING_BASELINE.json](../../../../handoff/LAYERING_BASELINE.json)):
+`node scripts/check-domain-layering.mjs` enforces two counters under `domain/**/*.rs` (baseline: [LAYERING_BASELINE.json](../../../../../handoff/LAYERING_BASELINE.json)):
 
 | Counter | Baseline (2026-06-11) | Meaning |
 |---------|----------------------|---------|
@@ -61,6 +61,6 @@ Plugin host / Remote / directory / reply post-processor factories live in `infra
 | `slot_runner.rs` | Multi-instance slot merge and invocation |
 | `ports/plugin_host/` | `plugin_backends` → `Arc<dyn …>` |
 
-**Integration tests (outside `domain/`):** `src-tauri/tests/theater_director_resolver.rs` — directory plugin wiring + RPC fallback.
+**Integration tests (outside `domain/`):** `distros/desktop-tauri/tests/theater_director_resolver.rs` — directory plugin wiring + RPC fallback.
 
-Naming SSOT: [NAMING_CONVENTIONS.md](../../../../creator-docs/NAMING_CONVENTIONS.md).
+Naming SSOT: [NAMING_CONVENTIONS.md](../../../../../creator-docs/NAMING_CONVENTIONS.md).

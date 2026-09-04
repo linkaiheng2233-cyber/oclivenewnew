@@ -13,7 +13,7 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 - **oclive_kernel_host** (complete host and in-process facade crate): **`0.2.0`**. `OcliveKernel` is the supported Rust integration entry; internal `AppState` is not a compatibility contract.
 - **oclive-cli** (scaffold CLI): **`0.1.0`** (`kernel/crates/oclive-cli/Cargo.toml`; **independent semver**, not required to match the desktop host; when scaffolding with `init --kernel-source`, path deps align contracts). **Default build** depends on `oclive_kernel_runtime` + `oclive_validation` only (`cargo tree -p oclive-cli --no-default-features` has **no** `libsqlite3-sys` / `axum`). **`doctor config-resolve`** defaults to runtime pure resolution; **`--via-host`** (feature **`diagnostics-host`**) optionally runs in-memory `AppState` deep diagnosis.
 - **oclive-pack-editor** (sister repo): **`0.5.1`** (`ui.json` parity with host **0.5.x**)
-- **oclive-vscode** (VS Code extension, sister repo): **`0.4.1`** (independent semver; spawn/attach contract needs host **≥0.4.0**, **0.5.2** recommended)
+- **oclive-vscode** (VS Code extension, sister repo): **`0.5.0`** (independent semver; spawn/attach contract needs host **≥0.4.0**, **0.5.2** recommended)
 
 ---
 
@@ -31,15 +31,15 @@ This page explains how **`ui.json` in role packs** relates to the **desktop host
 
 ## Upgrade and downgrade behavior
 
-1. **Host older than editor target**  
-   - Unknown **`ui.json`** keys: usually **silently ignored** when models use **`serde` defaults + optional fields**; if a release rejects unknown keys, see that version’s `CHANGELOG`.  
+1. **Host older than editor target**
+   - Unknown **`ui.json`** keys: usually **silently ignored** when models use **`serde` defaults + optional fields**; if a release rejects unknown keys, see that version’s `CHANGELOG`.
    - Declared but unimplemented slots: may **not render** or **do nothing** until the host is upgraded.
 
-2. **Editor older than host**  
+2. **Editor older than host**
    - New host slots / theme keys may be uneditable in the old editor; **edit `ui.json` manually** against [ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json).
 
-3. **Pack `settings.json` and `plugin_backends`**
-   - Governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../CHANGELOG.en.md).
+3. **Role blueprint and legacy configuration compatibility**
+   - Stable v4 uses `pipeline.ocblueprint` `slot_registry` (plus optional `runtime_config` / `extensions`) as the disk authority. `settings.json` / `plugin_backends` are legacy migration inputs only. Compatibility is governed by **`min_runtime_version`** and host `load_role`; see [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) and [CHANGELOG.en.md](../CHANGELOG.en.md).
 
 ---
 
@@ -75,7 +75,7 @@ Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for a
 | **oclive_kernel_host** | `kernel/crates/oclive_kernel_host/Cargo.toml` | HTTP, Tauri, and `OcliveKernel` share complete `process_message` / SQLite / plugin / Event Ring orchestration | **0.2.0** today; integrate through `OcliveKernel`, not direct `AppState` assembly |
 | **oclive-cli** | `kernel/crates/oclive-cli/Cargo.toml` | without `--kernel-source`, emits a serde stub; a linked `library` gets complete `OcliveKernel` path dependencies/facade | [OCLIVE_CLI_GUIDE.md](cli/OCLIVE_CLI_GUIDE.md) |
 | **oclive-pack-editor** | sister `package.json` | writes `distros/chat-pro/roles/{id}/`; **`ui.json`** matrix above | `HOST_RUNTIME_VERSION` must match host `version` |
-| **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.4.1** today; host **0.5.2** recommended |
+| **oclive-vscode** | sister `package.json` | spawn/attach **`kernel_server --api`**; `distro.oclive.toml` mirrors `examples/distro-profiles/vscode.oclive.toml` | **0.5.0** today; host **0.5.2** recommended |
 | **oclive-launcher** | sister `package.json` | sets **`OCLIVE_ROLES_DIR`**, optional model name, zip install; **does not** replace host contract | [launcher README](https://github.com/linkaiheng2233-cyber/oclive-launcher/blob/main/README.md) |
 | **role packs** | `manifest.json` (`schema_version`, `min_runtime_version`) | older hosts may refuse load or degrade | [PACK_VERSIONING.md](role-pack/PACK_VERSIONING.md) |
 | **host SQLite** | `kernel/crates/oclive_kernel_host/migrations/*.sql` | ships only with **host** releases; do not downgrade DB after a forward migration unless `CHANGELOG` says so | breaking migrations need bilingual `CHANGELOG` + this table |
@@ -84,7 +84,7 @@ On breaking changes: update **`CHANGELOG.md` / `CHANGELOG.en.md`**, this matrix,
 
 ### Release review (maintainers)
 
-1. Verify snapshot semver: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`**.  
+1. Verify snapshot semver: root **`package.json`**, **`distros/desktop-tauri/Cargo.toml`**, **`oclive_kernel_runtime`**.
 2. Follow [CONTRIBUTING](../CONTRIBUTING.en.md) and [release versioning](development/RELEASE_VERSIONING.md) for external notes when contracts or sister dependencies change.
 3. **HTTP / OOCP**: if `API_VERSION` or `RUNTIME_API_VERSION` changes, sync tests and docs (`creator-docs/testing/OOCP_TEST_SUITE.md`).
 

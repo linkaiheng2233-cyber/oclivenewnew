@@ -1,48 +1,54 @@
-# A.I.Live · 纯净内核：边界、灵魂与嵌入式范围
+# A.I.Live · 最小工具内核与当前嵌入运行时边界
 
-本文定义 **A.I.Live** **「纯净内核」** 在工程与产品叙事中的含义（工程代号 **oclive**），并与桌面宿主、无头服务、嵌入式库、机器人「灵魂」交付对齐。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
+本文消除“纯净内核”的两种旧含义：**最小概念核心**与当前已经可嵌入的**完整参考运行时**不是同一层。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
 
 [English](../../creator-docs-en/getting-started/PURE_KERNEL_BOUNDARY.md)
 
 ---
 
-## 1. 纯净内核是什么
+## 1. 两层边界
 
-**纯净内核**指运行时中**与 UI 无关、与具体硬件 BSP 无关、与某一闭源模型品牌无关**的那一层，负责：
+### 1.1 最小概念核心
 
-| 职责 | 实现锚点（主仓） |
-|------|------------------|
-| **回合编排** | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/` · `process_message` |
-| **槽位解析** | `SlotResolver` / `PluginHost::resolve_for_role` · **`slot_registry` → 六槽折叠** |
-| **稳定进程内入口** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs`；复用同一 `AppState` / turn pipeline，不复制编排 |
-| **契约与持久化形状** | `oclive_kernel_types` / `oclive_kernel_contracts` / `oclive_kernel_runtime` · `migrations/001_init.sql` · `oclive_validation` |
-| **无头入口（过渡）** | `http_api` · **`oclive-kernel-server`** · **`oclivenewnew-tauri --api`** |
+OCLive 真正要长期守住的最小核心是：
 
 ```text
-用户/设备边界          →  Vue / 硬件驱动 / 侧车进程（不在「内核」内）
-纯净内核               →  process_message + PluginHost + Repository 契约
-受支持的 Rust 集成入口 →  OcliveKernel（角色、回合、Event Ring、显式 shutdown）
-槽位实现（可替换）     →  builtin / remote / directory / local / ollama …
-灵魂数据（可定制）     →  角色包 pipeline.ocblueprint（v2）+ 知识/人格文件
+唯一回合/生命周期编排
+  + 能力调用与合并规则
+  + 权威状态提交、错误语义与故障隔离
+  + memory / emotion / event / prompt / llm / agent 六个稳定端口
 ```
 
-**不是** Linux 内核，也**不是**整个 Tauri 桌面应用。
+六槽是能力接口，不是六个平级决策内核。具体记忆算法、情绪模型、Prompt 模板、LLM 厂商、Event Ring、SQLite、HTTP、Tauri 和角色包工具都可以围绕它装配，但不决定 OCLive 是否成立。当前共景运行路径仍要求 `prompt + llm` 通过健康检查；其余槽位可按已定义的 `none` / Noop 语义变薄。
+
+### 1.2 当前完整嵌入运行时
+
+主仓今天交付的 `oclive_kernel_host::OcliveKernel` 是**受支持的 Rust 源码级门面**，它复用唯一 `process_message`，并提供角色加载、完整/流式回合、SQLite、插件、Event Ring 与关闭生命周期。它与 UI、具体硬件 BSP 和单一模型品牌解耦，因此可以被嵌入；但物理代码仍包含 HTTP 实现及大量默认设施，不能把整个 host crate 或五个 kernel crate 的总行数称为“最小内核大小”。
+
+| 层 | 当前代码锚点 | 边界 |
+|----|--------------|------|
+| **最小核心骨架** | `oclive_kernel_contracts` 六个 trait、`process_message` / turn pipeline、核心 DTO/错误 | 概念已收敛；尚未独立成可单独编译的 crate |
+| **完整嵌入运行时门面** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs` | 已可用；包含持久化、Event Ring、HTTP 依赖和默认装配 |
+| **传输与 UI 宿主** | `oclive-kernel-server`、Tauri、Vue、VS Code | 不属于内核本体；必须委托同一回合入口 |
+
+物理拆薄由 [`K-CORE-BOUNDARY-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 跟踪。在它完成前，“最小内核”是职责边界，不是已经存在的独立发布包。
 
 ---
 
-## 2. 纯净内核明确不包含什么
+## 2. 最小工具内核明确不包含什么
 
 - **Vue 前端**、Tauri `invoke`、窗口与主题。
 - **具体 LLM 厂商 SDK**（应落在 `llm` 槽：ollama / remote / directory）。
 - **板级 BSP**（麦克风驱动、电机、RTOS）；通过 **目录插件 / 侧车 / MCP** 接入，内核只消费契约化结果。
 - **创作者文档 UI**、插件市场站点、启动器安装体验。
 - **Prompt 正文语言**（角色包与模型侧内容语言）；与**界面 i18n** 分离。
+- **Event Ring 执行设施、SQLite Repository、资源协调和具体六槽实现**；它们属于参考运行时装配，通过端口或受控锚点协作。
 
 ---
 
-## 3. 「自定义灵魂」交付单元
+## 3. 角色包交付单元
 
-对外可说：**灵魂 = 可版本化的数据 + 可配置的槽位策略**，由内核在运行时加载，而非写死在编排代码里。
+对外可说：**角色交付单元 = 可版本化的数据 + 可配置的槽位策略**，由参考运行时加载，而非写死在编排代码里。它是重要的可携带资产，但不是最小内核代码本身。
 
 | 组成部分 | 说明 |
 |----------|------|
@@ -58,21 +64,21 @@
 
 ## 4. 情感陪伴在架构中的位置
 
-陪伴能力由**后端模块 + 设施模块**协作完成，而非单一「情感模块」黑盒（分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)）：
+当前默认陪伴装配由**后端模块 + 设施模块**协作完成，而非单一“情感模块”黑盒（分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)）：
 
 - **emotion 后端模块** + **复杂情感设施子模块**（第 1 设施子模块）：用户句情绪与跨回合叙事 `narrative_hint`。
 - **专家模型设施子模块**（第 2 设施子模块）：条件触发的专家子流程（专家路由）；与复杂情感**并列**，见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 - **立绘设施子模块**（第 3 设施子模块 · 草案）：`portrait_catalog`、表现导演 AI 选 `visual_state_id`；见 [RFC_PORTRAIT_FACILITY.md](../rfc/RFC_PORTRAIT_FACILITY.md)。
-- **视觉表现设施子模块**（第 4 设施子模块 · 草案）：Live2D / 3D / 演算 **角色舞台**；见 [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
+- **视觉表现设施子模块**（第 4 设施子模块）：`performance_directive` 与发行版 gating 已交付，Live2D / 3D / 演算 adapter 部分交付；见 [RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
 - **memory / event**：关系与事件对后续回合的影响。
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。
 
-内核保证 **调用顺序与 DTO**；陪伴「好不好」由槽实现与角色包内容决定。
+内核保证 **调用顺序、端口、错误与状态提交边界**；陪伴“好不好”由模型、槽实现、设施和角色包内容共同决定。强模型装配可以省略部分显式辅助；小模型装配可以使用更厚的候选生成与 Prompt 编译，但辅助信号不得冒充唯一语义真值。
 
 ---
 
-## 5. 部署形态与「一块钢板」
+## 5. 当前完整运行时的部署形态
 
 | 形态 | 用途 | Monolith | 说明 |
 |------|------|----------|------|
@@ -81,7 +87,7 @@
 | **嵌入式 `library`** | 进程内嵌、自有 `main` | **不适用** Monolith | 链接 `oclive_kernel_host` + contracts/runtime/types，由 **`OcliveKernel`** 提供角色加载、完整回合、流式回复、Event Ring 与持久化；`oclive-cli init --project-type library --kernel-source` 可直接生成（见 [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) §5） |
 | **HTTP `--api`** | 联调、CI、编写器试聊 | N/A | 当前主仓过渡方案，见 [headless-kernel-minimal](../../examples/headless-kernel-minimal/README.md) |
 
-**可拆可焊**：开发期槽位可替换（松耦合）；量产可选 Monolith 将选定 builtin 焊进单一二进制（紧耦合）。二者与 `settings.json` **正交**。
+**可拆可焊**：开发期槽位可替换（松耦合）；量产可选 Monolith 将选定 builtin 焊进单一二进制（紧耦合）。二者与角色运行配置（当前蓝图 `slot_registry` / `runtime_config`，以及 legacy `settings.json`）**正交**。
 
 这里的“稳定接口”指当前 Rust crate 的**受支持源码级门面**，不是稳定 C ABI。`AppState`、HTTP 路由和 Tauri command 都是内部装配/传输细节，集成方不应绕过 `OcliveKernel` 直接拼装第二条回合链。门面目前位于 `oclive_kernel_host`；调用时不需要启动 HTTP 或 Tauri，但该 crate 仍包含 HTTP 实现与相关依赖，后续可继续做依赖瘦身。
 
@@ -93,7 +99,7 @@
 
 - Linux 用户态、**数百 MB 级 RAM** 以上的设备或网关。
 - **Rust 异步**、HTTP/JSON-RPC、子进程目录插件、SQLite 持久化。
-- 与桌面**共用角色包**与 `plugin_backends` 形状。
+- 与桌面**共用当前角色包契约**（蓝图 `slot_registry`）；运行时折叠为同一 `PluginBackends` 六槽视图。
 - 当前桌面开发机已用真实文件 SQLite、角色加载、普通/流式回合、Event Ring 注册与主动回合完成进程内集成测试。
 - 侧车 LLM（`remote`）、本机 Ollama（`ollama`）、目录插件扩展硬件。
 
@@ -109,7 +115,7 @@
 ## 7. 相关链接
 
 - 实施计划：[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)
-- 平台开发者单线：[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
+- 内核集成方单线：[KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md)
 - 当前工程债务：[TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 与 [PRODUCT_LINE_TASK_BUCKETS.md](../../handoff/PRODUCT_LINE_TASK_BUCKETS.md)
 - 校企玩偶交付：与主仓并列的 **oclive doll core** 目录（settings 模板、硬件插件示例、打包说明）；契约以本仓为准。
 - Monolith RFC：[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)

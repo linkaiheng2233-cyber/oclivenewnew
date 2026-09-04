@@ -1,7 +1,7 @@
-﻿# PLUGIN_V1 — 编排层契约与后端枚举（蓝图 v2/v3/v4 · legacy 六槽）
+# PLUGIN_V1 — 编排层契约与后端枚举（蓝图 v2/v3/v4 · legacy 六槽）
 
-**SSOT 范围**：六槽 DTO、后端枚举、解析与 Stable 回合中的槽位调用顺序；Event Ring wire 见独立契约。
-**最后更新**：2026-08-31。
+**SSOT 范围**：六槽 DTO、后端枚举、解析与 Stable 固定 stage 中的槽位调用；Event Ring wire 见独立契约。
+**最后更新**：2026-09-05。
 
 > **2026-06-10 起**：`builtin_v2` 为 **已废弃 wire alias**（serde 读兼容），行为等同 `builtin`；四槽无独立 V2 实现（D-SLOT-01）。下文 legacy 表中 `builtin_v2` 行仅作迁移对照。
 
@@ -9,7 +9,7 @@
 
 **当前权威**：角色包 **`pipeline.ocblueprint` → `slot_registry`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)）。本文档描述宿主（Tauri / `chat_engine`）与可替换子系统之间的 **编排契约**：DTO 形状、槽位门面 trait、蓝图实例解析；下文 **legacy** 段落中的 `settings.json` → `plugin_backends` 仅用于 **v1（已废弃）** 迁移对照。实现以源码为准：`slot_resolver.rs`、`plugin_host.rs`、`kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs`。
 
-**全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。**架构总览（单核双态 · 后端/插件/设施 · `{专名}设施子模块`）**：[../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。**以内核为中心、模块环绕的总览（图 + Mermaid）**：[../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)。Event Ring 的信封、注册与主动授权见 **[EVENT_RING.md](EVENT_RING.md)**。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（`plugin_backends.* = directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
+**全库文档索引**：[../getting-started/DOCUMENTATION_INDEX.md](../getting-started/DOCUMENTATION_INDEX.md)。**架构总览（单核双态 · 后端/插件/设施 · `{专名}设施子模块`）**：[../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。**以内核为中心、模块环绕的总览（图 + Mermaid）**：[../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md)。Event Ring 的信封、注册与主动授权见 **[EVENT_RING.md](EVENT_RING.md)**。包版本与 `schema_version` 见 **[../role-pack/PACK_VERSIONING.md](../role-pack/PACK_VERSIONING.md)**。HTTP 侧车 JSON-RPC 全文见 **[REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)**；创作者总览见 **[CREATOR_PLUGIN_ARCHITECTURE.md](CREATOR_PLUGIN_ARCHITECTURE.md)**。**目录式进程插件**（蓝图实例 `backend: directory`、整壳、`directory_plugin_invoke` 等）见 **[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)**。
 
 ## 蓝图角色包（`pipeline.ocblueprint`）
 
@@ -27,51 +27,54 @@
 
 ## 设计约束
 
-- **可替换后端 = 编译期枚举 + 蓝图实例**：**v2** 通过 **`slot_registry`** 声明多实例；**legacy v1** 通过 `settings.json` → `plugin_backends`（勿在新包中使用）。无动态 `cdylib`。
+- **可替换后端 = 编译期枚举 + 蓝图实例**：**v2/v3/v4** 通过 **`slot_registry`** 声明多实例（新 Stable 包使用 v4）；**legacy v1** 通过 `settings.json` → `plugin_backends`（勿在新包中使用）。无动态 `cdylib`。
 - **默认实现**即当前内置逻辑；换后端时 **API 字段名不变**（尤其 `SendMessageResponse.reply`）。
 - **Remote**：宿主已实现 **HTTP JSON-RPC**（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）；未配置 `OCLIVE_REMOTE_*` URL 时回退 **builtin**（或进程内 LLM）并写日志。
-- **Directory**：`distros/chat-pro/plugins/*/manifest.json` 子进程 + 与 Remote 相同的 JSON-RPC wire；槽位见 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
+- **Directory**：由宿主扫描插件根下的 `*/manifest.json`，以子进程提供与 Remote 相同的 JSON-RPC wire；当前蓝图实例用 `plugin` / `plugins` 指向 `manifest.id`，legacy v1 才用 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
 
-## 架构图（legacy · 以 `plugin_backends` 六槽为准）
+## 架构图（当前蓝图与运行时折叠）
 
-> **v2 读图**：以 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 与 [KERNEL_AND_MODULES_ARCHITECTURE.md](../getting-started/KERNEL_AND_MODULES_ARCHITECTURE.md) 中的 **`slot_registry`** 为准；下图保留 v1 形状便于对照迁移。
-
-运行时结构体 **`PluginBackends`**（[`plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)）含 **六** 个枚举字段；**`directory_plugins`** 与之并列，仅在对应槽为 **`directory`** 时解析 manifest **`id`**。编排层通过 **`PluginHost::resolve_for_role`** 将每槽绑定到具体 **`Arc<dyn …>`** 实现，再由 **`chat_engine`** 按 **`send_message` 编排顺序**（见同文档下一节）调用。**`complex_emotion`** 等脚手架专用键可被 Serde 忽略，**不是**宿主六槽之一；运行时对应 **第 1 设施子模块**（**复杂情感设施子模块**；见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) §二）。**第 2 设施子模块**为 **专家模型设施子模块**（专家路由），见架构总览同文档。
+当前包配置先形成会话级有效 **`slot_registry`**；宿主再把六种稳定类型折叠为运行时 **`PluginBackends`**，并保留实例注册表给 `SlotRunner` 与复杂情感设施使用。运行时结构体 **`PluginBackends`**（[`plugin_backends.rs`](../../kernel/crates/oclive_kernel_types/src/models/plugin_backends.rs)）仍只有 **六** 个枚举字段；其中 `directory_plugins` 是折叠后的兼容视图，不是角色包当前 SSOT。编排层通过 **`PluginHost`** 将每槽绑定到具体 **`Arc<dyn …>`** 实现，再由 **`chat_engine`** 按 **`send_message` 编排顺序**（见下一节）调用。**`complex_emotion`** 可作为开放注册表中的设施类型被解析，但**不是**第七个稳定槽。
 
 ### 模块编号对照（与架构总览一致）
 
-| 编号 | `plugin_backends` 键 | 类型 |
-|------|------------------------|------|
+| 编号 | `slot_registry.type`（legacy 六键） | 类型 |
+|------|------------------------------------|------|
 | 第 1 模块 | `memory` | 后端模块 |
 | 第 2 模块 | `emotion` | 后端模块 |
 | 第 3 模块 | `event` | 后端模块 |
 | 第 4 模块 | `prompt` | 后端模块 |
 | 第 5 模块 | `llm` | 后端模块 |
 | 第 6 模块 | `agent` | 后端模块 |
-| 第 1 设施子模块 | （无此键；编排行内） | 复杂情感设施子模块 |
-| 第 2 设施子模块 | （无此键；编排行内） | 专家模型设施子模块（专家路由） |
+| 第 1 设施子模块 | `complex_emotion`（无 legacy 六键） | 复杂情感设施子模块 |
+| 第 2 设施子模块 | （无稳定槽类型；编排行内） | 专家模型设施子模块（专家路由） |
 
 **后端模块插件模块**（Remote / directory 等）挂在 **第 K 模块** 上，**不**占用第 7 模块号。完整规定见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 
 ```mermaid
 flowchart TB
   subgraph pack["角色包 / 会话覆盖"]
-    PB["settings.json → plugin_backends<br/>memory · emotion · event · prompt · llm · agent"]
-    DP["可选 directory_plugins<br/>各槽 → manifest.id"]
+    BP["pipeline.ocblueprint → slot_registry<br/>实例 type · backend · plugin(s)"]
+    SO["会话 slot override<br/>按实例键覆盖 · 仅内存"]
+    LEG["legacy v1 settings.json<br/>plugin_backends · 仅迁移兼容"]
   end
 
   subgraph resolve["宿主解析链"]
-    RPF["state::resolved_plugins_for"]
-    PH["PluginHost::resolve_for_role<br/>trait 绑定"]
+    EFF["EffectiveSessionConfig<br/>合成有效 slot_registry"]
+    FOLD["六类型 last-wins 折叠<br/>PluginBackends 兼容视图"]
+    PH["PluginHost / SlotRunner<br/>实例与 trait 绑定"]
   end
 
   subgraph orch["编排"]
     CE["chat_engine<br/>process_message / co_present"]
   end
 
-  PB --> RPF
-  DP --> RPF
-  RPF --> PH
+  BP --> EFF
+  SO --> EFF
+  LEG -.-> FOLD
+  EFF --> FOLD
+  EFF --> PH
+  FOLD --> PH
   PH --> CE
 
   subgraph slots["六条门面线 ResolvedRolePlugins"]
@@ -89,27 +92,39 @@ flowchart TB
   subgraph shapes["实现形态（每槽枚举见本文各节表）"]
     BIN["builtin / ollama<br/>进程内 Rust"]
     REM["remote<br/>HTTP JSON-RPC + OCLIVE_REMOTE_*"]
-    DIR["directory<br/>distros/chat-pro/plugins/ 子进程，同协议 wire"]
+    DIR["directory<br/>扫描插件根；子进程，同协议 wire"]
     LOC["memory: local<br/>_local_plugins"]
   end
 
   slots -.-> shapes
 ```
 
+### 多实例执行真值
+
+`PluginBackends` 的同类型 **last-wins 折叠只是兼容视图**，不等于每种槽的实际执行合并策略。`SlotRunner` / `PluginHost` 当前行为如下：
+
+| 类型 | 当前执行策略 |
+|------|--------------|
+| `memory` | 串行检索，按 memory id 去重后重新排序/截断 |
+| `emotion` / `event` / `prompt` / `complex_emotion` | 串行 last-wins |
+| `llm` 非流式 | 读取最后一个 LLM 实例的 `policy`：`ensemble` = 串行 last-wins（默认）、`fastest` = 并发首个成功、`fallback` = 按顺序首个成功 |
+| `llm` 流式 | 当前三种 `policy` 都归一为串行 last-wins，只让最后实例输出 token，避免并发流混写 |
+| `agent` | 当前执行折叠后的单一 provider；多实例/`plugins[]` 只形成 `merged_agent_directory_plugin_ids` 诊断集合，`wrap_agent_if_merged` 为 no-op。工具并集登记为 `K-AGENT-MERGE-01` |
+
 ---
 
-## `send_message` 编排顺序（与 `chat_engine`）
+## `send_message` 固定 stage 与槽位调用（与 `chat_engine`）
 
-Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)，由 [`dispatch_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/dispatch.rs) 选择 remote stub、remote-life 或 [`turn_pipeline::execute_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs)。共景 middle 位于 [`co_present/run_middle.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present/run_middle.rs)。与六槽相关的实际顺序如下：
+Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)，由 [`dispatch_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/dispatch.rs) 选择 remote stub、remote-life 或 [`turn_pipeline::execute_turn`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs)。共景 middle 位于 [`co_present/run_middle.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present/run_middle.rs)。下面描述的是**内核固定 stage 中的调用关系**，不是六个槽首尾相接的线性管道：
 
-1. **`PluginHost`**：[`state::resolved_plugins_for`](../../kernel/crates/oclive_kernel_host/src/state/mod.rs) → [`PluginHost::resolve_for_role`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)，按 `role.plugin_backends` 绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线。宿主构造 [`PluginHost::new`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs`](../../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs)。
-2. **Agent（第 6 模块）**：只在普通用户、非 staged 回合尝试；`handled=true` 时返回最小响应并短路 Stable 闲聊链。
+1. **有效配置与 `PluginHost`**：`EffectiveSessionConfig` 先把包内 `slot_registry` 与会话实例覆盖合成有效注册表，再将六种稳定类型折叠成 `PluginBackends` 兼容视图；[`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs) 据此绑定 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 六条**后端模块**线，`SlotRunner` 保留实例语义。legacy v1 才直接从 `role.plugin_backends` 起步。宿主构造 `PluginHost` 需传入 **应用数据根目录**（`PathBuf`），用于扫描 **`{app_data}/mcp-servers/*.json`** 等；集成烟测见 [`distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs`](../../distros/desktop-tauri/tests/plugin_backends_v2_resolve.rs)。
+2. **Agent（第 6 模块）**：在 preflight 之后、普通共景 pre 之前，只对普通用户、非 staged 回合尝试；`handled=true` 时由 `build_minimal_response` 返回最小响应并短路 Stable 闲聊链。该分支会独立调用情绪槽并保存最小状态/聊天，但不执行普通共景的回复后处理与 `reply_mode`。
 3. **pre**：第 2 模块 `emotion.analyze`（仅用户消息）与第 1 模块 `memory.rank_memories`，并加载人格、关系、身份和近期上下文。
-4. **middle 前半**：Turn Thinking、复杂情感设施和知识检索；第 3 模块 `event.estimate` 产生 `EventImpactEstimate`。
+4. **middle 前半**：先用规则得到事件初估，再由该初估和其他证据决定 Turn Thinking；同时处理 Fast 本地情绪强度降级与知识检索。只有策略允许时，第 3 模块 `event.estimate` 才调用 LLM/插件来替换规则初估。第 4 模块稍后只接收上一轮 hint 的去内容连续性信号，不消费本轮尚未产生的 hint。
 5. **Event Ring**：对话估计通过 `kernel.chat.event_impact.estimated` 兼容桥；memory 可提出 `kernel.memory.recall.candidate`，采纳后生成单轮 `kernel.memory.recollection.activated`。wire 与权威边界见 [EVENT_RING.md](EVENT_RING.md)。
 6. **Prompt（第 4 模块）**：`top_topic_hint` + `build_prompt` / `build_prompt_segments`，消费已经确定的角色、情绪、事件、关系、记忆和外部观察上下文。
-7. **主 LLM（第 5 模块）**：`generate` / `generate_stream` 产生原始 `reply`。
-8. **post**：分析角色回复情绪、执行策略与持久化、回复后处理、聊天写入并组装 `SendMessageResponse`。后处理是独立通道，不是第七槽。
+7. **主 LLM（第 5 模块）**：`generate` / `generate_stream` 产生原始 `reply` 与可选 `[EMO]`。
+8. **post**：剥离 `[EMO]`，按“有效主模型标记优先、remote/directory 仅在标记缺失或无效时兜底”解析本轮角色回复情绪与复杂情感；先让语义回复参与情绪、关系、记忆、立绘等状态计算和持久化，并在设施启用时保存下一轮 hint，再依次执行单一回复后处理器、普通共景 `reply_mode`、聊天写入与 `SendMessageResponse` 组装。后处理是独立通道，不是第七槽；当前没有任意多处理器链。
 
 门面与枚举的单一事实来源：`plugin_host.rs`、`models/plugin_backends.rs`、本文各节表格。
 
@@ -131,22 +146,23 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 - **排序后的** `Vec<Memory>`，长度不超过 `limit`。
 - 结构化上下文 `MemoryContext`（`build_context`）与 `models::MemoryContext` 一致：`memories` + `total_tokens` 估计。
 
-### 后端枚举 `memory`（`settings.json` → `plugin_backends.memory`）
+### 后端枚举 `memory`（蓝图 `type: memory`；legacy 键同名）
 
 | 值 | 含义 |
 |----|------|
 | `builtin` | 按 `importance * weight` 排序取 Top-K（与历史 `MemoryEngine::get_relevant_memories` 一致） |
 | `builtin_v2` | **已废弃 wire alias**（2026-06-10 起读入等同 `builtin`） |
 | `remote` | HTTP `memory.rank`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 `builtin`） |
-| `directory` | HTTP `memory.rank` 指向 **`directory_plugins.memory`** 对应 manifest 子进程 URL（失败回退 `builtin`；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
-| `local` | 使用已注册的本地 memory provider（`distros/chat-pro/roles/_local_distros/chat-pro/plugins/*.json`）；**当前阶段**排序仍委托 `builtin` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
+| `directory` | HTTP `memory.rank` 指向实例 `plugin` 对应 manifest 子进程 URL（legacy 由 `directory_plugins.memory` 折叠；失败回退 `builtin`） |
+| `local` | 使用已注册的本地 memory provider（`<roles 根>/_local_plugins/*.json`）；**当前阶段**排序仍委托 `builtin` 逻辑，多 provider 时按 `provider_id` 字典序取第一个并打警告（见 [LOCAL_PLUGIN_BRIDGE_SPEC.md](LOCAL_PLUGIN_BRIDGE_SPEC.md)） |
+| `none` | Noop：不参与记忆检索与排序 |
 
-与 `plugin_backends.memory` **同级**可选字段：
+与 memory 实例相关的可选字段（括号内为 legacy 折叠位置）：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `local_memory_provider_id` | `string`（可选） | 仅 `memory = local` 时有意义：指定已注册的 `provider_id`；省略且仅一个 memory provider 时自动选中；多 provider 时建议必填以避免歧义 |
-| `directory_plugins` | `object`（可选） | 槽位 `memory` / `emotion` / `event` / `prompt` / `llm` / **`agent`**：值为对应目录插件的 **`manifest.id`**（字符串）。任一模块为 `directory` 时对应槽位应非空，否则宿主记警告并回退（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。 |
+| `local_memory_provider_id` | `string`（可选） | 仅 `backend: local` 时有意义；当前写在 memory 实例上（legacy 与六键同级） |
+| `plugin` / `plugins` | `string` / `string[]` | 当前 directory 实例的插件 id；legacy 才折叠为 `directory_plugins.{type}` |
 
 ---
 
@@ -166,7 +182,8 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 | `builtin` | 关键词启发式（现有 `EmotionAnalyzer`） |
 | `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `emotion.analyze`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
-| `directory` | HTTP `emotion.analyze` 指向 **`directory_plugins.emotion`** 插件 URL（失败回退 builtin） |
+| `directory` | HTTP `emotion.analyze` 指向实例 `plugin` 对应插件 URL（失败回退 builtin） |
+| `none` | Noop：跳过用户句情绪分析 |
 
 ---
 
@@ -189,7 +206,8 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 | `builtin` | 现有 `event_impact_ai::estimate_event_impact` 链（含环境开关与规则回退） |
 | `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `event.estimate`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
-| `directory` | HTTP `event.estimate` 指向 **`directory_plugins.event`** 插件 URL（失败回退 builtin） |
+| `directory` | HTTP `event.estimate` 指向实例 `plugin` 对应插件 URL（失败回退 builtin） |
+| `none` | Noop：不产生新的事件影响估计 |
 
 ---
 
@@ -209,7 +227,8 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 | `builtin` | 现有 `PromptBuilder` |
 | `builtin_v2` | **已废弃 wire alias**（读入等同 `builtin`） |
 | `remote` | HTTP `prompt.build_prompt` / `prompt.top_topic_hint`（需 `OCLIVE_REMOTE_PLUGIN_URL`；失败回退 builtin） |
-| `directory` | 同上，指向 **`directory_plugins.prompt`** 插件 URL（失败回退 builtin） |
+| `directory` | 同上，指向实例 `plugin` 对应插件 URL（失败回退 builtin） |
+| `none` | Noop；合法但会使健康共景路径缺少必要 Prompt 能力 |
 
 ---
 
@@ -226,13 +245,14 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 |----|------|
 | `ollama` | 应用启动时注入的默认客户端（通常为 `OllamaClient` 包装） |
 | `remote` | HTTP `llm.generate` / `llm.generate_tag`（需 `OCLIVE_REMOTE_LLM_URL`；未配置则委托进程内默认 LLM 并记日志）。环境变量 **`OCLIVE_LLM_BACKEND=remote|ollama|directory`** 可在加载角色时覆盖本字段（例如由 **oclive-launcher** 注入）。 |
-| `directory` | HTTP `llm.generate` / `llm.generate_tag` 指向 **`directory_plugins.llm`** 插件 URL（失败回退 **ollama**） |
+| `directory` | HTTP `llm.generate` / `llm.generate_tag` 指向实例 `plugin` 对应插件 URL（失败回退 **ollama**） |
+| `none` | Noop；合法但无法生成正常主回复 |
 
 ---
 
 ## Agent 编排 `AgentProvider`
 
-工具调度 / ReAct 等任务编排；与主对话 LLM 分离，由 `plugin_backends.agent` 选择实现。详见仓库根 [`AGENTS.md`](../../AGENTS.md) 中 **Agent / Skill** 小节。
+工具调度 / ReAct 等任务编排；与主对话 LLM 分离，由有效 `type: agent` 实例选择实现。详见仓库根 [`AGENTS.md`](../../AGENTS.md) 中 **Agent / Skill** 小节。
 
 ### 后端枚举 `agent`
 
@@ -240,11 +260,12 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 |----|------|
 | `builtin` | 进程内 [`BuiltinReActAgent`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs)；可配合 MCP 工具（配置目录见上节 `PluginHost::new` 的 app data 根） |
 | `remote` | HTTP JSON-RPC 侧车 **`agent.process`**（`OCLIVE_REMOTE_AGENT_URL` 或回退 `OCLIVE_REMOTE_PLUGIN_URL`）；协议见 [AGENT_REMOTE_PROTOCOL.md](AGENT_REMOTE_PROTOCOL.md)；失败 **降级 builtin** |
-| `directory` | 子进程 JSON-RPC，槽位 **`directory_plugins.agent`**（失败 **降级 builtin**；见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)） |
+| `directory` | 子进程 JSON-RPC；实例用 `plugin` / `plugins` 指定 id（失败 **降级 builtin**） |
+| `none` | `NoopAgentProvider`；普通对话继续走非 Agent 主链 |
 
 ---
 
-## `settings.json` 片段示例
+## legacy v1 `settings.json` 片段（仅迁移对照）
 
 ```json
 {
@@ -260,38 +281,33 @@ Stable 回合入口为 [`chat_engine::process_message`](../../kernel/crates/ocli
 }
 ```
 
-省略 `plugin_backends` 时：记忆 / 情绪 / 事件 / Prompt / **Agent** 为 **builtin**，**`llm` 为 `ollama`**。未知枚举值会导致角色包解析失败（须修正拼写）；未来可对字符串值做宽松别名时再文档化。
+仅对 legacy v1：省略 `plugin_backends` 时，记忆 / 情绪 / 事件 / Prompt / **Agent** 为 **builtin**，**`llm` 为 `ollama`**。未知枚举值会导致角色包解析失败。新包应写 `pipeline.ocblueprint.slot_registry`，不要复制此片段作为当前格式。
 
 ---
 
-## 会话级 `plugin_backends` 覆盖（Tauri）
+## 会话级槽位覆盖（Tauri）
 
-宿主命令 **`set_session_plugin_backend`**（实现见 [`distros/desktop-tauri/src/api/role/mod.rs`](../../distros/desktop-tauri/src/api/role/mod.rs)），请求体 **`SetSessionPluginBackendRequest`**（[`kernel/crates/oclive_kernel_types/src/models/dto`](../../kernel/crates/oclive_kernel_types/src/models/dto/mod.rs)）。覆盖按 **`role_id` + 可选 `session_id`** 对应的会话命名空间持久化，**不写回角色包**；`load_role` / **`get_role_info`**（请求体 **`GetRoleInfoRequest`**，可选 **`session_id`**，与 `send_message` 同命名空间）返回中的 **`plugin_backends_effective`**、**`plugin_backends_effective_sources`** 等为包默认与会话覆盖合并后的快照。
+当前命令 **`set_session_slot_override`** 按 **`role_id` + 可选 `session_id` + `slot_key`** 修改会话内存中的实例补丁，**不写回角色包，也不跨进程持久化**。`load_role` / **`get_role_info`** 返回 `slot_registry_pack`、`slot_registry_effective` 与 `slot_session_overridden_keys`；六槽折叠兼容快照仍见 `plugin_backends_effective` / `plugin_backends_effective_sources`。实现见 [`slot_session.rs`](../../kernel/crates/oclive_kernel_host/src/service/role/slot_session.rs) 与 [`slots.rs`](../../kernel/crates/oclive_kernel_types/src/models/dto/slots.rs)。
 
 ### 请求字段（摘要）
 
 | 字段 | 说明 |
 |------|------|
 | `role_id` | 角色 id |
-| `module` | `memory` \| `emotion` \| `event` \| `prompt` \| `llm` \| `agent` |
-| `backend` | 见下表 **三态**（与 Serde `Option<Option<String>>` 对齐：缺键 / `null` / 字符串） |
+| `slot_key` | `slot_registry` 实例键，如 `memory`、`llm_primary` 或 `complex_emotion` |
+| `backend` | 可选；非空字符串覆盖实例后端 |
+| `plugin` / `plugins` | 可选；覆盖 directory 单插件 / 合并插件 id |
+| `model` | 可选；覆盖该实例模型标识 |
 | `session_id` | 可选；缺省为默认会话 |
-| `local_memory_provider_id` | **仅当 `module = memory` 时允许**：省略表示不修改本会话对该字段的覆盖；**空串**（trim 后为空）表示移除本会话覆盖、回退包内 `local_memory_provider_id`；否则为 trim 后的 `provider_id`。其它 `module` 携带本字段会返回参数错误。 |
+| `local_memory_provider_id` | 可选；用于 memory 实例的本地记忆提供者标识 |
 
-### `backend` 三态（各 `module` 通用）
+请求中的非空字段会与同一实例已有补丁合并，后写字段覆盖先写字段；若补丁五个可选字段全为空，宿主会清除该实例的整份会话覆盖。明确清除请优先调用 **`clear_session_slot_override`**；清空当前会话全部实例覆盖用 **`clear_all_session_slot_overrides`**。
 
-| 请求中的 `backend` | 行为 |
-|--------------------|------|
-| JSON **省略**该键 | **不修改**该模块在会话覆盖里的枚举字段 |
-| `null` | **移除**该模块的会话枚举覆盖，回退角色包 `plugin_backends` 对应字段 |
-| `"snake_case"` | 设为指定后端；非法值报错 |
+前端封装见 [`setSessionSlotOverride`](../../distros/shared/src/api/settings.ts)、`clearSessionSlotOverride`、`clearAllSessionSlotOverrides` 与 `getRoleInfo`。
 
-前端封装见 **`setSessionPluginBackend`**、**`getRoleInfo`**（[`distros/shared/src/api/`](../../distros/shared/src/api/)）：前者仅在传入时序列化 `backend` / `local_memory_provider_id`；后者可选第二参 **`sessionId`** 与 `send_message` 对齐。
+### legacy 六槽薄封装
 
-### `directory` 与 `directory_plugins`
-
-- **`set_session_plugin_backend`** 只改 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`** 的枚举值（及 **`local_memory_provider_id`**），**不包含** **`directory_plugins` 各槽**。若某模块设为 **`directory`**，槽位 id 仍来自角色包 **`plugin_backends.directory_plugins`**（见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。
-- 运行时结构体 **`PluginBackendsOverride`** 已预留会话级 **`directory_plugins`** 合并逻辑；待产品化 API 暴露后再与 `set_session_plugin_backend` 或专用命令对齐即可。
+旧命令 **`set_session_plugin_backend`** 仍作为默认六实例（`memory` / `emotion` / `event` / `prompt` / `llm` / `agent`）的薄封装存在，但要求角色包已有 `slot_registry`，内部会转调 `set_session_slot_override`。它不支持任意实例键，也不能设置 directory 插件 id；当前 directory 会话切换应直接用 `set_session_slot_override` 的 `plugin` / `plugins`。见 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)。
 
 ---
 
@@ -410,7 +426,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 - **params**：[`TheaterPromptBuildInput`](../../kernel/crates/oclive_kernel_contracts/src/theater_director.rs)（`mode`：`patch` | `ripple` | `cast_adapt` | `cast_rewrite` | `cast_rewrite_minimal`；persona、beats、tweak、fork 等快照字段）
 - **result**：`{ "prompt": "<非空字符串>" }`（长度上限 32 768）；RPC 失败或空串 → 内核 **builtin** 模板，不 500
 - **官方插件**：[`distros/chat-pro/plugins/com.oclive.theater_director_official/`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/) · 最小示例 [`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/)
-- **自定义 prompt pack**：Fork 官方插件 → 改 `prompts/`（入口 `prompts/index.mjs`；风格一句切换见 `drama_guardrails.mjs`）→ 新 `manifest.id` → `{app_data}/distros/chat-pro/plugins/<id>/` + `[theater].director_plugin` 或 **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**。详见官方插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md) 与 [`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)。
+- **自定义 prompt pack**：Fork 官方插件 → 改 `prompts/`（入口 `prompts/index.mjs`；风格一句切换见 `drama_guardrails.mjs`）→ 新 `manifest.id` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 **`OCLIVE_THEATER_DIRECTOR_PLUGIN`**。详见官方插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md) 与 [`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)。
 - **放置指南**：[PLUGIN_PLACEMENT_GUIDE.md](PLUGIN_PLACEMENT_GUIDE.md)
 
 **`category`**（单值，可选）：供插件工作台左栏分类，建议与 `provides` 主槽一致，例如 `llm`、`complex_emotion`。
@@ -512,7 +528,7 @@ TypeScript 侧 `SendMessageResponse`（`distros/shared/src/api/`）必须与 `mo
 
 | 字段 | 说明 |
 |------|------|
-| `type` | 槽位类型：`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` / `complex_emotion` |
+| `type` | 注册表类型：六种稳定槽 `memory` / `emotion` / `event` / `prompt` / `llm` / `agent`，或设施类型 `complex_emotion`；后者不是第七稳定槽 |
 | `backend` | 可选，默认 `directory`；必须属于对应 `type` 的既有 backend 枚举，安装前按最终蓝图同一规则校验 |
 | `label` | 可选，蓝图实例展示名 |
 | `position` | 可选，实例排序；缺省 `0` |

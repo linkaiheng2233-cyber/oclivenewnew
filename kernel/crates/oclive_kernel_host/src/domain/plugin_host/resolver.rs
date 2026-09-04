@@ -31,7 +31,9 @@ impl PluginResolver {
                 Some(effective),
             ));
             complex_emotion = registry.pick_complex_emotion_winner(reg);
-            // Agent: merge tool sets from multiple directory instances (parallel semantics at assembly layer, not SlotRunner)
+            // Agent multi-instance execution is not implemented yet. This call is
+            // intentionally a no-op; the collected ids below are diagnostics only
+            // until K-AGENT-MERGE-01 defines and implements tool-union semantics.
             agent = SlotResolver::wrap_agent_if_merged(agent, reg);
             merged_agent_directory_plugin_ids =
                 oclive_validation::merged_agent_directory_plugin_ids(reg);

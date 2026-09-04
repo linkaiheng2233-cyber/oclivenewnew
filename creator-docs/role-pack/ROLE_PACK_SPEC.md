@@ -88,7 +88,7 @@ distros/chat-pro/roles/{role_id}/
 | `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
 | `adult_eligible` | boolean | 否 | 默认 `true`；仅作为旧角色包兼容与创作者提示元数据保留，不参与 Chat Pro 成人功能授权。运行时只认本机成年确认、全局开关与角色开关 |
 
-**兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时以 catalog 模板为准；发行版可通过 `distro.oclive.toml` → `[user_identity].default_id` 覆盖会话默认（见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)）。
+**兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时正常默认取 catalog 模板；身份显式选择写入 SQLite 角色运行态，不改角色包，也不是六槽 SessionCache 覆盖。发行版 `distro.oclive.toml` 的 `[user_identity].allowed_ids` 可限制选择；`default_id` 当前仅用于一个窄 DB 兼容回退，见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md) 与债务 `K-UID-DEFAULT-02`。
 
 **示例**：`distros/chat-pro/roles/mumu/user_identities/`（含 **父亲/父女** 演示：`father.md` 映射 `father_daughter` 关系；**未**默认开启 `reply_post_processor`）。
 
@@ -279,7 +279,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | 七维人格（vector 模式） | `meta.personality`（对象或 7 元数组） | `manifest.json` → `default_personality` |
 | 交互模式 | `meta.interaction_mode` | `settings.json` → `interaction_mode` |
 | 场景 | `meta.scenes` + `scenes/{id}/` | `manifest.scenes` + `scenes/{id}/` |
-| 会话槽覆盖 | 内存 overlay；架构图改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` |
+| 会话槽覆盖 | `set_session_slot_override` 内存 overlay；改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` 仅为默认六实例薄封装 |
 | Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
 
 校验：`cargo run -p oclive-cli -- pack validate <dir>`（按声明精确分派 **v2/v3/v4**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [`BLUEPRINT_V2_IMPLEMENTATION_PLAN.md`](../../handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
@@ -336,8 +336,8 @@ Portable Core 是跨发行版的**最低通用契约**，不是发行版功能�
 
 - `meta` 的强制项只有 `id`（须等于角色目录名）、`name`、`version`、`author`、`description` 与至少一种 `relations`；`personality`、`scenes`、`default_relation` 均可省略并通过校验（`default_relation` 若填写须存在于 `relations`）。
 - `slot_registry` **不能省略、也不能为空**：当前校验强制"非空 + 至少一个 `type: llm`"（`validate_slot_registry_contract`），`{}` 会被 `pack validate` 与宿主加载直接拒绝。llm 后端允许 `ollama` / `remote` / `directory` / `none`。
-- 除 llm 外，六槽中的 `memory` / `emotion` / `event` / `prompt` / `agent` 均可省略——运行时从 `PluginBackends::default()` 回落为内置（builtin）实现，即"省略 = 五槽默认 builtin"。`complex_emotion` 是独立设施（**非六槽**），语义与六槽不同：**省略（无条目）= 不启用复杂情绪**（跳过 provider、不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价，消除隐性歧义）。此语义随情绪引擎 B 阶段 M1 落地（当前代码尚无 `none` 载体，省略仍走 builtin 兜底）。
-- 仓库内现有角色包（如 `deepseek`、`mumu`）的 `slot_registry` 写满 agent / complex_emotion / ollama 等条目，那是 **chatpro 发行版的功能需求**（远程模型、情绪引擎、Agent 等），**不是**最小格式的必需项；新创作者不必照抄填满开关。`pack create --format-blueprint-v2` 生成的七槽模板同样只是"更完整的默认脚手架"。
+- 除 llm 外，六槽中的 `memory` / `emotion` / `event` / `prompt` / `agent` 均可省略——运行时从 `PluginBackends::default()` 回落为内置（builtin）实现，即“省略 = 五槽默认 builtin”。`complex_emotion` 是独立设施（**非六槽**），语义与六槽不同：**省略（无条目）= 不启用复杂情绪**（解析为 Noop，不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价）。该语义已随情绪引擎 B 阶段 M1 落地。
+- 仓库内现有角色包（如 `deepseek`、`mumu`）的 `slot_registry` 写满 agent / complex_emotion / ollama 等条目，那是 **chatpro 发行版的功能需求**（远程模型、情绪引擎、Agent 等），**不是**最小格式的必需项；新创作者不必照抄填满开关。`pack create --format-blueprint-v2` 生成的是“六个稳定槽条目 + `complex_emotion` 设施条目”的七项完整脚手架，不是七个稳定槽，也不是最小格式。
 - 配上 Portable Core 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，就是"七图 + 一段人设 prompt"的完整最小角色包。若未来想让"空 `slot_registry` = 全 builtin"成为合法最小格式，需先放宽 `validate_slot_registry_contract`（当前是校验硬约束）。
 
 合规宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图，没有视觉能力时安全忽略图片。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
@@ -432,7 +432,7 @@ oclive-cli pack validate-memory ./mumu.ocmemory
 |------|------|
 | `manifest.min_runtime_version` | 必填、非空 semver，与目标宿主对齐 |
 | `settings.json` | 必须存在 |
-| `settings.plugin_backends` | 必须显式写出对象（六槽；可选 `complex_emotion` 等扩展键） |
+| `settings.plugin_backends` | 必须显式写出六槽对象；legacy 文件即使保留 `complex_emotion` 等提示键，当前 `PluginBackends` 也会忽略，不能用它启用设施 |
 | `settings.interaction_mode` | 必填：`immersive` 或 `pure_chat` |
 | 人格载体 | **二选一**：非空 `core_personality.txt`，或 `manifest.default_personality` 恰好 7 维（0.0～1.0） |
 | `remote_presence` | 可选 |
@@ -441,7 +441,7 @@ oclive-cli pack validate-memory ./mumu.ocmemory
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host-version 0.2.0 --profile robot-soul
 ```
 
-示例：`examples/robot-soul-minimal/distros/chat-pro/roles/default/`。
+示例：`examples/robot-soul-minimal/roles/default/`。
 
 ---
 
@@ -457,7 +457,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
 | `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3/v4）或 `manifest.id`（legacy） |
-| `init … --skip-role-pack` | 生成内核工程时不创建 `distros/chat-pro/roles/` |
+| `init … --skip-role-pack` | 生成内核工程时不创建根级 `roles/` |
 
 详见 [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md)。
 
@@ -664,7 +664,7 @@ auto_sync: false
 
 **legacy**：`enabled: false` 或无 catalog 文件 → `portrait_emotion` 七 tag + `CharacterInfo` 文件名启发式。
 
-### 9.10 `visual_presentation`（视觉表现设施 · 草案 · 默认关闭）
+### 9.10 `visual_presentation`（directive / gating 已交付 · 渲染 adapter 部分交付 · 默认关闭）
 
 **RFC**：[RFC_VISUAL_PRESENTATION_FACILITY.md](../rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
 
@@ -758,7 +758,7 @@ auto_sync: false
 
 **与 schema / manifest 的关系**
 
-- **v2+ 权威格式**为本 SPEC 的 `pipeline.ocblueprint`（`schema_version` **2** 或 **3**）+ `slot_registry`；包形状与校验以本 SPEC §1–§2 / §6 为准。
+- **当前权威格式**为本 SPEC 的 `pipeline.ocblueprint` + `slot_registry`：新 Stable 包用 `schema_version: 4`，现有 v2 保持兼容，v3 冻结为双核 Beta；包形状与校验以本 SPEC §1–§2 / §6 为准。
 - **Legacy** 仍可用 `manifest.json` + `settings.json`；字段白名单、`min_runtime_version`（宿主 semver 门槛）、未知键策略见 [PACK_VERSIONING.md](PACK_VERSIONING.md)，勿在本节约表复述。
 - JSON Schema / CLI：`oclive pack validate`（见 §6）；实现以 `oclive_validation` 为准。
 

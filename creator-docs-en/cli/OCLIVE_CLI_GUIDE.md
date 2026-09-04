@@ -2,9 +2,10 @@
 
 **oclive-cli** is the official oclive **kernel / headless project** scaffold: interact in the terminal (or script) to generate a **standalone `cargo build`-able** minimal project for hardware, sidecars, and multiple distribution shapes sharing the same configuration shape.
 
-**Source**: [`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)  
-**Contract reference** (full host): [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
-**Authoritative `plugin_backends` field reference**: [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
+**Source**: [`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)
+
+**Contract reference** (full host): [`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)
+**Blueprint `slot_registry` and folded six-slot reference**: [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md)
 
 ---
 
@@ -18,7 +19,7 @@ cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
-The end of `init --help` lists **presets and the `plugin_backends` matrix** (same as the generated project root **`CONFIG_REFERENCE.md`**).
+The end of `init --help` lists **presets and the six-slot backend matrix**. The current legacy `init` scaffold writes that matrix as `plugin_backends`, matching the generated root **`CONFIG_REFERENCE.md`**; new Stable role packs still use v4 blueprint `slot_registry`.
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
@@ -58,7 +59,7 @@ cargo run -p oclive-cli -- doctor -o ./my-project
 cargo run -p oclive-cli -- doctor --fix
 ```
 
-Checks Rust/Cargo, C++ toolchain, memory/disk, Ollama (`http://127.0.0.1:11434/api/tags`), GitHub reachability, workspace writability. At the **oclivenewnew root** with `distros/chat-pro/roles/*/pipeline.ocblueprint`, also runs three v2 blueprint checks: **`blueprint_file_format`**, **`slot_registry_llm`** (at least one `type: llm`), **`slot_position_unique`**. Fail items → non-zero exit. JSON Schema: `kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`.
+Checks Rust/Cargo, C++ toolchain, memory/disk, Ollama (`http://127.0.0.1:11434/api/tags`), GitHub reachability, and workspace writability. At the **oclivenewnew root** with `distros/chat-pro/roles/*/pipeline.ocblueprint`, it dispatches the declared v2/v3/v4 schema exactly and also checks **`blueprint_file_format`**, **`slot_registry_llm`** (at least one `type: llm`), and **`slot_position_unique`**. Fail items → non-zero exit. JSON Schema: `kernel/crates/oclive-cli/schemas/oclive_doctor_report.schema.json`.
 
 **`doctor config-resolve`** (effective six-slot backends + source chain; **default** uses `oclive_kernel_runtime::resolve_session_plugin_backends` **pure resolution** + on-disk role packs — **no** SQLite / Axum / Tauri):
 
@@ -119,17 +120,19 @@ cargo run -p oclive-cli -- plugin create my-remote --type remote --provides memo
 cargo run -p oclive-cli -- plugin create my-plugin
 ```
 
-**`--provides`**: `llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion` (repeatable). Output defaults to `./distros/chat-pro/plugins/`; final path is `<output>/<plugin_id>/`. See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
+**`--provides`**: `llm` | `memory` | `emotion` | `event` | `prompt` | `agent` | `complex_emotion` (repeatable). Output defaults to the current project's `./plugins/`; pass `-o ./distros/chat-pro/plugins/` explicitly when developing an official monorepo example. Final path is `<output>/<plugin_id>/`. See [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md).
 
 ---
 
 ## `dev`: watch role pack directories
 
-Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). **Recursive notify** on **`distros/chat-pro/roles/**/manifest.json`** and **`distros/chat-pro/roles/**/settings.json`**; **500ms debounce** then:
+Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). By default it recursively watches **`roles/**/manifest.json`** and **`roles/**/settings.json`**; use `--roles` to select another root. After a **500ms debounce** it prints:
 
 `[oclive dev] role pack '<id>' changed — reload`
 
 **`--reload-cmd`** runs a shell command after changes.
+
+**Current limitation:** `dev` does not yet watch the current `pipeline.ocblueprint` SSOT, so editing a v2/v3/v4 blueprint does not produce this signal. This is tracked as `D-CLI-BLUEPRINT-05`; it does not mean the host ignores blueprints.
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project
@@ -147,13 +150,13 @@ cargo run -p oclive-cli -- dev -o /path/to/project --no-watch
 cargo run -p oclive-cli -- init -o ./out/my-kernel
 ```
 
-Flow includes: project name, type (headless binary / library), multi-select backend slots, `builtin` / `remote` / `directory` / `none` (`llm` also has **`ollama`**), optional plugin toggles, whether to generate sample `distros/chat-pro/roles/default`; **headless service (`kernel_server`)** ends with **developer compile options** (off by default).
+Flow includes: project name, type (headless binary / library), multi-select backend slots, `builtin` / `remote` / `directory` / `none` (`llm` also has **`ollama`**), optional plugin toggles, whether to generate sample `roles/default`; **headless service (`kernel_server`)** ends with **developer compile options** (off by default).
 
 ### Non-interactive + presets
 
 | Preset | Meaning |
 |--------|---------|
-| `minimal` | All six slots `builtin` semantics; `llm` is **`ollama`**; `agent` **omits JSON key**; `complex_emotion` is `none`; plugin placeholders off |
+| `minimal` | memory/emotion/event/prompt are `builtin`, and `llm` is **`ollama`**. The logical Agent preset is none, but today's non-dual legacy output **omits the key and therefore resolves to builtin**; its `complex_emotion` hint key is ignored by legacy parsing; plugin placeholders off |
 | `mixed` | Matrix-aligned: `llm=ollama`, `agent` / `complex_emotion` `builtin`; some plugin docs on |
 | `full` | `llm=remote`, `complex_emotion=remote`, other slots `builtin`; all plugin docs on |
 
@@ -162,7 +165,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal -o /t
 cargo run -p oclive-cli -- init --non-interactive --quiet --preset minimal --skip-role-pack -o /tmp/my-kernel-no-roles
 ```
 
-`--skip-role-pack`: do not create `distros/chat-pro/roles/` (blank kernel project).
+`--skip-role-pack`: do not create the root-level `roles/` directory (blank kernel project).
 
 Enable Monolith (non-interactive: add **`--monolith`**; **kernel_server** only):
 
@@ -200,7 +203,7 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 ## Generated artifacts
 
 - **Stub `Cargo.toml` without `--kernel-source`**: depends only on **`serde` / `serde_json`** to validate directory/config shape. With `--kernel-source <repo root>`, `kernel_server` links the real headless entry and `library` links host/contracts/runtime/types while re-exporting the complete stable in-process **`OcliveKernel`** facade.
-- **`distros/chat-pro/roles/default/settings.json`**: includes **`_comment_*`** and full **`plugin_backends`** (including seventh key `complex_emotion`); trim invalid keys per [SETTINGS_REFERENCE.md](SETTINGS_REFERENCE.md) when matching the full host (e.g. strings `none` the host rejects).
+- **`roles/default/settings.json`** (the current non-dual `init` legacy example): includes `_comment_*`, six-slot `plugin_backends`, and a `complex_emotion` facility hint key ignored by legacy `PluginBackends`. `none` is a legal Noop backend for all six types, although disabling prompt or llm breaks the healthy path. New Stable packs should use a v4 blueprint.
 - **`CONFIG_REFERENCE.md` (project root)**: preset matrix and one-liner per slot; **developer compile options (Monolith)** and RFC link.
 - **End of `init --help`**: preset matrix, **`--monolith`**, pointer to [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md).
 - **Generated README**: pointers to `oclive_kernel_server`, OOCP, and directory plugins based on project shape/toggles; a linked `library` also gets an `OcliveKernel::start → load_role → process_message → shutdown` example.
@@ -280,7 +283,7 @@ Repo **`.github/workflows/ci.yml`** **`cli`** job runs `cargo test -p oclive-cli
 
 ## Suggested roadmap
 
-1. After **`oclive_kernel_runtime`** lands in the workspace, add **`--kernel-source path`** to the CLI to auto-write `Cargo.toml` deps.  
+1. **`--kernel-source path`** already writes dependencies for the complete reference runtime. After **K-CORE-BOUNDARY-01** physically extracts the minimal core, add a core-only generation mode while retaining compatibility with the current full-runtime mode.
 2. When aligning with `MODULE_NONE_SEMANTICS`, add **auto-validation** for “logical none” vs “loadable JSON”, or a `cargo oclive-validate-settings` subcommand.
 
 ---

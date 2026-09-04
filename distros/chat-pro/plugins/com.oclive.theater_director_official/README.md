@@ -44,7 +44,7 @@ manifest.json
 
 ## `TheaterPromptBuildInput` 常用字段
 
-与内核契约一致（[`TheaterPromptBuildInput`](../../crates/oclive_kernel_contracts/src/theater_director.rs)）：
+与内核契约一致（[`TheaterPromptBuildInput`](../../../../kernel/crates/oclive_kernel_contracts/src/theater_director.rs)）：
 
 | 字段 | 说明 |
 |------|------|
@@ -66,12 +66,12 @@ manifest.json
    - 发行版：`distro.oclive.toml` → `[theater].director_plugin = "<id>"`
    - 开发：`OCLIVE_THEATER_DIRECTOR_PLUGIN=<id>`
 
-最小可替换示例（**自包含 `prompts/`**，可整夹复制到 `{app_data}/plugins/`）：[`examples/directory-plugin-theater-director-minimal/`](../../examples/directory-plugin-theater-director-minimal/) — 见该目录 [`README.md`](../../examples/directory-plugin-theater-director-minimal/README.md)。
+最小可替换示例（**自包含 `prompts/`**，可整夹复制到 `{app_data}/plugins/`）：[`examples/directory-plugin-theater-director-minimal/`](../../../../examples/directory-plugin-theater-director-minimal/) — 见该目录 [`README.md`](../../../../examples/directory-plugin-theater-director-minimal/README.md)。
 
-改插件后同步打包 seed：
+改插件后，从仓库根目录同步打包 seed：
 
 ```powershell
-robocopy plugins/com.oclive.theater_director_official src-tauri/resources/plugins/com.oclive.theater_director_official /MIR
+robocopy distros/chat-pro/plugins/com.oclive.theater_director_official distros/desktop-tauri/resources/plugins/com.oclive.theater_director_official /MIR
 ```
 
 并 bump `manifest.json` `version`。
@@ -79,7 +79,7 @@ robocopy plugins/com.oclive.theater_director_official src-tauri/resources/plugin
 ## 本地调试
 
 ```powershell
-cd plugins/com.oclive.theater_director_official
+cd distros/chat-pro/plugins/com.oclive.theater_director_official
 node -e "import { buildTheaterPrompt } from './prompts/index.mjs'; console.log(buildTheaterPrompt({ mode: 'patch', cast_a_name: 'A', cast_b_name: 'B', patch_tweak: { drama_seed: 'test' } }));"
 ```
 
@@ -89,7 +89,7 @@ Drift 烟测（插件 ↔ Rust fallback 关键子串）：`node scripts/theater-
 
 ## Rust fallback sync 清单
 
-日常 **只改插件**。以下变更时需同步 [`crates/oclive_kernel_host/src/domain/theater/`](../../crates/oclive_kernel_host/src/domain/theater/)：
+日常 **只改插件**。以下变更时需同步 [`kernel/crates/oclive_kernel_host/src/domain/theater/`](../../../../kernel/crates/oclive_kernel_host/src/domain/theater/)：
 
 | 变更类型 | Rust 落点 |
 |----------|-----------|
@@ -102,4 +102,4 @@ Drift 烟测（插件 ↔ Rust fallback 关键子串）：`node scripts/theater-
 
 ## 人工验收
 
-四场景 playtest 矩阵：[`handoff/theater/PLAYTEST_MATRIX.md`](../../handoff/theater/PLAYTEST_MATRIX.md)
+四场景 playtest 矩阵：[`handoff/theater/PLAYTEST_MATRIX.md`](../../../../handoff/theater/PLAYTEST_MATRIX.md)

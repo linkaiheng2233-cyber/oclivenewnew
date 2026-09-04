@@ -1,6 +1,8 @@
-# 平台开发者路径：从脚手架到部署（单线）
+# 内核集成者路径：从脚手架到部署（单线）
 
 本文给 **第三方 / 硬件 / 网关** 一条最短闭环，与 [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 一致。
+
+本文接入的是当前 **完整参考运行时门面** `OcliveKernel`。文件名为兼容既有链接而保留；“平台”不是 OCLive 最小工具内核的定义，物理拆薄状态见 `K-CORE-BOUNDARY-01`。
 
 [English](../../creator-docs-en/getting-started/KERNEL_PLATFORM_DEVELOPER_PATH.md)
 
@@ -20,11 +22,11 @@
 |------|------|----------------|
 | 1 | `cargo build -p oclive-cli` | CLI 可用 |
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <本仓库根> -o <项目> …` | 带 path 依赖的 **kernel_server** 或 **library** 工程 |
-| 3 | 放入或编辑 **`distros/chat-pro/roles/<id>/`**（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
+| 3 | 在生成工程根级 **`roles/<id>/`** 放入或编辑角色包（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | 4 | 目录插件 / 侧车（可选） | 见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)、[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
 | 5 | `cargo run -p oclive-cli -- pack validate <角色根> [--profile robot-soul]` | 契约与 RobotSoulPack 规则 |
 | 6 | 运行 | 跨进程：**`cargo run -p oclive_kernel_server -- --api`** 或 **`oclivenewnew-tauri --api`**；进程内：由生成的 `library` 调用 **`OcliveKernel`** |
-| 7 | 部署 | 二进制 + `distros/chat-pro/roles/` + `distros/chat-pro/plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等 |
+| 7 | 部署 | 二进制 + 根级 `roles/` + `plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等；主仓内置示例才位于 `distros/chat-pro/` |
 
 ---
 
@@ -44,7 +46,7 @@
 
 - **[examples/remote_plugin_openai_compat/README.md](../../examples/remote_plugin_openai_compat/README.md)**
 
-`settings.json` 中 `plugin_backends.llm = "remote"` 并配置 `OCLIVE_REMOTE_LLM_URL`（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)）。
+将角色蓝图的 `type: llm` 实例设为 `backend: remote`，并配置 `OCLIVE_REMOTE_LLM_URL`（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)）。
 
 ---
 
@@ -110,7 +112,7 @@ async fn one_turn() -> KernelResult<()> {
 | 文档 | 用途 |
 |------|------|
 | [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) | `init` / `build` / `bench` / `pack` / `dev` |
-| [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) | `plugin_backends` 权威 |
+| [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) | `slot_registry` 与后端配置权威 |
 | [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) | 磁盘角色包 + **RobotSoulPack** |
 | [AGENTS.md](../../AGENTS.md) | 协作与测试分层 |
 

@@ -1,6 +1,6 @@
 # Blueprint and system configuration (SETTINGS_REFERENCE)
 
-> **`pipeline.ocblueprint` is the single source of system configuration.** Fields below are normally **blueprint / host admin** only. Stable v4 `inference_profile` is the sole exception that an editor may expose through a non-technical creator form. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
+> For v2/v3/v4 role packs, **`pipeline.ocblueprint` is the single source of in-pack runtime configuration.** It does not schedule the Stable main path through `steps[]`; host settings, distro capability ceilings, and in-memory session overrides are outside the pack. Fields below are normally **blueprint / host admin** only. Stable v4 `inference_profile` is the sole exception that an editor may expose through a non-technical creator form. Creator-facing fields: **[ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) §0** · **[ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)**.
 
 ## 0. Blueprint-only fields
 
@@ -58,7 +58,7 @@ The current kernel forwards `temperature`, `top_p`, the output limit, and prefer
 
 ---
 
-**v2:** backends in **`slot_registry`**. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
+**v2/v3/v4:** backends live in **`slot_registry`**; new Stable packs use v4. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 
@@ -70,9 +70,9 @@ This document describes configuration semantics shared by the **desktop host (Ta
 
 ---
 
-## I. Six host slots (`PluginBackends`)
+## I. Six stable slot types and runtime `PluginBackends`
 
-The runtime struct **`PluginBackends`** has these **6** fields (Serde **ignores unknown fields**, so JSON may contain extra keys such as scaffold `complex_emotion` without host parse errors).
+Current blueprints express selection through each `slot_registry` instance's `type` and `backend`; runtime folds the six stable types into the six-field **`PluginBackends`** compatibility view. Legacy `settings.json.plugin_backends` ignores unknown fields, so a scaffold `complex_emotion` key does not fail parsing, but it does not enable the facility through those six fields.
 
 | Field | Facade trait (orchestration entry) | Common built-in (in-process) |
 |-------|-----------------------------------|-------------------------------|
@@ -83,39 +83,39 @@ The runtime struct **`PluginBackends`** has these **6** fields (Serde **ignores 
 | `llm` | `LlmClient` | **`LlmBackend::Ollama`** (default local client; **no `builtin` literal**) |
 | `agent` | [`AgentProvider`](../../kernel/crates/oclive_kernel_host/src/domain/agent.rs) | `AgentBackend::Builtin` |
 
-When the whole `plugin_backends` block is omitted: memory / emotion / event / prompt / agent behave as **`builtin`**, **`llm` is `ollama`** (see PLUGIN_V1 examples).
+For legacy v1 only, omitting `plugin_backends` defaults memory / emotion / event / prompt / agent to **`builtin`** and llm to **`ollama`**. A current blueprint must retain at least one LLM instance; a healthy co-present path also needs an effective Prompt.
 
-### 1.1 Per-slot values (v1 enum summary)
+### 1.1 Per-type backend values
 
 Full table and JSON-RPC method names are in **[PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)**. Common operator-facing values:
 
 | Slot | Common values | When choosing `remote` / `directory` |
 |------|---------------|--------------------------------------|
-| memory | `builtin` / `remote` / `directory` / `local` (`builtin_v2` read alias) | `remote`: `OCLIVE_REMOTE_PLUGIN_URL`; `directory`: configure `directory_plugins.memory` |
-| emotion | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
-| event | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
-| prompt | `builtin` / `remote` / `directory` (`builtin_v2` read alias) | same |
-| llm | **`ollama`** / `remote` / `directory` | **`remote`**: `OCLIVE_REMOTE_LLM_URL`; **`OCLIVE_LLM_BACKEND`** may override at load; JSON‑RPC vs OpenAI‑compat fork → [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
-| agent | `builtin` / `remote` / `directory` | `remote`: sidecar JSON-RPC; `directory`: configure `directory_plugins.agent` |
+| memory | `builtin` / `remote` / `directory` / `local` / `none` (`builtin_v2` read alias) | `remote`: `OCLIVE_REMOTE_PLUGIN_URL`; directory: instance `plugin` |
+| emotion | `builtin` / `remote` / `directory` / `none` (`builtin_v2` alias) | same |
+| event | `builtin` / `remote` / `directory` / `none` (`builtin_v2` alias) | same |
+| prompt | `builtin` / `remote` / `directory` / `none` (`builtin_v2` alias) | same; `none` removes a required healthy-path capability |
+| llm | **`ollama`** / `remote` / `directory` / `none` | remote: `OCLIVE_REMOTE_LLM_URL`; directory: instance `plugin`; `none` cannot produce a normal reply |
+| agent | `builtin` / `remote` / `directory` / `none` | remote: Agent sidecar; directory: instance `plugin` / `plugins` |
 
-**Strings not in the v1 enum** (e.g. literal `none`) cause **role pack parse failure**. If scaffolds or docs say “none”, that means **logically off / undeclared**; for host-loadable JSON **omit the key** (fall back to default) or use a legal enum value.
+`none` is a legal explicit-off backend for the six current types, although disabling prompt or llm prevents a healthy co-present reply. Any other token outside the allowed set for its type fails legacy parsing or blueprint validation.
 
-### 1.2 `directory_plugins` object
+### 1.2 Directory plugin ids
 
-When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot under `plugin_backends.directory_plugins`. See [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md).
+For a current **`directory`** instance, put the plugin's `manifest.id` in `plugin` or, for merge-capable types, `plugins[]`. Only legacy v1 uses `plugin_backends.directory_plugins`. See [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md).
 
 ---
 
-## II. Complex emotion: `plugin_backends` extension key (not a host slot)
+## II. Complex-emotion facility type (not a seventh stable slot)
 
 **Architecture:** **facility submodule 1** (normative name: **complex-emotion facility submodule**). Naming and **facility submodule 2** (expert-model facility submodule / expert routing): **[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)** ([中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)).
 
-**`PluginBackends` has no `complex_emotion` field.** `oclive-cli` writes the key inside **`plugin_backends`** for factory presets; the host **ignores** it on deserialize. The hot path resolves via `slot_registry` in `co_present`—**not** `PluginHost`: `type: complex_emotion` + `backend: builtin|remote|directory|none`, last-wins. **Omitted (no entry) = disabled** (provider skipped, no hint produced); explicit `builtin` = enabled; explicit `none` = explicitly disabled (equivalent to omitted).
+**`PluginBackends` has no `complex_emotion` field.** The current legacy CLI scaffold still writes a hint key inside **`plugin_backends`**, which the host **ignores** on deserialize; that is not how a current pack enables the facility. The Stable path resolves `type: complex_emotion` + `backend: builtin|remote|directory|none` from blueprint `slot_registry` through `PluginHost` / `SlotRunner`, last-wins. **Omitted or `none` disables hint reads/writes**; `builtin` enables carry-over storage and deterministic Fast intensity; `remote` / `directory` additionally provide post-LLM fallback. A valid main-LLM `[EMO]` always wins.
 
 | Item | Detail |
 |------|--------|
-| vs **emotion backend module** | emotion produces `EmotionResult`; this facility outputs `narrative_hint` for the **prompt backend module** |
-| vs **backend-module plugin modules** | Sidecar `complex_emotion.resolve_turn` (`OCLIVE_COMPLEX_EMOTION_URL`) exists; **not** switched via this JSON key yet (roadmap); **not** “module 7” |
+| vs **emotion backend module** | emotion produces user-utterance `EmotionResult` as one fallback input; this facility resolves reply emotion and `narrative_hint` after generation, and the next **prompt backend module** sees only a content-free carry-over signal |
+| vs **backend-module plugin modules** | Sidecar `complex_emotion.resolve_turn` (`OCLIVE_COMPLEX_EMOTION_URL`) exists; current packs select `builtin` / `remote` / `directory` / `none` through the `slot_registry` entry, not through an ignored `plugin_backends` extension key; **not** “module 7” |
 | vs **Monolith** | Weld key `complex_emotion` (one of seven weld keys), ≠ host slot |
 
 - Sidecar wire: [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md).
@@ -129,7 +129,7 @@ When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot 
 |------|---------|-------|------|
 | memory / emotion / event / prompt | builtin | builtin | builtin |
 | llm | ollama | ollama | remote |
-| agent | **omit key** (semantic none) | builtin | builtin |
+| agent | Logical preset is none; non-dual legacy output **omits the key and therefore resolves to builtin**, while the v3 dual-core blueprint writes explicit `none` | builtin | builtin |
 | complex_emotion | none | builtin | remote |
 
 ---
@@ -138,14 +138,14 @@ When any slot is **`directory`**, fill **`manifest.id`** (string) for that slot 
 
 1. Prepare an HTTP JSON-RPC sidecar implementing PLUGIN_V1 / REMOTE_PLUGIN_PROTOCOL methods.
 2. Set URLs in the environment, e.g. **`OCLIVE_REMOTE_PLUGIN_URL`** (shared sidecar) and **`OCLIVE_REMOTE_LLM_URL`** (LLM only).
-3. Edit **`settings.json` → `plugin_backends`**: set the target slot to **`remote`** (`llm` becomes **`remote`**, not `builtin`).
+3. Edit **`pipeline.ocblueprint` → `slot_registry`**: set the target instance's `backend` to **`remote`** (LLM uses `remote`; its local default is `ollama`).
 4. Restart the host or reload the role; watch logs for downgrade/fallback when URLs are missing.
 
 ---
 
 ## V. `monolith.toml` (compile-time, not runtime)
 
-Written by **`oclive-cli init`** when Monolith is enabled at **project root**; consumed **only at compile time** (**`cargo run -p oclive-cli -- --experimental build`** reads it and regenerates `process_message_monolith.rs`; you may also use **`cargo build --features monolith`** alone). **Orthogonal** to **`settings.json` → `plugin_backends`**: role pack load **does not** read this file.
+Written by **`oclive-cli init`** when Monolith is enabled at **project root** and consumed **only at compile time**. It is orthogonal to runtime pack `slot_registry` and legacy `plugin_backends`; role loading does **not** read this file.
 
 | Field | Meaning |
 |-------|---------|

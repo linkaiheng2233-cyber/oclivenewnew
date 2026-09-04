@@ -1,6 +1,6 @@
-# Pure kernel / platform goals — implementation plan (kernel first)
+# Embeddable reference runtime — implementation record (minimal-kernel boundary first)
 
-**Current status (2026-08-31)**: this document preserves the K0–K5 implementation record. The K0–K5 code paths are closed, and K4 now exposes complete in-process orchestration through **`OcliveKernel`**. **V-EMBED-01 remains Partial** because Linux/ARM or real-hardware target proof, resource budgets, and long soak are still missing; current status and scheduling live in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
+**Current status (2026-09-03)**: this document preserves the K0–K5 implementation record for the complete reference runtime. The K0–K5 code paths are closed, and K4 exposes complete in-process orchestration through **`OcliveKernel`**. This does not mean the minimal tool kernel has already been physically extracted into an independent crate; that work is tracked by `K-CORE-BOUNDARY-01`. **V-EMBED-01 remains Partial** because Linux/ARM or real-hardware target proof, resource budgets, and long soak are still missing; current status and scheduling live in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
 **Authoritative contracts**: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
 
@@ -12,10 +12,10 @@
 
 | Goal | Acceptance |
 |------|------------|
-| **Custom robot “soul”** | Change persona and backend policy by swapping role pack + `settings.plugin_backends` (within `min_runtime_version`) **without editing orchestration code** |
-| **Companion collaboration** | Single-turn `process_message` runs memory / emotion / event / prompt / llm / agent in contract order; slots remain swappable |
+| **Custom robot “soul”** | Change persona and backend policy through the role pack and `pipeline.ocblueprint.slot_registry`, within the runtime-version contract, **without editing orchestration code**; legacy dual files are compatibility-only |
+| **Companion collaboration** | One `process_message` owns call, merge, commit, error, and isolation boundaries, and runs only the slot implementations applicable to that path. Today co-present health requires `prompt + llm`; the other ports may follow their Noop contracts |
 | **Headless & embedded** | Hardware partners integrate **without Vue**. `--api` / `kernel_server` and the `library` **`OcliveKernel`** facade share complete host orchestration; real-hardware proof remains V-EMBED-01 |
-| **AI hardware/software platform** | Third parties follow **one developer path**: scaffold → pack → plugin/sidecar → validate → deploy |
+| **AI hardware/software integration tool** | Third parties follow **one integration path**: scaffold → pack → plugin/sidecar → validate → deploy, without adopting one centralized platform shape |
 
 ---
 
@@ -27,18 +27,18 @@ flowchart LR
   K1 --> K2[K2 runtime lib]
   K2 --> K3[K3 soul pack]
   K2 --> K4[K4 stable library facade]
-  K3 --> K5[K5 platform path]
+  K3 --> K5[K5 integration path]
   K4 --> K5
 ```
 
 | Phase | Goal | Main deliverables | Checklist |
 |-------|------|-------------------|-----------|
-| **K0** | Boundary locked | `PURE_KERNEL_BOUNDARY.md`, this plan | B1, B3 |
+| **K0** | Responsibility boundary locked | `PURE_KERNEL_BOUNDARY.md`, this plan | B1, B3 |
 | **K1** | Headless loop | `examples/headless-kernel-minimal/`, `--api` | B3 transition |
-| **K2** | Real kernel wiring | `oclive_kernel_runtime` + `oclive_kernel_host` + `oclive-cli --kernel-source` | B3 |
+| **K2** | Complete reference-runtime wiring | `oclive_kernel_runtime` + `oclive_kernel_host` + `oclive-cli --kernel-source` | B3 |
 | **K3** | Soul delivery unit | RobotSoulPack profile + sample pack | B1 |
 | **K4** | Embedded facade | `OcliveKernel` + complete generated/compiled library sample | B3 |
-| **K5** | Single platform path | `KERNEL_PLATFORM_DEVELOPER_PATH.md` | B4, B5 |
+| **K5** | Single integrator path | `KERNEL_PLATFORM_DEVELOPER_PATH.md` | B4, B5 |
 
 ---
 
@@ -71,7 +71,7 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K2 — Scaffold → real kernel (core engineering) ✅
+## K2 — Scaffold → complete reference runtime (core engineering) ✅
 
 **Goal**: provide a path-linkable **`oclive_kernel_runtime`** for DTOs and pure resolution plus **`oclive_kernel_host`** for `process_message`, persistence, and host services. Desktop Tauri and `oclive_kernel_server` share the complete orchestration in `oclive_kernel_host`.
 
@@ -104,12 +104,12 @@ cd examples/oocp-test-suite && node run.mjs
 **Done when**
 
 - [x] Add **RobotSoulPack** (`--profile robot-soul`) to [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)
-- [x] Minimal fields:
+- [x] Legacy minimum accepted by that historical phase (current new Stable packs use the v4 shape in ROLE_PACK_SPEC):
   - `manifest.json`: `id`, `name`, `version`, `min_runtime_version`
   - `settings.json`: explicit `plugin_backends` (six slots + optional extensions), `interaction_mode`, optional `remote_presence`
   - `core_personality.txt` or seven-dim `default_personality` (either/or)
 - [x] `oclive-cli pack validate --profile robot-soul`
-- [x] `examples/robot-soul-minimal/distros/chat-pro/roles/default/`
+- [x] `examples/robot-soul-minimal/roles/default/`
 
 ---
 
@@ -130,7 +130,7 @@ cd examples/oocp-test-suite && node run.mjs
 
 ---
 
-## K5 — Single platform developer path
+## K5 — Single kernel-integrator path
 
 - [x] Write [KERNEL_PLATFORM_DEVELOPER_PATH.md](KERNEL_PLATFORM_DEVELOPER_PATH.md) (zh/en)
 - [x] One line: `oclive-cli init` → pack → directory plugin/sidecar → validate → `--api` or server → deploy

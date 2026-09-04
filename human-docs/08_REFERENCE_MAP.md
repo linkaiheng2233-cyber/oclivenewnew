@@ -16,7 +16,7 @@
 | 文档 | 用途 |
 |------|------|
 | [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
-| [RFC 立绘 / 视觉表现（草案）](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) | catalog · 表现导演 · 角色舞台 |
+| [RFC 立绘](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) / [视觉表现](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | catalog 与表现导演已交付；角色舞台 directive / gating 已交付、渲染 adapter 部分交付 |
 | [RFC Turn Thinking](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | Fast/Deep · `fast_persistence` · 包级 latch / ephemeral · [EN](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
 | [RFC_PORTRAIT_FACILITY](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | 立绘与视觉表现边界 |
 | [kernel/crates/README](../kernel/crates/README.md) | Crate 依赖与改哪 |

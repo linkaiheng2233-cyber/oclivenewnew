@@ -84,8 +84,8 @@ v2 兼容包可能把系统配置写在 **`meta`**；Stable v4 必须只写 **`r
 |---------|------|
 | `slot_registry` | 多实例槽：`type`、`backend`、`plugin`、`model`、`url`、`position`… |
 | `groups` | 架构图分组（可选） |
-| `pipeline` | 双核 RFC：`stable` / `experimental` + `depends_on`（**schema v3 · Proposed**） |
-| `slot_registry.*.zone` | 双核归属（**Proposed**） |
+| `pipeline` | 双核 Beta：`stable` / `experimental` + `depends_on`（**schema v3 · 已实现但冻结、默认关闭**） |
+| `slot_registry.*.zone` | 冻结 v3 双核归属（**已实现校验与运行时筛选**；v4 不接受） |
 
 **禁止落盘**：`module_relations`、`steps`、`entry`（校验报错；运行时派生）。
 
@@ -133,11 +133,11 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 | `remote_presence` / `autonomous_scene` | **`runtime_config.*`** |
 | `ollama_model` | `slot_registry` 中 `type: llm` 的 `model` 或 `runtime_config.ollama_model` |
 
-### 3.3 不属于角色包、也不属于角色蓝图文件
+### 3.5 包外配置与宿主权威
 
 | 配置 | 落点 |
 |------|------|
-| `remote_fallback_to_builtin` | 宿主 **`app_settings`** / `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` |
+| `remote_fallback_to_builtin` | 宿主 **`app_settings`** / `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN` 为运行权威；包内 `runtime_config` 只能提供建议 |
 | Monolith `weld_modules` | 工程根 **`monolith.toml`**（不随角色包分发） |
 | 目录插件 **`permissions`** | 插件 **`manifest.json`** + 用户 **`high_risk_grants.json`** |
 | MCP server | `{app_data}/mcp-servers/*.json` + 用户授权 |
@@ -178,7 +178,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 |----|------|
 | **角色包** | 只提供 Stable 灵魂（`meta` 子集、`prompts/`、`scenes/` 内容） |
 | **Experimental** | `pipeline.experimental` + 开放 `type` 由**开发者蓝图**配置，非入门创作者职责 |
-| **P4 运行时** | 仅 **`PluginHost` 七种 type** 可执行；其余 type 校验可过、运行时报未实现（Q20） |
+| **P4 运行时** | 仅 **`PluginHost` 当前七类 type（六槽 + `complex_emotion` 设施）**可执行；其余 type 校验可过、运行时报未实现（Q20） |
 | **省略 `pipeline.stable`** | Stable 仍走 **`co_present` 硬编码**（Q19） |
 
 详见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md) · [DUAL_CORE_CURSOR_HANDOFF.md](DUAL_CORE_CURSOR_HANDOFF.md)。
@@ -199,7 +199,7 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
 Capability Registry / Plan Compiler（已实现只读计划）→ SlotResolver / PluginHost → process_message
 ```
 
-会话 **`set_session_plugin_backend`** 覆盖槽位枚举，**不写回**角色包；高危能力仍走 **插件 manifest + grants**。
+会话 **`set_session_slot_override`** 按 `slot_registry` 实例键覆盖 `backend` / `plugin` / `plugins` / `model` / `local_memory_provider_id`，**不写回**角色包；旧 **`set_session_plugin_backend`** 仅是六个默认实例键的兼容薄包装。高危能力仍走 **插件 manifest + grants**。
 
 ---
 

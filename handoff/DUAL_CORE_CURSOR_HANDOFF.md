@@ -1,4 +1,4 @@
-﻿# 给 Cursor：双核双态设计总结 · 对齐进度
+# 给 Cursor：双核双态设计总结 · 对齐进度
 
 **状态**：**P2–P5 已实现**（2026-05）— `DualPipelineRunner`、宿主门控、`init --dual-core`、OOCP S13、Monolith 模板已落地；**默认仍关闭**，不开双核零 diff。  
 **权威 RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
@@ -23,7 +23,7 @@
 | **P1** | 蓝图契约：`zone`、`pipeline.*`、`depends_on` DAG 校验 | **已完成（校验 crate）** | `blueprint_v3.rs` · `validate_blueprint_v3_json` |
 | **边界** | 角色包 / 蓝图 / `runtime_config` 文档 + creator profile | **已完成** | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) |
 | **P1b** | `runtime_config` schema（v2 忽略警告） | **已完成** | `runtime_config.rs` + JSON Schema |
-| **P2** | 宿主加载 + `DualPipelineRunner` + `process_message` 门控 | **已完成** | 七槽 experimental method · 快照回滚 |
+| **P2** | 宿主加载 + `DualPipelineRunner` + `process_message` 门控 | **已完成** | 当前七类 experimental method（六槽 + `complex_emotion` 设施）· 快照回滚 |
 | **P3** | `oclive init --dual-core` 模板（蓝图 `runtime_config`） | **已完成** | 默认关；非角色包 |
 | **P4** | `process_message` 接线 + OOCP 降级用例 | **已完成** | S13 可选 `--include-s13` |
 | **P5** | `--monolith --dual-core` 双 pipeline 焊接 | **已完成** | 保留调度器 |
@@ -39,7 +39,7 @@
 
 | 核 | 职责 | 编排 | 心智 |
 |----|------|------|------|
-| **稳定核（Stable）** | 保证基础对话能力 | **六槽** `type` + **`complex_emotion` 第七设施**（不进 `pipeline.stable`，宿主硬编码，与今日一致） | 坚如磐石 |
+| **稳定核（Stable）** | 保证基础对话能力 | **六槽** `type` + **`complex_emotion` 独立设施**（非稳定第七槽；不进 `pipeline.stable` 步骤表，由宿主固定 pre / middle / post 生命周期锚点处理） | 坚如磐石 |
 | **实验核（Experimental）** | 安全试错 | **`type` 完全开放**（校验不查 type）；`action` 须能解析到 `slot_registry` 实例；顺序由 `pipeline.experimental` + `depends_on` | 爱干嘛干嘛 |
 
 两核 **共享同一后端实现池**（builtin / remote / directory / ollama …）。**无**「稳定核专属后端」。开发者：实现 trait → 注册 `slot_registry` → **同一实例可同时服务两核**（见 §三 `zone`）。
@@ -64,9 +64,9 @@
 
 1. **`slot_registry` 是总表** — 不拆成 stable / experimental 两张表。
 2. **`zone` 标识归属** — 取值 `stable` / `experimental`；类型为 **字符串或字符串数组**，**同一实例可同时属于两个 zone**（例如 `zone: ["stable", "experimental"]`）。
-3. **`pipeline.stable` / `pipeline.experimental`** — 分别定义两核编排；步骤为对象数组。
+3. **`pipeline.experimental`** — 定义实验 DAG；`pipeline.stable` 仅为冻结 v3 的描述/焊接输入，当前运行时 Stable 恒走宿主 `co_present`。
 4. **`depends_on`** — 声明步骤依赖；编排器**加载时校验 DAG**（无环、引用存在）。
-5. 未开启双核时：可省略 `pipeline` / `zone`，宿主行为 = 今日 v2。
+5. 未开启双核时：可省略 `pipeline` / `zone`，宿主行为 = 当前 Stable 单路径。
 
 ### 3.2 目标示例（权威形状）
 
@@ -94,13 +94,13 @@
 }
 ```
 
-> **已决（Q1–Q3）**：`action` 中段为 **`registry_key`**（上例 `emotion`、`llm` 为键名）。`complex_emotion` **不进** `pipeline`（第七设施，宿主硬编码）。`method` 深度见 §十一 Q17。
+> **已决（Q1–Q3）**：`action` 中段为 **`registry_key`**（上例 `emotion`、`llm` 为键名）。`complex_emotion` **不进 `pipeline.stable` 步骤表**；它是由 Stable 宿主固定生命周期锚点处理的独立设施（pre 读旧 hint、middle 连续性/Fast 强度、post 解析与写入），不是稳定第七槽。`method` 深度见 §十一 Q17。
 
 ### 3.3 Stable vs Experimental 对 `type` 的约束
 
 | 核 | `slot_registry.type` | `pipeline` |
 |----|----------------------|------------|
-| **Stable** | **仅**六槽 + **`complex_emotion` 仅宿主**（不进 pipeline） | 可省略 `pipeline.stable` → 走今日 `co_present`（§十一 Q19） |
+| **Stable** | **仅**六槽 + **`complex_emotion` 宿主固定生命周期锚点**（不进 pipeline 步骤表） | 可省略 `pipeline.stable` → 走今日 `co_present`（§十一 Q19） |
 | **Experimental** | **任意**（校验不查 type，Q12） | `pipeline.experimental` + `depends_on`；`action` 只要求 registry 键存在 |
 
 ---
@@ -111,9 +111,9 @@
 
 1. 若未启用双核 → 仅跑 **Stable**（= 今日）。
 2. 启用双核 → **优先 Experimental**：
-   - 执行前对 **`SessionState`**（及本轮可回滚的编排中间态）做**快照**；
+   - 执行前对 hint、当前 emotion、presence scene 三个有限状态做**快照**（横跨 SessionCache / SQLite，不是通用事务）；
    - 成功 → 保留新状态；
-   - 失败（崩溃 / 校验 / 子步骤 `Err`）→ **恢复快照**，无缝执行 **Stable** `pipeline.stable`。
+   - 失败（校验 / 子步骤 `Err` 等已捕获边界）→ 尝试恢复有限快照，随后执行宿主固定 **Stable `co_present`**。emotion / scene 原值为 `NULL` 时当前不会清除实验写入，见 `K-DUAL-ROLLBACK-02`。
 
 **降级策略**：复用已有 **Remote 降级**思想（`remote_fallback_to_builtin` / `OCLIVE_REMOTE_FALLBACK_TO_BUILTIN`、builtin 回退路径），**不**另建一套错误处理框架。实验核失败 ≈「本回合实验路径不可用 → 走稳定路径」。
 
@@ -126,7 +126,7 @@ flowchart TD
   D --> E{OK?}
   E -->|yes| F[Commit state]
   E -->|no| G[Restore snapshot]
-  G --> H[Run pipeline.stable]
+  G --> H[Run fixed Stable co_present]
 ```
 
 ---
@@ -159,17 +159,17 @@ flowchart TD
 
 | 项 | 结论 |
 |----|------|
-| 当前项目 | v2 蓝图 **已闭环**，可正常交付 |
+| 当前项目 | Stable v4 为新包 canonical；v2 兼容；v3 仅冻结双核 Beta |
 | 角色包 / 蓝图 | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) · `pack validate --profile creator` |
-| 双核 P1 校验 | **`validate_blueprint_v3_json`** 已入库；**宿主调度未接线** |
-| 双核 | **P2+ 未来**；**不阻塞** v2 发布 |
+| 双核 P1 校验 | **`validate_blueprint_v3_json`** 已入库；宿主调度与门控已接线 |
+| 双核 | **P2–P5 已实现**；仅 v3、默认关闭，不阻塞 Stable v4 / v2 兼容路径 |
 | Cursor 默认 | **勿**改未开双核时的 `process_message` 默认路径 |
 | 交叉引用 | 创作者**不得**在分发包单独 `runtime_config.dual_core.enabled: true`（§十二） |
 
-### 实现顺序（建议）
+### 历史实现顺序（P1–P5 已完成）
 
 1. **P1** — `oclive_validation`：`zone`、`pipeline` 步骤、`depends_on` DAG 校验 + fixture。
-2. **P2** — `DualPipelineRunner` 单测 + 快照 MVP（先内存态，再定 DB 边界）。
+2. **P2** — `DualPipelineRunner` 单测 + 有限快照；最终实现覆盖 SessionCache/SQLite hint、SQLite emotion 与 `user_presence_scene`，并保留 `NULL` 回滚缺口 `K-DUAL-ROLLBACK-02`。
 3. **P3** — `oclive-cli init --dual-core`。
 4. **P4** — 宿主 `process_message` 分支；OOCP 降级场景。
 5. **P5** — Monolith 双 pipeline 焊接（`RFC_OCLIVE_MONOLITH_MODE`）。
@@ -178,9 +178,9 @@ flowchart TD
 
 | 区域 | 路径 |
 |------|------|
-| 编排 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs`、`turn_pipeline.rs` |
+| 编排 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`、`turn_pipeline/`、`domain/dual_pipeline.rs` |
 | 槽位 | `kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs` |
-| 蓝图 | `kernel/crates/oclive_validation/src/blueprint_v2.rs` |
+| 蓝图 | `kernel/crates/oclive_validation/src/blueprint_v2/`、`blueprint_v3.rs`、`blueprint_v4.rs`、`blueprint_dispatch.rs` |
 | 契约 | `kernel/crates/oclive_kernel_contracts/` |
 | Remote 降级参考 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/`、`remote_fallback` 相关、`api/settings.rs` |
 | CLI | `kernel/crates/oclive-cli/` |
@@ -191,14 +191,14 @@ flowchart TD
 
 | ID | 问题 | 决议 |
 |----|------|------|
-| Q1 | Stable 与 `complex_emotion` | **第七设施**；不进 `pipeline.stable`；宿主硬编码（= 今日 `co_present`） |
+| Q1 | Stable 与 `complex_emotion` | **独立设施（非稳定第七槽）**；不进 `pipeline.stable` 步骤表；当前由 `co_present` 固定 pre / middle / post 锚点处理，时序以 `NARRATIVE_HINT_CONTRACT` 为准 |
 | Q2 | `action` 命名 | **`slot.<registry_key>.<method>`**（registry 键唯一；同 `type` 可多实例） |
 | Q3 | `depends_on` | **一步一 action**；`depends_on` 引用 **action 字符串**（非步骤 id） |
 | Q4 | `zone` 双属是否须被 pipeline 引用 | **不强制**；`zone` 为归属标注，pipeline 可不用该实例 |
 | Q5 | Stable pipeline 引用仅 `experimental` zone 的键 | **校验拒绝**（P1） |
-| Q6 | 未开双核时蓝图含 `zone`/`pipeline` | **忽略**（向前兼容；v2 包无感） |
+| Q6 | 未开双核时蓝图含 `zone`/`pipeline` | 仅冻结 **v3** 接受这些字段；`dual_core` 关闭时宿主不调度 `pipeline.experimental`。严格 v2/v4 都拒绝 v3 专属字段，不存在“v2 静默忽略” |
 | Q7 | 实验失败用户可见性 | **完全静默**（与 Remote 降级一致） |
-| Q8 | 快照范围（P2 MVP） | **仅内存态**：`SessionState` + 编排中间态 + `narrative_hint` 等；**不含** DB 已提交写入 |
+| Q8 | 快照范围（最终实现） | 有限三字段：SessionCache/SQLite hint、SQLite 当前 emotion、SQLite `user_presence_scene`；会恢复此前存在的值，但原值为 `NULL` 时暂不能清除实验写入，见 `K-DUAL-ROLLBACK-02` |
 | Q9 | 实验失败定义 | **硬失败**：子步骤 `Err`、超时、panic（边界捕获）、`oclive_validation`/契约失败 |
 | Q10 | schema | **`schema_version: 3`**；v2 **不**自动升级，须迁移工具 |
 | Q11 | `--dual-core` 粒度 | **蓝图**（`runtime_config.dual_core.enabled`）；`oclive init --dual-core` 写模板；不进桌面设置；**非**创作者开启 |
@@ -206,11 +206,11 @@ flowchart TD
 | Q13 | Experimental 引用 Stable 实例 | **允许**（同一 `slot_registry` 键可被两 pipeline 引用） |
 | Q14 | 首版范围 | **P4** = 标准构建 + `--dual-core`；**P5** `--monolith --dual-core` **单独里程碑** |
 | Q15 | 双核启用标志 | **`runtime_config.dual_core.enabled`**（蓝图）；创作者包不得单独 `true` |
-| Q16 | schema 分流 | 宿主按 **`schema_version` 分流**：**2** → 今日 v2 逻辑；**3** → 双核校验（`validate_blueprint_json_by_schema_version`） |
+| Q16 | schema 分流 | 宿主按 **`schema_version` 精确分流**：**2** → 兼容逻辑；**3** → 冻结双核 Beta；**4** → Stable `runtime_config` / `extensions`；未知版本拒绝 |
 | Q17 | `method` 校验 | **P1 只校验 registry 键存在**；不校验 `method` 闭表 |
 | Q18 | v3 迁移工具 | **P4 前手写 v3 示例**；`migrate-v2-v3` **延后** |
 | Q19 | 省略 `pipeline.stable` | Stable 走 **`co_present` 硬编码**，不经 pipeline 解释器 |
-| Q20 | Experimental `type` 运行时 | **P4 仅支持 `PluginHost` 七种 type**；开放 type 校验过、运行时报未实现 |
+| Q20 | Experimental `type` 运行时 | **P4 仅支持 `PluginHost` 当前七类 type（六槽 + `complex_emotion` 设施）**；开放 type 校验过、运行时报未实现 |
 
 ---
 
@@ -225,7 +225,7 @@ flowchart TD
 | `pipeline.stable` / `pipeline.experimental` 步骤：`action` + `depends_on` | DAG：无环、边指向已声明 `action` |
 | `action` 解析：`slot.<registry_key>.<method>` | registry 键 **必须存在**；**不**校验 `type`（Experimental）；Stable 步骤额外校验 `type ∈` 六槽 |
 | Stable 禁止引用 `zone` 仅含 `experimental` 的键 | 校验错误信息可定位 JSON 路径 |
-| 未启用双核的加载路径 | 含 v3 字段的 v2 加载器：**忽略** `zone`/`pipeline`（或仅 v3 文件走 v3 校验 — 见 §十一 Q16） |
+| 未启用双核的加载路径 | 仅 v3 文件可含 `zone`/`pipeline`；关闭开关时仍校验但不调度 experimental。v2/v4 对这些字段严格拒绝（见 §九 Q6/Q16） |
 | fixture + `cargo test -p oclive_validation` | 覆盖合法 DAG、环、缺键、zone 违规 |
 | 文档 | `ROLE_PACK_SPEC` / `BREAKING_CHANGE_PROCESS` 登记 schema 3 |
 
@@ -239,7 +239,7 @@ flowchart TD
 |------|------|
 | 新模块 `chat_engine/dual_pipeline.rs` | 可脱离 Tauri 单测 |
 | 启用双核：快照 → 跑 `pipeline.experimental`（拓扑序）→ 成功提交 / 失败恢复 | 与 Q8/Q9 一致 |
-| `complex_emotion` | **不**经 pipeline 调度；由 Stable 路径宿主在固定点调用 |
+| `complex_emotion` | Stable **不**经 `pipeline.stable` 调度；由宿主固定跨轮锚点处理。Experimental 的 `resolve_turn` 当前仅调用并丢弃 provider 输出，不提交 hint；正式写入仍由 Stable post-LLM 完成 |
 | 失败 → 静默降级跑 Stable | 日志可带 `degraded_from=experimental`；**无**用户可见字段（Q7） |
 | Stable 无 `pipeline.stable` | 回退 **今日** `co_present` 硬编码顺序（Q1） |
 | `pipeline.experimental` 空 | 跳过实验路径，仅 Stable |
@@ -253,7 +253,7 @@ flowchart TD
 | 任务 | 验收 |
 |------|------|
 | `oclive init --dual-core` | 生成 `schema_version: 3` 示例 + `zone` + 双 `pipeline` |
-| 默认 `init`（无 flag） | 仍生成 v2 或 v3 无 pipeline（**不**改变今日默认） |
+| 默认 `init`（无 flag） | 当前仍生成 legacy `roles/default/manifest.json` + `settings.json`；这是 `D-CLI-BLUEPRINT-05`，不得误写为 v2/v3 或 Stable 默认 |
 | `CONFIG_REFERENCE` / CLI 指南 | 与 Q11 一致 |
 
 ---

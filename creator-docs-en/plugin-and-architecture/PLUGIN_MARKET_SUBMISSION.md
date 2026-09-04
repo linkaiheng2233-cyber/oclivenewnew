@@ -21,7 +21,7 @@ Desktop **Plugin & backend management → Plugin market**:
 1. Paste the link the creator provides.
 2. Click **Load**.
    - **`…/plugins.json`**: load catalog, browse multiple plugins.
-   - **Git repo HTTPS / SSH**: treated as a single-plugin repo; install card shown (shallow clone to `{app_data}/distros/chat-pro/plugins/<id>/`).
+   - **Git repo HTTPS / SSH**: treated as a single-plugin repo; the installer shallow-clones to a temporary directory, validates it, then installs to `{app_data}/plugins/<id>/`.
 3. After install, configure slots in **Plugin workbench**; high-risk permissions prompt per [DIRECTORY_PLUGINS.md](./DIRECTORY_PLUGINS.md).
 
 Maintainers can share an audited catalog raw link, for example:

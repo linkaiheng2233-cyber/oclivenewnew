@@ -9,7 +9,7 @@
 
 ## 一句话
 
-**OCLive（A.I.Live）** 是开源、本地优先的 **AI 角色组装平台**：用 **六槽可替换模块** + **角色包独立分发** + **契约校验**，让开发者在约 30 分钟内组装并发行自己的角色内核。
+**OCLive（A.I.Live）** 是开源、本地优先的 **AI 角色工具内核**：一套权威回合编排连接 `memory`、`emotion`、`event`、`prompt`、`llm`、`agent` 六个稳定能力端口。角色包、编写器、发行版和市场让它更容易创作与分发，但不是内核本体。
 
 工程仓库代号 **oclive**；技术栈 **Tauri + Vue 3 + Rust**。
 
@@ -19,10 +19,11 @@
 
 | 是 | 不是 |
 |----|------|
-| **组装—契约—分发层**（模块可替换、可打包、可校验） | 又一个「定死的垂直角色记忆引擎」 |
-| **契约型薄核** + `PluginHost` 六槽 | 以蓝图 `steps[]` 作首轮调度 DSL 的主路径 |
+| **工具内核**（唯一编排/权威边界 + 六个稳定能力端口） | 又一个“定死的垂直角色记忆引擎” |
+| **可选参考运行时与创作工具链**（可替换、可打包、可校验） | 必须接受整套默认模块的集中式平台 |
+| `PluginHost` 六槽与稳定契约 | 以蓝图 `steps[]` 作首轮调度 DSL 的主路径 |
 | **角色包**（身份、人格、`prompts/`）与 **蓝图**（`slot_registry`、后端路由）分责 | 把创作者字段写进六槽或 `runtime_config` 混为一谈 |
-| 默认 **`distros/chat-pro/roles/mumu` 等为官方示例**，展示平台能力 | 内置角色即产品上限 |
+| 默认 **`distros/chat-pro/roles/mumu` 等为官方示例**，展示参考装配 | 内置角色即产品上限 |
 
 深度叙事：[handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) · [creator-docs/roadmap/VISION_OPEN_LAB.md](../creator-docs/roadmap/VISION_OPEN_LAB.md)
 
@@ -41,7 +42,9 @@
 
 v2 配置在蓝图 **`slot_registry`**；legacy 在 **`settings.json` → `plugin_backends`**。后端种类：`builtin` / `remote` / `directory` / `none`。
 
-**不占六槽**的设施子模块（如复杂情感 `narrative_hint`、专家路由）在编排行内注入，见架构总览。
+**不占六槽**的设施子模块（如复杂情感 `narrative_hint`、专家路由）通过 Rust 固定锚点提供候选或辅助结果，不能因此取得主编排与状态提交权；复杂情感的本轮结果在回复后解析，只以去内容余韵信号影响下一轮 Prompt。见架构总览。
+
+六槽是六类能力入口，不是六个都必须工作的平级“大脑”。当前共景健康路径至少需要 `prompt + llm`；其余槽位按各自 `none` / Noop 契约变薄。默认实现为了本地小模型使用较多显式辅助，强模型装配可以更克制。记住：**事实显式化，判断候选化，表达模型化。**
 
 ---
 
@@ -75,7 +78,7 @@ flowchart LR
 
 ## 验收
 
-- [ ] 能说出：OCLive 卖的是「可组装、可分发」，不是单一角色引擎
+- [ ] 能说出：OCLive 的本体是“工具内核 + 六个稳定端口”；组装与分发是围绕它的工具能力
 - [ ] 能区分：`distros/chat-pro/roles/mumu` 是示例；六槽在蓝图 `slot_registry`
 
 ---

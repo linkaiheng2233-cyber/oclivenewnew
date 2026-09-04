@@ -123,7 +123,7 @@
 **Theater v0 产品门已通过**（朋友 cohort · 2026-06-25 · 见 [`MODE2_UNFREEZE.md`](MODE2_UNFREEZE.md)）。**仍冻结**：
 
 - 新增 `process_message` **编排阶段**（模式 3 范畴）
-- 六槽扩展、蓝图 v3 DSL 默认开启
+- 扩展六槽分类，或将冻结的蓝图 v3 双核 DSL 默认开启
 - **模式 3**（`send_message` 长对话双 cast）
 
 **可选解冻 · 默认仍关**：`dual_core` / `expert_routing`（见 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) §2）
@@ -151,7 +151,7 @@
 ### Prompt pack v0.2 · 戏剧性纪律 · 插件 SSOT（2026-06）
 
 - **创作面**：[`distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/prompts/) — `drama_guardrails.mjs` + `modes/*`；`mode=patch` 为戳 chip 主路径（标题「剧场即兴 · 戏剧性补丁」）。
-- **替换**：Fork 插件 → 改 `prompts/` → `{app_data}/distros/chat-pro/plugins/<id>/` + `[theater].director_plugin` 或 `OCLIVE_THEATER_DIRECTOR_PLUGIN`（**无**剧场设置 UI 选包）。
+- **替换**：Fork 插件 → 改 `prompts/` → `{app_data}/plugins/<id>/` + `[theater].director_plugin` 或 `OCLIVE_THEATER_DIRECTOR_PLUGIN`（**无**剧场设置 UI 选包）。
 - **Rust fallback**：仅 RPC 失败；同步清单见官方插件 [`README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md)；drift 烟测 `node scripts/theater-prompt-drift.mjs`。
 - **人工验收矩阵**：[`PLAYTEST_MATRIX.md`](PLAYTEST_MATRIX.md)（四场景 × 代表 chip + playtest 笔记模板）。
 

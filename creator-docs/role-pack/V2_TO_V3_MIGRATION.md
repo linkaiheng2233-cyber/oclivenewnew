@@ -1,6 +1,6 @@
 # 从 v2 升级到 v3 蓝图
 
-**目标读者**：已使用 `schema_version: 2` 的 `pipeline.ocblueprint`、需要 **`runtime_config`** 或可选 **双核** 的蓝图作者。按本文手动升级，**约 10 分钟**可完成校验与试聊。
+**目标读者**：已使用 `schema_version: 2` 的 `pipeline.ocblueprint`、明确需要启用**冻结双核 Beta** 的蓝图作者。普通 Stable 包需要 `runtime_config` 时应升级到 **v4**，不要经过 v3；按本文手动进入双核 Beta，约 10 分钟可完成校验与试聊。
 
 **权威格式**：[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · 校验：`oclive_validation::blueprint_v3` · 双核：[DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md)
 
@@ -13,7 +13,7 @@
 | 维度 | v2 | v3 |
 |------|----|----|
 | `schema_version` | `2` | `3` |
-| 引擎 / 系统配置 | 多在 `meta.*`（过渡期宿主仍兼容） | 顶层 **`runtime_config`**（SSOT 目标） |
+| 引擎 / 系统配置 | 多在 `meta.*`（过渡期宿主仍兼容） | 顶层 **`runtime_config`**（仅双核 Beta 兼容；Stable SSOT 在 v4） |
 | 双核 | 无正式字段 | `runtime_config.dual_core` + 可选 `pipeline.stable` / `pipeline.experimental` |
 | 槽位归属 | 无 `zone` | 可选 `slot_registry.*.zone`（`stable` / `experimental`） |
 | 默认运行时 | `process_message` → `co_present` | **双核关闭时与 v2 行为一致**（零 diff） |
@@ -27,7 +27,7 @@
 ### 步骤 1：备份
 
 ```powershell
-Copy-Item -Recurse roles\my_role roles\my_role.v2.bak
+Copy-Item -Recurse distros\chat-pro\roles\my_role distros\chat-pro\roles\my_role.v2.bak
 ```
 
 ### 步骤 2：改 `schema_version`
@@ -38,9 +38,9 @@ Copy-Item -Recurse roles\my_role roles\my_role.v2.bak
 "schema_version": 3
 ```
 
-### 步骤 3：添加 `runtime_config`
+### 步骤 3：添加双核 Beta 的 `runtime_config`
 
-将原 `meta` 中的**系统字段**迁入 `runtime_config`（v3 校验会读此段；v2 文件若含 `runtime_config` 仅警告）：
+将原 `meta` 中的**系统字段**迁入 `runtime_config` 并声明 `dual_core`（v3 校验会读此段；v2 文件若含 `runtime_config` 仅警告）。如果并不需要双核，请停止本流程并直接迁移到 Stable v4：
 
 ```json
 "runtime_config": {
@@ -54,11 +54,11 @@ Copy-Item -Recurse roles\my_role roles\my_role.v2.bak
 
 字段含义见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) 与 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §3.3。
 
-**最小 v3（不开双核）**：只需 `"runtime_config": { "dual_core": { "enabled": false } }` 或省略 `dual_core`（默认关）。
+**兼容说明**：v3 在 `dual_core` 关闭或省略时仍可加载并走 Stable，但这只是零回归保障，不是新包推荐形态；不启用双核就应使用 v4。
 
-### 步骤 4：（可选）双核与 `pipeline`
+### 步骤 4：启用双核与 `pipeline`
 
-仅当集成方显式开启双核时添加：
+本迁移只面向明确选择双核 Beta 的集成方，因此应添加：
 
 ```json
 "runtime_config": {
@@ -73,7 +73,7 @@ Copy-Item -Recurse roles\my_role roles\my_role.v2.bak
 ```
 
 - Stable 核今日仍走宿主 **`co_present`**；`pipeline.stable` 主要为文档与 Monolith 焊接。
-- Experimental 步骤的 `action` 须能解析到 `slot_registry` 键；P4 运行时仅 **PluginHost 七种 type** 可执行。
+- Experimental 步骤的 `action` 须能解析到 `slot_registry` 键；P4 运行时仅 **PluginHost 当前七类 type（六槽 + `complex_emotion` 设施）**可执行。
 
 ### 步骤 5：（可选）`zone` 标记
 
@@ -91,7 +91,7 @@ Copy-Item -Recurse roles\my_role roles\my_role.v2.bak
 ### 步骤 6：校验
 
 ```powershell
-cargo run -p oclive-cli -- pack validate roles\my_role
+cargo run -p oclive-cli -- pack validate distros\chat-pro\roles\my_role
 cargo run -p oclive-cli -- doctor
 ```
 

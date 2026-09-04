@@ -4,7 +4,7 @@
 > **读完能做什么**：在 post 独立通道内改回复呈现，不把分段逻辑写进六槽。  
 > **耗时**：约 **35 min**  
 > **SSOT 范围**：人类 checklist；RFC 见 [RFC_REPLY_MODE](../../../creator-docs/rfc/RFC_REPLY_MODE.md)  
-> **最后更新**：2026-08-16
+> **最后更新**：2026-09-04
 
 ---
 
@@ -12,7 +12,7 @@
 
 - **MODULE_MAP**：[§11 `reply_mode`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#11-独立通道能力增强注册表--非六槽)
 - **配置**：角色包 `config.json` → `reply_mode`
-- **锚点**：`turn_pipeline/post.rs` · `reply_post_process` 之后
+- **锚点**：`turn_pipeline/post/post_llm.rs` · display 阶段位于 `reply_post_process` 之后、chat append 之前
 - **默认**：`single`，与现状完全一致
 
 ---

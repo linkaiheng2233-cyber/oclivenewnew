@@ -7,14 +7,14 @@
 
 ## 1. 当前格式
 
-新角色包只使用 **`pipeline.ocblueprint`** 作为主清单（SSOT），支持
-`schema_version: 2` 或 `3`。不要在同一目录新增 `manifest.json` /
+新角色包只使用 **`pipeline.ocblueprint`** 作为主清单（SSOT），当前校验器精确支持
+`schema_version: 2`、`3`、`4`，新 Stable 包使用 v4。不要在同一目录新增 `manifest.json` /
 `settings.json`；这两个文件只属于 legacy 迁移路径。
 
-推荐目录：
+推荐目录如下。`<角色包根>` 在本 monorepo 中是 `distros/chat-pro/roles`；`oclive-cli init` 生成的独立工程通常使用根级 `roles`：
 
 ```text
-roles/<角色 id>/
+<角色包根>/<角色 id>/
 ├── pipeline.ocblueprint        # 必填：角色元数据、关系、场景和模块槽位
 ├── core_personality.txt        # 必填：Tier 0 核心人设
 ├── config.json                 # 可选：时间、记忆、立绘、思考节奏等运行策略

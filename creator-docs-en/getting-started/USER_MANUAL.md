@@ -75,7 +75,8 @@ Error triage: [ERROR_CODES.md](ERROR_CODES.md). Build/install from source: root 
 | Shortcut | Action |
 |----------|--------|
 | **Ctrl+Shift+S** | Open **Settings** |
-| **Ctrl+Shift+F** | Open **plugin manager** (V1 vs V2 preview depends on experimental toggle in Settings) |
+| **Ctrl+Shift+F** | Open **installed plugins** (enable/disable, uninstall, install zip, marketplace, and UI placement where applicable) |
+| **Ctrl+Shift+M** | Open **model manager** |
 | **Ctrl+Shift+D** | Toggle **debug panel** (power-user) |
 | **Hold Ctrl ~1s** | May open **shortcut help** (if enabled in your build) |
 

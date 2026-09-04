@@ -16,7 +16,7 @@ Oclive 在工厂之上采用 **单核双态构建架构**：**单核** = 一套 
 
 | 总称 | 外核态 | 宏核态 |
 |------|--------|--------|
-| 单核双态构建架构 | 标准 `main.rs`、`plugin_backends` | `main_monolith.rs`、`feature monolith` |
+| 单核双态构建架构 | 标准 `main.rs`、`PluginHost` + `slot_registry` | `main_monolith.rs`、`feature monolith` |
 | 已有专名 | PLUGIN_V1、纯净内核、PluginHost | RFC Monolith、高耦合、`monolith.toml` |
 | 全焊 | — | `weld_modules = []` 且 `exclude = []`，或 `--monolith-preset latency` |
 
@@ -93,35 +93,37 @@ flowchart TB
     E["--with-example-plugin"]
   end
   subgraph impl["实现层（运行时 + 编译期）"]
-    PB["plugin_backends 第1-6模块"]
+    BP["pipeline.ocblueprint<br/>slot_registry 配置 SSOT"]
+    PB["EffectiveSessionConfig<br/>折叠第1-6槽"]
+    LEG["legacy settings.json<br/>仅兼容迁移"]
     M["monolith.toml 编译期焊接"]
-    PL["distros/chat-pro/plugins/ 目录插件 · Remote 侧车"]
+    PL["plugins/ 目录插件 · Remote 侧车"]
   end
   subgraph code["代码层（编排）"]
     PM["process_message（Rust 固定顺序）"]
-    BP["pipeline.ocblueprint（可选；桌面主路径已移除）"]
   end
-  T --> PB
-  R --> PB
-  P --> PB
+  T --> BP
+  R --> BP
+  P --> BP
   T --> M
   P --> M
   E --> PL
+  BP --> PB
+  LEG -.兼容折叠.-> PB
   PB --> PM
   M --> PM
   PL --> PB
-  BP -.->|未来/无头实验| PM
 ```
 
 | 层 | 谁用 | 工具 / 产物 | 改什么 |
 |----|------|-------------|--------|
-| **配方层** | 平台 / 硬件开发者 | `oclive init --template …` | 工程类型、预设第 1–6 模块、是否 Monolith、是否带示例 `distros/chat-pro/roles/` |
-| **实现层** | 集成方 + 创作者 | `settings.json`、`monolith.toml`、`distros/chat-pro/plugins/` | 各槽 **builtin / remote / directory / ollama**；编译期焊哪些槽 |
-| **代码层** | 内核维护者 | `oclive_kernel_host` 的 `chat_engine`（`oclive_kernel_runtime` 提供 DTO / 纯解析基础） | **一轮对话的原子步骤顺序**（记忆→情绪→事件→Prompt→LLM→…） |
+| **配方层** | 内核集成者 / 硬件开发者 | `oclive init --template …` | 工程类型、预设第 1–6 模块、是否 Monolith、是否带根级示例 `roles/` |
+| **实现层** | 集成方 + 高级作者 | `pipeline.ocblueprint.slot_registry`、`monolith.toml`、根级 `plugins/` | 各槽 **builtin / remote / directory / ollama / none**；编译期焊哪些槽。`settings.json.plugin_backends` 仅为 legacy |
+| **代码层** | 内核维护者 | `oclive_kernel_host` 的 `chat_engine`（`oclive_kernel_runtime` 提供 DTO / 纯解析基础） | **一轮对话的权威阶段**：入口/Agent 短路 → pre → 模式 middle → 主 LLM → post。六槽按阶段按需调用，不是六个槽机械串行 |
 
 ---
 
-## 5 分钟从零到对话（纯内核脚手架）
+## 5 分钟从零到对话（无头参考运行时脚手架）
 
 在 **oclivenewnew** 仓库根、已安装 Rust 的前提下（可先 `cargo build -p oclive-cli`）：
 
@@ -129,7 +131,7 @@ flowchart TB
 # 1. 检查环境（Rust / 磁盘 / Ollama / 网络等）
 cargo run -p oclive-cli -- doctor
 
-# 2. 极速创建纯对话内核（full 预设，无 Monolith，无示例 distros/chat-pro/roles/）
+# 2. 极速创建可独立构建的无头脚手架（full 预设，无 Monolith，无示例 roles/）
 cargo run -p oclive-cli -- init --quick --non-interactive -o ./my-chat --project-name my-chat
 
 # 3. 进入项目
@@ -171,12 +173,12 @@ curl -X POST http://127.0.0.1:8420/chat \
 |------|------|-----|------|
 | **T3** | 市场浏览 | `oclive market` | TUI / CLI 搜索安装插件与模板；索引缓存 `plugin_index_cache.json` |
 | **T1** | 云端注册表 | `oclive registry push/pull/search`；凭据优先 **`oclive config set`** | 团队共享模板包；`login` 为 deprecated 薄封装 |
-| **T2** | 角色包协作 | `oclive collab` | `.oclive-collab.yml` + Git；多人编辑 `distros/chat-pro/roles/<id>/` |
+| **T2** | 角色包协作 | `oclive collab` | `.oclive-collab.yml` + Git；多人编辑目标角色根（独立工程通常为 `roles/<id>/`） |
 
 ```bash
 cargo run -p oclive-cli -- --experimental market browse
 cargo run -p oclive-cli -- registry push my-team-kernel
-cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:org/role-pack.git -o ./distros/chat-pro/roles/demo
+cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:org/role-pack.git -o ./roles/demo
 ```
 
 ---
@@ -199,18 +201,18 @@ cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:or
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
 2. **覆盖细节**（可选）：显式 `--preset` / `--monolith` / `--monolith-preset` / `--with-role-pack` / `--with-example-plugin` **优先于**模板默认值。
 3. **接真内核**：`--kernel-source` 写入 path 依赖；`kernel_server` 在生成工程内 `cargo run -- --api`，`library-embed` 则 `cargo check` 并通过 `OcliveKernel` 接入自有 `main`。
-4. **换灵魂**：编辑 `distros/chat-pro/roles/<id>/` 或 `oclive pack create`；`oclive dev` 监听 manifest/settings。
-5. **换实现**：改 `plugin_backends`、安装 `distros/chat-pro/plugins/<id>/`、或起 Remote 侧车（见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)）。
+4. **换灵魂**：编辑生成工程的 `roles/<id>/` 或用 `oclive pack create`；新 Stable 包写 v4 `pipeline.ocblueprint`。当前 `oclive dev` 只监听 legacy `manifest.json` / `settings.json`，蓝图监听缺口见 `D-CLI-BLUEPRINT-05`。
+5. **换实现**：编辑蓝图 `slot_registry`、安装 `plugins/<id>/`、或启动 Remote 侧车（见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)）。legacy 包才修改 `settings.json.plugin_backends`。
 6. **要性能**：`robot-soul` 模板默认启用 Monolith；改 `monolith.toml` 后 `oclive build`。
 
 ---
 
 ## 与蓝图（`pipeline.ocblueprint`）的关系
 
-- **蓝图**：历史上用于描述**运行时**「原子步骤」的编排（DSL）；与 **Monolith 焊接范围正交**，焊接只写在 **`monolith.toml`**（见 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)）。
-- **桌面主应用**：入口蓝图**已从主路径移除**；主编排以 **`process_message`** 为准（见 [AGENTS.md](../../AGENTS.md)）。
-- **工厂定位（蓝图校验，C 级 / experimental）**：`oclive blueprint validate <path>` 仅校验 JSON 形状。**不**改变桌面宿主 `process_message`；新工程优先 **`init --pipeline`**。生成工程仍含 **`docs/BLUEPRINT_REFERENCE.md`** 供参考。
-- **开发者定制编排**：默认通过 `OcliveKernel`、槽位 trait 与 Event Ring 扩展，不 fork `process_message`；`monolith.toml` 只改变焊接实现。若确需改变阶段顺序，应按 Breaking/RFC 建立明确变体，而不是把私有分叉冒充稳定内核接口。
+- **蓝图是当前角色运行配置 SSOT**：v2/v3/v4 的 `slot_registry` 选择六槽实例与后端；新 Stable 包使用 v4。宿主加载并折叠这些配置，但蓝图**不拥有**主流程顺序。
+- **主编排由内核负责**：`process_message` / `turn_pipeline` 定义阶段、调用、合并、提交与故障边界；旧 `steps` / `entry` / `module_relations` DSL 已移除并会被校验拒绝。
+- **校验入口**：`oclive pack validate <角色根>` 或试验命令 `oclive blueprint validate <pipeline.ocblueprint>` 都按声明的 `schema_version` 精确分派；它们只读校验，不改变运行时。
+- **与 Monolith 正交**：蓝图选择运行时实现，`monolith.toml` 选择编译期焊接范围。若确需改变阶段顺序，应按 Breaking/RFC 建立明确变体；`init --pipeline` 当前只生成 `docs/PIPELINE_CUSTOM.md` 与顺序常量，不能被描述为稳定内核的可变编排契约。
 
 ---
 
@@ -248,7 +250,7 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ## 极速模式
 
-**`oclive init --quick`** / **`-q`**：`preset=full`、无 Monolith、无 `distros/chat-pro/roles/`、不接 `--kernel-source`。交互仅问**项目名**与**输出目录**；CLI 已传 `--preset` / `--monolith` / `--template` 等时，交互流程**不再重复询问**对应项。
+**`oclive init --quick`** / **`-q`**：`preset=full`、无 Monolith、无根级 `roles/`、不接 `--kernel-source`。交互仅问**项目名**与**输出目录**；CLI 已传 `--preset` / `--monolith` / `--template` 等时，交互流程**不再重复询问**对应项。
 
 ---
 
@@ -257,7 +259,7 @@ Monolith 是工厂里的 **「性能档位」**：
 `--template robot-gateway` 额外生成：
 
 - **`mcp_servers/`**：`README.md` + `smart_home.example.json`（HTTP 侧车示例）。
-- **`distros/chat-pro/roles/gateway/settings.json`**：`plugin_backends.agent` = **builtin**，含 **`agent_mcp`** 占位（扫描目录与 server id）。
+- **`roles/gateway/settings.json`**：当前脚手架的 legacy 示例，`plugin_backends.agent` = **builtin**，含 **`agent_mcp`** 占位（扫描目录与 server id）。
 
 厂商将 MCP manifest 同步到宿主 `{app_data}/mcp-servers/` 后即可接智能家居工具链（见 PLUGIN_V1 / AGENTS.md）。
 
@@ -273,19 +275,19 @@ Monolith 是工厂里的 **「性能档位」**：
 | `headless-api` | 纯 HTTP API | full | 关闭 | kernel_server | 无 |
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |
 
-`--with-role-pack`：`robot-soul-minimal` | `default`；`--skip-role-pack` 强制空 `distros/chat-pro/roles/`。
+`--with-role-pack`：`robot-soul-minimal` | `default`；`--skip-role-pack` 强制不生成根级 `roles/`。
 
 ---
 
 ## 编排参考（生成工程）
 
-`oclive init` 在 **`docs/ORCHESTRATION_REFERENCE.md`**（及 `.en.md`）说明与 `process_message` 对齐的六段主流程、可互换步骤（如 `analyze_emotion` / `detect_event`）、硬约束（`build_prompt` 必须在 `call_llm` 之前），以及如何通过 `monolith.toml` 跳过槽位。**桌面宿主不走可变顺序**，文档仅供纯内核开发者。
+`oclive init` 生成 **`docs/PIPELINE_CUSTOM.md`** 与 `src/oclive_pipeline_order.rs`，用于记录所选 `--pipeline` 顺序；另生成 **`docs/BLUEPRINT_V2_POINTER.md`**、`WELD_BENCH_REPORT*` 与 `DEBUG_REFERENCE.md`。这些是脚手架说明和实验常量，**不会改写完整参考宿主的 `process_message`**，也不表示可变顺序属于最小内核契约。
 
 ---
 
 ## 示例插件
 
-`--with-example-plugin`（默认关闭）将主仓 **`examples/directory-plugin-llamacpp/`** 复制到生成项目的 **`distros/chat-pro/plugins/com.oclive.example.llamacpp_llm/`**，便于第一次编写目录插件。见生成工程 **`distros/chat-pro/plugins/README.md`**。
+`--with-example-plugin`（默认关闭）将主仓 **`examples/directory-plugin-llamacpp/`** 复制到生成项目的 **`plugins/com.oclive.example.llamacpp_llm/`**，便于第一次编写目录插件。见生成工程 **`plugins/README.md`**。
 
 ---
 
@@ -297,7 +299,7 @@ Monolith 是工厂里的 **「性能档位」**：
 
 ## 开发监听增强（`dev`）
 
-**`oclive dev`** 递归监听 **`distros/chat-pro/roles/**/manifest.json`** 与 **`settings.json`**，任意子目录角色包变更时输出 **`检测到角色包 '<id>' 变更`**（500ms 防抖），便于多角色并行开发。
+**`oclive dev`** 默认递归监听生成工程 **`roles/**/manifest.json`** 与 **`settings.json`**，任意子目录 legacy 角色包变更时输出 **`检测到角色包 '<id>' 变更`**（500ms 防抖）。它尚未监听 `pipeline.ocblueprint`；见 `D-CLI-BLUEPRINT-05`。
 
 ---
 

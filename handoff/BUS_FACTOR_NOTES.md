@@ -62,7 +62,7 @@
 4. **分派**：`dispatch.rs` 根据 presence 选择 `process_remote_stub`、`process_remote_life`，或 `execute_turn(TurnMode::CoPresent)`。
 5. **Stable 回合**：`turn_pipeline::execute_turn` 固定执行 `pre_llm` → 模式对应 `run_middle` → 主 LLM → `post_llm`；共景 middle 在 `turn_pipeline/co_present/run_middle.rs`。
 
-**设计意图**：单入口便于审计与测试；分支显式化避免「隐式 pipeline DSL」与运行时不一致（历史上去除 `pipeline.ocblueprint` 主路径的原因，见 `AGENTS.md` 内核架构小节）。
+**设计意图**：单入口便于审计与测试；分支显式化避免步骤 DSL 与运行时不一致。被移除的是蓝图中的 `steps` / `entry` 调度权，不是 `pipeline.ocblueprint` 本身：它仍是 `slot_registry` 等角色运行配置的磁盘 SSOT（见 `AGENTS.md` 内核架构小节）。
 
 `TurnOrigin`边界回归位于`distros/desktop-tauri/tests/turn_origin_sensor.rs`：同一会话先执行sensor回合并断言角色运行时与聊天/记忆/事件零变化，再执行普通user回合证明原持久化路径仍生效。枪械、IoT等宿主专用DeviceContext格式不属于本仓标准DTO，由各自composition root转换为中性消息体并传入类型化origin。
 
@@ -77,7 +77,7 @@ Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creato
 | 项目 | 说明 |
 |------|------|
 | **装配与解析** | **`kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs`**：`PluginHost::resolve_for_role` 按角色包 + 会话覆盖解析 **第 1–6 模块**（见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)），得到 `ResolvedRolePlugins`（各槽 `Arc<dyn …Provider>`）。 |
-| **配置来源** | v2：**`pipeline.ocblueprint` → `slot_registry`**（折叠六槽）+ DB 会话覆盖；legacy：`settings.json` → `plugin_backends`。有效值：`effective_plugin_backends_for_session`（`AppState`）。 |
+| **配置来源** | v2/v3/v4：**`pipeline.ocblueprint` → `slot_registry`**（折叠六槽）+ `SessionCache` 内存会话覆盖；legacy：`settings.json` → `plugin_backends`。有效值：`effective_plugin_backends_for_session`（`AppState`）。会话覆盖不写角色包，也不持久化到 SQLite。 |
 | **模块编号与枚举** | **[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)**、**[`SETTINGS_REFERENCE.md`](../creator-docs/cli/SETTINGS_REFERENCE.md)**、**[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)**。 |
 | **降级策略** | 目录插件 / Remote 失败时主对话路径尽量 **记日志 + 回退内置或 Ollama**（具体分支见 `co_present`、remote 子模块与插件运行时；错误码见 ERROR_CODES）。 |
 | **目录插件运行时** | `kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/`（manifest 校验、`runtime` 等）；权限三面一致性与用户授权见 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) §权限规范。 |
@@ -119,10 +119,12 @@ Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creato
 |------|------|
 | **Trait / 类型** | **`kernel/crates/oclive_kernel_runtime/src/domain/complex_emotion.rs`** 再导出内核 `ComplexEmotionInput` / `ComplexEmotionOutput` 等；内置 **`BuiltinKeywordComplexEmotionProvider`**。 |
 | **Remote 可选** | **`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/complex_emotion_http.rs`**。 |
-| **注入 Prompt 链路** | **[`turn_pipeline/`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/)**：在 **`load_recent_context` 之后、`build_prompt` 之前** 调用解析；上一轮 hint 缓存在 **`AppState`**（按会话 `srid`）；经 **`PromptInput::previous_complex_emotion_narrative_hint`** 传入 **`PromptBuilder::build_prompt`**（`prompt_builder/mod.rs`）。 |
-| **测试** | **`distros/desktop-tauri/tests/narrative_hint_prompt_roundtrip.rs`**。 |
+| **跨轮读取** | **`turn_pipeline/pre.rs`** 仅在设施启用时按 `srid` 从 `SessionCache` / SQLite（24h TTL）读取上一轮 hint；**`run_middle.rs`** 交给 `PromptBuilder` 的只是该旧 hint，且 Builder 只发出不含原文的连续性信号。 |
+| **本轮解析** | **`turn_pipeline/post/post_llm.rs`** 在主 LLM 后解析并剥离 `[EMO]`：有效主模型标记优先；Fast / 发行版 skip 保留本地确定性强度；remote / directory 只在标记缺失或无效时兜底；builtin / none / 省略按契约保持或禁用。 |
+| **持久化** | 当前 hint 只在设施启用且符合写入规则时经 **`complex_emotion_store.rs`** 写入 SQLite + `SessionCache`，供**下一轮**使用；本轮 Prompt 不得读取本轮新 hint。 |
+| **测试 / SSOT** | **[`NARRATIVE_HINT_CONTRACT.md`](../creator-docs/testing/NARRATIVE_HINT_CONTRACT.md)**；覆盖 `narrative_hint_prompt_roundtrip.rs`、`complex_emotion_backend_contract.rs`、marker 与 store 单测。 |
 
-**设计意图**：复杂情感是「回合间状态」，不能只在 UI 层拼接；必须进入 Prompt 构造输入才能保证模型侧一致。
+**设计意图**：复杂情感是可追踪的「回合间状态」，不是本轮 pre 阶段替模型先写结论。模型先表达本轮判断，设施负责协议解析、可选降级与跨轮保存；下一轮只得到最小连续性提示，避免旧 hint 原文劫持语境。
 
 ---
 
@@ -173,7 +175,7 @@ Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creato
 |----------|----------|----------|------------|
 | 主编排 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` | 单消息入口、Agent/异地分支 | 不改业务顺序请先读 [`DESIGN_DECISIONS.md`](../creator-docs/architecture/DESIGN_DECISIONS.md) |
 | 共景 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs` | 回合阶段、`narrative_hint` | 槽位调用走 `SlotRunner`，勿直连 `pl.llm` |
-| 多实例合并 | `kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs` | last-wins / memory 去重 | 新策略需补「为何」注释；Agent 合并在 `plugin_host` |
+| 多实例合并 | `kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs` | memory 去重；emotion/event/prompt/complex-emotion last-wins；非流式 llm 三策略 | 新策略需补「为何」注释；`SlotResolver::wrap_agent_if_merged` 当前为 no-op，见 `K-AGENT-MERGE-01` |
 | 插件装配 | `kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs` | `ResolvedRolePlugins`、`PluginHostPort` | Remote 需 env；目录插件权限见 `high_risk_grants` |
 | 蓝图解析 | `kernel/crates/oclive_kernel_host/src/domain/slot_resolver.rs` | `slot_registry` → `ResolvedRoleSlots` | 不手写 `module_relations` |
 | 蓝图加载 | `kernel/crates/oclive_kernel_host/src/infrastructure/storage/blueprint.rs` | `load_blueprint_v2_for_role_dir` | 校验失败看 `oclive_validation` 报错拼接 |

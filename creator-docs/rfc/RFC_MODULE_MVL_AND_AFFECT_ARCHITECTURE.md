@@ -2,7 +2,7 @@
 
 | 元数据 | 值 |
 |--------|-----|
-| 状态 | **Draft**（`display_metrics` 与 domain port 分层已落地；定稿前以源码与 [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) 为准） |
+| 状态 | **Draft**（2026-09-03 按“保留模型智能”修订；`display_metrics` 与 domain port 分层已落地，其余以源码与 [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) 为准） |
 | 受众 | 内核 / 插件作者 / 角色包创作者 / 发行版 / 课程 fork |
 | 前置 | [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) · [MODULE_NONE_SEMANTICS.md](../kernel/MODULE_NONE_SEMANTICS.md) · [OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [personality-archive-notes.md](../../docs/personality-archive-notes.md) |
 | Breaking | 是（见 §8）：数值好感力学、`vector` 默认路径、DTO 语义 |
@@ -17,10 +17,12 @@
 
 **Affect split (target architecture)**:
 
-- **Simulation** (drives reply): `core_personality.txt` + `mutable_personality` (profile SSOT) + **emotion engine T2** character-affect text in Prompt — **not** numeric favor / trait scores.
+- **Simulation evidence** (advises reply): `core_personality.txt` + `mutable_personality` + optional **emotion T2 candidates** in Prompt — **not** numeric favor / trait scores and not a unique emotional truth.
 - **Display** (user understanding only): `display_metrics` JSON (`favor`, `traits[7]`, `relation_summary`) for UI — **must not** be read by `PromptBuilder` mechanics.
 
-Legacy kernel favor formulas and `PersonalityEngine` numeric evolution in Prompt are **deprecated**, not the long-term platform ceiling.
+The reply model retains semantic interpretation and natural expression. Candidate affect should carry source/confidence/TTL/scope in the target contract; current `EmotionResult` is still mainly a seven-number distribution and does not yet implement those top-level semantics uniformly.
+
+Legacy kernel favor formulas and `PersonalityEngine` numeric evolution in Prompt are **deprecated**, not the long-term kernel boundary.
 
 ---
 
@@ -30,6 +32,9 @@ Legacy kernel favor formulas and `PersonalityEngine` numeric evolution in Prompt
 2. **可替换**：插件作者满足 T0 trait 即可接入；T1+ 通过可选 capability 扩展，不抬高上架门槛。
 3. **不锁死未来**：展示指标与 Prompt 力学分通道；数值好感/七维 **永不** 成为 T0 硬依赖。
 4. **开发者自由**：在最小契约内探索 remote / directory / 更强 LLM / 自定义 UI。
+5. **保留模型智能**：情绪、意图、关系和回忆意义默认是带证据的候选，不由规则分数、固定模板或单个辅助模型宣布唯一真相；主回复模型保留结合语境解释与表达的空间。
+
+本 RFC 采用：**事实显式化，判断候选化，表达模型化。** 其中 `source / confidence / TTL / scope` 是目标契约要求；当前 `EmotionResult` 尚未完整具备这些顶层字段，实施必须另走 DTO 版本化与迁移，不能把原则描述当作已经落地。
 
 ---
 
@@ -41,12 +46,12 @@ Legacy kernel favor formulas and `PersonalityEngine` numeric evolution in Prompt
 | **T0** | MVL；契约稳定；官方 builtin + `none` 必须满足 |
 | **T1+** | 增强层；可关、可换、可缺省 |
 | **整机硬门槛** | 共景路径 **必须** 有 `prompt` + `llm`（见 `startup_health`） |
-| **仿真层** | 影响 `reply` 的文本状态（档案 + 情绪模拟叙述） |
+| **仿真证据层** | 可影响 `reply` 的档案、事实与情绪候选；进入 Prompt 后仍由模型解释 |
 | **展示层** | 仅 UI / 调试的指标（`display_metrics`） |
 
 与 [MODULE_NONE_SEMANTICS.md](../kernel/MODULE_NONE_SEMANTICS.md) 的关系：
 
-- `plugin_backends.<slot> = none` → 该槽 **整槽不参与**（Noop）。
+- 当前包的 `slot_registry` 将某一稳定六槽实例声明为 `backend: none` → 该实例不提供能力；有效折叠结果为 `none` 时整槽按 Noop 语义运行。legacy v1 才直接使用 `settings.json.plugin_backends.<slot> = none`。
 - `builtin` **T0** → 槽参与，但只做本 RFC 定义的最小事。
 
 ---
@@ -93,7 +98,7 @@ flowchart LR
 |------|------|-------------|
 | **T0** | **用户情绪识别** | `UserEmotionAnalyzer::analyze(text) -> EmotionResult`；`none` → 全 neutral |
 | T1 | 用户语气进 Prompt | `format_for_prompt` 或等价一行；角色包 `affect.user_emotion_in_prompt` |
-| T2 | **角色情绪模拟** | `CharacterAffectSimulator::simulate(ctx) -> String`（**自然语言**，无 favor/traits 数值） |
+| T2 | **角色情绪候选** | 目标契约产出自然语言/结构化候选与来源、置信度、有效期；具体 trait 名另行评审，不输出必须照做的台词，不成为第二决策内核 |
 | T3 | **展示快照** | `DisplayMetrics { favor, traits[7], relation_summary }`；**禁止** PromptBuilder 读取 |
 | T3 push | **被动刷新** | 桌面 Tauri：`affect:metricsChanged`；HTTP 发行版：`GET /display_metrics` 轮询（无 SSE） |
 
@@ -110,10 +115,11 @@ flowchart LR
 
 **T0 官方实现**：`EmotionAnalyzer`（关键词）；作者可替换为任意满足 `analyze` 的实现。
 
-**T2 实现阶段**（实现顺序，trait 按终局设计）：
+**T2 与当前复杂情感链的关系**：
 
-1. **过渡**：post-turn 与 mutable `## 社交关系` 同写（轻量）。
-2. **终局**：主 LLM **之前** 调用 `simulate`，段落标题如「角色此刻感受」。
+1. **当前参考实现**：主 LLM 在回复中可输出 `[EMO]`；`post_llm` 解析并剥离标记，以有效主模型判断为权威，remote / directory 只在标记缺失或无效时兜底。`narrative_hint` 只跨轮保存，下一轮 Prompt 只得到去内容连续性信号。
+2. **未来可选 advisor**：如果增加主 LLM 之前的 `simulate`，它只能提交带 source / confidence / TTL / scope 的候选证据，必须可关、可替换、可审计；不得强制台词、覆盖主模型判断或成为第二决策内核。
+3. **强模型装配可省略 advisor**；小模型装配可启用更多筛选与结构化辅助。二者复用相同六槽、状态提交和错误边界。
 
 ### 4.3 第 3 模块 · `event`
 
@@ -129,7 +135,7 @@ flowchart LR
 | 层级 | 能力 | 契约 / 行为 |
 |------|------|-------------|
 | **T0** | 组装 | Tier0 `core_personality.txt` + 用户句 + `KERNEL_DIALOGUE_GUARDRAILS` + 默认锚点 |
-| T1 | 设施段落 | 复杂情感 hint、专家路由、关系过渡（**文本**，非数值力学） |
+| T1 | 设施段落 | 复杂情感的上一轮去内容连续性信号、专家路由、关系过渡（**文本**，非数值力学）；不得重新注入 raw hint |
 | T1 | HostProfile overlay | concise profile 等 |
 | T2 | Deep capsule / persona_override | Wave D |
 
@@ -171,17 +177,19 @@ flowchart LR
 
 ---
 
-## 6. 仿真层 vs 展示层（目标真源）
+## 6. 仿真证据层 vs 展示层（目标边界）
 
-### 6.1 仿真层（影响 `reply`）
+### 6.1 仿真证据层（可影响 `reply`）
 
 | 来源 | 内容 | 进入 Prompt |
 |------|------|-------------|
 | `core_personality.txt` | 角色是谁 | 是 |
 | `mutable_personality` | 关系、相处、事件沉淀 | 是 |
-| emotion **T2** | 角色此刻感受（短文） | 是 |
-| emotion **T1** | 用户语气线索 | 可选 |
-| 复杂情感设施 | 跨轮 `narrative_hint` | 可选 |
+| emotion **T2** | 角色此刻感受的候选解释，不是唯一状态 | 可选 |
+| emotion **T1** | 用户语气候选线索 | 可选 |
+| 复杂情感设施 | 跨轮 `narrative_hint` 候选 | 可选 |
+
+进入 Prompt 只表示“本轮允许模型参考”，不表示候选已经变成事实。事实、候选与已提交状态必须可区分；强模型装配可以减少 T1/T2 辅助，小模型装配可以增加筛选和编译，但二者都不能让辅助结果夺取最终自然表达。
 
 ### 6.2 展示层（仅用户理解）
 
@@ -199,7 +207,7 @@ flowchart LR
 | **存储** | `role_runtime.display_metrics`（JSON）或等价；与 mutable 同轮 post-turn 写入（推荐） |
 | **读取** | `load_role`、`SendMessageResponse`；前端仪表 |
 | **禁止** | `PromptBuilder`、favor 公式、`PersonalityEngine` 数值演化进 Prompt |
-| **不一致** | 语气以 **mutable + T2 文本** 为准；展示下轮对齐 |
+| **不一致** | 不用展示数值压过对话语境；保留候选来源并在后续轮次重新评估 |
 
 ### 6.3 UI 命名（减认知负担）
 
@@ -207,7 +215,7 @@ flowchart LR
 |--------|----------|--------|
 | 好感条 | 好感（理解用） | `display_metrics.favor` |
 | 七维 | **性格读数**（理解用） | `display_metrics.traits` |
-| 用户情绪 | **你的情绪（分析）** | `SendMessageResponse.emotion`（可选展示） |
+| 用户情绪 | **你的情绪（模型推测）** | `SendMessageResponse.emotion`（可选展示，不能冒充事实） |
 
 ---
 
@@ -232,7 +240,7 @@ flowchart LR
 |----|------|
 | `mode` | `simulation_display_split`（新默认）\| `legacy_vector`（废弃别名） |
 | `user_emotion_in_prompt` | emotion T1 |
-| `simulation` | `off` \| `builtin` \| `directory:<id>` — emotion T2 |
+| `simulation` | `off` \| `builtin` \| `directory:<id>` — emotion T2 候选生成；名称后续可迁移为 `advisor` |
 | `display_interval_turns` | emotion T3 更新频率；强事件可强制刷新 |
 | `display_seed_favor` | **仅首屏展示种子**；非 Prompt 力学 |
 
@@ -257,7 +265,7 @@ flowchart LR
 | `personality_source: vector` 默认 | 改为 `profile`；`vector` deprecated |
 | `favorability_delta` 力学语义 | 改为可选展示差分或移除 |
 | `relation_state` 五段枚举力学 | UI 可保留映射或改为 `relation_summary` 自由文本 |
-| 沉浸疏远公式压 Prompt | 改为 mutable / T2 注入「许久未见」叙述 |
+| 沉浸疏远公式压 Prompt | 改为 mutable / T2 提供“许久未见”等候选证据，由模型结合语境表达 |
 
 **迁移**：官方 `mumu` 随本 RFC 一小步 bump 角色包 `affect` 块；`oclive pack validate` 增加可选校验。
 
@@ -291,29 +299,29 @@ flowchart LR
 |------|------|
 | **全槽 T0 + none** | `prompt`+`llm` 必填；`emotion=none` 仍能 `/chat` |
 | **emotion 插件仅 T0** | 替换 `analyze` 后 OOCP 烟测通过 |
-| **simulation_display_split** | Prompt 无 `好感约 X/100`；`display_metrics` 存在（T3 开启时） |
+| **simulation_display_split** | Prompt 无 `好感约 X/100`；T2 不输出强制台词；候选元数据落地后验证 source/confidence/TTL/scope；`display_metrics` 存在（T3 开启时） |
 | **legacy_vector** | 一版内旧包仍可通过显式 `mode` 运行（若保留） |
 
 ---
 
 ## 11. 实现顺序（建议）
 
-1. **RFC 定稿** + MODULE_MAP 同步 §T0/T1+ 表  
-2. **DTO** `display_metrics`；DB 字段；Prompt 删除数值好感段落（`affect.mode` 默认新）  
-3. **emotion T2** trait 草案 + 过渡实现（post-turn 合并）  
-4. **mumu** 包格式 + mutable 模板  
-5. **前端** 仪表（理解用文案）  
-6. **删除 legacy** 数值路径  
+1. **RFC 定稿** + MODULE_MAP 同步 §T0/T1+ 表
+2. **DTO** `display_metrics`；DB 字段；Prompt 删除数值好感段落（`affect.mode` 默认新）
+3. **emotion T2 advisor** trait 草案（可选 pre 候选，不覆盖当前 post-LLM `[EMO]` 权威链）
+4. **mumu** 包格式 + mutable 模板
+5. **前端** 仪表（理解用文案）
+6. **删除 legacy** 数值路径
 
 ---
 
 ## 12. 相关文档（实现后须同步）
 
-- [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) §5 emotion、§12 编排行  
-- [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · `meta.affect`  
-- [MODULE_NONE_SEMANTICS.md](../kernel/MODULE_NONE_SEMANTICS.md)  
-- [personality-archive-notes.md](../../docs/personality-archive-notes.md)  
-- [BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)  
+- [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) §5 emotion、§12 编排行
+- [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · `meta.affect`
+- [MODULE_NONE_SEMANTICS.md](../kernel/MODULE_NONE_SEMANTICS.md)
+- [personality-archive-notes.md](../../docs/personality-archive-notes.md)
+- [BREAKING_CHANGE_PROCESS.md](../../handoff/BREAKING_CHANGE_PROCESS.md)
 
 ---
 
@@ -321,6 +329,6 @@ flowchart LR
 
 | # | 问题 | 建议默认 |
 |---|------|----------|
-| 1 | T2 首版 post 合并 vs 独立 pre `simulate` | trait 按 pre；首版可 post 过渡 |
+| 1 | 是否需要独立 pre `simulate` advisor | 默认不作为必需链；若立项，只提交候选证据，保留当前 post-LLM `[EMO]` 权威与插件降级链 |
 | 2 | Fast 轮是否跳过 T3 更新 | 是（对齐 Turn Thinking 省成本） |
 | 3 | `display_metrics.traits` 与 profile 归纳七维是否冗余 | 是；traits 仅展示，profile 归纳可不暴露 |

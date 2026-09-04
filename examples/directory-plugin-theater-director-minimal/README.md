@@ -12,7 +12,7 @@ Self-contained directory plugin demonstrating how to fork the official theater d
 
 Copy this entire folder to `{app_data}/plugins/<your-id>/`. The bundled `prompts/` avoids broken imports to the monorepo `plugins/` tree after install.
 
-Official reference: [`plugins/com.oclive.theater_director_official/README.md`](../../plugins/com.oclive.theater_director_official/README.md)
+Official reference: [`distros/chat-pro/plugins/com.oclive.theater_director_official/README.md`](../../distros/chat-pro/plugins/com.oclive.theater_director_official/README.md)
 
 ## Quick start
 

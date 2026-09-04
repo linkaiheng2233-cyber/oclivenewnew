@@ -6,7 +6,7 @@
 
 1. 编辑 `rpc_server.mjs`：将各 `METHOD` 桩替换为真实逻辑（JSON-RPC 2.0，契约见主仓 `creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md`）。
 2. 确认 `manifest.json` 中 `provides`、`rpcMethods`、`process` 与 `permissions` 与实现一致。
-3. 将整个目录复制到宿主 **`{app_data}/plugins/{{PLUGIN_ID}}/`**（或内核脚手架项目的 `plugins/`），在角色包 `settings.json` 中将对应槽设为 **`directory`** 并填写 `directory_plugins.<slot>` 为本 manifest 的 **`id`**。
+3. 将整个目录复制到宿主 **`{app_data}/plugins/{{PLUGIN_ID}}/`**（或内核脚手架项目的 `plugins/`）。当前蓝图角色包在 `pipeline.ocblueprint.slot_registry` 中把对应实例设为 **`backend: directory`**，并将 `plugin` 设为本 manifest 的 **`id`**；仅 legacy / 占位脚手架 `settings.json` 使用 `directory_plugins.<slot>`。
 
 ## 本地调试
 

@@ -5,7 +5,11 @@
 //! `pipeline.experimental` first; on failure **gracefully degrade** to [`turn_pipeline::execute_turn`](crate::domain::chat_engine::turn_pipeline::execute_turn) ([`TurnMode::CoPresent`](crate::domain::chat_engine::turn_pipeline::TurnMode::CoPresent))
 //! (stable core), without user-visible disruption.
 //!
-//! **Design**: experiment first, rollback-capable, degradable—experimental steps only mutate snapshot-able session in-memory state; on failure restore snapshot then take the stable path.
+//! **Design**: experiment first, bounded rollback, degradable. The snapshot covers
+//! one SessionCache/SQLite-backed hint plus two SQLite-backed role-runtime fields;
+//! on failure previously present values are restored before taking the Stable path.
+//! A prior NULL emotion/scene is not currently cleared; this is not a general
+//! database transaction (see K-DUAL-ROLLBACK-02).
 //!
 //! **Feature freeze (2026-06)**: dual-core scheduling is compiled only with the `dual_core` Cargo feature.
 //! Production stable pipeline execution for gated roles runs on **`oclivenewnew-tauri --features dual_core`**.
@@ -13,9 +17,10 @@
 //! Allow-list SSOT: [`dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS`](super::dual_pipeline_registry::EXPERIMENTAL_METHOD_SPECS);
 //! `oclive-cli explain DUAL_CORE` keeps a separate table—sync both when changing methods (see registry module docs).
 //!
-//! **Disambiguation**: `dual_pipeline` is the **runtime orchestrator** (this module). The blueprint JSON keys
-//! `pipeline.experimental` / `pipeline.stable` are **config only** — not the on-disk blueprint file
-//! `pipeline.ocblueprint`, and not a step-scheduling DSL.
+//! **Disambiguation**: `dual_pipeline` is the **runtime orchestrator** (this module). In a frozen v3
+//! `pipeline.ocblueprint`, `pipeline.experimental` is the bounded DAG consumed by this runner;
+//! `pipeline.stable` is retained only as a description/validation section and is never executed.
+//! Neither key replaces the blueprint file itself or changes the ordinary Stable turn order.
 //!
 //! **Downstream**: [`process_message`](crate::domain::chat_engine::process_message),
 //! [`ExperimentalStepCtx`](super::dual_pipeline_steps::ExperimentalStepCtx),
@@ -40,7 +45,7 @@ use oclive_validation::{parse_pipeline_action_kind, PipelineActionKind, Pipeline
 #[error("dual-core experimental: {0}")]
 pub(crate) struct DualCoreError(pub String);
 
-/// Session in-memory state captured before experimental core runs and restored on failure.
+/// Bounded cache/role-runtime state captured before Experimental runs and partially restored on failure.
 ///
 /// Only fields experimental steps may mutate and the stable core reuses (controls rollback cost and consistency):
 /// - `narrative_hint`: complex emotion narrative cache;
@@ -85,7 +90,8 @@ impl DualPipelineRunner {
         }
     }
 
-    /// On experimental failure before degradation: restore the three session fields from [`take_snapshot`].
+    /// On Experimental failure before degradation, restore bounded values captured as `Some`;
+    /// the narrative hint also restores an absent value as empty.
     pub async fn rollback(state: &AppState, srid: &str, snapshot: TurnRollbackSnapshot) {
         crate::domain::complex_emotion_store::persist_stored_narrative_hint(
             state,

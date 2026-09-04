@@ -2,7 +2,7 @@
 
 本文档说明 **Oclive 主程序（oclivenewnew）** 运行时会读写的常见配置文件：位置、用途与关键字段。路径以 **桌面端默认布局** 为准；开发时若使用自定义 `roles` 目录，请以实际 **`roles` 父目录** 与 **Tauri 应用数据目录** 为准。
 
-**应用数据目录**（下文记为 **`{app_data}`**）：由 Tauri `path_resolver().app_data_dir()` 解析（Windows 常见为 `%APPDATA%` 下应用标识目录），与 **`app.db`** 同级。目录插件相关文件均放在此目录（**不是** `app_data/oclive/` 子目录名）。
+**应用数据目录**（下文记为 **`{app_data}`**）：指运行时有效的 `OCLIVE_APP_DATA`；桌面 / shared kernel 默认使用品牌 canonical 目录（Windows 为 `%LOCALAPPDATA%/OCLive/data`），显式环境变量可覆盖。旧 Tauri `%APPDATA%/com.oclivenewnew.app` 只作为一次性迁移来源。`app.db`、用户插件和宿主插件配置都以该有效目录为根；完整解析顺序见 [OCLIVE_APP_DATA.md](../kernel/OCLIVE_APP_DATA.md)。
 
 | 文件 | 路径 |
 |------|------|
@@ -10,7 +10,7 @@
 | 插件 UI 状态（v2） | `{app_data}/plugin_state.json` |
 | 宿主插件选项 | `{app_data}/oclive_host_plugins.json` |
 | 上次切换的角色 ID | `{app_data}/oclive_last_role_id.txt` |
-| 用户级插件包目录（扫描根之一） | `{app_data}/distros/chat-pro/plugins/` |
+| 用户级插件包目录（扫描根之一） | `{app_data}/plugins/` |
 
 **实现参考**：`kernel/crates/oclive_kernel_host/src/infrastructure/plugin_state.rs`、`kernel/crates/oclive_kernel_host/src/infrastructure/directory_plugins/runtime/mod.rs`、`distros/desktop-tauri/src/lib.rs`（`app_data_dir` 解析）。
 
@@ -55,7 +55,7 @@
 | `theme` | 主题主色等（若 schema 中有定义） |
 | `layout` | 布局相关（若 schema 中有定义） |
 
-与 **`settings.json`** 分工：**`ui.json` 管前端展示与插件布局**；**`settings.json` 管后端能力**（如 **`plugin_backends`**、`directory_plugins` 槽位）。详见下文 §5。
+与后端配置分工：**`ui.json` 管前端展示与插件布局**；**`pipeline.ocblueprint.slot_registry` 管后端能力实例**。legacy `settings.json` 只用于 v1 迁移。详见下文 §5。
 
 ---
 
@@ -68,19 +68,21 @@
 
 ## 4. `manifest.json`（目录插件）
 
-- **位置**：每个插件包根目录下的 **`manifest.json`**（扫描根为 `<roles 父目录>/distros/chat-pro/plugins/`、`./distros/chat-pro/plugins/`、`{app_data}/distros/chat-pro/plugins/` 等，见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1）。
+- **位置**：每个插件包根目录下的 **`manifest.json`**（扫描根为 `<roles 父目录>/plugins/`、`./plugins/`、`{app_data}/plugins/` 等；本 monorepo 对应 `distros/chat-pro/plugins/`，见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §1）。
 - **用途**：声明插件 ID、版本、整壳、子进程、UI 插槽、bridge 白名单、依赖等。
 - **详细规范**：见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md) §2；**版本号**须为宿主可解析的 **SemVer**（`load_from_dir` 校验）。
 
 ---
 
-## 5. `settings.json`（角色包核心配置）
+## 5. `pipeline.ocblueprint`（角色包核心配置）
 
-- **位置**：角色包根目录。
-- **用途**：角色运行时行为：**场景、人格、插件后端枚举 `plugin_backends`**、Ollama/Remote 等（完整字段见 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
+- **位置**：角色包根目录；新包不得与 legacy `manifest.json` / `settings.json` 双轨并存。
+- **用途**：`meta` 保存角色元数据、人格与场景，**`slot_registry`** 保存开放实例及其 `type`、`backend`、`plugin` / `plugins`、模型等（完整字段见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 与 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)）。
 - **与 `ui.json` 分工**：
-  - **`settings.json`**：**后端能力** — 例如 `plugin_backends.memory = "directory"` 与 **`directory_plugins`** 各槽位指向的 **`manifest.id`**。
+  - **`pipeline.ocblueprint.slot_registry`**：**后端能力** — 例如某个 `type: memory` 实例使用 `backend: directory`，其 `plugin` 指向目录插件 **`manifest.id`**。
   - **`ui.json`**：**前端布局** — 哪些插件出现在工具栏/设置页等，以及 **`theme` / `layout`**（若使用）。
+
+legacy `settings.json` 的 `plugin_backends.directory_plugins` 仍可由迁移工具读取，但不是 v2/v3/v4 新包的配置真源。
 
 ---
 

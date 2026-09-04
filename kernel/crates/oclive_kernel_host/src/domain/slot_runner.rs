@@ -1,11 +1,11 @@
 //! # Blueprint v2 multi-instance slot executor (`SlotRunner`)
 //!
-//! **Role**: when `slot_registry` has multiple instances of the same `slot_type`, pick a **merge policy** per type (serial last-wins, memory dedup-merge, serial LLM, etc.) and invoke the corresponding `dyn` implementation.
+//! **Role**: when `slot_registry` has multiple instances of the same `slot_type`, apply the type-specific execution policy (serial last-wins, memory dedup-merge, configurable non-streaming LLM selection, etc.) and invoke the corresponding `dyn` implementation.
 //!
 //! **Upstream**: [`SlotResolver`](../slot_resolver.rs) produces `ResolvedRoleSlots`; [`PluginHost`](../plugin_host.rs) provides `BackendRegistry`.
-//! **Downstream**: co-present stages (emotion, event, memory ranking, Prompt, LLM); **multi directory-plugin Agent merge** lives in `PluginHost` / `SlotResolver::wrap_agent_if_merged`, not here.
+//! **Downstream**: co-present stages (emotion, event, memory ranking, Prompt, LLM). Agent execution uses the folded provider in `PluginHost`; `SlotResolver::wrap_agent_if_merged` is currently a no-op (`K-AGENT-MERGE-01`).
 //!
-//! **Key decision**: merge policy follows slot semantics (see `*_last_wins` / `memory_merge_rank` doc comments)—e.g. memory needs **dedup-merge**, LLM only needs the **final reply**; avoid one-size-fits-all parallelism that corrupts context.
+//! **Key decision**: merge policy follows slot semantics (see `*_last_wins`, `memory_merge_rank`, and [`LlmMergePolicy`])—e.g. memory needs **dedup-merge**, while non-streaming LLMs may choose ensemble, fastest, or fallback behavior. Avoid one-size-fits-all parallelism that corrupts context.
 
 #![allow(
     clippy::missing_errors_doc,
@@ -319,7 +319,9 @@ impl SlotRunner {
             .await
     }
 
-    /// `llm`: serial **call all** (logged), **last-wins** as the final reply.
+    /// `llm`: for multiple instances, apply the last LLM entry's [`LlmMergePolicy`].
+    /// `Ensemble` is serial last-wins, `Fastest` returns the first concurrent success,
+    /// and `Fallback` returns the first ordered success.
     pub async fn generate_llm(
         pl: &ResolvedRolePlugins,
         ollama_model: &str,

@@ -26,4 +26,4 @@ cargo run -p oclive-cli -- --experimental debug -o . --json --message "测试"
 | `llm_generate` | 主 LLM 生成 |
 | `postprocess` | 回复后处理与 bot 情绪 |
 
-详见主仓 `crates/oclive_kernel_host/src/domain/debug_trace.rs` 与 `chat_engine/turn_pipeline/`。
+详见主仓 `kernel/crates/oclive_kernel_host/src/domain/debug_trace.rs` 与 `chat_engine/turn_pipeline/`。

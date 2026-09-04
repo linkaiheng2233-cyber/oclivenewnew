@@ -19,7 +19,7 @@
 1. 粘贴创作者提供的链接。
 2. 点击 **加载**。
    - **`…/plugins.json`**：加载目录，浏览多条插件。
-   - **Git 仓库 HTTPS / SSH**：识别为单插件仓库，显示安装卡片（浅克隆到本机 `{app_data}/distros/chat-pro/plugins/<id>/`）。
+   - **Git 仓库 HTTPS / SSH**：识别为单插件仓库，显示安装卡片（浅克隆到临时目录，校验后安装到本机 `{app_data}/plugins/<id>/`）。
 3. 安装后于 **插件工作台** 配置槽位；高风险权限按 [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) 弹窗授权。
 
 维护者可将审核后的目录 raw 链接发给用户，例如：

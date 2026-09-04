@@ -1,6 +1,7 @@
 # `narrative_hint` 全链路契约（方案 A / B M1）
 
 **状态**：与 `oclive_kernel_host` 共景路径、`oclive_kernel_runtime::PromptBuilder` 及桌面对接文档 v1.22 一致。
+**最后更新**：2026-09-04
 
 ## 1. 数据形状与存储
 
@@ -17,15 +18,15 @@
 
 | `slot_registry` 的 `complex_emotion` | 读取 / 注入旧 hint | 写入新 hint | 情绪标签来源 |
 |--------------------------------------|--------------------|-------------|--------------|
-| 省略或 `none` | 否 | 否 | 有效 `[EMO]` 标签仍可更新机器人六槽情绪 |
+| 省略或 `none` | 否 | 否 | 有效 `[EMO]` 标签仍可更新角色回复情绪状态（`bot_emotion`） |
 | `builtin` | 是 | 是 | 优先使用有效 `[EMO]`；无效时保持降级结果 |
-| `remote` / `directory` | 是 | 是 | 优先使用有效 `[EMO]`；无效时使用插件 `labels[]`，并据此更新机器人六槽情绪 |
+| `remote` / `directory` | 是 | 是 | 优先使用有效 `[EMO]`；无效时使用插件 `labels[]`，并据此更新角色回复情绪状态（`bot_emotion`） |
 
 同一槽位重复声明时沿用注册表的 last-wins 语义。`none` 只关闭复杂情感 hint 的读写，不吞掉主 LLM 已生成的有效情绪标签。
 
 ## 3. 单轮调用顺序（`process_message` / 共景）
 
-1. 根据角色有效槽位确定复杂情感后端。
+1. 根据角色有效 `slot_registry` 确定复杂情感设施实例与后端。
 2. 仅对 `builtin` / `remote` / `directory` 读取 `stored_complex_emotion_narrative_hint(srid)`；过期记录按空处理。
 3. `build_prompt` 根据步骤 2 的上一轮快照决定是否输出去内容连续性信号；省略或 `none` 始终传空。
 4. 主对话 LLM 生成正文与可选 `[EMO]` 标记。
@@ -54,7 +55,7 @@
 | 用例 | 位置 |
 |------|------|
 | 首轮无连续性段、次轮以旧 hint 触发去内容信号、三轮存储更新、空值与特殊字符不泄漏 | `distros/desktop-tauri/tests/narrative_hint_contract_audit.rs`、`narrative_hint_prompt_roundtrip.rs` |
-| `none` 不读不写但保留标签效果；remote 标签驱动六槽；插件 hint 截断 | `distros/desktop-tauri/tests/complex_emotion_backend_contract.rs` |
+| `none` 不读不写但保留标签效果；remote 标签驱动 `bot_emotion`；插件 hint 截断 | `distros/desktop-tauri/tests/complex_emotion_backend_contract.rs` |
 | 未闭合标记剥离、最后有效标记、Unicode 200 字符上限 | `kernel/crates/oclive_kernel_host/src/domain/emo_marker.rs` 单元测试 |
 | SQLite + 会话缓存、24 小时 TTL、持久化层防御性截断 | `kernel/crates/oclive_kernel_host/src/domain/complex_emotion_store.rs` 单元测试 |
 | Prompt 空值和特殊字符结构 | `oclive_kernel_runtime` `prompt_builder` 单元测试 |

@@ -12,7 +12,7 @@
 
 | 决策 | 为什么这样做 |
 |------|----------------|
-| **`pipeline.ocblueprint` 不解释执行 DSL** | 避免「文件里写的流程」与 `process_message` / `co_present` **实际执行顺序**不一致；编排顺序由 **Rust 代码**审计，蓝图只提供配置（`slot_registry`、`groups`）。 |
+| **`pipeline.ocblueprint` 不解释普通 Stable 执行 DSL** | 避免「文件里写的流程」与 `process_message` / `co_present` **实际执行顺序**不一致；编排顺序由 **Rust 代码**审计。蓝图提供 `slot_registry`、只读 `groups`、Stable v4 `runtime_config` / `extensions` 等配置；仅冻结 v3 双核 Beta 的 `pipeline.experimental` 是受限实验 DAG。 |
 | **入口** | [`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`](../../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) |
 
 ---
@@ -47,9 +47,9 @@
 | 槽位类型 | 策略 | 为什么 |
 |----------|------|--------|
 | memory | 串行合并 + **按 id 去重** | 用户需要多路召回的**并集**，同一记忆不应重复注入 Prompt |
-| llm | 串行 **last-wins** | 只需**一条**最终回复；共享同一 prompt，避免并发打满资源 |
+| llm | 非流式：`ensemble` 串行 last-wins（默认）/ `fastest` 并发首个成功 / `fallback` 按序首个成功；流式当前串行 last-wins | 允许按资源与可靠性取舍；流式避免并发 token 混写 |
 | emotion / event / prompt / complex_emotion | 串行 **last-wins** | 状态类或「最终文本」语义，后次覆盖前次 |
-| agent（多目录插件） | **PluginHost** 合并目录 ID | 多工具无强顺序依赖时合并工具集；执行逻辑见 `plugin_host` / `SlotResolver::wrap_agent_if_merged` |
+| agent（多目录插件） | **尚未合并执行** | 当前只收集 `merged_agent_directory_plugin_ids` 供诊断，`SlotResolver::wrap_agent_if_merged` 返回原 provider；工具并集见 `K-AGENT-MERGE-01` |
 
 实现与注释：[`kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs`](../../kernel/crates/oclive_kernel_host/src/domain/slot_runner.rs)。
 
@@ -67,8 +67,8 @@
 
 ```text
 distros/chat-pro/roles/{id}/pipeline.ocblueprint
-  → load_blueprint_v2_for_role_dir（解析 + 校验）
-  → Role { slot_registry, plugin_backends, slot_groups }
+  → schema_version 精确分派 v2 / v3 / v4（解析 + 校验）
+  → Role { slot_registry, plugin_backends, slot_groups, runtime_config, extensions }
   → PluginHost::resolve → SlotResolver::resolve
   → process_message → SlotRunner
 ```

@@ -4,6 +4,8 @@
 
 See full RFC: [RFC_VISUAL_PRESENTATION_FACILITY.md](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) (Chinese SSOT).
 
+**Status:** directive materialization, response DTO, and distro gating are delivered; renderer adapters remain partial and the facility is off by default.
+
 ## Role
 
 Maps `visual_state_id` → optional `performance_directive` for host UI adapters. **No second LLM.**

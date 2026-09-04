@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-09-03
+**最后更新**：2026-09-05
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -10,13 +10,19 @@
 
 ## 0. 五条铁律（关系骨架）
 
+**先分清本体与装配**：OCLive 的最小概念核心是 **唯一回合/生命周期编排 + 权威状态提交与故障边界 + 六个稳定能力端口**。六槽是 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类可替换能力，不是六个平级决策内核，也不要求每种具体实现都启用。当前共景路径的健康门槛仍是 `prompt + llm`；其余槽位的 `none` / Noop 语义以 [`MODULE_NONE_SEMANTICS.md`](../creator-docs/kernel/MODULE_NONE_SEMANTICS.md) 和真实性矩阵为准。
+
+`oclive_kernel_host::OcliveKernel` 是当前**完整嵌入运行时门面**，物理上仍装配 SQLite、Event Ring、HTTP 依赖和具体设施；它不能被等同为已经独立编译出来的最小 core。物理拆薄状态只看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`。
+
 | # | 铁律 | 一句话 |
 |---|------|--------|
 | 1 | **编排** | [`process_message`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) → 共在 [`co_present`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/co_present.rs)；蓝图 **`steps[]` 不调度**。 |
 | 2 | **六槽** | `slot_registry` → `PluginBackends` → `PluginHost::resolve_for_role`；键 **`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`**。其中 legacy `event` 只负责 `event.impact` 估计，结果进入通用 Event Ring。 |
 | 3 | **记忆三套存储** | 聊天日志 **`chat_messages`** ≠ **`short_term_memory`** ≠ **`long_term_memory`**；删聊天 **不清** 记忆表。 |
-| 4 | **配置四层** | 角色包 → 蓝图 → 发行版 `HostProfile` → 会话 DB；分责 [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md)。 |
+| 4 | **配置四层** | 角色内容层 → 包内蓝图配置层 → 发行版 `HostProfile` → `SessionCache` 会话内存覆盖；分责 [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md)。角色运行时状态可另行持久化，但不是槽位配置覆盖。 |
 | 5 | **图纸 ≠ 资源执行** | 蓝图只声明能力意图；宿主编译内部 `ExecutionPlan`；Resource Coordinator 根据真实设备和策略发放资源租约。 |
+
+**六槽版本纪律**：v1 的六类端口是稳定分类。新能力通常应先归入某一槽的实现、设施、独立通道或宿主能力；不得把普通扩展顺延命名为“第 7 槽”。若真实场景证明必须改变六槽分类，它是需要迁移、兼容期和 Breaking 说明的核心契约修订，而不是常规插件扩展。
 
 Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_RING.md`](../creator-docs/plugin-and-architecture/EVENT_RING.md)；本文只登记它与模块的关系。
 
@@ -42,12 +48,12 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 ## 2. 模块四大类（划分）
 
-| 大类 | 占 `plugin_backends` 六键？ | 编号 | 改动的文档 SSOT |
-|------|------------------------------|------|-----------------|
-| **后端模块（六槽）** | **是** | 第 1–6 模块 | **本文 §3–§8** + [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)（DTO/顺序） |
-| **设施子模块** | **否** | 第 1–4 设施 | **本文 §9** + 各 RFC |
-| **独立通道能力增强** | **否** | 注册表 `id` | **本文 §10** + [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
-| **后端模块插件** | 挂在某槽 `backend` | 无独立号 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
+| 大类 | 与六槽折叠 `PluginBackends` 的关系 | 编号 | 改动的文档 SSOT |
+|------|------------------------------------|------|-----------------|
+| **后端模块（六槽）** | 蓝图六种稳定 `slot_registry.type` 折叠为六字段 | 第 1–6 模块 | **本文 §3–§8** + [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md)（DTO/顺序） |
+| **设施子模块** | **不进入六槽折叠**；可有自有蓝图声明（如 `complex_emotion`） | 第 1–4 设施 | **本文 §9** + 各 RFC |
+| **独立通道能力增强** | **不进入六槽折叠**；走自有 Resolver / 锚点 | 注册表 `id` | **本文 §10** + [`RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md`](../creator-docs/rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) |
+| **后端模块插件** | 实现某槽的 `backend`，沿用该槽字段 | 无独立号 | [`DIRECTORY_PLUGINS.md`](../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md) · [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md) |
 
 **对外叙述**（产品文案、编号脚注）：[`OCLIVE_ARCHITECTURE_OVERVIEW.md`](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) — **不**在此重复长文。
 
@@ -62,15 +68,16 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | 层 | 含义 |
 |----|------|
 | **编译期** | 各槽 `trait` + `PluginHost`；换实现 **不改** `process_message` 顺序 |
-| **配置期** | v2 `slot_registry` 多实例 → 折叠 `PluginBackends`（同 `type` **last-wins**，`position` 大者优先） |
+| **配置期** | v2/v3/v4 `slot_registry` 多实例 → 折叠 `PluginBackends`（同 `type` **last-wins**，`position` 大者优先）；新 Stable 包使用 v4 |
 | **运行期** | `set_session_slot_override` 叠在有效快照上（**不写盘**） |
 
 ### 3.2 有效 backends 解析链
 
 ```text
-角色包 blueprint
-  ├─ legacy `plugin_backends`（manifest/settings 直写六键）
-  └─ v2 `slot_registry`（多实例 → 折叠为 `PluginBackends`，同 type last-wins）
+角色包运行配置快照
+  ├─ legacy v1：`manifest.json` + `settings.json.plugin_backends`
+  └─ v2/v3/v4：`pipeline.ocblueprint.slot_registry`
+       （多实例 → 有效注册表 → 六种稳定 type 折叠为 `PluginBackends`；同 type last-wins）
        ↓
 用户 LLM 设置（DB `app_settings`）/ `OCLIVE_LLM_BACKEND` 等 env
        ↓
@@ -101,9 +108,9 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | 槽 | 策略 |
 |----|------|
 | memory | 去重合并检索 |
-| llm | last-wins |
-| agent | 工具集合并 |
-| 其它 | PLUGIN_V1 · ARCHITECTURE_LAYERING |
+| llm | 非流式读取最后一个 LLM 实例的 `policy`：`ensemble` = 串行 last-wins、`fastest` = 首个成功、`fallback` = 按序首个成功；流式当前统一串行 last-wins |
+| agent | 当前只执行折叠后的单一 Agent；多实例/`plugins[]` 仅收集诊断 ID，工具并集尚未实现（`K-AGENT-MERGE-01`） |
+| emotion / event / prompt / complex_emotion | 串行 last-wins；memory 与 LLM 例外见上 |
 
 **backend 真值矩阵（24 格）**：只维护于 [`SLOT_BACKEND_REALITY_MATRIX.md`](./SLOT_BACKEND_REALITY_MATRIX.md)，本文 **不** 复制该表。
 
@@ -115,17 +122,17 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 | 项 | 内容 |
 |----|------|
-| **定义** | 为 Prompt 提供 **相关记忆检索**；维护 STM 写入与 LTM 归档策略的 **编排侧** 入口 |
+| **定义** | `MemoryRetrieval` 为 Prompt 提供 **相关记忆检索**；STM 写入与 LTM 归档由内核编排/持久化实现负责，不属于该 trait 的写权限 |
 | **`plugin_backends` 键** | `memory` |
 | **Trait** | `MemoryRetrieval`（`oclive_kernel_contracts`） |
 | **合法 backend** | `builtin` · `remote` · `directory` · `local` · `none` |
 | **Builtin** | `BuiltinMemoryRetrieval` + `MemoryEngine`（STM/LTM 衰减、阈值） |
-| **主链 hook** | `turn_pipeline/pre.rs` 检索 · `post_llm` 写入 STM/LTM |
+| **主链 hook** | 槽位在 `turn_pipeline/pre.rs` 检索；内核在 `post_llm` 写入 STM/LTM |
 | **Event Ring 接入** | 本轮已检索且与当前用户句相关的最高候选由 `builtin.memory_recollection` 提交 `kernel.memory.recall.candidate`（事件只携带记忆 ID、置信度与相关度，不复制正文）；`builtin.event_decision` 按注册基础权重与证据决定是否发出 `kernel.memory.recollection.activated`。只有已激活回忆进入专门的长文本回复上下文，默认 `weave`，且 TTL 固定为当前一轮；没有候选或未采纳时沿用原记忆 Prompt 行为 |
 | **与聊天存储** | **无关** — `chat_messages` 不进 MemoryEngine；回放见 `replay_memory_extraction` |
 | **合并** | 多 memory 实例 → 去重合并 |
 | **可移植边界** | `.ocmemory` 只携带 `memory_seed` + LTM；STM 是可重建缓存，临时局面状态不属于 memory/persona 迁移 |
-| **`none`** | `NoopMemoryRetrieval`；共景路径通常 **禁止** none（见 MODULE_NONE_SEMANTICS） |
+| **`none`** | `NoopMemoryRetrieval`；共景路径允许，不检索长期记忆并返回空列表（见 MODULE_NONE_SEMANTICS） |
 | **允许改** | 检索算法、decay、archive 阈值、remote/directory 协议 |
 | **禁止** | 用聊天记录表当记忆真源；角色任务改 `slot_registry` |
 
@@ -150,9 +157,9 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **Trait** | `UserEmotionAnalyzer` |
 | **Backend** | `builtin` · `remote` · `directory` · `none` |
 | **主链 hook** | `pre.rs` → `EmotionResult` → Prompt · Turn Thinking Auto 路由 |
-| **与复杂情感** | **不同模块** — 复杂情感是 **第 1 设施**（消费 emotion 产出） |
+| **与复杂情感** | **不同模块** — 复杂情感是 **第 1 设施**；本槽的用户情绪只是其降级证据之一，本轮角色回复情绪以有效主 LLM `[EMO]` 为权威 |
 | **允许改** | 分析器、remote 协议 |
-| **禁止** | 写入 `slot_registry` 的 `complex_emotion` 键冒充六槽 |
+| **禁止** | 把 `slot_registry` 中的 `complex_emotion` 设施实例冒充稳定六槽，或写入 `plugin_backends` 六键 |
 
 ---
 
@@ -198,7 +205,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **Trait** | `LlmClient` |
 | **Backend** | `ollama` · `remote` · `directory` · `none`（共景 **禁止** none） |
 | **发行版 builtin 实现** | `[llm_runtime].mode=performance`：`llama-server/GGUF → Ollama`；不新增角色包 backend 枚举 |
-| **合并** | 多 llm 实例 → **last-wins** |
+| **合并** | 多 llm 非流式按最后一个 LLM 实例的 `policy` 选择 `ensemble`（串行 last-wins，默认）/ `fastest` / `fallback`；流式当前统一串行 last-wins |
 | **主链 hook** | `co_present` generate / stream |
 | **性能闭环** | `performance_llm.rs` 管理 runtime pack/进程/熔断；`openai_compatible_llm.rs` 解析 SSE；GGUF 路径与 Ollama fallback model 分开保存 |
 | **流式回退规则** | 首 token 前失败可回退 Ollama；已产生 token 后必须返回错误，不得重跑造成重复文本/语音 |
@@ -215,7 +222,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **键** | `agent` |
 | **Trait** | `AgentProvider` |
 | **Backend** | `builtin` · `remote` · `directory` · `none` |
-| **合并** | 多 agent → 工具集 **并集** |
+| **合并** | 当前折叠后只执行单一 Agent；`merged_agent_directory_plugin_ids` 仅供诊断，`wrap_agent_if_merged` 为 no-op。多 Agent 工具并集见 `K-AGENT-MERGE-01` |
 | **发行版** | `host_flags.skip_agent` → 强制 `none` |
 | **MCP** | `{app_data}/mcp-servers/*.json` · 须 `network:*` / `process:spawn` 授权 |
 | **允许改** | Agent 协议、MCP 客户端、调试 trace |
@@ -227,7 +234,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 | # | 名称 | 输入 / 输出 | 主链锚点 | 默认 | 改动 SSOT |
 |---|------|-------------|----------|------|-----------|
-| **1** | 复杂情感 | emotion + 上下文 → `narrative_hint` | `pre.rs` → 下一轮 `PromptInput.previous_complex_emotion_narrative_hint` | on（可 skip） | `complex_emotion.rs` |
+| **1** | 复杂情感 | 上一轮 hint + 用户情绪/上下文降级证据 + 主 LLM `[EMO]` → 本轮回复情绪与下一轮 `narrative_hint` | `pre.rs` 读旧 hint → `run_middle.rs` 只给 Prompt 去内容连续性信号 / Fast 强度 → `post_llm.rs` 解析并剥离 marker、插件兜底、持久化 | **省略 / `none` = hint 读写关；`builtin` = hint 读写 + Fast 强度；`remote` / `directory` = 再加 post 降级 provider**（发行版仍可 skip） | `NARRATIVE_HINT_CONTRACT.md` · `complex_emotion.rs` · `post/post_llm.rs` · `complex_emotion_store.rs` |
 | **2** | 专家模型 | 条件 → 专家子流程；`slot.lora.apply` 选择预声明的 directory LLM adapter | `expert_routing.json` · `dual_core` · `post::run_main_llm*` | **可选启用；默认关** | TECHNICAL_DEBT §2 |
 | **3** | 立绘 | 封闭 catalog → `visual_state_id` | `post_llm` · 表现导演 LLM | **平台默认关；角色包可 opt in** | RFC_PORTRAIT |
 | **4** | 视觉表现 | `visual_state_id` → `performance_directive` | 宿主 UI 帧循环 · **无** AI 选图 | **平台默认关；角色包可 opt in** | RFC_VISUAL_PRESENTATION |
@@ -242,8 +249,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 |------|------|------|------------------------|
 | `event_ring` | 通用内核单次 dispatch 外环与信封/路由权威：模块通过 `EventModuleDeclaration` 只声明订阅、允许发射事件与优先级，并只提交 `EventDraft`；可信注册调用通过独立 `EventModuleRegistryPolicy` 分配基础影响权重与 `fail_fast` / `isolate` 故障边界，模块不能自报权重或故障策略。Ring 签发来源/权重/顺序/因果链后按 `(priority, module_id)` 路由；隔离型模块的处理错误或非法输出会被原子拒绝并隔离，诊断只记录状态和失败次数。主动输入链为来源绑定 emitter 提交 `kernel.proactive.turn.proposed`，`builtin.proactive_turn_decision` 按注册权重、置信度与紧迫度生成带因果链的 `kernel.proactive.turn.authorized`；宿主只为该权威事件签发一次性 `ProactiveTurnPermit`，Ring dispatch 返回后由 `process_proactive_turn` 消耗 Permit 并以独立 `TurnInput::ExternalObservation` 进入 origin-aware 共景 Prompt，`user_message` 保持为空且不写用户聊天状态。目录插件以独立 `eventRing` manifest 建议 + `event_ring.handle` RPC 接入：宿主限制精确安全订阅、插件自有发射命名空间、权重上限与超时，并在首次扫描/重扫时同步；当前目录插件不能读写 proactive 内核事件，也拿不到主动 emitter/Permit，且不复用前端 `bridge.events`。`EventRingDiagnostics` 不包含 payload、metadata 值或 stream key。每个 `AppState` 独立、内存有界、无数据库写者，权重不控制执行顺序；该“权威”不包含提案采纳或角色状态提交 | `oclive_kernel_types::EventDraft` / `EventEnvelope` / `EventModuleRegistryPolicy` / `ProactiveTurnProposal` / `EventRingDiagnostics` · `oclive_kernel_contracts::EventEmitter` / `EventModule` / `EventModuleRegistrar` · `domain/event_ring/` · `domain/chat_engine::process_proactive_turn` · `infrastructure/directory_plugins/event_ring.rs` | **分路径**：legacy `event.impact` 与 memory recollection 在 `process_message`；主动链经 Ring dispatch 后走受 Permit 限制的 `process_proactive_turn`；目录模块只随获准 Ring dispatch 被调用。后两者不构成第二套 `process_message` |
 | `user_identity` | 用户是谁 | `user_identities/` · pre | **是**（pre 段落） |
-| `reply_post_process` | 回复润色/改写 | `config.json` · post_llm | **是**（post） |
-| `reply_mode` | 回复分段与展示节奏 | `config.json` · post_llm（`reply_post_process` 之后） | **是**（post） |
+| `reply_post_process` | 回复润色/改写 | `config.json` · `post_llm.rs` 内 semantic/state 消费后、聊天写入前 | **是**（post） |
+| `reply_mode` | 回复分段与展示节奏 | `config.json` · display 阶段（`reply_post_process` 之后、聊天写入前） | **是**（post） |
 | `theater_director` | 剧场场景生成 | `POST /theater/scene` | **否**（圈外 API） |
 | **`voice.asr`** | 麦克风 → 文本（ASR，基础）+ 可选情感 TTS（扩展 · 默认关） | 宿主 `chat_toolbar` + **`plugin_rpc_invoke`** → [`VOICE_ASR_SUBMIT_EVENT`](../distros/shared/src/lib/voiceAsrEvents.ts) → `send_message`；`message:sent` / 流式首句 → **`voice.speak`**（须 `tts_expansion_enabled`） | **否** |
 | **`voice.director`** | 人设 → **`voice_directive`**（`rules-v1` · `emo_text` · `ref_map`） | 插件 RPC **`voice.build_directive`** | **否** |
@@ -363,32 +370,41 @@ Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，
 ```mermaid
 flowchart TB
   PM["process_message"]
+  AG{"⑥ agent handled?"}
+  MIN["minimal_response<br/>短路 Stable pipeline"]
   CO["co_present"]
-  TT["TurnThinkingRouter"]
   PRE["pre"]
-  EV["EventEstimate"]
+  MID["co_present middle"]
+  RULE["规则 EventEstimate"]
+  TT["TurnThinkingRouter"]
+  USE{"event LLM?"}
   ER["Event Ring"]
   RC["memory.recall.candidate"]
   RA["memory.recollection.activated"]
-  BP["BuildPrompt"]
-  GEN["llm generate"]
   PST["post_llm"]
 
-  PM --> CO --> TT --> PRE --> EV --> ER --> BP --> GEN --> PST
+  PM --> AG
+  AG -->|handled| MIN
+  AG -->|continue| CO --> PRE --> MID
 
   PRE --> M1["① memory"] & M2["② emotion"]
-  M1 --> RC --> ER --> RA --> BP
-  EV --> M3["③ event.impact（legacy 子槽）"] --> ER
+  MID --> RULE --> TT
+  TT --> USE
+  USE -->|yes| M3["③ event.impact（legacy 子槽）"] --> ER
+  USE -->|no，沿用规则估计| ER
+  M1 --> RC --> ER --> RA --> M4
   ER -.-> EM["声明式事件模块"]
   ER -.-> DP["目录事件模块 event_ring.handle"]
-  BP --> M4["④ prompt"]
-  GEN --> M5["⑤ llm"]
+  TT --> M4["④ prompt.build"]
+  M4 --> M5["⑤ llm.generate"] --> PST
   PRE -.-> F1["设施① complex_emotion"]
-  PST -.-> SC["独立通道 post_process"]
-  PST -.-> F3["设施③ portrait?"]
+  F1 -.上一轮去内容信号.-> M4
+  PST -.本轮解析与持久化.-> F1
+  PST -.-> SC["独立通道 reply_post_process"]
+  PST -.-> F3["设施③ portrait"]
 ```
 
-Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
+图中的箭头表示当前普通用户 co-present 回合的数据依赖，不表示六槽按编号机械串行。Agent 短路在 `pre` 之前；异地 stub / RemoteLife 是并列分支，见 `process_message.rs`。
 
 ---
 
@@ -442,10 +458,12 @@ Agent 短路、异地 stub：**并列**于上链，见 `process_message.rs`。
 
 | 层 | 典型内容 | 谁改 | AI 任务边界 |
 |----|----------|------|-------------|
-| 角色包 | `core_personality.txt` · scenes · prompts | 创作者 | **不改** slot_registry |
-| 蓝图 | `slot_registry` · `runtime_config` · 目标 `extensions` 外壳 | 管理员 / 集成方 | 须 validation；扩展载荷由对应作者维护 |
+| 角色内容层 | `core_personality.txt` · scenes · prompts | 创作者 | **不改** slot_registry |
+| 包内蓝图配置层 | `slot_registry` · `runtime_config` · 目标 `extensions` 外壳 | 管理员 / 集成方 | 须 validation；扩展载荷由对应作者维护 |
 | 发行版 | `distro.oclive.toml` → HostProfile | 产品 | **不改**角色人设任务 |
-| 会话 | `role_runtime` · slot override | 运行时 | override 不写盘 |
+| 会话配置覆盖 | `SessionCache` · slot override | 运行时 | **只在进程内存，不写包、不进 SQLite** |
+
+`role_runtime`、关系、记忆等角色状态有各自的持久化契约，不属于上表的槽位配置覆盖层；不要因为它们共享 `session_id` 就把两者合并成“会话 DB 配置”。
 
 ---
 

@@ -1,45 +1,83 @@
-# 创作者说明：用户身份与初始好感
+# 创作者说明：用户关系、身份模板与初始好感
 
-角色包「用户自定义」总览教学见 [《角色包用户自定义创作者教学》](./CREATOR_ROLE_PACK_CUSTOMIZATION.md)。
+角色包「用户自定义」总览见 [《角色包定制指南》](CREATOR_ROLE_PACK_CUSTOMIZATION.md)，完整格式以 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 为准。
 
-本文说明角色包 `manifest.json` 里 **`user_relations`**（用户身份）相关字段，以及加载时的校验规则。
+这三个概念需要分开：
 
-## 关系键 `id` 与展示名 `display_name`
+- **关系**：`pipeline.ocblueprint` → `meta.relations`，描述互动关系、好感初值与倍率；
+- **用户身份模板**：可选 `user_identities/`，描述“用户是谁”，并可映射到一个关系；
+- **当前选择**：宿主把全局/场景身份 id 持久化在 SQLite 角色运行态，不写回角色包，也不是六槽 SessionCache 覆盖。
 
-- **`user_relations` 的键**（如 `friend`、`classmate`）是程序内部使用的 **英文标识**，用于存档、API、默认关系等，请保持稳定、勿随意改名。
-- **`display_name`**（可选）：界面下拉框、关系预览等处展示的 **中文或其它展示文案**。若省略或留空，则展示名与键相同（即显示英文键）。
-- 导出角色时，若某身份的展示名与键不同，会写出 `display_name` 字段；相同则省略，保持 JSON 简洁。
+legacy `manifest.json.user_relations` 只是 `meta.relations` 的旧名字，以下示例以新 Stable 包的蓝图写法为准。
 
-示例：
+## 关系键与展示名
+
+`relations` 的键（如 `friend`、`classmate`）是存档、API 和映射使用的稳定 id。发布后不要随意改名。`display_name` 是可选的界面文案；省略或留空时，界面可回退显示 id。
 
 ```json
-"user_relations": {
-  "friend": {
-    "display_name": "好友",
-    "prompt_hint": "你们是好朋友，说话随意亲密",
-    "favor_multiplier": 1.0,
-    "initial_favorability": 45
+{
+  "schema_version": 4,
+  "meta": {
+    "relations": {
+      "friend": {
+        "display_name": "好友",
+        "prompt_hint": "你们是好朋友，说话随意亲密",
+        "favor_multiplier": 1.0,
+        "initial_favorability": 45
+      }
+    },
+    "default_relation": "friend"
   }
 }
 ```
 
+这里省略了蓝图其它必填字段；可复制完整 v4 样例再编辑。
+
 ## `default_relation`
 
-- 必须对应 **`user_relations` 中存在的键**（若填写了非空字符串）。
-- 用于新对话或未指定关系时的默认身份。
+- 非空时必须引用 `meta.relations` 中存在的键。
+- 用于尚无更具体关系映射时的默认关系。
+- 它不是 `user_identities/index.json.default_identity_id`：前者选关系，后者选用户身份模板。
 
-## `favor_multiplier` 与 `initial_favorability`
+## 好感字段
 
-- **`favor_multiplier`**：好感变化倍率，须为 **有限且大于 0** 的正数。
-- **`initial_favorability`**：该身份下、**首次建立用户—角色关系**时的初始好感（0～100）。须为有限数字；加载时会再约束到合法区间。
+- `favor_multiplier`：好感变化倍率，必须是有限且大于 0 的数。
+- `initial_favorability`：首次建立该用户—角色关系时的初始好感，必须在 0～100。
+
+## 让身份映射到关系
+
+需要更完整的“用户是谁”描述时，在 `user_identities/index.json` 的身份条目中写 `maps_to_relation_id`：
+
+```json
+{
+  "schema_version": 1,
+  "default_identity_id": "classmate_user",
+  "identities": {
+    "classmate_user": {
+      "display_name": "同班同学",
+      "template_file": "classmate.md",
+      "maps_to_relation_id": "classmate"
+    }
+  }
+}
+```
+
+模板正文放在 `user_identities/classmate.md`。无 `user_identities/` 时，宿主可回退使用关系里的 `prompt_hint`；这只是兼容行为，不代表关系与身份是同一个概念。当前选择与发行版限制见 [用户身份 RFC](../rfc/RFC_USER_IDENTITY_AND_REPLY_POST_PROCESSOR.md)。
 
 ## `memory_config.topic_weights` 与场景
 
-- `topic_weights` 的 **顶层键必须是场景 id**，且该场景须出现在以下至少一处：
-  - `manifest.json` 顶层 **`scenes`** 数组，或
-  - `distros/chat-pro/roles/{角色id}/scenes/` 下 **子目录名**（与 manifest 顶层 `scenes` 合并、去重后的场景 id 列表一致）。
-- 否则会加载失败，并返回 **中文错误说明**（便于修正 manifest）。
+`topic_weights` 的顶层键必须是已声明的场景 id。场景集合来自蓝图 `meta.scenes` 与角色包 `scenes/<scene_id>/` 子目录的合并结果，否则角色加载会失败。
 
-## 校验时机
+- Stable v4：写在 `runtime_config.memory_config.topic_weights`；
+- v2 兼容包：仍可从 `meta.memory_config.topic_weights` 读取；
+- legacy 包：按 [V1_TO_V2_MIGRATION.md](V1_TO_V2_MIGRATION.md) 迁移，不要与蓝图双写。
 
-在从目录加载角色（读取 `manifest.json` 并转为运行时 `Role`）时执行上述校验；校验失败时不会静默忽略，请根据提示修改包内配置。
+## 校验
+
+```powershell
+cargo run -p oclive-cli -- pack validate .\distros\chat-pro\roles\<角色 id>
+```
+
+默认校验会按蓝图声明的 v2/v3/v4 精确分派。关系 id、默认关系、数值范围、场景引用和身份模板文件错误都会被报告；校验失败不会被静默忽略。
+
+[English](../../creator-docs-en/role-pack/CREATOR_USER_RELATIONS.md)
