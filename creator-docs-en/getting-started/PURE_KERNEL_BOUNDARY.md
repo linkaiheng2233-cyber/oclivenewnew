@@ -50,7 +50,7 @@ Role data and slot policy are both portable inputs, but they are not the same co
 
 | Part | Description |
 |------|-------------|
-| **Kernel minimal role definition (target boundary)** | contract version, stable role id, display name/role version, non-empty core persona, and at least one relation plus its default id; personality defaults, scenes, knowledge, and memory seed are optional |
+| **Kernel minimal role definition (target boundary)** | Confirmed required values: contract version, stable role id, display name/role version, and a non-empty core persona. Personality defaults, scenes, knowledge, and memory seed are optional. Whether relations must be supplied or the kernel injects a stable neutral default remains a product decision; see [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
 | **Reference-host combined directory (current)** | **`pipeline.ocblueprint`** v2/v3/v4 combines `meta` with `slot_registry` / `runtime_config`, then the loader consumes persona, scene, knowledge, and product-extension files from the same directory. This is a reference implementation input, not the kernel canonical schema ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | **Effective backends** | Host blueprint `slot_registry` fold + **`set_session_slot_override`** + environment; outside the minimal role definition ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
 | **Relation & memory** | `role_runtime`, long-term memory via Repository; `memory` slot implements policy |

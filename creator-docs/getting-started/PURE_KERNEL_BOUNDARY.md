@@ -52,7 +52,7 @@ OCLive 真正要长期守住的最小核心是：
 
 | 组成部分 | 说明 |
 |----------|------|
-| **内核最小角色定义（目标边界）** | contract 版本、稳定角色 id、展示名/角色版本、非空核心人设、至少一个关系定义与默认关系 id；七维人格、场景、知识与记忆种子可选 |
+| **内核最小角色定义（目标边界）** | 已确定必需：contract 版本、稳定角色 id、展示名/角色版本、非空核心人设；七维人格、场景、知识与记忆种子可选。关系由角色必填还是由内核提供稳定中性默认仍待产品决定，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
 | **参考宿主组合目录（当前实现）** | **`pipeline.ocblueprint`** v2/v3/v4 把 `meta` 与 `slot_registry` / `runtime_config` 放在同一文件，再从同目录加载 `core_personality.txt`、场景、知识及产品扩展；这是参考实现输入，不是 kernel canonical schema（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | **有效后端** | 由宿主蓝图 `slot_registry`、**`set_session_slot_override`** 会话覆盖和环境变量合成；不属于最小角色定义（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **关系与记忆** | `role_runtime`、长期记忆等由内核经 Repository 读写；策略由 `memory` 等槽实现 |
