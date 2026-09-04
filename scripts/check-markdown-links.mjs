@@ -10,11 +10,13 @@
  * Usage:
  *   node scripts/check-markdown-links.mjs
  *   node scripts/check-markdown-links.mjs human-docs creator-docs
+ *   node scripts/check-markdown-links.mjs --tracked
  *   node scripts/check-markdown-links.mjs --self-test
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -32,6 +34,13 @@ const DEFAULT_TARGETS = [
   'creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md',
 ];
 const SKIPPED_SCHEMES = /^(?:https?:|mailto:|data:|app:|codex:|vscode:|file:)/i;
+const SKIPPED_DIRECTORY_NAMES = new Set([
+  'archive',
+  'node_modules',
+  'target',
+  'dist',
+  '.git',
+]);
 
 function listMarkdownFiles(targets, root = repoRoot) {
   const files = [];
@@ -46,20 +55,31 @@ function listMarkdownFiles(targets, root = repoRoot) {
       return;
     }
     for (const entry of fs.readdirSync(absolutePath, { withFileTypes: true })) {
-      if (
-        entry.name === 'archive' ||
-        entry.name === 'node_modules' ||
-        entry.name === 'target' ||
-        entry.name === 'dist' ||
-        entry.name === '.git' ||
-        entry.name.startsWith('.venv')
-      ) continue;
+      if (SKIPPED_DIRECTORY_NAMES.has(entry.name) || entry.name.startsWith('.venv')) continue;
       visit(path.join(absolutePath, entry.name));
     }
   }
 
   for (const target of targets) visit(path.resolve(root, target));
   return files.sort();
+}
+
+function listTrackedMarkdownFiles(root = repoRoot) {
+  const output = execFileSync('git', ['ls-files', '-z', '--', '*.md'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  return output
+    .split('\0')
+    .filter(Boolean)
+    .filter((relativePath) =>
+      relativePath
+        .split(/[\\/]/u)
+        .every((segment) => !SKIPPED_DIRECTORY_NAMES.has(segment) && !segment.startsWith('.venv')),
+    )
+    .map((relativePath) => path.resolve(root, relativePath))
+    .filter((absolutePath) => fs.existsSync(absolutePath))
+    .sort();
 }
 
 function stripFencedCode(markdown) {
@@ -141,8 +161,16 @@ const args = process.argv.slice(2);
 if (args.includes('--self-test')) {
   selfTest();
 } else {
-  const targets = args.length > 0 ? args : DEFAULT_TARGETS;
-  const { files, errors } = checkTargets(targets);
+  if (args.includes('--tracked') && args.length !== 1) {
+    throw new Error('--tracked cannot be combined with explicit scan targets');
+  }
+  const result = args.includes('--tracked')
+    ? (() => {
+        const files = listTrackedMarkdownFiles();
+        return { files, errors: files.flatMap((file) => localLinkErrors(file)) };
+      })()
+    : checkTargets(args.length > 0 ? args : DEFAULT_TARGETS);
+  const { files, errors } = result;
   if (errors.length > 0) {
     console.error(`check-markdown-links: FAIL (${errors.length} broken local links)`);
     for (const error of errors) console.error(`  - ${error}`);
