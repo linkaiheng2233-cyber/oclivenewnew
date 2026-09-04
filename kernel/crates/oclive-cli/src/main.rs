@@ -118,7 +118,7 @@ enum Commands {
     /// Benchmark standard vs monolith binaries (JSON report)
     #[command(hide = true)]
     Bench(commands::bench::BenchArgs),
-    /// Watch role pack manifest/settings changes
+    /// Watch role pack blueprint and legacy config changes
     Dev(dev_cmd::DevArgs),
     /// Role pack validate, create, publish (.oclivepack)
     Pack(pack_cmd::PackArgs),

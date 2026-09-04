@@ -28,20 +28,21 @@ pub struct DevArgs {
 }
 
 fn is_role_pack_hot_file(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|n| n.to_str())
-        .is_some_and(|n| n == "manifest.json" || n == "settings.json")
+    path.file_name().and_then(|n| n.to_str()).is_some_and(|n| {
+        n == "pipeline.ocblueprint" || n == "manifest.json" || n == "settings.json"
+    })
 }
 
-/// Resolve the role pack id from `roles/<id>/manifest.json` or `roles/<id>/settings.json`.
+/// Resolve the role pack id from a canonical or legacy config directly under `roles/<id>/`.
 fn role_pack_id_from_hot_file(path: &Path, roles_root: &Path) -> Option<String> {
     let rel = path.strip_prefix(roles_root).ok()?;
-    if rel.components().count() < 2 {
+    let mut components = rel.components();
+    let role_id = components.next()?;
+    components.next()?;
+    if components.next().is_some() {
         return None;
     }
-    rel.parent()
-        .and_then(|dir| dir.file_name())
-        .map(|s| s.to_string_lossy().into_owned())
+    Some(role_id.as_os_str().to_string_lossy().into_owned())
 }
 
 pub fn run(args: DevArgs) -> Result<()> {
@@ -61,7 +62,7 @@ pub fn run(args: DevArgs) -> Result<()> {
         );
     }
     eprintln!(
-        "[oclive dev] watching manifest.json / settings.json under {} recursively",
+        "[oclive dev] watching pipeline.ocblueprint / manifest.json / settings.json under {} recursively",
         watch_dir.display()
     );
     let (tx, rx) = channel();
@@ -115,4 +116,47 @@ pub fn run(args: DevArgs) -> Result<()> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hot_files_cover_current_blueprint_and_legacy_configs() {
+        for name in ["pipeline.ocblueprint", "manifest.json", "settings.json"] {
+            assert!(is_role_pack_hot_file(Path::new(name)), "{name}");
+        }
+        assert!(!is_role_pack_hot_file(Path::new("config.json")));
+    }
+
+    #[test]
+    fn role_id_requires_a_config_directly_under_the_role_root() {
+        let roles_root = Path::new("roles");
+        let current = roles_root.join("mumu").join("pipeline.ocblueprint");
+        let legacy = roles_root.join("mumu").join("settings.json");
+
+        assert_eq!(
+            role_pack_id_from_hot_file(&current, roles_root).as_deref(),
+            Some("mumu")
+        );
+        assert_eq!(
+            role_pack_id_from_hot_file(&legacy, roles_root).as_deref(),
+            Some("mumu")
+        );
+        assert_eq!(
+            role_pack_id_from_hot_file(
+                &roles_root
+                    .join("mumu")
+                    .join("blueprint")
+                    .join("pipeline.ocblueprint"),
+                roles_root,
+            ),
+            None
+        );
+        assert_eq!(
+            role_pack_id_from_hot_file(&roles_root.join("pipeline.ocblueprint"), roles_root),
+            None
+        );
+    }
 }

@@ -126,13 +126,13 @@ cargo run -p oclive-cli -- plugin create my-plugin
 
 ## `dev`: watch role pack directories
 
-Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). By default it recursively watches **`roles/**/manifest.json`** and **`roles/**/settings.json`**; use `--roles` to select another root. After a **500ms debounce** it prints:
+Run from an **existing** kernel / scaffold project root (with `Cargo.toml`). By default it recursively watches the current **`roles/*/pipeline.ocblueprint`** directly under each role root and continues to support legacy **`roles/*/manifest.json`** and **`roles/*/settings.json`**; use `--roles` to select another root. After a **500ms debounce** it prints:
 
 `[oclive dev] role pack '<id>' changed — reload`
 
 **`--reload-cmd`** runs a shell command after changes.
 
-**Current limitation:** `dev` does not yet watch the current `pipeline.ocblueprint` SSOT, so editing a v2/v3/v4 blueprint does not produce this signal. This is tracked as `D-CLI-BLUEPRINT-05`; it does not mean the host ignores blueprints.
+Edits to v2, v3, or v4 `pipeline.ocblueprint` files produce the same signal. The watcher only emits a development-time reload hint: it neither parses nor rewrites the blueprint and does not create a second role-pack schema.
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project

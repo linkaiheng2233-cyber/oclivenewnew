@@ -454,13 +454,13 @@ cargo run -p oclive-cli -- plugin manage --tui --role distros/chat-pro/roles/mum
 
 ## `dev`：角色包目录监听
 
-在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。默认使用 **notify 递归模式**监听 **`roles/**/manifest.json`** 与 **`roles/**/settings.json`**（可用 `--roles` 改根目录）；**500ms 防抖**后打印：
+在**已存在**的内核 / 脚手架项目根（含 `Cargo.toml`）执行。默认使用 **notify 递归模式**监听直接位于各角色根下的当前 **`roles/*/pipeline.ocblueprint`**，并继续兼容 **`roles/*/manifest.json`** 与 **`roles/*/settings.json`**（可用 `--roles` 改根目录）；**500ms 防抖**后打印：
 
 `[oclive dev] 检测到角色包 '<id>' 变更，已重载`
 
 **`--reload-cmd`** 可在变更后执行一条 shell 命令（如通知侧车重载）。
 
-**当前限制**：`dev` 尚未监听当前 SSOT `pipeline.ocblueprint`，因此修改 v2/v3/v4 蓝图不会触发上述提示；这是已登记的 `D-CLI-BLUEPRINT-05`，不要把它误解为宿主不加载蓝图。
+`pipeline.ocblueprint` 的 v2/v3/v4 修改都会触发同一提示。监听只负责发出开发期 reload 信号，不解析或改写蓝图，也不会建立第二套角色包 schema。
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project

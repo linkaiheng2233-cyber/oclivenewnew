@@ -90,7 +90,7 @@
 
 ## `oclive dev`（角色包目录监听）
 
-在**已生成**的内核 / 脚手架项目根（含 `Cargo.toml`）执行；默认监听 **`roles/`** 下递归变更，对角色配置文件变更防抖后打印提示，可选 `--reload-cmd` 触发自定义命令。实际监听文件集合以当前 CLI 实现为准；若只监听 legacy 双文件而未覆盖 `pipeline.ocblueprint`，属于工具技术债务，不代表蓝图不是 SSOT。
+在**已生成**的内核 / 脚手架项目根（含 `Cargo.toml`）执行；默认监听直接位于各角色根下的 `pipeline.ocblueprint`，并兼容 legacy `manifest.json` / `settings.json`。角色配置变更防抖后打印提示，可选 `--reload-cmd` 触发自定义命令；监听器只发信号，不解析或改写角色包。
 
 ```bash
 cargo run -p oclive-cli -- dev -o /path/to/project
