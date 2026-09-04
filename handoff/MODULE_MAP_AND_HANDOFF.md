@@ -68,7 +68,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | 层 | 含义 |
 |----|------|
 | **编译期** | 各槽 `trait` + `PluginHost`；换实现 **不改** `process_message` 顺序 |
-| **配置期** | v2/v3/v4 `slot_registry` 多实例 → 折叠 `PluginBackends`（同 `type` **last-wins**，`position` 大者优先）；新 Stable 包使用 v4 |
+| **配置期** | 当前参考宿主 v2/v3/v4 蓝图的 `slot_registry` 多实例 → 折叠 `PluginBackends`（同 `type` **last-wins**，`position` 大者优先）；该格式族的新 Stable 样例使用 v4，这条装配链不属于内核最小角色 contract |
 | **运行期** | `set_session_slot_override` 叠在有效快照上（**不写盘**） |
 
 ### 3.2 有效 backends 解析链

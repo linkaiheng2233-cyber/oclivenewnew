@@ -106,7 +106,7 @@ cd examples/oocp-test-suite && node run.mjs
 **完成标准**
 
 - [x] 在 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) 增加 **RobotSoulPack**（`--profile robot-soul`）
-- [x] 当时验收的 legacy 最小字段集（历史草案；当前新 Stable 包见 ROLE_PACK_SPEC 的 v4）：
+- [x] 当时验收的 legacy 最小字段集（历史草案；当前参考宿主蓝图格式族的 Stable 形状见 ROLE_PACK_SPEC 的 v4；两者都不是新定义的内核最小角色 contract）：
   - `manifest.json`：`id`、`name`、`version`、`min_runtime_version`
   - `settings.json`：`plugin_backends`（六槽显式 + 可选扩展键）、`interaction_mode`、`remote_presence`（可选）
   - `core_personality.txt` 或 `default_personality` 七维（二选一）

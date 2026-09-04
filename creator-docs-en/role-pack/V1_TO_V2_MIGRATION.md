@@ -1,6 +1,6 @@
 # Migrating role packs from v1 to v2 (A.I.Live)
 
-**A.I.Live** role packs have used **`pipeline.ocblueprint`** as their single configuration source since v2 (engineering codename **oclive**). This guide documents the existing migration command's **v2-compatible output**. That output remains supported, while new Stable packs target **v4**.
+The complete **A.I.Live reference host** has used **`pipeline.ocblueprint`** as the combined directory's single configuration source since v2 (engineering codename **oclive**). This guide documents the existing migration command's **v2-compatible output**. That output remains supported, while new Stable examples in this reference-host format family target **v4**. This migration format is not the kernel-minimal role contract.
 
 **Already on v2?** It can remain on v2. Use **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)** only when explicitly enabling the frozen dual-core Beta. For the current Stable configuration boundary, migrate to v4 following [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md): move engine fields from `meta` to top-level `runtime_config` and do not duplicate them.
 

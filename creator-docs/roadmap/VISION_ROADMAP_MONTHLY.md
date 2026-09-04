@@ -29,7 +29,7 @@
 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | 各子系统 DTO、蓝图 `slot_registry` 与 legacy `settings.json` 枚举；**已补充**「`send_message` 编排顺序」与 `chat_engine` / `PluginHost` 对照。 |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | 包版本、`schema_version`、`min_runtime_version`（预留）、未知字段策略；**已补充**第 1 月与 `plugin_backends` 的对照。 |
 | Rust 门面 | 以 **[`PluginHost`](../../kernel/crates/oclive_kernel_host/src/domain/ports/plugin_host.rs)** 为完整参考宿主，绑定 memory / emotion / legacy event / prompt / llm / agent 六个稳定端口；主流程拥有调用、合并、提交与隔离权。具体 trait 与 DTO 见 PLUGIN_V1。 |
-| `pipeline.ocblueprint` | 当前 v2/v3/v4 包以 **`slot_registry`** 声明六槽实例与 backend，新 Stable 包使用 v4；宿主把有效注册表折叠成六键 `PluginBackends` 兼容视图。legacy `settings.json.plugin_backends` 仅作旧包迁移；`builtin_v2` 仅为读兼容 alias。 |
+| `pipeline.ocblueprint` | 当前参考宿主的 v2/v3/v4 蓝图以 **`slot_registry`** 声明六槽实例与 backend，该格式族的新 Stable 样例使用 v4；宿主把有效注册表折叠成六键 `PluginBackends` 兼容视图。它不是内核最小角色 contract；legacy `settings.json.plugin_backends` 仅作旧包迁移，`builtin_v2` 仅为读兼容 alias。 |
 
 **验收**：全量 `cargo test`、`npm run build`；对话与好感等行为与本月前**无回归**（或仅有可说明的显式变更）。
 

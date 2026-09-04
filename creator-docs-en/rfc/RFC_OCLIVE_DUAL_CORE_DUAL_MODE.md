@@ -37,4 +37,4 @@ Do not conflate **build modes** with **runtime cores**.
 
 **Progress**: P1–P5 are merged, including validation, `DualPipelineRunner`, host gating, the CLI scaffold, OOCP coverage, and the Monolith template. The feature remains a **frozen v3 Beta, default off**. See [DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md) · [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md).
 
-Current delivery uses **Stable v4** for new packs, keeps v2 compatible, and reserves v3 for the opt-in dual-core Beta.
+Current reference-host blueprint delivery uses **Stable v4** for new packs in that format family, keeps v2 compatible, and reserves v3 for the opt-in dual-core Beta. This does not define the kernel-minimal role contract.

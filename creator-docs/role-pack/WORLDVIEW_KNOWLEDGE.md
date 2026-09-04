@@ -21,7 +21,7 @@
 ```
 
 - **`glob`**：须以 **`knowledge/`** 开头；当前实现递归枚举 `knowledge/` 下全部 `.md`（与 `**/*.md` 约定一致）。
-- **legacy 兼容**：没有 `pipeline.ocblueprint` 的旧包仍读取 manifest/settings；其中 `settings.json.knowledge` 覆盖 legacy manifest 的同名字段。新 Stable v4 包不要同时维护第二份配置。
+- **legacy 兼容**：没有 `pipeline.ocblueprint` 的旧参考宿主组合目录仍读取 manifest/settings；其中 `settings.json.knowledge` 覆盖 legacy manifest 的同名字段。该参考宿主蓝图格式族的新 Stable v4 包不要同时维护第二份配置；这不约束其它发行版的产品包格式。
 
 ## Markdown 与 YAML front matter
 

@@ -201,7 +201,7 @@ cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:or
 1. **浏览配方**：`oclive init --list-templates` 或交互式「选择场景模板」；再 `oclive init --template robot-soul -o ./my-doll`（玩偶）、`robot-gateway`（网关 + MCP 骨架）、`dialogue-only`、`headless-api`、`library-embed`。
 2. **覆盖细节**（可选）：显式 `--preset` / `--monolith` / `--monolith-preset` / `--with-role-pack` / `--with-example-plugin` **优先于**模板默认值。
 3. **接真内核**：`--kernel-source` 写入 path 依赖；`kernel_server` 在生成工程内 `cargo run -- --api`，`library-embed` 则 `cargo check` 并通过 `OcliveKernel` 接入自有 `main`。
-4. **换灵魂**：编辑生成工程的 `roles/<id>/` 或用 `oclive pack create`；新 Stable 包写 v4 `pipeline.ocblueprint`。当前 `oclive dev` 只监听 legacy `manifest.json` / `settings.json`，蓝图监听缺口见 `D-CLI-BLUEPRINT-05`。
+4. **换灵魂**：编辑生成工程的 `roles/<id>/` 或用 `oclive pack create`；后者当前生成参考宿主组合目录，该格式族的 Stable 样例写 v4 `pipeline.ocblueprint`。`oclive dev` 已同时监听蓝图文件与 legacy `manifest.json` / `settings.json`，只发 reload 信号而不解析或改写；内核最小角色 contract 的生成/识别缺口见 `D-CLI-BLUEPRINT-05`。
 5. **换实现**：编辑蓝图 `slot_registry`、安装 `plugins/<id>/`、或启动 Remote 侧车（见 [PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)）。legacy 包才修改 `settings.json.plugin_backends`。
 6. **要性能**：`robot-soul` 模板默认启用 Monolith；改 `monolith.toml` 后 `oclive build`。
 
@@ -209,7 +209,7 @@ cargo run -p oclive-cli -- --experimental collab init --remote git@github.com:or
 
 ## 与蓝图（`pipeline.ocblueprint`）的关系
 
-- **蓝图是当前角色运行配置 SSOT**：v2/v3/v4 的 `slot_registry` 选择六槽实例与后端；新 Stable 包使用 v4。宿主加载并折叠这些配置，但蓝图**不拥有**主流程顺序。
+- **蓝图是当前参考宿主的角色运行配置 SSOT**：v2/v3/v4 的 `slot_registry` 选择六槽实例与后端；该格式族的新 Stable 样例使用 v4。宿主加载并折叠这些配置，但蓝图**不拥有**主流程顺序，也不是内核最小角色 contract。
 - **主编排由内核负责**：`process_message` / `turn_pipeline` 定义阶段、调用、合并、提交与故障边界；旧 `steps` / `entry` / `module_relations` DSL 已移除并会被校验拒绝。
 - **校验入口**：`oclive pack validate <角色根>` 或试验命令 `oclive blueprint validate <pipeline.ocblueprint>` 都按声明的 `schema_version` 精确分派；它们只读校验，不改变运行时。
 - **与 Monolith 正交**：蓝图选择运行时实现，`monolith.toml` 选择编译期焊接范围。若确需改变阶段顺序，应按 Breaking/RFC 建立明确变体；`init --pipeline` 当前只生成 `docs/PIPELINE_CUSTOM.md` 与顺序常量，不能被描述为稳定内核的可变编排契约。

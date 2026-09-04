@@ -1,6 +1,6 @@
 # Migrating from v2 to v3 blueprint
 
-**Audience:** Authors on `schema_version: 2` who explicitly need the **frozen dual-core Beta**. Ordinary Stable packs that need `runtime_config` should upgrade directly to **v4**, not pass through v3. This manual Beta opt-in takes about 10 minutes.
+**Audience:** Reference-host blueprint authors on `schema_version: 2` who explicitly need the **frozen dual-core Beta**. Ordinary Stable packs in this blueprint family that need `runtime_config` should upgrade directly to **v4**, not pass through v3. This manual Beta opt-in takes about 10 minutes; it does not define the kernel-minimal role contract.
 
 **Normative spec:** [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · validation: `oclive_validation::blueprint_v3` · dual-core: [DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md)
 
@@ -26,7 +26,7 @@ Batch CLI migration (Q18) is **deferred**; copy v2 pack → edit JSON → `pack 
 
 1. **Back up** `distros/chat-pro/roles/<id>/`.
 2. Set **`"schema_version": 3`**.
-3. Add the dual-core Beta **`runtime_config`** (move system fields from `meta`). If dual-core is not needed, stop and migrate directly to Stable v4:
+3. Add the dual-core Beta **`runtime_config`** (move system fields from `meta`). If dual-core is not needed, stop and migrate directly to Stable v4 in this reference-host blueprint family:
 
 ```json
 "runtime_config": {
@@ -35,7 +35,7 @@ Batch CLI migration (Q18) is **deferred**; copy v2 pack → edit JSON → `pack 
 }
 ```
 
-Compatibility note: v3 with dual-core disabled or omitted still loads on the Stable path, but that is a zero-regression guarantee rather than the recommended new-pack form. Use v4 when dual-core is not enabled.
+Compatibility note: v3 with dual-core disabled or omitted still loads on the Stable path, but that is a zero-regression guarantee rather than the recommended new-pack form in this reference-host blueprint family. Use v4 when dual-core is not enabled.
 
 4. **Enable the Beta:** `"dual_core": { "enabled": true }` plus non-empty `pipeline.experimental` (see [DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md)).
 5. **Optional** `zone` on `slot_registry` entries.
@@ -67,7 +67,7 @@ Scaffold: `cargo run -p oclive-cli -- init --dual-core -o ./my-kernel`
 
 ## 5. FAQ
 
-**Must I upgrade to v3?** No. New ordinary Stable packs use v4; existing v2 packs remain compatible. Upgrade to v3 only for the frozen dual-core Beta.
+**Must I upgrade to v3?** No. New ordinary Stable packs in the current reference-host blueprint family use v4; existing v2 packs remain compatible. Upgrade to v3 only for the frozen dual-core Beta.
 
 **No `migrate-v2-v3` CLI?** Q18 deferred; use manual steps or `init --dual-core` template.
 

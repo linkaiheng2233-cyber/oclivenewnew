@@ -8,7 +8,7 @@
 
 以下数据摘自 **`creator-docs/development/LIGHTWEIGHT_PROFILE.md` §6.7**（**Windows x86_64**，**Release**，采样日期 **2026-05-20**；`cargo bloat --release -n 8`，可执行文件为 `oclivenewnew-tauri.exe`，`target-dir` 以外置配置为准）。
 
-**v2 兼容样例角色包**（当前 `mumu`：`distros/chat-pro/roles/mumu/pipeline.ocblueprint`；新 Stable 包用 v4）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
+**参考宿主 v2 兼容样例角色包**（当前 `mumu`：`distros/chat-pro/roles/mumu/pipeline.ocblueprint`；该蓝图格式族的新 Stable 样例用 v4）：对话热路径仍为 `process_message` → `co_present`，**不**因 `slot_registry` 多实例而增加蓝图 `steps[]` 调度；包体与 `.text` 与 v1 双文件形态同量级（差异主要来自 `meta`/`slot_registry` JSON 体积，非二次编排引擎）。
 
 | 指标 | 数值 |
 |------|------|

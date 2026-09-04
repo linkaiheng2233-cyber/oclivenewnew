@@ -29,7 +29,7 @@ This document breaks one product assembly—**minimal tool kernel + usable refer
 | `creator-docs/plugin-and-architecture/PLUGIN_V1.md` | Subsystem DTOs, blueprint `slot_registry`, and legacy `settings.json` enums; orchestration order vs `chat_engine` / `PluginHost`. |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | Pack version, `schema_version`, `min_runtime_version`, unknown-field policy. |
 | Rust facades | The complete reference **`PluginHost`** binds six stable ports: memory, emotion, legacy event, prompt, LLM, and agent. The main path owns call, merge, commit, and isolation authority. |
-| `pipeline.ocblueprint` | Current v2/v3/v4 packs declare instances and backends in **`slot_registry`**; new Stable packs use v4. The host folds the effective registry into a six-key `PluginBackends` compatibility view. `settings.json.plugin_backends` is legacy migration input only. |
+| `pipeline.ocblueprint` | Current reference-host v2/v3/v4 blueprints declare instances and backends in **`slot_registry`**; new Stable examples in that format family use v4. The host folds the effective registry into a six-key `PluginBackends` compatibility view. This is not the kernel-minimal role contract; `settings.json.plugin_backends` is legacy migration input only. |
 
 **Acceptance**: Full `cargo test`, `npm run build`; dialogue and favor behavior unchanged unless explicitly documented.
 

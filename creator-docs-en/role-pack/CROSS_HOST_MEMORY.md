@@ -43,7 +43,7 @@ Full format: [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md). Summary:
 
 | Category | Path | Notes |
 |----------|------|-------|
-| Entry | `pipeline.ocblueprint` (v2/v3/v4; new Stable packs use v4) | Identity, `meta`, blueprint `slot_registry` |
+| Current reference-host entry | `pipeline.ocblueprint` (v2/v3/v4; new Stable examples in this family use v4) | Identity, `meta`, host-assembly `slot_registry`; not the kernel-minimal carrier |
 | Behavior policy | `config.json` | `time` / `memory` / `relation` / `chat_storage`, etc. |
 | Prompts | `prompts/` | System prompt, openings |
 | Scenes | `scenes/{scene_id}/` | `scene.json`, descriptions, assets |

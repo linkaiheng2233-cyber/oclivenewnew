@@ -36,7 +36,7 @@
 | 人格、记忆种子与身份文件 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) · [角色包创作流程](CREATOR_WORKFLOW.md) |
 | Chat Pro 成人角色扩展 | [ROLE_PACK_SPEC · `adult_extension.json`](../role-pack/ROLE_PACK_SPEC.md#chat-pro-成人角色扩展adult_extensionjson--可选) |
 | 世界观与知识文件 | [WORLDVIEW_KNOWLEDGE](../role-pack/WORLDVIEW_KNOWLEDGE.md) |
-| 包版本与迁移 | [PACK_VERSIONING](../role-pack/PACK_VERSIONING.md) · [legacy→v2 兼容产物](../role-pack/V1_TO_V2_MIGRATION.md) · [v2→冻结双核 v3](../role-pack/V2_TO_V3_MIGRATION.md)；普通新 Stable 包用 v4 |
+| 参考宿主组合目录的版本与迁移 | [PACK_VERSIONING](../role-pack/PACK_VERSIONING.md) · [legacy→v2 兼容产物](../role-pack/V1_TO_V2_MIGRATION.md) · [v2→冻结双核 v3](../role-pack/V2_TO_V3_MIGRATION.md)；该蓝图格式族的普通新 Stable 包用 v4，非内核最小角色 contract |
 | 编写器兼容 | [COMPATIBILITY](../COMPATIBILITY.md) |
 
 ## 开发者专题

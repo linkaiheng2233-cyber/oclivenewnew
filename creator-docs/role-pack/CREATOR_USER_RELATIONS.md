@@ -8,7 +8,7 @@
 - **用户身份模板**：可选 `user_identities/`，描述“用户是谁”，并可映射到一个关系；
 - **当前选择**：宿主把全局/场景身份 id 持久化在 SQLite 角色运行态，不写回角色包，也不是六槽 SessionCache 覆盖。
 
-legacy `manifest.json.user_relations` 只是 `meta.relations` 的旧名字，以下示例以新 Stable 包的蓝图写法为准。
+legacy `manifest.json.user_relations` 只是 `meta.relations` 的旧名字，以下示例以当前参考宿主蓝图格式族的新 Stable 写法为准；这不规定其它发行版的产品包布局。
 
 ## 关系键与展示名
 

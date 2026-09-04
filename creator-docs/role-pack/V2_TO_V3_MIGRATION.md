@@ -1,6 +1,6 @@
 # 从 v2 升级到 v3 蓝图
 
-**目标读者**：已使用 `schema_version: 2` 的 `pipeline.ocblueprint`、明确需要启用**冻结双核 Beta** 的蓝图作者。普通 Stable 包需要 `runtime_config` 时应升级到 **v4**，不要经过 v3；按本文手动进入双核 Beta，约 10 分钟可完成校验与试聊。
+**目标读者**：已使用 `schema_version: 2` 的 `pipeline.ocblueprint`、明确需要启用**冻结双核 Beta** 的参考宿主蓝图作者。该蓝图格式族的普通 Stable 包需要 `runtime_config` 时应升级到 **v4**，不要经过 v3；按本文手动进入双核 Beta，约 10 分钟可完成校验与试聊。本文不定义内核最小角色 contract。
 
 **权威格式**：[ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) · 校验：`oclive_validation::blueprint_v3` · 双核：[DEVELOPER_GUIDE.md](../dual-core/DEVELOPER_GUIDE.md)
 
@@ -40,7 +40,7 @@ Copy-Item -Recurse distros\chat-pro\roles\my_role distros\chat-pro\roles\my_role
 
 ### 步骤 3：添加双核 Beta 的 `runtime_config`
 
-将原 `meta` 中的**系统字段**迁入 `runtime_config` 并声明 `dual_core`（v3 校验会读此段；v2 文件若含 `runtime_config` 仅警告）。如果并不需要双核，请停止本流程并直接迁移到 Stable v4：
+将原 `meta` 中的**系统字段**迁入 `runtime_config` 并声明 `dual_core`（v3 校验会读此段；v2 文件若含 `runtime_config` 仅警告）。如果并不需要双核，请停止本流程并直接迁移到该参考宿主蓝图格式族的 Stable v4：
 
 ```json
 "runtime_config": {
@@ -54,7 +54,7 @@ Copy-Item -Recurse distros\chat-pro\roles\my_role distros\chat-pro\roles\my_role
 
 字段含义见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md) 与 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §3.3。
 
-**兼容说明**：v3 在 `dual_core` 关闭或省略时仍可加载并走 Stable，但这只是零回归保障，不是新包推荐形态；不启用双核就应使用 v4。
+**兼容说明**：v3 在 `dual_core` 关闭或省略时仍可加载并走 Stable，但这只是零回归保障，不是该参考宿主蓝图格式族的新包推荐形态；不启用双核就应使用 v4。
 
 ### 步骤 4：启用双核与 `pipeline`
 
@@ -133,7 +133,7 @@ cargo run -p oclive-cli -- doctor
 ## 5. FAQ
 
 **Q：必须升到 v3 吗？**  
-A：否。Stable 新包应使用 v4；只有明确启用双核 Beta 时才升 v3。现有 v2 包继续兼容且不会自动改写。
+A：否。当前参考宿主蓝图格式族的 Stable 新包应使用 v4；只有明确启用双核 Beta 时才升 v3。现有 v2 包继续兼容且不会自动改写。
 
 **Q：v2 里的 `meta.memory_config` 不迁会怎样？**  
 A：v3 校验优先 `runtime_config`；仅留 `meta` 时宿主可能仍兼容读，但 `pack validate` 与编写器目标视图会以 `runtime_config` 为准。

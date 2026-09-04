@@ -759,7 +759,7 @@ auto_sync: false
 
 **与 schema / manifest 的关系**
 
-- **当前权威格式**为本 SPEC 的 `pipeline.ocblueprint` + `slot_registry`：新 Stable 包用 `schema_version: 4`，现有 v2 保持兼容，v3 冻结为双核 Beta；包形状与校验以本 SPEC §1–§2 / §6 为准。
+- **当前参考宿主组合目录的权威格式**为本 SPEC 的 `pipeline.ocblueprint` + `slot_registry`：该格式族的新 Stable 包用 `schema_version: 4`，现有 v2 保持兼容，v3 冻结为双核 Beta；包形状与校验以本 SPEC §1–§2 / §6 为准。它不是 kernel minimal role contract。
 - **Legacy** 仍可用 `manifest.json` + `settings.json`；字段白名单、`min_runtime_version`（宿主 semver 门槛）、未知键策略见 [PACK_VERSIONING.md](PACK_VERSIONING.md)，勿在本节约表复述。
 - JSON Schema / CLI：`oclive pack validate`（见 §6）；实现以 `oclive_validation` 为准。
 

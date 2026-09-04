@@ -104,7 +104,7 @@ cd examples/oocp-test-suite && node run.mjs
 **Done when**
 
 - [x] Add **RobotSoulPack** (`--profile robot-soul`) to [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)
-- [x] Legacy minimum accepted by that historical phase (current new Stable packs use the v4 shape in ROLE_PACK_SPEC):
+- [x] Legacy minimum accepted by that historical phase (the current reference-host blueprint family's Stable shape is v4 in ROLE_PACK_SPEC; neither is the newly defined kernel-minimal role contract):
   - `manifest.json`: `id`, `name`, `version`, `min_runtime_version`
   - `settings.json`: explicit `plugin_backends` (six slots + optional extensions), `interaction_mode`, optional `remote_presence`
   - `core_personality.txt` or seven-dim `default_personality` (either/or)

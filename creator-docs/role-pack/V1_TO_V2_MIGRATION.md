@@ -1,8 +1,8 @@
 # 从 v1 迁移到 v2 角色包（A.I.Live）
 
-**A.I.Live** 角色包自 v2 起以 **`pipeline.ocblueprint`** 为唯一配置中枢（工程代号 **oclive**）。本文记录现有迁移命令生成的 **v2 兼容产物**；它仍受支持，但新建 Stable 包的当前目标是 **v4**。
+**A.I.Live 完整参考宿主**自 v2 起以 **`pipeline.ocblueprint`** 作为组合目录的唯一配置中枢（工程代号 **oclive**）。本文记录现有迁移命令生成的 **v2 兼容产物**；它仍受支持，而该参考宿主格式族的新建 Stable 样例以 **v4** 为目标。这个迁移格式不是内核最小角色 contract。
 
-**已升级到 v2？** 可以继续使用。只有明确启用冻结双核 Beta 时才进入 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**；普通包若要采用当前 Stable 配置边界，应按 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 升为 v4，并把引擎字段从 `meta` 移到顶层 `runtime_config`，不得双写。
+**已升级到 v2？** 可以继续使用。只有明确启用冻结双核 Beta 时才进入 **[V2_TO_V3_MIGRATION.md](V2_TO_V3_MIGRATION.md)**；普通参考宿主蓝图包若要采用该格式族当前的 Stable 配置边界，应按 [ROLE_PACK_SPEC.md](ROLE_PACK_SPEC.md) 升为 v4，并把引擎字段从 `meta` 移到顶层 `runtime_config`，不得双写。
 
 **目标读者**：仍使用 `manifest.json` + `settings.json` 的创作者。按本文操作，**约 10 分钟**可完成迁移与校验。
 
@@ -149,5 +149,5 @@ cargo run -p oclive-cli -- pack validate distros\chat-pro\roles\my_role
 
 | 日期 | 说明 |
 |------|------|
-| 2026-09-04 | 明确迁移命令输出 v2 兼容包；新 Stable 目标为 v4，v3 仅限冻结双核 Beta。 |
+| 2026-09-04 | 明确迁移命令输出参考宿主 v2 兼容包；该蓝图格式族的新 Stable 目标为 v4，v3 仅限冻结双核 Beta。 |
 | 2026-05-20 | 初版：v2 SSOT、`pack migrate-to-blueprint`、校验与 FAQ。 |

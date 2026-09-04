@@ -8,7 +8,7 @@ This page is for **external disclosure**: Release **binary size sampling**, what
 
 Figures below are copied from **[`LIGHTWEIGHT_PROFILE.md`](../development/LIGHTWEIGHT_PROFILE.md) §6.7** (**Windows x86_64**, **Release**, sampled **2026-05-20**; `cargo bloat --release -n 8`, `oclivenewnew-tauri.exe`; external `target-dir` per repo config).
 
-**v2 compatibility sample** (current `mumu`: `distros/chat-pro/roles/mumu/pipeline.ocblueprint`; new Stable packs use v4): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
+**Reference-host v2 compatibility sample** (current `mumu`: `distros/chat-pro/roles/mumu/pipeline.ocblueprint`; new Stable examples in that blueprint family use v4): the chat hot path remains `process_message` → `co_present`; no extra blueprint `steps[]` scheduler. Binary size is in the same ballpark as legacy twin-file packs.
 
 | Metric | Value |
 |--------|--------|

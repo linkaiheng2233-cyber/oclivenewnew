@@ -5,7 +5,7 @@
 | 状态 | **Opt-in Beta（默认关闭）** — P2–P5 主链路已入库，仍以 Stable 为默认交付面 |
 | 入口 | **`oclive init --dual-core`**（显式开启；**默认关闭**） |
 | 与 Monolith | **正交**：Monolith 是**编译期**焊接；双核是**运行时**双编排 + 降级 |
-| 与蓝图版本 | 使用同一文件名 **`pipeline.ocblueprint`**；仅冻结的 v3 双核 Beta 增加 `zone` + `pipeline` 段，Stable 新包使用 v4，v2 保持兼容（见 §4） |
+| 与蓝图版本 | 使用当前参考宿主蓝图的同一文件名 **`pipeline.ocblueprint`**；仅冻结的 v3 双核 Beta 增加 `zone` + `pipeline` 段，该格式族的 Stable 新包使用 v4，v2 保持兼容（见 §4） |
 | 受众 | 创作者 / 集成方 / 内核开发者；**普通终端用户无感**（未开启 `--dual-core` 时行为与今日一致） |
 
 **相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[历史 v2 蓝图 RFC](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史设计总结）、[历史术语对齐记录](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)。
@@ -42,7 +42,7 @@
 
 ## 2. 入口控制：默认关闭
 
-- **默认**：与今日相同 — 仅 **Stable 路径**（v2 兼容或 v4 Stable 单编排，`SlotResolver` → `PluginHost` → `process_message`）。
+- **默认**：与今日相同 — 仅 **Stable 路径**（参考宿主蓝图 v2 兼容或 v4 Stable 单编排，`SlotResolver` → `PluginHost` → `process_message`）。
 - **显式开启**：脚手架 **`oclive init --dual-core`** 在冻结 v3 **蓝图**写入 **`runtime_config.dual_core.enabled: true`**（当前已实现；与 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) 一致）。
 - **非角色包字段**：初级创作者角色包 **不得** 单独开启双核；开关仅蓝图 / 宿主管理员。
 - **legacy `settings.json`**：**不**承载 `dual_core`。
@@ -63,7 +63,7 @@
 
 ## 4. 冻结 v3 蓝图形状（已实现 · 非 Stable 默认）
 
-> v2 只有 `meta` + `slot_registry`（+ 可选 `groups`），无 `zone` / `pipeline`；下面是当前冻结 v3 双核 Beta 形状。新 Stable 包使用 v4，且 v4 不继承 v3 的 `zone` / `pipeline` / `dual_core`。
+> 当前参考宿主蓝图的 v2 只有 `meta` + `slot_registry`（+ 可选 `groups`），无 `zone` / `pipeline`；下面是冻结 v3 双核 Beta 形状。该格式族的新 Stable 包使用 v4，且 v4 不继承 v3 的 `zone` / `pipeline` / `dual_core`。
 
 ```json
 {
@@ -198,7 +198,7 @@ Monolith **不** 替代双核；双核 **不** 替代 Monolith。二者正交。
 | **P4 集成** | `process_message` 接线、OOCP 降级场景 | P2 |
 | **P5 Monolith** | `--monolith --dual-core` 焊接双 pipeline | Monolith RFC + P2 |
 
-**当前发布**：P1–P5 已实现并入库，但运行时双核仍是**仅 v3、默认关闭的冻结 Beta**。默认交付面是 Stable v4（v2 继续兼容）；实现与验收摘要见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
+**当前发布**：P1–P5 已实现并入库，但运行时双核仍是**仅 v3、默认关闭的冻结 Beta**。当前参考宿主蓝图的默认交付面是 Stable v4（v2 继续兼容）；实现与验收摘要见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)。
 
 ---
 

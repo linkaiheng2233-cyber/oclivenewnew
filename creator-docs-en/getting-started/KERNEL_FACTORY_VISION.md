@@ -167,7 +167,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 1. Browse recipes: `oclive init --list-templates` or the interactive template picker; then pick `robot-soul`, `robot-gateway` (MCP scaffold), `dialogue-only`, `headless-api`, or `library-embed`.
 2. **Override** explicitly if needed: `--preset`, `--monolith`, `--monolith-preset`, `--with-role-pack`, `--with-example-plugin` beat template defaults.
 3. **Wire the real kernel**: `--kernel-source <oclivenewnew root>`; run `cargo run -- --api` for `kernel_server`, or `cargo check` and call `OcliveKernel` from your own `main` for `library-embed`.
-4. **Swap soul**: edit generated-project `roles/<id>/` or use `oclive pack create`; new Stable packs use v4 `pipeline.ocblueprint`. Today `oclive dev` watches only legacy manifest/settings; see `D-CLI-BLUEPRINT-05`.
+4. **Swap soul**: edit generated-project `roles/<id>/` or use `oclive pack create`. The latter currently creates a reference-host combined directory whose Stable examples use v4 `pipeline.ocblueprint`. `oclive dev` now watches both blueprint files and legacy manifest/settings, emitting reload signals without parsing or rewriting them; see `D-CLI-BLUEPRINT-05` for the remaining kernel-minimal generation/recognition gap.
 5. **Swap implementations**: edit blueprint `slot_registry`, install `plugins/<id>/`, or run a Remote sidecar ([PLUGIN_AUTHOR_LEARNING_PATH.md](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md)). Only legacy packs edit `settings.json.plugin_backends`.
 6. **Need speed**: `robot-soul` / `robot-gateway` enable Monolith by default; edit `monolith.toml` then `oclive build`.
 
@@ -175,7 +175,7 @@ See [OCLIVE_CLI_GUIDE.md](../cli/OCLIVE_CLI_GUIDE.md) (Chinese guide includes Uâ
 
 ## Blueprint (`pipeline.ocblueprint`)
 
-- **Current role-configuration SSOT:** v2/v3/v4 `slot_registry` selects six-slot instances and backends; new Stable packs use v4. The host loads and folds this configuration, but the blueprint does **not** own stage order.
+- **Current reference-host role-configuration SSOT:** v2/v3/v4 `slot_registry` selects six-slot instances and backends; new Stable examples in this format family use v4. The host loads and folds this configuration, but the blueprint neither owns stage order nor defines the kernel-minimal role contract.
 - **Kernel-owned orchestration:** `process_message` / `turn_pipeline` defines phases, calls, merges, commits, and fault boundaries. Removed `steps` / `entry` / `module_relations` DSL fields are rejected by validation.
 - **Validation:** `oclive pack validate <role root>` and experimental `oclive blueprint validate <pipeline.ocblueprint>` dispatch exact `schema_version`; both are read-only.
 - **Orthogonal to Monolith:** the blueprint selects runtime implementations, while `monolith.toml` selects compile-time welding. `init --pipeline` currently generates `docs/PIPELINE_CUSTOM.md` and an order constant; it is not a stable variable-orchestration contract for the full host.

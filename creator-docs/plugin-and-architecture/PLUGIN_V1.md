@@ -27,7 +27,7 @@
 
 ## 设计约束
 
-- **可替换后端 = 编译期枚举 + 蓝图实例**：**v2/v3/v4** 通过 **`slot_registry`** 声明多实例（新 Stable 包使用 v4）；**legacy v1** 通过 `settings.json` → `plugin_backends`（勿在新包中使用）。无动态 `cdylib`。
+- **可替换后端 = 编译期枚举 + 蓝图实例**：当前参考宿主的 **v2/v3/v4** 蓝图通过 **`slot_registry`** 声明多实例（该格式族的新 Stable 样例使用 v4）；**legacy v1** 通过 `settings.json` → `plugin_backends`（勿在新蓝图包中使用）。这描述宿主能力装配，不是内核最小角色 contract；无动态 `cdylib`。
 - **默认实现**即当前内置逻辑；换后端时 **API 字段名不变**（尤其 `SendMessageResponse.reply`）。
 - **Remote**：宿主已实现 **HTTP JSON-RPC**（见 [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md)）；未配置 `OCLIVE_REMOTE_*` URL 时回退 **builtin**（或进程内 LLM）并写日志。
 - **Directory**：由宿主扫描插件根下的 `*/manifest.json`，以子进程提供与 Remote 相同的 JSON-RPC wire；当前蓝图实例用 `plugin` / `plugins` 指向 `manifest.id`，legacy v1 才用 `plugin_backends.directory_plugins`（[DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md)）。

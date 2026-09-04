@@ -23,7 +23,7 @@ How **co-present main dialogue** loads Markdown under `distros/chat-pro/roles/{r
 ```
 
 - **`glob`:** must start with **`knowledge/`**; implementation recursively enumerates all `.md` under `knowledge/` (consistent with `**/*.md` convention).
-- **Legacy compatibility:** packs without `pipeline.ocblueprint` still read manifest/settings, where `settings.json.knowledge` overrides the legacy manifest field. New Stable v4 packs should not maintain a second copy.
+- **Legacy compatibility:** legacy reference-host combined directories without `pipeline.ocblueprint` still read manifest/settings, where `settings.json.knowledge` overrides the legacy manifest field. New Stable v4 packs in that reference-host blueprint family should not maintain a second copy; this does not constrain another distro's product-pack format.
 
 ## Markdown and YAML front matter
 
