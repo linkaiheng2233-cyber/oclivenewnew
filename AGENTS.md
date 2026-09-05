@@ -26,7 +26,7 @@
 
 **文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
 
-**规划与执行委派**：强模型父 Agent 与 `gpt-5.6-luna` worker 的边界见 [AI_CHANGE_BOUNDARIES.md §强模型规划与经济模型执行](handoff/AI_CHANGE_BOUNDARIES.md#强模型规划与经济模型执行)。
+**规划与执行委派**：第二条模型分工流水线入口见 [oclive-adaptive-pipeline](handoff/workflows/oclive-adaptive-pipeline/SKILL.md)；权责总则见 [AI_CHANGE_BOUNDARIES.md §强模型规划与经济模型执行](handoff/AI_CHANGE_BOUNDARIES.md#强模型规划与经济模型执行)。
 
 **关联改动摘要（G17）**：按能力核对生产者 → 契约 → 适配/权限 → 消费者 → 状态/回退 → 测试；最小改动面不等于只改单端。涉及 Chat Pro / 目录插件 / 插槽时跑 `npm run check:module-compat`。
 

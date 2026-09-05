@@ -61,6 +61,8 @@ description: >-
 
 见 [`AI_READING_INDEX` §9](../../../handoff/AI_READING_INDEX.md#9-按任务选阅读路径)。技术债收口 → 本 Skill + TECHNICAL_DEBT + AI_VERIFICATION_PROTOCOL。
 
+第二条互补模型分工入口：[`oclive-adaptive-pipeline`](../../../handoff/workflows/oclive-adaptive-pipeline/SKILL.md)；本工程门禁与 S/M/L 仍由本 Skill 负责。
+
 ## OCLive 阶段增量
 
 ### ① Plan
