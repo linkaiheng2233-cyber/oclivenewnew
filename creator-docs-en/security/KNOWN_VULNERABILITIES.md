@@ -12,12 +12,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-08-21** (local `cargo audit` after the compatible-range dependency refresh; 1,225 advisories loaded) |
+| **Last scan date** | **2026-09-05** (local `cargo audit` after adding the optional `media-png` dependency edge; 1,239 advisories loaded, 698 dependency entries scanned) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **7** (`gdkx11`/GTK3 · `glib` · five `unic-*` entries; `spin` is now the non-yanked 0.9.9, while other documented warnings remain tracked by the ignore policy) |
+| **Warning-level count** | **8** (`gdkx11`/GTK3 · `glib` · five `unic-*` entries · yanked `chacha20` 0.10.1; existing ignore policy unchanged) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+This lockfile change only adds the optional `oclive_validation → png 0.18.1` dependency edge, with no package additions/removals or version upgrades. `media-png` is disabled by default and absent from the minimum logical contract's default dependency graph. Local `cargo deny --locked --offline --features oclive_validation/media-png check bans licenses` passed. This is point-in-time evidence, not proof of decoder safety or hard isolation.
 
 ---
 
@@ -65,6 +67,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
+| yanked | `chacha20` 0.10.1 | **Observed, not changed** | Reported by the 2026-09-05 audit; this version was already locked before the optional PNG edge. Only the risk record is synchronized; unrelated dependency upgrades are outside this role-media slice |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.104** | 2026-08-21 lockfile verification |
 

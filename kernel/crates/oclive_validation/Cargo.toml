@@ -19,10 +19,12 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 semver = { workspace = true }
 wasm-bindgen = { version = "0.2", optional = true }
+png = { version = "0.18.1", default-features = false, optional = true }
 
 [features]
 default = []
 wasm = ["dep:wasm-bindgen"]
+media-png = ["dep:png"]
 
 [dev-dependencies]
 tempfile = { workspace = true }

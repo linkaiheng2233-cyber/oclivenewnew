@@ -37,6 +37,8 @@ pub mod reply_post_processor;
 pub mod role_pack;
 pub mod runtime_config;
 pub mod scene_continuity;
+#[cfg(feature = "media-png")]
+pub mod static_png;
 pub mod turn_thinking;
 pub mod user_identities;
 pub mod validate;

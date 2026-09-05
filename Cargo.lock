@@ -3491,6 +3491,7 @@ dependencies = [
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
+ "png 0.18.1",
  "proptest",
  "semver",
  "serde",

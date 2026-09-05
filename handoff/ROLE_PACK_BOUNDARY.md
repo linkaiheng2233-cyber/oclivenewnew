@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）与可选的本地资产有界读取（§0.3）已实现；媒体有效性验证、独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）和可选静态 PNG 校验（§0.4）已实现；独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -58,7 +58,7 @@
 
 纯函数 `validate_minimal_role_definition` 校验已构造的 DTO；`parse_minimal_role_definition` 从 JSON 投影到同一 DTO 并执行同一校验。JSON 缺少必需字段、类型错误或内容为空时返回错误；未知字段（包括关系、默认关系、好感度、蓝图和扩展元数据）被忽略，不解析其产品含义，也不保留到序列化结果。因此该 DTO **不能作为 richer product pack 的无损编辑/回写模型**。发行版自己的版本、扩展和七图标签由适配层另行维护。
 
-**验收范围**：通过只证明“非空人设 + 非空资产引用列表”的逻辑结构成立，不证明资产存在、访问安全、媒体可解码或生命周期可用。这两个逻辑函数不读取文件、获取 URL、注入关系默认值或构造旧 `Role`；本地文件快照由 §0.3 的可选适配入口另行读取，媒体有效性仍需后续验证。现有 `RoleStorage`、`pack validate` profile 和 `init` 均未切换到这条新入口。JSON 投影也没有成为统一磁盘格式或版本封装。
+**验收范围**：通过只证明“非空人设 + 非空资产引用列表”的逻辑结构成立，不证明资产存在、访问安全、媒体可解码或生命周期可用。这两个逻辑函数不读取文件、获取 URL、注入关系默认值或构造旧 `Role`；本地文件快照由 §0.3 的可选适配入口另行读取，媒体另按 §0.4 或发行版自己的能力验证。现有 `RoleStorage`、`pack validate` profile 和 `init` 均未切换到这条新入口。JSON 投影也没有成为统一磁盘格式或版本封装。
 
 测试包含共享校验边界和 [`minimal_role_contract.rs`](../kernel/crates/oclive_kernel_types/tests/minimal_role_contract.rs) 的两种合成产品映射；它们不代表 ChatPro/直播发行版的实际加载、视觉渲染或跨宿主回合验收。
 
@@ -73,9 +73,27 @@
 
 **文件系统前提**：调用方必须在读取期间防止根目录、路径组件和文件被并发更改。canonicalize 检查不是抗竞争替换的文件系统沙箱，也不识别硬链接的来源；这条便捷入口不能直接承担敌对可变目录的隔离边界。
 
-**尚未保证**：非空字节不等于有效视觉资产。此入口不检查图片格式、解码、像素/帧预算或可渲染性，不下载 URL、不指定七图集、不注入产品语义；媒体校验与安全解码由后续媒体适配层负责。它也不定义独立磁盘包 schema、生命周期标识或 CLI 行为，不能据此宣称“一图 + prompt 已能被当前宿主直接加载”。
+**尚未保证**：非空字节不等于有效视觉资产。此入口不检查图片格式、解码、像素/帧预算或可渲染性，不下载 URL、不指定七图集、不注入产品语义；媒体校验由独立媒体适配能力负责（首个可选能力见 §0.4）。它也不定义独立磁盘包 schema、生命周期标识或 CLI 行为，不能据此宣称“一图 + prompt 已能被当前宿主直接加载”。
 
 验收包含 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs)（8 项）与读取失败/读取中超限单元测试（2 项），全部使用临时夹具。Windows 目录 junction 的包内允许/包外拒绝已在本机执行通过；Unix 对应测试分支尚未在本机执行。这不是媒体有效性或真实跨宿主运行验收。
+
+### 0.4 第三代码切片：可选静态 PNG 媒体能力
+
+**已确认范围**：静态 PNG + 进程内有界解码，不承诺硬隔离。入口为 [`oclive_validation::static_png::validate_static_png`](../kernel/crates/oclive_validation/src/static_png.rs)，仅在显式启用 `media-png` feature 后编译。默认逻辑校验依赖图不引入 PNG 解码器；这不是全发行版格式清单，也不增加作者必填字段。
+
+输入是已读取的字节快照与调用方 `StaticPngLimits`：输入字节数、宽、高、总像素、输出帧缓冲字节数、解码器内部预算均须为正。两个内存预算分别控制本适配器输出缓冲与解码器的 best-effort 分配，输入、分配器开销和部分内部开销不在其中；**不能加总后声称进程硬内存上限**。尺寸在 IHDR 后、其余元数据和像素解码前检查。完整解码静态帧并读至 IEND，启用 CRC（含附加块）与 Adler-32 检查，拒绝缺失尾部和尾随字节。
+
+| 结果 | 精确语义 |
+|------|----------|
+| `Ok(StaticPngInfo)` | 此快照在本次预算下完成静态 PNG 像素解码；只返回宽高与 identity 输出大小，不保留像素/元数据，不保证任何宿主实际可渲染 |
+| `Unsupported(NotPng)` | 无 PNG 签名，包括 JPEG/WebP/未知字节；不判断其有效性，不得因此将 minimal role 判为非法。非 PNG 在 PNG 输入预算之前分类；非空的截断 PNG 签名前缀另判 malformed |
+| `Unsupported(Animation)` | 有 APNG 块标记，不静默只验第一帧；不证明该动画自身有效，也不实现动画 |
+| `Invalid(...)` | 已识别 PNG 在本适配策略下损坏或超出输入/尺寸/像素/输出/解码器预算；超预算不是“在所有宿主都损坏” |
+| `InvalidLimits` / `AllocationFailed` / `DecoderFailure` | 调用方配置、分配失败或意外解码 API 失败；不伪装成角色内容错误 |
+
+**非目标**：颜色管理、EXIF 解释、重编码、缩略图和可选元数据语义验证。text / ICC 内容跳过，像素按 identity 解码并丢弃；此检查不是文件净化器，不能据此绕过其他渲染器自己的防护。没有子进程、硬执行超时或恶意输入的进程级隔离。PNG 限制的上游说明见 [Decoder::set_limits](https://docs.rs/png/0.18.1/png/struct.Decoder.html#method.set_limits)。
+
+[媒体定向测试](../kernel/crates/oclive_validation/tests/static_png.rs) 使用合成字节与临时目录，覆盖损坏/截断、各预算、校验和、尾部、APNG、其他格式和“逻辑 → 文件快照 → 媒体能力”组合。默认 feature 与启用 feature 分别回归；本切片未启用现有宿主/CLI 的自动媒体校验，不构成生命周期或跨宿主运行验收。
 
 ## 1. 当前参考宿主内部划分
 

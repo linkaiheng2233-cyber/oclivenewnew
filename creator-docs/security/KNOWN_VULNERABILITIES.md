@@ -12,12 +12,14 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-08-21**（兼容范围依赖更新后，本地 `cargo audit`；advisory-db 1225 条） |
+| **最近扫描日期** | **2026-09-05**（新增可选 `media-png` 依赖边后，本地 `cargo audit`；advisory-db 1239 条，扫描 698 个依赖条目） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **7**（`gdkx11`/GTK3 · `glib` · 5 个 `unic-*`；`spin` 已升级至非 yanked 的 0.9.9，其他已登记警告仍按 ignore 策略跟踪） |
+| **警告级命中数** | **8**（`gdkx11`/GTK3 · `glib` · 5 个 `unic-*` · `chacha20` 0.10.1 yanked；本轮不改变既有 ignore 策略） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+本次锁文件仅新增 `oclive_validation → png 0.18.1` 的可选依赖边，没有增删 package 或升级版本。`media-png` 默认关闭，不进入最小逻辑契约的默认依赖图；本地 `cargo deny --locked --offline --features oclive_validation/media-png check bans licenses` 通过。扫描结果是时点证据，不构成解码器安全或硬隔离保证。
 
 ---
 
@@ -67,6 +69,7 @@
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
+| yanked | `chacha20` 0.10.1 | **已观察，未处理** | 2026-09-05 当前 audit 命中；该版本在本轮之前已锁定，不是新增 PNG 依赖。仅同步风险记录，不在角色媒体切片中升级无关依赖 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.104** | 2026-08-21 锁文件复核 |
 

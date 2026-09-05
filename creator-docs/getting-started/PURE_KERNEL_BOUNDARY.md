@@ -52,7 +52,7 @@ OCLive 真正要长期守住的最小核心是：
 
 | 组成部分 | 说明 |
 |----------|------|
-| **内核最小角色定义（逻辑校验与本地文件读取已实现，运行接入待做）** | 作者只需非空 persona prompt + 至少 1 个视觉资产。共享 DTO 只校验正文与资产引用非空；可选 native 适配入口另做本地路径/普通文件检查和有界字节读取，不证明媒体有效或角色可加载。预算属于调用方，不增加角色字段；七图情绪集、关系模型与技术封装边界见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1–0.3 |
+| **内核最小角色定义（逻辑/本地文件/可选 PNG 校验已实现，运行接入待做）** | 作者侧最少内容仍是人设与一个视觉资产；逻辑 contract 用 persona prompt + 视觉资产引用表达。逻辑校验、本地文件快照和可选静态 PNG 解码各自独立；PNG 不是必需格式，不支持某格式不等于角色非法，预算由调用方提供。七图情绪集、关系模型与能力边界见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1–0.4 |
 | **参考宿主组合目录（当前实现）** | **`pipeline.ocblueprint`** v2/v3/v4 把 `meta` 与 `slot_registry` / `runtime_config` 放在同一文件，再从同目录加载 `core_personality.txt`、场景、知识及产品扩展；这是参考实现输入，不是 kernel canonical schema（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | **有效后端** | 由宿主蓝图 `slot_registry`、**`set_session_slot_override`** 会话覆盖和环境变量合成；不属于最小角色定义（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **当前参考运行时的关系与记忆** | `role_runtime`、长期记忆等经 Repository 读写；具体策略由相应能力实现，不构成最小角色内容要求 |
