@@ -2,7 +2,7 @@
 
 **SSOT scope:** public architecture narrative, module numbering, and layering terminology. Module definitions remain in MODULE_MAP; wire contracts remain in their focused contract pages.
 
-**Last updated:** 2026-09-05.
+**Last updated:** 2026-09-06.
 
 This page is the **authoritative public narrative** and module taxonomy. It first defines the minimal tool kernel, then describes the complete reference runtime's six backend modules, facilities, side channels, plugin implementations, and dual build modes. Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), and source.
 
@@ -12,7 +12,7 @@ This page is the **authoritative public narrative** and module taxonomy. It firs
 
 ## Architecture in brief
 
-OCLive's minimal conceptual core is a **contract-first tool kernel**: one turn/lifecycle orchestration path, capability-call/merge rules, authoritative state commits, error semantics, and failure isolation. Memory, emotion, legacy event impact, prompt, LLM, and agent attach through **six stable PLUGIN_V1 capability ports**. Slots supply capabilities, evidence, candidates, context, or action results; they are not six peer authorities.
+OCLive's minimal conceptual core is a **contract-first tool kernel**: it constrains one turn/lifecycle orchestration path, capability-call/merge rules, authoritative state commits, error semantics, and failure isolation. The trusted Rust Host in the current reference implementation performs product-state commits and resource operations within those constraints. Memory, emotion, legacy event impact, prompt, LLM, and agent attach through **six stable PLUGIN_V1 capability ports**. Slots supply capabilities, evidence, candidates, context, or action results; they are not six peer authorities. Responsibility and integration boundaries are in [`MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md).
 
 The current `oclive_kernel_host::OcliveKernel` is an embeddable **complete reference-runtime facade**. It still physically assembles session state, SQLite, Event Ring, HTTP dependencies, concrete slot implementations, and facilities. It reuses one `process_message`, but it is not yet a separately extracted minimal core. Complex emotion and expert-model facilities are useful reference components, not a seventh slot or a prerequisite for OCLive.
 

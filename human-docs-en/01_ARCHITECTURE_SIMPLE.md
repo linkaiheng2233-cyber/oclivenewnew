@@ -1,9 +1,13 @@
 # 01 · Architecture (simple)
 
-> **Last updated:** 2026-09-04
+> **Last updated:** 2026-09-06
 > **Next:** [02 Thirty-minute start](02_THIRTY_MINUTE_START.md) · **Full human edition (CN):** [human-docs/01](../human-docs/01_ARCHITECTURE_SIMPLE.md) · **Module registry:** [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 Keep two layers separate: the **minimal conceptual core** is one turn/lifecycle orchestration and authority boundary plus six stable capability ports. The flow below is the **complete reference runtime**, so it also shows Event Ring, persistence, facilities, and hosts.
+
+The Host is more than a communication bridge: the Core constrains public turn semantics, capability-result/domain-commit validity, and error boundaries; the trusted Rust Host in the current reference implementation performs product-state commits and resource operations within those constraints. Tauri APIs and HTTP are transport adapters. The current `oclive_kernel_host::OcliveKernel` is a complete reference-runtime facade that still physically assembles state, SQLite, plugins, and facilities; this does not mean a small Core crate has been extracted. The unique responsibility SSOT is [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md).
+
+For Chat Pro, Tauri API/HTTP is the transport surface while the runtime assembles `AppState`, state, and permissions; `distros/desktop-tauri/src/api/chat_backend.rs` identifies the loopback kernel as the single authoritative writer. This example does not imply one Host per distro.
 
 ## One turn (co-present path)
 
@@ -22,7 +26,7 @@ Main source anchors: `turn_pipeline/pre.rs` → `turn_pipeline/co_present/run_mi
 
 Prompt context combines the typed current input, static role-pack content, runtime character state, retrieved memory/knowledge, and this turn's derived affect/event/recollection results. Module 4 assembles facts, candidates, and committed state admitted for this turn; admission does not make every semantic interpretation true. Module 5 generates the reply; post-processing edits the final output rather than re-deciding memory or events.
 
-Remember: **six slots provide capabilities; Event Ring carries trusted events; decision modules admit proposals; Rust orchestration applies and persists results.**
+Remember: **six slots provide capabilities; Event Ring carries trusted events; decision modules admit proposals; Rust orchestration applies and persists results.** The Host executes those constrained commits; transport and UI do not gain domain authority.
 
 ## Three memory stores (do not conflate)
 
@@ -65,7 +69,7 @@ desktop-tauri / oclive-kernel-server
         → depends on oclive_kernel_types
 ```
 
-This is the principal chain; direct dependencies on types, validation, and other support crates are omitted.
+This is the principal chain of the current reference runtime; direct dependencies on types, validation, and other support crates are omitted. It is not a physical extraction diagram or a new future scheduling contract for the minimal Core.
 
 ## Event Ring (not a seventh slot)
 

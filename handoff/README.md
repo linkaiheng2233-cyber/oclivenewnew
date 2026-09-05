@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：本文只登记活跃 handoff 的职责、分层和归档规则。
-**最后更新**：2026-09-05。
+**最后更新**：2026-09-06。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 ## 文档分层
@@ -32,7 +32,7 @@
 
 | 文件 | 唯一职责 |
 |------|----------|
-| [MODULE_MAP_AND_HANDOFF.md](MODULE_MAP_AND_HANDOFF.md) | 模块注册表与六槽 / 设施 / 独立通道关系 |
+| [MODULE_MAP_AND_HANDOFF.md](MODULE_MAP_AND_HANDOFF.md) | **小 Kernel / 六槽 / Host / Adapter 权责唯一 SSOT**：模块定义与六槽 / 设施 / 独立通道关系 |
 | [SLOT_BACKEND_REALITY_MATRIX.md](SLOT_BACKEND_REALITY_MATRIX.md) | 六槽 × backend 实现真值 |
 | [ROLE_PACK_BOUNDARY.md](ROLE_PACK_BOUNDARY.md) | 角色包、蓝图、发行版和会话分责 |
 | [CHAT_STORAGE_ARCHITECTURE.md](CHAT_STORAGE_ARCHITECTURE.md) | 聊天日志、短期与长期记忆存储 |

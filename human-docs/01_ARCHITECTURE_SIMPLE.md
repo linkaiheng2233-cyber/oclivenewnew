@@ -1,6 +1,6 @@
 # 01 · 简架构
 
-> **最后更新**：2026-09-04
+> **最后更新**：2026-09-06
 > **读者**：已跑通主仓、要理解「一条消息怎么走」的工程师。  
 > **读完能做什么**：画出用户回合与主动回合主路径；说清六槽、Event Ring、上下文来源和权力边界。
 > **耗时**：约 **45 分钟**（含下面扩展节）。  
@@ -9,6 +9,10 @@
 配套学习图：[OCLive 架构学习长图（SVG，可无限放大）](assets/oclive-architecture-learning-map.svg) · [PNG](assets/oclive-architecture-learning-map.png)。图是学习摘要，模块定义仍以 MODULE_MAP 与源码为准。
 
 先记住两层：**最小概念核心**只有唯一回合/生命周期编排、权威状态边界和六个稳定能力端口；下面的大图讲的是**当前完整参考运行时**，所以还会出现 Event Ring、SQLite、设施和宿主。它们很重要，但不等于全都属于最小 core。
+
+这里的 Host 不只是通信桥：Core 负责约束公共回合语义、能力结果/领域提交的有效性和错误边界，当前参考实现的可信 Rust Host 在约束内执行产品状态提交与资源操作；Tauri API 和 HTTP 负责传输适配。当前 `oclive_kernel_host::OcliveKernel` 是完整参考运行时门面，物理上仍装配状态、SQLite、插件与设施，不能据此声称小 core 已拆成独立 crate。权责唯一 SSOT 是 [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md)。
+
+以 Chat Pro 为例：Tauri API/HTTP 是传输面，runtime 负责装配 `AppState`、状态与权限；`distros/desktop-tauri/src/api/chat_backend.rs` 明确 loopback kernel 是 single authoritative writer。这个例子不表示每个 Distro 都必须一对一配置一个 Host。
 
 ---
 
@@ -79,7 +83,7 @@ flowchart TB
 | 六槽/设施 | 提供检索、分析、估计、组装或生成能力 |
 | 后处理 | 修改最终展示文本，不重做事件与记忆决策 |
 
-口诀：**六槽提供能力，Ring 管事件可信流通，决策模块管采纳，Rust 编排管最终应用。**
+口诀：**六槽提供能力，Ring 管事件可信流通，决策模块管采纳，Rust 编排管最终应用。** Host 执行被 Core 约束的实际提交；传输和 UI 不取得领域权威。
 
 ### Turn Thinking（Fast / Deep · 编排行）
 
@@ -204,7 +208,7 @@ flowchart TB
   tauri -->|依赖| host -->|依赖| runtime -->|依赖| contracts -->|依赖| types
 ```
 
-图只画主链，省略 host / tauri 对 types、validation 等直接依赖。口诀：**Types 形状 · Contracts 接口 · Runtime 公式 · Host 流程 · Tauri 入口。**
+图只画当前参考运行时主链，省略 host / tauri 对 types、validation 等直接依赖；它不是未来小 Core 的物理拆分图或新调度契约。口诀：**Types 形状 · Contracts 接口 · Runtime 公式 · Host 流程 · Tauri 入口。**
 
 ---
 

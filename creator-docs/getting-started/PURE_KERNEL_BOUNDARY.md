@@ -1,37 +1,41 @@
 # A.I.Live · 最小工具内核与当前嵌入运行时边界
 
-本文消除“纯净内核”的两种旧含义：**最小概念核心**与当前已经可嵌入的**完整参考运行时**不是同一层。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
+本文消除“纯净内核”的两种旧含义：**最小概念核心**与当前已经可嵌入的**完整参考运行时**不是同一层。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；职责与集成权责唯一 SSOT 见 [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
+
+**最后更新**：2026-09-06。
 
 [English](../../creator-docs-en/getting-started/PURE_KERNEL_BOUNDARY.md)
 
 ---
 
-## 1. 两层边界
+## 1. 职责目标与当前实现
 
-### 1.1 最小概念核心
+### 1.1 已确认的最小核心职责
 
-OCLive 真正要长期守住的最小核心是：
+本轮已确认的职责边界是：
 
 ```text
 唯一回合/生命周期编排
   + 能力调用与合并规则
-  + 权威状态提交、错误语义与故障隔离
+  + 状态提交有效性约束、错误语义与故障隔离
   + memory / emotion / event / prompt / llm / agent 六个稳定端口
 ```
 
-六槽是能力接口，不是六个平级决策内核。具体记忆算法、情绪模型、Prompt 模板、LLM 厂商、Event Ring、SQLite、HTTP、Tauri 和角色包工具都可以围绕它装配，但不决定 OCLive 是否成立。当前共景运行路径仍要求 `prompt + llm` 通过健康检查；其余槽位可按已定义的 `none` / Noop 语义变薄。
+六槽是能力接口，不是六个平级决策内核。Core 负责守住公共回合语义、能力结果与领域提交的有效性约束、错误边界和故障隔离；当前参考实现的可信 Rust Host 在这些约束内执行实际产品状态提交与资源操作。权责/成功口径须区分生成成功、领域提交成功与外部送达成功，但本页不把 delivery 暗定为未来 Core 输出，也不新增“提交完成后才准 stream”的顺序要求。具体记忆算法、情绪模型、Prompt 模板、LLM 厂商、Event Ring、SQLite、HTTP、Tauri 和角色包工具都可以围绕它装配，但不决定 OCLive 是否成立。当前共景运行路径仍要求 `prompt + llm` 通过健康检查；其余槽位可按已定义的 `none` / Noop 语义变薄。
+
+这里的“已确认”只表示职责口径收敛；依赖集合、阶段边界、Kernel v0 API 和物理拆分不在本文定案。最小角色内容或加载准备也不自动成为 Core 的固定调用输入，是否硬性需要 persona 仍待相应 contract 决定。
 
 ### 1.2 当前完整嵌入运行时
 
-主仓今天交付的 `oclive_kernel_host::OcliveKernel` 是**受支持的 Rust 源码级门面**，它复用唯一 `process_message`，并提供角色加载、完整/流式回合、SQLite、插件、Event Ring 与关闭生命周期。它与 UI、具体硬件 BSP 和单一模型品牌解耦，因此可以被嵌入；但物理代码仍包含 HTTP 实现及大量默认设施，不能把整个 host crate 或五个 kernel crate 的总行数称为“最小内核大小”。
+主仓今天交付的 `oclive_kernel_host::OcliveKernel` 是**受支持的 Rust 源码级完整运行时门面**，也是可信 Host 的现有实现；它复用唯一 `process_message`，并提供角色加载、完整/流式回合、SQLite、插件、Event Ring 与关闭生命周期。它与 UI、具体硬件 BSP 和单一模型品牌解耦，因此可以被嵌入；但物理代码仍包含 HTTP 实现及大量默认设施，不能把整个 host crate 或五个 kernel crate 的总行数称为“最小内核大小”。Host 不是 IPC 桥、Docker 或安全沙箱，也不天然与某个 Distro 一对一。
 
 | 层 | 当前代码锚点 | 边界 |
 |----|--------------|------|
-| **最小核心骨架** | `oclive_kernel_contracts` 六个 trait、`process_message` / turn pipeline、核心 DTO/错误 | 概念已收敛；尚未独立成可单独编译的 crate |
-| **完整嵌入运行时门面** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs` | 已可用；包含持久化、Event Ring、HTTP 依赖和默认装配 |
-| **传输与 UI 宿主** | `oclive-kernel-server`、Tauri、Vue、VS Code | 不属于内核本体；必须委托同一回合入口 |
+| **最小核心职责目标** | `oclive_kernel_contracts` 六个 trait、`process_message` / turn pipeline、核心 DTO/错误 | 职责已确认；依赖集合、阶段边界、Kernel v0 API 与物理拆分未在此定案 |
+| **完整嵌入运行时门面** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs` | 当前可用；包含持久化、Event Ring、HTTP 依赖和默认装配，并负责实际 Host 提交/资源操作 |
+| **传输与 UI 适配** | `oclive-kernel-server`、Tauri、Vue、VS Code | 不属于 Core 或 Host 的领域权威；传输/UI 应委托同一回合入口 |
 
-物理拆薄由 [`K-CORE-BOUNDARY-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 跟踪。在它完成前，“最小内核”是职责边界，不是已经存在的独立发布包。
+物理拆薄由 [`K-CORE-BOUNDARY-01`](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 跟踪。在它完成前，“最小内核”是职责边界，不是已经存在的独立发布包；本文也不替后续 Kernel v0 contract 或拆分阶段作决定。
 
 ---
 
@@ -44,6 +48,8 @@ OCLive 真正要长期守住的最小核心是：
 - **Prompt 正文语言**（角色包与模型侧内容语言）；与**界面 i18n** 分离。
 - **Event Ring 执行设施、SQLite Repository、资源协调和具体六槽实现**；它们属于参考运行时装配，通过端口或受控锚点协作。
 
+`RoleRuntime`、`MemorySystem`、`Relations`、`Favorability`、`Blueprint`、`runtimeState`、SQLite、PNG、Event Ring 和 Runtime Event Stream 都是外围装配、产品能力或后续设施，不是 Core 成立的必需组成。它们可以由 Host 或授权 Adapter 提供；资源访问权不等于领域状态提交权，具体实现也不能借此绕过错误与授权边界。
+
 ---
 
 ## 3. 角色包交付单元
@@ -52,10 +58,12 @@ OCLive 真正要长期守住的最小核心是：
 
 | 组成部分 | 说明 |
 |----------|------|
-| **内核最小角色定义（逻辑/文件加载准备/可选 PNG 校验已实现，运行接入待做）** | 作者侧最少内容仍是人设与一个视觉资产；逻辑 contract 用 persona prompt + 视觉资产引用表达。可从调用方指定的 JSON 文件准备定义与只读资产快照，不规定统一文件名、不激活角色。PNG 是独立可选能力，不支持某格式不等于角色非法，预算由调用方提供；现有完整 `Role` 生命周期仍待拆分适配。七图情绪集、关系模型与能力边界见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1–0.5 |
+| **已确认的最小角色内容边界（逻辑/文件加载准备/可选 PNG 校验已实现，运行接入待做）** | 作者侧最少内容仍是人设与一个视觉资产；逻辑 contract 用 persona prompt + 视觉资产引用表达。可从调用方指定的 JSON 文件准备定义与只读资产快照，不规定统一文件名、不激活角色。PNG 是独立可选能力，不支持某格式不等于角色非法，预算由调用方提供；现有完整 `Role` 生命周期仍待拆分适配。七图情绪集、关系模型与能力边界见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1–0.5 |
 | **参考宿主组合目录（当前实现）** | **`pipeline.ocblueprint`** v2/v3/v4 把 `meta` 与 `slot_registry` / `runtime_config` 放在同一文件，再从同目录加载 `core_personality.txt`、场景、知识及产品扩展；这是参考实现输入，不是 kernel canonical schema（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | **有效后端** | 由宿主蓝图 `slot_registry`、**`set_session_slot_override`** 会话覆盖和环境变量合成；不属于最小角色定义（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
 | **当前参考运行时的关系与记忆** | `role_runtime`、长期记忆等经 Repository 读写；具体策略由相应能力实现，不构成最小角色内容要求 |
+
+这张表确认的是角色内容与加载准备的边界，不是 Core 调用输入的最终定义；尤其不能从“persona + 至少一个视觉引用”推出本轮已确定 Core 必须直接接收 persona。当前公开 `PromptInput<'a>` 仍保留 `role: &'a Role`，这是参考运行时的已知耦合证据，后续接口拆分另行决定。
 
 **机器人场景**：设备可以只替换角色数据，由设备宿主独立选择六槽装配；最小角色仍携带至少一个视觉资产，无显示设备时可不渲染，不要求桌面版七图目录、模型或蓝图策略。
 
@@ -75,7 +83,7 @@ OCLive 真正要长期守住的最小核心是：
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。
 
-内核保证 **调用顺序、端口、错误与状态提交边界**；陪伴“好不好”由模型、槽实现、设施和角色包内容共同决定。强模型装配可以省略部分显式辅助；小模型装配可以使用更厚的候选生成与 Prompt 编译，但辅助信号不得冒充唯一语义真值。
+内核约束 **调用顺序、端口、错误与状态提交边界**；可信 Host 执行实际产品状态提交和资源操作。陪伴“好不好”由模型、槽实现、设施和角色包内容共同决定。强模型装配可以省略部分显式辅助；小模型装配可以使用更厚的候选生成与 Prompt 编译，但辅助信号不得冒充唯一语义真值。
 
 ---
 

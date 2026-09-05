@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-09-05
+**最后更新**：2026-09-06
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -10,9 +10,19 @@
 
 ## 0. 五条铁律（关系骨架）
 
-**先分清本体与装配**：OCLive 的最小概念核心是 **唯一回合/生命周期编排 + 权威状态提交与故障边界 + 六个稳定能力端口**。六槽是 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类可替换能力，不是六个平级决策内核，也不要求每种具体实现都启用。当前共景路径的健康门槛仍是 `prompt + llm`；其余槽位的 `none` / Noop 语义以 [`MODULE_NONE_SEMANTICS.md`](../creator-docs/kernel/MODULE_NONE_SEMANTICS.md) 和真实性矩阵为准。
+**先分清本体与装配**：OCLive 的最小概念核心是 **唯一回合/生命周期编排 + 权威状态提交约束与故障边界 + 六个稳定能力端口**。六槽是 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类可替换能力，不是六个平级决策内核，也不要求每种具体实现都启用。当前共景路径的健康门槛仍是 `prompt + llm`；其余槽位的 `none` / Noop 语义以 [`MODULE_NONE_SEMANTICS.md`](../creator-docs/kernel/MODULE_NONE_SEMANTICS.md) 和真实性矩阵为准。
 
-`oclive_kernel_host::OcliveKernel` 是当前**完整嵌入运行时门面**，物理上仍装配 SQLite、Event Ring、HTTP 依赖和具体设施；它不能被等同为已经独立编译出来的最小 core。物理拆薄状态只看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`。
+### 0.1 小 Kernel、合同、实现、Host 与 Adapter 的权责
+
+| 层 | 负责什么 | 不授予什么 |
+|----|----------|------------|
+| **小 Kernel（职责边界）** | 守住回合/生命周期公共语义、能力结果的有效性与合并/提交约束、错误语义和故障边界 | 不因此等同于已独立编译的 crate；依赖集合、阶段划分、Kernel v0 API 与物理拆分仍需分别确认 |
+| **六槽合同** | 规定 `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` 能力端口的输入、结果和错误边界 | 不把槽实现变成平级状态权威，也不规定某个 SQLite、HTTP 或 RichRole 产品格式 |
+| **具体槽实现** | 在合同和宿主授权内提供检索、分析、估计、组装、生成或动作结果；可由授权 Adapter 使用网络、存储、工具或 LLM | 不因获得资源访问就取得领域提交权、权限授予权或第二条回合管线；重试不会增加授权 |
+| **Host** | 负责准备输入/上下文、绑定六槽、管理资源与权限、应用结果；在当前参考实现中由可信 Rust 服务与 composition root 在 Core 约束内执行产品状态提交和资源操作 | 不是 IPC 桥、Docker 或安全沙箱；不能降低 Core 不变量，不能授予 Session、LLM 或普通插件直接权威写权；不与 Distro 天然一对一 |
+| **Adapter / 传输 / UI** | 把外部输入、能力调用和输出映射到 Host 获准的合同边界；持久化或资源 Adapter 可执行 Host 合法授权的写入/操作 | 不自行决定或批准领域状态更新；传输/UI 不是 Host，也不能绕过 Host 另建编排 |
+
+权责/成功口径须区分**生成成功**、**领域提交成功**与**外部送达成功**三类结果；这不暗定未来 Core 输出包含 delivery，也不新增“领域提交完成后才准 stream”的要求。`oclive_kernel_host::OcliveKernel` 是当前**完整嵌入运行时门面**，物理上仍装配 SQLite、Event Ring、HTTP 依赖和具体设施；它不能被等同为已经独立编译出来的最小 core。物理拆薄状态只看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`。
 
 | # | 铁律 | 一句话 |
 |---|------|--------|
@@ -62,6 +72,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 ---
 
 ## 3. 六槽解耦机制（共用）
+
+六槽合同的目标边界是稳定能力结果、调用边界和错误语义；目标上不规定特定的 SQLite、HTTP、RichRole 或其他产品载体。具体实现可以经授权 Adapter 使用网络、存储、工具或 LLM；这属于能力实现的资源访问，不改变 Core 的领域提交权边界。失败重试沿用原授权，不会获得额外权限。当前公开的 `oclive_kernel_types::PromptInput` 仍有 `role: &Role` 耦合，这是已知的参考运行时实现事实，不在本文替 Kernel v0 API 作决定。
 
 ### 3.1 三层解耦
 
@@ -136,6 +148,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **允许改** | 检索算法、decay、archive 阈值、remote/directory 协议 |
 | **禁止** | 用聊天记录表当记忆真源；角色任务改 `slot_registry` |
 
+**职责 / 不授予**：本模块负责检索、排序和形成记忆上下文；它不是整个 `MemorySystem`，不因此获得 STM/LTM 写权限，也不取得领域状态提交权。
+
 **记忆三套存储（与第 1 模块配合）**：
 
 | 存储 | 表 / 组件 | 进 Prompt |
@@ -161,6 +175,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **允许改** | 分析器、remote 协议 |
 | **禁止** | 把 `slot_registry` 中的 `complex_emotion` 设施实例冒充稳定六槽，或写入 `plugin_backends` 六键 |
 
+**职责 / 不授予**：本模块负责分析用户输入情绪；该结果不是全部角色状态的权威，也不因此取得关系、好感或其他领域状态的提交权。
+
 ---
 
 ## 6. 第 3 模块 · `event`
@@ -176,6 +192,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **主链 hook** | `co_present` `EventEstimate` stage → `EventRing` 兼容桥 → `PersonalityEngine::evolve_by_event`；无注册事件模块时估计结果逐字段不变 |
 | **允许改** | 规则表、LLM 提示、remote |
 | **禁止** | 把 Turn Thinking 登记为第七槽 |
+
+**职责 / 不授予**：本模块负责估计事件类型与影响因子；它不是 Event Ring，也不是 Runtime Event Stream，不自行写入好感或关系状态。
 
 ---
 
@@ -193,6 +211,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **Wave D persona capsule** | **`prompts/deep_capsule.txt`**（兼容文件名）— [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) · **Small 模型 Fast/Deep 已接线** |
 | **允许改** | 段落公式 `sections.rs`、overlay（concise profile） |
 | **禁止** | 运行时 LLM 压缩 prompt；用 capsule 替换 guardrails |
+
+**职责 / 不授予**：本模块负责组装已由宿主准入的上下文；它不获得任意状态读取权，也不拥有身份或授权的所有权。
 
 ---
 
@@ -212,6 +232,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **允许改** | Ollama 适配、llama-server builtin 适配、directory RPC、TTFT 客户端选项 |
 | **禁止** | UI 内二次调 LLM 选立绘 |
 
+**职责 / 不授予**：本模块负责生成主对话文本及其流；生成结果不等于领域状态提交，也不为自身或其他实现授予权限。
+
 ---
 
 ## 9. 第 6 模块 · `agent`
@@ -227,6 +249,8 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **MCP** | `{app_data}/mcp-servers/*.json` · 须 `network:*` / `process:spawn` 授权 |
 | **允许改** | Agent 协议、MCP 客户端、调试 trace |
 | **禁止** | 跳过 MCP 授权；把 ASR 写进 agent 槽 |
+
+**职责 / 不授予**：本模块负责在已授权范围内执行工具调用和多步任务；当前实现可在本回合内执行工具，仍复用既有回合入口，不构成 proposal-only 规则或第二条 pipeline。
 
 ---
 

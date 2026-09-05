@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-04
+> **最后更新**：2026-09-06
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -223,6 +223,15 @@ Vue invoke / HTTP --api
 1. [`handoff/README.md`](./README.md) §文档分责 — **查是否已有 SSOT**  
 2. [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16  
 3. 模块关系 **只**改 MODULE_MAP；**链接代替复制**
+
+### Kernel / 六槽 / Host 权责
+
+按以下顺序阅读；本节只提供导航，不复制权责事实：
+
+1. **职责**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#0-五条铁律关系骨架) §0–§9 · [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md#0-三层-contract不得混称) §0–§0.5
+2. **以后依赖 / 阶段**：[`PURE_KERNEL_BOUNDARY.md`](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md#1-职责目标与当前实现) §1 · [`KERNEL_IMPLEMENTATION_PLAN.md`](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)；两者是现行实现/阶段参考，未来依赖与阶段仍待讨论
+3. **未来 Kernel v0 公共 contract（待讨论）**：[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)；这些是现行六槽接口/实现参考，不是已定的 Kernel v0 公共 contract
+4. **再讨论物理代码拆分**：回看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 中 `K-CORE-BOUNDARY-01`，并以已确认的职责、阶段和公共 contract 为前置。
 
 ### 技术债收口 / 按开发流水线走
 
