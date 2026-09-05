@@ -87,9 +87,9 @@ pub use runtime_event_trace::{
 pub use slot_extension::SlotExtension;
 
 pub use oclive_validation::{
-    MemorySeedEntry, MemorySeedFile, PortableLongTermMemoryEntry, PortableMemoryFile,
-    PortablePersonaFile, SlotGroupEntry, SlotRegistryEntry, MEMORY_SEED_SCHEMA_VERSION,
-    PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
+    MemorySeedEntry, MemorySeedFile, MinimalRoleDefinition, PortableLongTermMemoryEntry,
+    PortableMemoryFile, PortablePersonaFile, SlotGroupEntry, SlotRegistryEntry,
+    MEMORY_SEED_SCHEMA_VERSION, PORTABLE_MEMORY_SCHEMA_VERSION, PORTABLE_PERSONA_SCHEMA_VERSION,
 };
 
 pub use models::{

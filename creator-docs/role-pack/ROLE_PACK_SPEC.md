@@ -347,7 +347,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 ```
 
-`portable-core` 验证的是当前参考宿主七图 profile，不代替尚待实现的 kernel minimal 校验，也不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
+`portable-core` 验证的是当前参考宿主七图 profile，不代替 kernel minimal 的独立验收。后者当前只有共享逻辑 DTO / 非空引用校验，资源实体验证与目录加载尚未实现（见边界文 §0.2）。各发行版的 UI、语音、视觉、插件或硬件能力仍由自己的 capability-conformance 验收负责。
 
 ### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
 

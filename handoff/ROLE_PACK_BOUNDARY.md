@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 维护者已确认最小角色内容为“非空 persona prompt + 至少 1 个视觉资产”，关系系统整体归发行版能力；独立 schema / CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO 与无 I/O 校验已实现（§0.2），资产实体验证、独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -45,7 +45,22 @@
 宿主配置 ─────宿主装配─────> 能力绑定 ──> 六槽 ports / 外围设施
 ```
 
-这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。独立最小 schema、共享适配入口与 CLI 生成/校验尚未实现，由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入本节最小 contract。
+这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影见 §0.2；独立磁盘格式、实际资源/生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
+
+### 0.2 第一代码切片：共享逻辑投影（无 I/O）
+
+`oclive_kernel_types::MinimalRoleDefinition` 是内核消费者的类型入口；定义及校验实现在 [`oclive_validation::minimal_role`](../kernel/crates/oclive_validation/src/minimal_role.rs)，沿用已有共享类型重导出方向，不新增 crate 或循环依赖。
+
+| 字段 | 当前逻辑校验 |
+|------|--------------|
+| `persona_prompt: String` | 必填，去除空白后非空；保留原正文，不注入模板 |
+| `visual_assets: Vec<String>` | 必填，至少一个非空资产引用；保留顺序，引用由适配器解释，不规定路径、URI scheme 或情绪槽位 |
+
+纯函数 `validate_minimal_role_definition` 校验已构造的 DTO；`parse_minimal_role_definition` 从 JSON 投影到同一 DTO 并执行同一校验。JSON 缺少必需字段、类型错误或内容为空时返回错误；未知字段（包括关系、默认关系、好感度、蓝图和扩展元数据）被忽略，不解析其产品含义，也不保留到序列化结果。因此该 DTO **不能作为 richer product pack 的无损编辑/回写模型**。发行版自己的版本、扩展和七图标签由适配层另行维护。
+
+**验收范围**：通过只证明“非空人设 + 非空资产引用列表”的逻辑结构成立，不证明资产存在、访问安全、媒体可解码或生命周期可用。实际资源由后续适配层检查和物化；本切片不读取文件、获取 URL、注入关系默认值或构造旧 `Role`。现有 `RoleStorage`、`pack validate` profile 和 `init` 均未切换到这条新入口。JSON 投影也没有成为统一磁盘格式或版本封装。
+
+测试包含共享校验边界和 [`minimal_role_contract.rs`](../kernel/crates/oclive_kernel_types/tests/minimal_role_contract.rs) 的两种合成产品映射；它们不代表 ChatPro/直播发行版的实际加载、视觉渲染或跨宿主回合验收。
 
 ## 1. 当前参考宿主内部划分
 
