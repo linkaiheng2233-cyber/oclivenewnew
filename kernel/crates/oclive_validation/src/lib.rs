@@ -23,6 +23,7 @@ pub mod json_keys;
 pub mod manifest;
 pub mod meta_action_templates;
 pub mod minimal_role;
+pub mod minimal_role_local_assets;
 pub mod penetration_templates;
 pub mod pipeline_action;
 pub mod plugin_backends;
@@ -103,6 +104,7 @@ pub use meta_action_templates::{
 pub use minimal_role::{
     parse_minimal_role_definition, validate_minimal_role_definition, MinimalRoleDefinition,
 };
+pub use minimal_role_local_assets::load_minimal_role_local_assets;
 pub use penetration_templates::{
     validate_penetration_templates_config, validate_penetration_templates_config_file,
 };

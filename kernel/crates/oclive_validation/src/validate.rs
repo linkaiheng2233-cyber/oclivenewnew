@@ -243,7 +243,7 @@ pub fn validate_scene_id(id: &str) -> Result<(), String> {
     validate_portable_path_segment(id)
 }
 
-fn validate_portable_path_segment(id: &str) -> Result<(), String> {
+pub(crate) fn validate_portable_path_segment(id: &str) -> Result<(), String> {
     let trimmed = id.trim();
     if trimmed.is_empty() {
         return Err("不能为空".to_string());

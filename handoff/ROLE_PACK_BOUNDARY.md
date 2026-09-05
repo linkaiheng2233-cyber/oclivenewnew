@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO 与无 I/O 校验已实现（§0.2），资产实体验证、独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）与可选的本地资产有界读取（§0.3）已实现；媒体有效性验证、独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -45,7 +45,7 @@
 宿主配置 ─────宿主装配─────> 能力绑定 ──> 六槽 ports / 外围设施
 ```
 
-这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影见 §0.2；独立磁盘格式、实际资源/生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
+这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影见 §0.2，本地文件读取边界见 §0.3；独立磁盘格式、媒体/生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
 
 ### 0.2 第一代码切片：共享逻辑投影（无 I/O）
 
@@ -58,9 +58,24 @@
 
 纯函数 `validate_minimal_role_definition` 校验已构造的 DTO；`parse_minimal_role_definition` 从 JSON 投影到同一 DTO 并执行同一校验。JSON 缺少必需字段、类型错误或内容为空时返回错误；未知字段（包括关系、默认关系、好感度、蓝图和扩展元数据）被忽略，不解析其产品含义，也不保留到序列化结果。因此该 DTO **不能作为 richer product pack 的无损编辑/回写模型**。发行版自己的版本、扩展和七图标签由适配层另行维护。
 
-**验收范围**：通过只证明“非空人设 + 非空资产引用列表”的逻辑结构成立，不证明资产存在、访问安全、媒体可解码或生命周期可用。实际资源由后续适配层检查和物化；本切片不读取文件、获取 URL、注入关系默认值或构造旧 `Role`。现有 `RoleStorage`、`pack validate` profile 和 `init` 均未切换到这条新入口。JSON 投影也没有成为统一磁盘格式或版本封装。
+**验收范围**：通过只证明“非空人设 + 非空资产引用列表”的逻辑结构成立，不证明资产存在、访问安全、媒体可解码或生命周期可用。这两个逻辑函数不读取文件、获取 URL、注入关系默认值或构造旧 `Role`；本地文件快照由 §0.3 的可选适配入口另行读取，媒体有效性仍需后续验证。现有 `RoleStorage`、`pack validate` profile 和 `init` 均未切换到这条新入口。JSON 投影也没有成为统一磁盘格式或版本封装。
 
 测试包含共享校验边界和 [`minimal_role_contract.rs`](../kernel/crates/oclive_kernel_types/tests/minimal_role_contract.rs) 的两种合成产品映射；它们不代表 ChatPro/直播发行版的实际加载、视觉渲染或跨宿主回合验收。
+
+### 0.3 第二代码切片：本地资产字节快照（适配层）
+
+可选的 native 入口 [`oclive_validation::load_minimal_role_local_assets`](../kernel/crates/oclive_validation/src/minimal_role_local_assets.rs) 接受调用方指定的资产根目录、`MinimalRoleDefinition`、单资产字节上限与总字节上限，返回与 `visual_assets` 顺序一致的 `Vec<Vec<u8>>`。**根目录和预算是宿主输入，不是新增角色字段**；此入口不接入回合编排，也不替换现有目录加载器。
+
+- 先复用 §0.2 的逻辑校验，再在任何文件系统访问前检查全部引用。此适配器只接受 `/` 分段的相对路径；复用已有 portable path segment 校验，允许中文和段内空格，拒绝空段、点/隐藏段、绝对路径、反斜杠、URL、Windows 设备名/非法字符、首尾空白、尾点和超过 128 字节的段。其他发行版仍可为逻辑 DTO 提供不同的资产来源适配器。
+- 根目录与文件路径 canonicalize 后按路径组件检查包含关系；允许解析到根目录内的链接，拒绝解析到包外的链接。只读取可访问、非空的普通文件，打开前和打开后均检查文件类型与长度。
+- 两个预算均须为正，单资产预算须小于 `usize::MAX`。有界读取至多多读 1 字节检测超限，不静默截断；累计返回的载荷不超过总预算，重复引用独立读取并重复计费。读取失败或任一资产不合格时不返回部分成功结果。预算限制载荷，不承诺整个进程的内存上限。
+- 返回拥有所有权的字节快照，消费者应使用快照，不重新打开未经复查的路径。错误只含字段/索引与原因，不回显人设正文、资产引用、绝对路径或底层 OS 错误内容。
+
+**文件系统前提**：调用方必须在读取期间防止根目录、路径组件和文件被并发更改。canonicalize 检查不是抗竞争替换的文件系统沙箱，也不识别硬链接的来源；这条便捷入口不能直接承担敌对可变目录的隔离边界。
+
+**尚未保证**：非空字节不等于有效视觉资产。此入口不检查图片格式、解码、像素/帧预算或可渲染性，不下载 URL、不指定七图集、不注入产品语义；媒体校验与安全解码由后续媒体适配层负责。它也不定义独立磁盘包 schema、生命周期标识或 CLI 行为，不能据此宣称“一图 + prompt 已能被当前宿主直接加载”。
+
+验收包含 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs)（8 项）与读取失败/读取中超限单元测试（2 项），全部使用临时夹具。Windows 目录 junction 的包内允许/包外拒绝已在本机执行通过；Unix 对应测试分支尚未在本机执行。这不是媒体有效性或真实跨宿主运行验收。
 
 ## 1. 当前参考宿主内部划分
 
