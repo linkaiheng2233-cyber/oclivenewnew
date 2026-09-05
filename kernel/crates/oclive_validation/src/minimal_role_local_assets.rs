@@ -6,7 +6,7 @@
 
 use std::fs::{self, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::minimal_role::{validate_minimal_role_definition, MinimalRoleDefinition};
 use crate::validate::validate_portable_path_segment;
@@ -61,7 +61,7 @@ pub fn load_minimal_role_local_assets(
     max_total_bytes: usize,
 ) -> Result<Vec<Vec<u8>>, Vec<String>> {
     validate_minimal_role_definition(role)?;
-    if max_asset_bytes == 0 || max_asset_bytes == usize::MAX || max_total_bytes == 0 {
+    if !valid_local_byte_budgets(max_asset_bytes, max_total_bytes) {
         return Err(vec![
             "minimal role local assets: invalid caller byte budgets".into(),
         ]);
@@ -69,24 +69,15 @@ pub fn load_minimal_role_local_assets(
     // Check every reference before any filesystem access. No reference is a URL,
     // absolute path, or platform-dependent separator in this adapter.
     for (index, reference) in role.visual_assets.iter().enumerate() {
-        if reference
-            .split('/')
-            .any(|segment| validate_portable_path_segment(segment).is_err())
-        {
+        if !valid_local_reference(reference) {
             return Err(vec![asset_error(
                 index,
                 "expected a portable relative path",
             )]);
         }
     }
-    let root = asset_root.canonicalize().map_err(|_| {
-        vec!["minimal role local assets: root is not an accessible directory".into()]
-    })?;
-    if !root.is_dir() {
-        return Err(vec![
-            "minimal role local assets: root is not an accessible directory".into(),
-        ]);
-    }
+    let root = canonical_asset_root(asset_root)
+        .map_err(|reason| vec![format!("minimal role local assets: {reason}")])?;
 
     let mut remaining = max_total_bytes;
     let mut snapshots = Vec::new();
@@ -106,7 +97,31 @@ fn asset_error(index: usize, reason: &str) -> String {
     format!("minimal role local assets: visual_assets[{index}]: {reason}")
 }
 
-fn read_local_asset(root: &Path, reference: &str, limit: usize) -> Result<Vec<u8>, &'static str> {
+pub(crate) fn valid_local_byte_budgets(per_file: usize, total: usize) -> bool {
+    per_file > 0 && per_file < usize::MAX && total > 0
+}
+
+pub(crate) fn valid_local_reference(reference: &str) -> bool {
+    reference
+        .split('/')
+        .all(|segment| validate_portable_path_segment(segment).is_ok())
+}
+
+pub(crate) fn canonical_asset_root(root: &Path) -> Result<PathBuf, &'static str> {
+    let reason = "root is not an accessible directory";
+    let root = root.canonicalize().map_err(|_| reason)?;
+    if !root.is_dir() {
+        return Err(reason);
+    }
+    Ok(root)
+}
+
+/// Caller validates the relative reference/budget and supplies a canonical root.
+pub(crate) fn read_local_asset(
+    root: &Path,
+    reference: &str,
+    limit: usize,
+) -> Result<Vec<u8>, &'static str> {
     let path = root
         .join(reference)
         .canonicalize()

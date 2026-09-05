@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）和可选静态 PNG 校验（§0.4）已实现；独立磁盘格式与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现；统一磁盘入口与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -45,7 +45,7 @@
 宿主配置 ─────宿主装配─────> 能力绑定 ──> 六槽 ports / 外围设施
 ```
 
-这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影见 §0.2，本地文件读取边界见 §0.3；独立磁盘格式、媒体/生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
+这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影、本地文件读取、可选媒体能力与加载准备见 §0.2–0.5；统一磁盘入口、生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
 
 ### 0.2 第一代码切片：共享逻辑投影（无 I/O）
 
@@ -94,6 +94,19 @@
 **非目标**：颜色管理、EXIF 解释、重编码、缩略图和可选元数据语义验证。text / ICC 内容跳过，像素按 identity 解码并丢弃；此检查不是文件净化器，不能据此绕过其他渲染器自己的防护。没有子进程、硬执行超时或恶意输入的进程级隔离。PNG 限制的上游说明见 [Decoder::set_limits](https://docs.rs/png/0.18.1/png/struct.Decoder.html#method.set_limits)。
 
 [媒体定向测试](../kernel/crates/oclive_validation/tests/static_png.rs) 使用合成字节与临时目录，覆盖损坏/截断、各预算、校验和、尾部、APNG、其他格式和“逻辑 → 文件快照 → 媒体能力”组合。默认 feature 与启用 feature 分别回归；本切片未启用现有宿主/CLI 的自动媒体校验，不构成生命周期或跨宿主运行验收。
+
+### 0.5 第四代码切片：调用方指定文件的本地加载准备
+
+[`oclive_validation::minimal_role_local_file::load_minimal_role_local_file`](../kernel/crates/oclive_validation/src/minimal_role_local_file.rs) 将现有逻辑解析器与本地字节读取组合为**只读准备入口**，不是第二套产品包解析器，也不是角色激活 API。调用方指定资产根目录、定义文件相对路径、定义文件字节上限、单资产与资产合计字节上限；例子中的 `content.json` 只是调用方的选择，不注册统一文件名、格式版本或目录扫描规则。
+
+- 定义文件与资产共用 §0.3 的相对路径、canonical 包含关系、非空普通文件和有界读取策略；先校验调用预算及定义路径，再读取定义文件，严格检查 UTF-8，复用 §0.2 的 JSON/逻辑校验，最后读取资产。资产引用始终相对于**资产根目录**，不是定义文件所在子目录。
+- 返回 `LocalMinimalRoleSnapshot`：定义与对应字节保存在私有字段中，只提供只读定义及按原顺序配对的 `(引用, 字节)` 迭代器；重复引用保留且重复计费。失败不返回半成品，后续源文件变化不改变已返回内容。默认 `Debug` 只展示资产数量，诊断不回显路径、人设或载荷。
+- 定义文件预算与资产预算独立，均由调用方提供；定义原始缓冲在解析后、资产读取前释放。它们不是整个进程的内存/时间硬上限，解析后的字符串与容器另有开销。调用方仍须在整个调用期间防止根目录、路径和文件被并发改动；这不是可变目录的原子快照或文件系统隔离机制。
+- 未知产品字段仍被忽略并丢弃，不从中加载额外路径或注入默认关系/能力；不适合 richer pack 无损回写。返回快照只证明逻辑与本地实体检查通过；PNG/其他媒体验证及宿主能否消费各自独立，启用 `media-png` 也不会让此加载函数自动调用解码器。
+
+**运行接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。公开的 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。涉及这些公共接口的拆分/迁移范围须另行确认，本切片未修改它们；CLI、统一磁盘入口与真实跨宿主运行验收也未完成。
+
+[加载准备测试](../kernel/crates/oclive_validation/tests/minimal_role_local_file.rs) 包含 9 项默认测试与 1 项 `media-png` 组合测试；定义文件的包内/包外链接检查复用 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs) 的临时链接夹具。测试不使用官方角色包、真实消息、宿主回合或持久化状态。
 
 ## 1. 当前参考宿主内部划分
 

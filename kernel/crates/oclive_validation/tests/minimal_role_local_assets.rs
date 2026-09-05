@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::Path;
 
+use oclive_validation::minimal_role_local_file::load_minimal_role_local_file;
 use oclive_validation::{
     load_minimal_role_local_assets, parse_minimal_role_definition,
     validate_minimal_role_definition, MinimalRoleDefinition,
@@ -179,10 +180,17 @@ fn allows_internal_directory_links_but_rejects_links_outside_the_root() {
     fs::create_dir(&sibling).unwrap();
     fs::write(root.join("inside/image"), b"inside").unwrap();
     fs::write(sibling.join("image"), b"outside").unwrap();
+    let raw = r#"{"persona_prompt":"Guide","visual_assets":["inside/image"]}"#;
+    fs::write(root.join("inside/content.json"), raw).unwrap();
+    fs::write(sibling.join("content.json"), raw).unwrap();
     link_directory(&root.join("inside"), &root.join("internal-link"));
     link_directory(&sibling, &root.join("external-link"));
     let inside = load_minimal_role_local_assets(&root, &role(&["internal-link/image"]), 16, 16);
     let outside = load_minimal_role_local_assets(&root, &role(&["external-link/image"]), 16, 16);
+    let definition_inside =
+        load_minimal_role_local_file(&root, "internal-link/content.json", raw.len(), 16, 16);
+    let definition_outside =
+        load_minimal_role_local_file(&root, "external-link/content.json", raw.len(), 16, 16);
     // Remove test links themselves before assertions/temporary directory cleanup.
     #[cfg(windows)]
     for link in ["internal-link", "external-link"] {
@@ -194,5 +202,10 @@ fn allows_internal_directory_links_but_rejects_links_outside_the_root() {
     }
     assert_eq!(inside.unwrap(), vec![b"inside".to_vec()]);
     assert!(outside.unwrap_err()[0].contains("escapes the asset root"));
+    assert_eq!(
+        definition_inside.unwrap().assets().next().unwrap().1,
+        b"inside"
+    );
+    assert!(definition_outside.unwrap_err()[0].contains("escapes the asset root"));
     assert_eq!(fs::read(sibling.join("image")).unwrap(), b"outside");
 }

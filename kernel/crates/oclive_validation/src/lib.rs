@@ -24,6 +24,7 @@ pub mod manifest;
 pub mod meta_action_templates;
 pub mod minimal_role;
 pub mod minimal_role_local_assets;
+pub mod minimal_role_local_file;
 pub mod penetration_templates;
 pub mod pipeline_action;
 pub mod plugin_backends;
