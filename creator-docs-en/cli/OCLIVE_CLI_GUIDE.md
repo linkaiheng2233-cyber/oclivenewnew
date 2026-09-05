@@ -102,8 +102,8 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 
 - **`validate` (exact v2/v3/v4 dispatch)**: `pipeline.ocblueprint` (`meta`, `slot_registry`, at least one `type: llm`, etc.). v4 is Stable; v3 is the frozen dual-core Beta — see [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
 - **`validate --profile legacy`**: merged `manifest.json` / `settings.json`, `plugin_backends`, `min_runtime_version` vs `--host-version`, etc.
-- **`validate --profile robot-soul`**: RobotSoulPack rules after legacy validation (ROLE_PACK_SPEC §6).
-- **`validate --profile portable-core`**: validates a v2/v3/v4 blueprint, non-empty `core_personality.txt`, an enabled `portrait_catalog`, and seven fixed default emotion image IDs. This is a historical reference-host visual profile, not the cross-distro kernel-minimal contract.
+- **`validate --profile robot-soul`**: existing reference-host RobotSoulPack rules after legacy validation; passing does not establish conformance to the new minimum (ROLE_PACK_SPEC §6).
+- **`validate --profile portable-core`**: validates a v2/v3/v4 blueprint, non-empty `core_personality.txt`, an enabled `portrait_catalog`, and seven fixed default emotion image IDs. The seven-image set is a recommended optional cross-distro standard, but this reference-host profile is distinct from the [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md), which requires only one visual asset and a persona prompt.
 - **`create`**: creates a valid directory in the current reference-host format family; prefer **`--format-blueprint-v4`** for its new Stable examples. `--format-blueprint-v2` remains for compatibility; with `--flat`, `-o` is the role root. Kernel-minimal generation/recognition remains tracked as `D-CLI-BLUEPRINT-05` in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 - **`publish`**: **`.oclivepack`** ZIP; top-level folder is **`meta.id`** (v2/v3/v4) or **`manifest.id`** (legacy).
 

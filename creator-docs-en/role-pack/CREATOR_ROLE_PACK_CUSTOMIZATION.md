@@ -59,14 +59,14 @@ activity; it does not replace memory, emotion, or the core persona.
 
 ## Portraits and the `portable-core` visual profile
 
-When the current reference host claims this historical visual profile, enable `portrait_catalog` in `config.json`,
+When the current reference host claims this seven-image visual profile, enable `portrait_catalog` in `config.json`,
 create `portrait_catalog.json`, and provide existing safe paths for:
 
 `happy_default`, `sad_default`, `angry_default`, `neutral_default`,
 `excited_default`, `confused_default`, and `shy_default`.
 
-The `portable-core` profile checks a core persona and seven baseline portraits. It is
-a product/presentation visual baseline, not the cross-distro kernel-minimal contract.
+The `portable-core` profile checks a core persona and seven baseline portraits.
+The seven-image set is a recommended optional cross-distro visual standard. The current product pack's `portrait_catalog` is optional, but mapping to the [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) must supply at least one visual asset and a non-empty persona prompt; the seven-image directory is not required.
 A role may keep additional scenes, portraits, voice resources, knowledge, or
 distro-specific features when those files have a clear consumer and validation path.
 

@@ -77,7 +77,7 @@ flowchart LR
 | **event** | 否 | `Ignore` / `impact = 0` |
 | **agent** | 否 | 不短路 |
 
-**robot-soul / 无头最小包**：至少 `prompt` + `llm`；推荐默认开启 **emotion T0**，但不作为健康检查硬门槛。
+**robot-soul / 无头参考宿主最小运行装配**：至少 `prompt` + `llm`；推荐默认开启 **emotion T0**，但不作为健康检查硬门槛。这是能力端口健康要求；角色内容的最小边界另见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1。
 
 ---
 

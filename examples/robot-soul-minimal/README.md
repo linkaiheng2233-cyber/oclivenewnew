@@ -1,6 +1,8 @@
 # Robot soul minimal（K3 示例）
 
-面向 **无头 / 嵌入式** 交付的最小角色包目录，满足 `oclive pack validate --profile robot-soul`。
+面向当前参考宿主 **无头 / 嵌入式** 场景的 `robot-soul` profile 示例目录，满足 `oclive pack validate --profile robot-soul`。
+
+目录名中的 `minimal` 是既有示例名称，不代表新 [kernel minimal role contract](../../handoff/ROLE_PACK_BOUNDARY.md)。本例没有视觉资产；适配到新最小定义时仍须提供非空 persona prompt 与至少 1 个视觉资产。该独立 contract 的加载/CLI 支持尚未实现。
 
 ## 校验
 

@@ -24,9 +24,11 @@ This path integrates the current **complete reference-runtime facade**, `OcliveK
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <repo root> -o <proj> …` | **kernel_server** or **library** with path deps |
 | 3 | Author a pack under the generated project's root-level **`roles/<id>/`** (`pack create` or copy [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)) | `pack validate`; devices: **`--profile robot-soul`** ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | 4 | Directory plugins / sidecars (optional) | [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md), [REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
-| 5 | `cargo run -p oclive-cli -- pack validate <role root> [--profile robot-soul]` | Contract + RobotSoulPack |
+| 5 | `cargo run -p oclive-cli -- pack validate <role root> [--profile robot-soul]` | Current reference-host format + RobotSoulPack rules |
 | 6 | Run | Cross-process: **`cargo run -p oclive_kernel_server -- --api`** or **`oclivenewnew-tauri --api`**; in-process: call **`OcliveKernel`** from the generated `library` |
 | 7 | Ship | Binary + root-level `roles/` + `plugins/` (if directory) + env: `OCLIVE_ROLES_DIR`, `OCLIVE_API_PORT`, `OCLIVE_HTTP_API_MOCK_LLM` (bring-up), …; only built-in monorepo examples live under `distros/chat-pro/` |
+
+These steps validate the existing reference host. The independent [kernel minimal role contract](../../handoff/ROLE_PACK_BOUNDARY.md) has a confirmed content boundary, but loader/CLI integration remains unimplemented; passing `robot-soul` does not replace that acceptance gate.
 
 ---
 

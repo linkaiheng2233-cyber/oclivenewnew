@@ -178,7 +178,7 @@
 | `headless-api` | full | 关闭 | kernel_server |
 | `library-embed` | minimal | 关闭 | library |
 
-历史参考宿主视觉 profile：`pack validate --profile portable-core`。它检查基础人格 Prompt 与七张默认情绪图片，不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展；它也不是跨发行版的内核最小角色 contract。
+参考宿主七图视觉 profile：`pack validate --profile portable-core`。它检查基础人格 Prompt 与七张默认情绪图片；七图集是推荐的可选跨发行版标准，不限制发行版自己的 HostProfile、UI、语音、视觉或硬件扩展，也不代替 [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) 的一图 + persona prompt 校验。
 
 **`--monolith-preset`**（Monolith 启用时）：`latency` | `memory` | `embedded` — 预填 `weld_modules`（见生成工程 `CONFIG_REFERENCE.md`）。
 

@@ -50,14 +50,14 @@ Role data and slot policy are both portable inputs, but they are not the same co
 
 | Part | Description |
 |------|-------------|
-| **Kernel minimal role definition (target boundary)** | Confirmed required values: contract version, stable role id, display name/role version, and a non-empty core persona. Personality defaults, scenes, knowledge, and memory seed are optional. Whether relations must be supplied or the kernel injects a stable neutral default remains a product decision; see [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
+| **Kernel minimal role definition (confirmed, not implemented)** | Required authored content: a non-empty persona prompt and at least one visual asset. The seven-image emotion set is a recommended optional cross-distro standard; relations, default relations, and favorability belong to distros. The adapter/loading boundary supplies lifecycle identifiers without adding required authored content; see [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
 | **Reference-host combined directory (current)** | **`pipeline.ocblueprint`** v2/v3/v4 combines `meta` with `slot_registry` / `runtime_config`, then the loader consumes persona, scene, knowledge, and product-extension files from the same directory. This is a reference implementation input, not the kernel canonical schema ([ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)) |
 | **Effective backends** | Host blueprint `slot_registry` fold + **`set_session_slot_override`** + environment; outside the minimal role definition ([SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)) |
-| **Relation & memory** | `role_runtime`, long-term memory via Repository; `memory` slot implements policy |
+| **Current reference-runtime relation & memory** | `role_runtime` and long-term memory use Repository access; their capability implementations own policy. They do not define minimum role content |
 
-**Robot scenario**: swap role data while the device host independently selects its six-port assembly; a soul pack need not carry desktop model, portrait, or blueprint policy.
+**Robot scenario**: swap role data while the device host independently selects its six-port assembly. A minimal role still carries at least one visual asset; a device without a display may leave it unrendered. Desktop seven-image directories, models, and blueprint policy are not required.
 
-Working name **RobotSoulPack** is aligned with **`oclive pack validate --profile robot-soul`**; fields and sample: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md), [examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md).
+**RobotSoulPack** is the existing reference-host robot/embedded profile, validated by **`oclive pack validate --profile robot-soul`**. Passing it does not establish conformance to the new minimum; fields and sample: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md), [examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md).
 
 ---
 

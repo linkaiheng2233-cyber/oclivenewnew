@@ -299,7 +299,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 
 ### 现有 Portable Core profile（`--profile portable-core`）
 
-`portable-core` 是已经实现的**参考宿主视觉基线 profile**：它在 v2/v3/v4 组合蓝图之上要求基础人格 Prompt 与七张默认情绪图。这个历史名称不代表 kernel minimal role contract；无视觉能力的内核宿主不应被迫携带图片，发行版也不应因为该 profile 而统一产品包格式。
+`portable-core` 是已经实现的**参考宿主视觉基线 profile**：它在 v2/v3/v4 组合蓝图之上要求基础人格 Prompt 与七张默认情绪图。七图情绪集是推荐的可选跨发行版标准能力；最小角色定义只要求非空 persona prompt + 至少 1 个视觉资产，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1。无视觉输出的宿主可不渲染资产；发行版无需统一产品包格式，也无需把这份 profile 的蓝图壳带入最小 contract。
 
 | 规则 | 说明 |
 |------|------|
@@ -339,7 +339,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 - `slot_registry` **不能省略、也不能为空**：当前校验强制"非空 + 至少一个 `type: llm`"（`validate_slot_registry_contract`），`{}` 会被 `pack validate` 与宿主加载直接拒绝。llm 后端允许 `ollama` / `remote` / `directory` / `none`。
 - 除 llm 外，六槽中的 `memory` / `emotion` / `event` / `prompt` / `agent` 均可省略——运行时从 `PluginBackends::default()` 回落为内置（builtin）实现，即“省略 = 五槽默认 builtin”。`complex_emotion` 是独立设施（**非六槽**），语义与六槽不同：**省略（无条目）= 不启用复杂情绪**（解析为 Noop，不产 hint）；显式 `builtin` = 开启；显式 `none` = 明确关闭（与省略等价）。该语义已随情绪引擎 B 阶段 M1 落地。
 - 仓库内现有角色包（如 `deepseek`、`mumu`）的 `slot_registry` 写满 agent / complex_emotion / ollama 等条目，那是 **chatpro 发行版的功能需求**（远程模型、情绪引擎、Agent 等），**不是**最小格式的必需项；新创作者不必照抄填满开关。`pack create --format-blueprint-v2` 生成的是“六个稳定槽条目 + `complex_emotion` 设施条目”的七项完整脚手架，不是七个稳定槽，也不是最小格式。
-- 配上该 profile 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，得到的是“七图 + 一段人设 prompt”的**视觉兼容样本**，不是 kernel 最小角色包。将来实现 kernel minimal contract 时，不应以放宽这份组合蓝图来偷换边界；应由共享适配层把最小角色定义与宿主能力绑定分开。
+- 配上该 profile 要求的 `core_personality.txt`、`config.json`、`portrait_catalog.json` 与七张默认情绪图，得到的是**参考宿主七图视觉兼容样本**。其内容覆盖已确认的“一图 + persona prompt”最小要求，但当前 profile 的关系/蓝图校验并不等于最小 contract 校验；后续由共享适配层分离最小角色定义与宿主能力绑定。
 
 宣称支持这一视觉 profile 的宿主至少应能加载人格并运行基础对话；有视觉能力时显示对应基础图。高级资源可以追加，不能改变七个固定 ID 的语义。校验命令：
 
@@ -347,7 +347,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 ```
 
-`portable-core` 只验证这份历史视觉基线，不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价，更不能作为 kernel compatibility boundary；这些能力应由发行版自己的 capability-conformance 验收负责。
+`portable-core` 验证的是当前参考宿主七图 profile，不代替尚待实现的 kernel minimal 校验，也不宣称各发行版的 UI、语音、视觉、插件或硬件能力完全等价；这些能力应由发行版自己的 capability-conformance 验收负责。
 
 ### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
 
@@ -427,7 +427,7 @@ oclive-cli pack validate-memory ./mumu.ocmemory
 
 ### RobotSoulPack（`--profile robot-soul`）
 
-在标准目录校验通过后追加，用于 **机器人 / 无头 / 嵌入式** 最小可交付「灵魂包」：
+在标准目录校验通过后追加，用于当前参考宿主的 **机器人 / 无头 / 嵌入式** profile。它不要求视觉资产，且允许七维人格代替人设正文，因此通过该 profile 不代表满足 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 的新最小角色 contract；映射时仍须提供非空 persona prompt 与至少一个视觉资产。
 
 | 规则 | 说明 |
 |------|------|
@@ -451,12 +451,12 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 | 命令 | 作用 |
 |------|------|
 | `pack validate <dir>` | 按 `schema_version` 精确分派 v2/v3/v4 蓝图目录校验 |
-| `pack validate <dir> --profile portable-core` | v2/v3/v4 参考宿主蓝图 + 历史视觉基线（基础人格 + 七张默认情绪图）；非 kernel minimal |
+| `pack validate <dir> --profile portable-core` | v2/v3/v4 参考宿主蓝图 + 七图视觉 profile；七图集为推荐可选标准，非 kernel minimal 校验 |
 | `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
 | `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |
 | `pack validate <dir> --profile robot-soul` | legacy + RobotSoulPack（见 §6） |
-| `pack create -o <out> --id <id> [--flat]` | 生成最小可校验包（`--flat` 时 `<out>` 即为角色根） |
+| `pack create -o <out> --id <id> [--flat]` | 生成当前参考宿主的可校验目录（`--flat` 时 `<out>` 即为角色根），尚非独立 kernel minimal 生成器 |
 | `pack publish <dir> [-o file.oclivepack]` | ZIP 打包；唯一顶层目录名为 `meta.id`（v2/v3/v4）或 `manifest.id`（legacy） |
 | `init … --skip-role-pack` | 生成内核工程时不创建根级 `roles/` |
 

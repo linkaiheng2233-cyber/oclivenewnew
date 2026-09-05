@@ -35,7 +35,7 @@ user message → emotion T0 or none → memory / identity / profile → prompt T
 | event | No | `Ignore` / impact 0 |
 | agent | No | No short-circuit |
 
-**robot-soul / headless minimal pack:** at least `prompt` + `llm`; emotion T0 recommended but not a hard health gate.
+**robot-soul / headless reference-host minimal runtime assembly:** at least `prompt` + `llm`; emotion T0 recommended but not a hard health gate. These are capability-port health requirements; the minimum role-content boundary is defined separately in [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1.
 
 ## Relation to `none` semantics
 

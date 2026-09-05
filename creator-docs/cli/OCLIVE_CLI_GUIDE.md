@@ -376,7 +376,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/legacy-example --profile robot-soul
 # 创作者 profile：仅 meta 子集 + prompts/（不校验 slot_registry / runtime_config）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile creator
-# portable-core：历史参考宿主视觉 profile（人格 + 七张默认情绪图；非内核最小 contract）
+# portable-core：参考宿主七图视觉 profile（七图集为推荐可选标准；非内核最小 contract）
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 cargo run -p oclive-cli -- pack validate-persona ./exports/mumu.ocpersona
 cargo run -p oclive-cli -- pack validate-memory ./exports/mumu.ocmemory
@@ -387,8 +387,8 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`validate`（精确 v2/v3/v4 分派）**：校验 `pipeline.ocblueprint`（`meta`、`slot_registry`、至少一个 `type: llm` 等）；**v4** 是 Stable，**v3** 为冻结的双核 Beta，**v2** 含 `runtime_config` 时仅警告。见 [`ROLE_PACK_SPEC.md`](../role-pack/ROLE_PACK_SPEC.md)。
 - **`validate --profile creator`**：仅角色包（`meta` 创作者子集 + **`prompts/`**）；不校验 `slot_registry` / `runtime_config`。见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
-- **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加 RobotSoulPack 规则（见 ROLE_PACK_SPEC §6）。
-- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；这是历史参考宿主的视觉 profile，不是跨发行版内核最小 contract。
+- **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加现有参考宿主的 RobotSoulPack 规则；通过不代表符合新最小 contract（见 ROLE_PACK_SPEC §6）。
+- **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；七图集是推荐的可选跨发行版标准，但该参考宿主 profile 不等于只需一图 + persona prompt 的 [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md)。
 - **`create`**：生成当前参考宿主格式的可校验目录；该格式族的新 Stable 样例推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。内核最小角色 contract 的生成/识别能力尚未实现，跟踪于 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05`。
 - **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2/v3/v4）或 **`manifest.id`**（legacy）。
 

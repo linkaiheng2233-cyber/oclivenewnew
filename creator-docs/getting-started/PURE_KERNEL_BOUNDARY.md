@@ -52,14 +52,14 @@ OCLive 真正要长期守住的最小核心是：
 
 | 组成部分 | 说明 |
 |----------|------|
-| **内核最小角色定义（目标边界）** | 已确定必需：contract 版本、稳定角色 id、展示名/角色版本、非空核心人设；七维人格、场景、知识与记忆种子可选。关系由角色必填还是由内核提供稳定中性默认仍待产品决定，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
+| **内核最小角色定义（已确认、待实现）** | 作者只需非空 persona prompt + 至少 1 个视觉资产。七图情绪集是推荐的可选跨发行版标准；关系、默认关系和好感度归发行版。生命周期技术标识由适配/加载边界提供，不增加作者必填内容，见 [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1 |
 | **参考宿主组合目录（当前实现）** | **`pipeline.ocblueprint`** v2/v3/v4 把 `meta` 与 `slot_registry` / `runtime_config` 放在同一文件，再从同目录加载 `core_personality.txt`、场景、知识及产品扩展；这是参考实现输入，不是 kernel canonical schema（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | **有效后端** | 由宿主蓝图 `slot_registry`、**`set_session_slot_override`** 会话覆盖和环境变量合成；不属于最小角色定义（见 [SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)） |
-| **关系与记忆** | `role_runtime`、长期记忆等由内核经 Repository 读写；策略由 `memory` 等槽实现 |
+| **当前参考运行时的关系与记忆** | `role_runtime`、长期记忆等经 Repository 读写；具体策略由相应能力实现，不构成最小角色内容要求 |
 
-**机器人场景**：设备可以只替换角色数据，由设备宿主独立选择六槽装配；不要求灵魂包携带桌面版的模型、立绘或蓝图策略。
+**机器人场景**：设备可以只替换角色数据，由设备宿主独立选择六槽装配；最小角色仍携带至少一个视觉资产，无显示设备时可不渲染，不要求桌面版七图目录、模型或蓝图策略。
 
-工作名 **RobotSoulPack**（最小灵魂包）已与 **`oclive pack validate --profile robot-soul`** 对齐；字段与示例见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、[examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md)。
+**RobotSoulPack** 是现有参考宿主的机器人/嵌入式 profile，对应 **`oclive pack validate --profile robot-soul`**，其校验通过不代表符合新最小 contract；字段与示例见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)、[examples/robot-soul-minimal](../../examples/robot-soul-minimal/README.md)。
 
 ---
 

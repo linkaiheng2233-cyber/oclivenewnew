@@ -60,7 +60,7 @@ The current kernel forwards `temperature`, `top_p`, the output limit, and prefer
 
 **Current reference-host v2/v3/v4 blueprints:** backends live in **`slot_registry`**; new Stable examples in this format family use v4. Legacy **`settings.json` → `plugin_backends`** sections below are **deprecated** comparison only.
 
-The `portable-core` validation profile is a historical reference-host visual baseline that requires a core persona and seven default emotion images. It is not the cross-distro kernel-minimal role contract.
+The `portable-core` profile validates the reference host's persona and seven-image visual baseline. The seven-image set is a recommended optional cross-distro standard; this profile does not replace validation of the one-image-plus-persona [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md).
 
 This document describes configuration semantics shared by the **desktop host (Tauri)** and **`oclive-cli` scaffolds**. Single sources of truth remain code:
 

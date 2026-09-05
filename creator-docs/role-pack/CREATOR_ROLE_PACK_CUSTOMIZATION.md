@@ -62,7 +62,7 @@
 
 ## 4. 立绘与 `portable-core` 视觉 profile
 
-当前参考宿主选择这一历史视觉 profile 时：
+当前参考宿主选择这一七图视觉 profile 时：
 
 1. 在 `config.json` 设置 `portrait_catalog.enabled: true`；
 2. 创建 `portrait_catalog.json`；
@@ -72,7 +72,7 @@
 4. 确保每个 `path` 都是包内安全相对路径且文件真实存在。
 
 `portable-core` profile 检查通用人格与七张基础立绘，不限制角色还可以携带多少场景、
-语音、知识或发行版专属能力。它是产品/展示层的视觉基线，不是跨发行版内核最小 contract。
+语音、知识或发行版专属能力。七图集是推荐的可选跨发行版标准；当前产品包的 `portrait_catalog` 可选，但映射到 [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) 时必须提供至少 1 个视觉资产与非空 persona prompt，不要求采用七图目录。
 
 ## 5. 语音与其它侧通道
 

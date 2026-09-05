@@ -16,7 +16,7 @@ This specification describes on-disk directories **aligned with the complete A.I
 
 | Component | Entry-level creators | Blueprint / admins |
 |-----------|----------------------|-------------------|
-| **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`prompts/`**, scene prose | — |
+| **Role pack** | `meta` identity, **`personality`**, **`relations`**, **`core_personality.txt`** persona source, scene prose | — |
 | **Blueprint** | **Do not edit** unless you integrate hosts | **`slot_registry`**, **`groups`**, **`backend`**, **`model`**, **`interaction_mode`**, **`memory_config`**, **`runtime_config.dual_core.enabled`** (RFC), … |
 
 In the current **reference host**, every supported blueprint version uses one entry file, `pipeline.ocblueprint`. Stable v4 is the Stable reference-host blueprint version; it is not the kernel canonical role-pack schema. v2 remains compatible, while v3 is the frozen dual-core Beta. Editors should expose a **role** view vs an **advanced blueprint** view.
@@ -193,9 +193,11 @@ Role packs have two version layers — do not mix them:
 
 ### Existing Portable Core profile (`--profile portable-core`)
 
-`portable-core` is an implemented **reference-host visual-baseline profile**. It layers a non-empty `core_personality.txt` and seven fixed portrait assets on top of a v2/v3/v4 combined blueprint. Its historical name does not make it the kernel minimal role contract: a non-visual kernel host must not be forced to carry images, and distros need not standardize their product-pack formats around it. Validate with `oclive pack validate <role-dir> --profile portable-core` only when claiming this visual profile.
+`portable-core` is an implemented **reference-host visual-baseline profile**. It layers a non-empty `core_personality.txt` and seven fixed portrait assets on top of a v2/v3/v4 combined blueprint. The seven-image emotion set is a recommended optional cross-distro standard. The confirmed minimum requires only a non-empty persona prompt and at least one visual asset; see [ROLE_PACK_BOUNDARY.md](../../handoff/ROLE_PACK_BOUNDARY.md) §0.1. A host without visual output may leave the asset unrendered. Distros need not standardize their product-pack formats or include this profile's blueprint shell in the minimum. Validate with `oclive pack validate <role-dir> --profile portable-core` only when claiming this visual profile.
 
 The current profile still needs a reference-host blueprint shell because host scanning recognizes `pipeline.ocblueprint` (or legacy `manifest.json`) as the entry. That shell requires `schema_version`, `meta` (`id`, `name`, `version`, `author`, `description`, and at least one `relations` entry), and a non-empty `slot_registry` with at least one `type: llm` instance. These are facts about the current combined loader, not the proposed kernel-minimal boundary. The other five stable slots fall back to builtin defaults, while omitted `complex_emotion` remains disabled. Full `slot_registry` entries in shipped packs reflect reference-host or ChatPro needs, not minimum role data.
+
+The existing **RobotSoulPack** / `--profile robot-soul` is also a reference-host profile. It does not require a visual asset and permits seven personality values in place of persona prose. Passing that profile therefore does not establish conformance to the new minimum; adaptation must still supply a non-empty persona prompt and at least one visual asset. Neither current profile replaces the independent minimal-contract validator still to be implemented.
 
 Portable state is split into two JSON documents. `.ocpersona` carries the immutable core identity plus an optional mutable-profile snapshot; import may restore only the mutable profile after matching the installed role id and core. `.ocmemory` carries optional creator-authored `memory_seed` entries and runtime long-term memories. Chat logs, short-term cache, and ephemeral situation state are excluded from both. Optional role-pack `memory_seed.json` is read-only at runtime, participates in retrieval without decay, and is never merged into user LTM. Validate with `oclive-cli pack validate-persona` and `validate-memory`; extension data belongs under the top-level `extensions` object.
 

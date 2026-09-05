@@ -24,9 +24,11 @@
 | 2 | `cargo run -p oclive-cli -- init --kernel-source <本仓库根> -o <项目> …` | 带 path 依赖的 **kernel_server** 或 **library** 工程 |
 | 3 | 在生成工程根级 **`roles/<id>/`** 放入或编辑角色包（建议先用 `pack create` 或复制 [examples/robot-soul-minimal](../../examples/robot-soul-minimal/)） | 可 `pack validate`；设备交付建议 **`--profile robot-soul`**（见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)） |
 | 4 | 目录插件 / 侧车（可选） | 见 [DIRECTORY_PLUGINS.md](../plugin-and-architecture/DIRECTORY_PLUGINS.md)、[REMOTE_PLUGIN_PROTOCOL.md](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |
-| 5 | `cargo run -p oclive-cli -- pack validate <角色根> [--profile robot-soul]` | 契约与 RobotSoulPack 规则 |
+| 5 | `cargo run -p oclive-cli -- pack validate <角色根> [--profile robot-soul]` | 当前参考宿主格式与 RobotSoulPack 规则 |
 | 6 | 运行 | 跨进程：**`cargo run -p oclive_kernel_server -- --api`** 或 **`oclivenewnew-tauri --api`**；进程内：由生成的 `library` 调用 **`OcliveKernel`** |
 | 7 | 部署 | 二进制 + 根级 `roles/` + `plugins/`（若用 directory）+ 环境变量：`OCLIVE_ROLES_DIR`、`OCLIVE_API_PORT`、`OCLIVE_HTTP_API_MOCK_LLM`（联调）等；主仓内置示例才位于 `distros/chat-pro/` |
+
+这些步骤验证现有参考宿主。独立 [kernel minimal role contract](../../handoff/ROLE_PACK_BOUNDARY.md) 已确认内容边界，加载/CLI 接入尚待实现；`robot-soul` profile 通过不能代替该最小契约验收。
 
 ---
 

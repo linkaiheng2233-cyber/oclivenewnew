@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 已校正“内核最小角色 contract / 参考宿主蓝图 / 发行版产品包”三层边界。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-05 维护者已确认最小角色内容为“非空 persona prompt + 至少 1 个视觉资产”，关系系统整体归发行版能力；独立 schema / CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -17,33 +17,35 @@
 
 | 层 | 只负责 | 不负责 |
 |----|--------|--------|
-| **Kernel Minimal Role Contract** | 让内核识别一个角色、建立角色生命周期命名空间，并取得非空核心人设；关系基线由角色显式提供还是由内核给出稳定默认仍待决 | 不选择 LLM/插件/backend，不规定头像、立绘、语音、市场或某个发行版的完整包布局 |
+| **Kernel Minimal Role Contract** | 识别最小角色定义：非空 persona prompt + 至少 1 个视觉资产，并接入角色生命周期 | 不定义关系、好感度、视觉渲染或发行版产品语义，不选择 LLM/插件/backend |
 | **参考宿主装配蓝图** | OCLive 完整参考运行时的 `slot_registry`、backend/provider/model 路由、运行策略与扩展声明 | 不是内核最小角色格式，也不要求第三方发行版原样采用 |
 | **发行版 / 产品角色包** | ChatPro、VS Code、游戏版或第三方产品自己的 UI、资产、语音、市场元数据、版本与扩展 | 不得反向扩大 kernel minimal contract；只需通过适配器映射到最小角色数据与宿主能力装配 |
 
 **当前事实（不是目标边界）**：参考宿主的 `RoleStorage` 仍把角色内容和装配配置从同一目录聚合；v2/v3/v4 以 **`pipeline.ocblueprint`** 为入口，legacy 以 `manifest.json` + `settings.json` 为入口。Stable v4 只是在这条**参考宿主组合格式**中的 Stable 蓝图版本。第三方发行版可以维护自己的磁盘格式，再分别映射为内核角色定义与宿主能力绑定，不必复制 v4 产品外壳。
 
-### 0.1 建议冻结的最小逻辑 contract
+### 0.1 已确认的最小逻辑 contract
 
-第一版最小边界已确定只要求以下逻辑值；本节先冻结语义，不提前决定它最终落在 `role.json`、其它文件名或嵌入宿主 DTO 中：
+**Kernel 只保证识别最小角色定义；发行版 richer role-pack format 由各发行版自行维护。7 图情绪集属于推荐的跨发行版标准能力，不属于进入 kernel 的必要条件；1 图 + persona prompt 即构成合法最小角色。** 这是已确认的逻辑边界，尚不代表当前加载器已能直接识别仅有这两项的目录。
 
-| 已确定必需值 | 原因 |
+| 作者侧必需内容 | 边界 |
 |--------|------|
-| contract 版本 | 让解析与迁移可判定，不能借发行版版本猜格式 |
-| 稳定 `role_id` | 角色生命周期、缓存、持久化与资源命名空间 |
-| 展示名与角色版本 | 最小可识别信息及兼容诊断 |
-| 非空核心人设 | 角色区别于空配置的语义底座；当前参考宿主对应 `core_personality.txt` |
+| 非空 persona / role prompt | 角色的人设正文；当前参考宿主对应 `core_personality.txt`，该文件名不成为跨发行版要求 |
+| 至少 1 个视觉资产 | 单图即可；不强制情绪标签、七图目录、`portrait_catalog`、桌面立绘格式或渲染器 |
 
-**未决项：关系是否必填。** 当前参考宿主校验要求至少一种关系，但运行时代码与测试允许空 `user_relations`：找不到关系时会使用空 Prompt hint、倍率 `1.0`、初始好感 `50`，`Role::default()` 还提供 `friend` 默认 id。因此“角色必须携带至少一个关系 + 默认 id”不是现有内核硬约束。公开 DTO / CLI schema 落地前必须在“角色显式提供关系”与“省略时由内核注入稳定中性关系”之间做产品决定。
+**可选内容**：标准化视觉槽位（如现有七图情绪集）和其他扩展元数据。视觉资产属于可携带角色内容；显示方式、情绪选图和硬件输出由发行版或其能力实现负责。无显示设备的宿主可以不渲染，但这不取消最小角色定义中的资产要求。
 
-关系（取决于上述决策）、七维人格、场景、知识与只读 `memory_seed` 可以作为**可选角色内容**映射；省略时由内核定义稳定默认。`author`、`description`、`featured`、`preset_order`、头像/立绘、UI、语音、市场数据和产品扩展不是内核运行必需项。`slot_registry`、`runtime_config`、backend、provider、model、URL、资源预算与权限授权属于**宿主装配输入**，不得进入最小角色 contract。
+**关系决策已关闭**：`1b8f1c37` 中“关系是否必填”的待决项不再存在。`relations`、`default_relation`、favorability / affection 整体不属于 kernel minimal role contract；内核不要求关系，也不因为缺少关系而注入默认关系。角色包是否具有关系概念，对最小 contract 完全透明。当前参考宿主校验要求关系，而运行时与测试允许空关系表，其已有中性 fallback 只是当前实现事实，不升级为最小契约。
+
+**发行版能力与宿主装配**：ChatPro 自行定义关系、好感度和 ChatPro runtime semantics；直播发行版自行定义 stream state / audience interaction model；其他发行版维护自己的扩展模型。七维人格、场景、知识、`memory_seed`、作者/展示名/产品版本、UI、语音、市场信息可由产品包承载，但没有内核统一解释或注入默认值的义务。`slot_registry`、`runtime_config`、backend/provider/model、URL、资源预算与权限授权属于独立宿主装配输入。
+
+生命周期仍需要技术标识与命名空间；适配/加载边界可提供内部角色句柄和传输版本信息。这些是技术封装，不增加作者侧必填内容，也不要求采用发行版的 `meta.id/name/version`。磁盘文件名、传输 schema 与视觉资产描述/解析规则留在后续实现切片中确定。
 
 ```text
-发行版角色包 ──发行版适配器──> 最小角色定义 ──> 内核生命周期
-                              └> 宿主能力绑定 ──> 六槽 ports / 外围设施
+发行版角色包 ──发行版适配器──> 最小角色定义（persona + 视觉资产）──> 内核生命周期
+宿主配置 ─────宿主装配─────> 能力绑定 ──> 六槽 ports / 外围设施
 ```
 
-这两个输出可以由同一个发行版适配器生成，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。专用磁盘 schema、共享适配 trait 与 CLI 生成格式尚未实现，由 `D-CLI-BLUEPRINT-05` 分阶段跟踪。
+这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。独立最小 schema、共享适配入口与 CLI 生成/校验尚未实现，由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入本节最小 contract。
 
 ## 1. 当前参考宿主内部划分
 
@@ -58,7 +60,7 @@
 
 ---
 
-## 2. 角色包可编辑（创作者）
+## 2. 当前参考宿主角色包可编辑内容（创作者）
 
 ### 2.1 `meta` 创作者子集（v2/v4）
 

@@ -8,7 +8,7 @@ This path has one goal: produce a combined role pack that the current A.I.Live r
 
 - The A.I.Live runtime;
 - the [role-pack editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor), or this repository's `oclive-cli`;
-- one personality draft. Portraits, scenes, knowledge, and seed memories can come later.
+- one personality draft; content intended for the minimal contract also needs at least one visual asset. Scenes, knowledge, and seed memories can come later.
 
 ## 1. Create a loadable reference-host pack (5 minutes)
 
@@ -33,7 +33,7 @@ Start with only these items:
 
 `memory_seed.json` is a read-only seed supplied by the creator. It is separate from user-generated long-term memory. Mutable personality and user memory belong to the runtime and must not be written back into the pack.
 
-The seven portraits are mandatory only when claiming the historical `portable-core` visual profile. They are not a minimum requirement for kernel role recognition.
+The seven-image set is a recommended optional cross-distro standard; all seven are mandatory only when claiming `portable-core`. Current reference-host base validation permits no portraits. The confirmed, not-yet-implemented [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) requires a persona prompt and at least one visual asset, which adaptation of this product pack must supply.
 
 For a first pack, leave `slot_registry`, `groups`, remote plugins, dual-core settings, and MCP alone. They belong to distro or advanced integration work.
 

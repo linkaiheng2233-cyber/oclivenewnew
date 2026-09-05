@@ -8,7 +8,7 @@
 
 - A.I.Live 运行时；
 - [角色包编写器](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)，或本仓库的 `oclive-cli`；
-- 至少一份人设正文。立绘、场景、知识与预置记忆都可以稍后补。
+- 至少一份人设正文；准备面向最小 contract 的内容时，还需至少一个视觉资产。场景、知识与预置记忆可以稍后补。
 
 ## 1. 建立可加载的参考宿主包（5 分钟）
 
@@ -33,7 +33,7 @@ cargo run -p oclive-cli -- pack create -o .\work\my-role --flat --id my-role --n
 
 `memory_seed.json` 是创作者提供的只读种子，不是用户运行后产生的长期记忆。可变人设和用户长期记忆由运行时管理，不要写回角色包。
 
-七张立绘只在选择历史 `portable-core` 视觉 profile 时强制，不是内核识别角色的最低要求。
+七图集是推荐的可选跨发行版标准，仅选择 `portable-core` profile 时才强制七张。当前参考宿主基础校验允许没有立绘；已确认、待实现的 [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) 则要求 persona prompt + 至少 1 个视觉资产，映射该产品包时仍需满足这一内容要求。
 
 初次创作不需要修改 `slot_registry`、`groups`、远程插件、双核或 MCP；这些属于发行版和高级集成能力。
 
