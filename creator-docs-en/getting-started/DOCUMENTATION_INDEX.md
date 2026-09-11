@@ -3,17 +3,17 @@
 [中文](../../creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 **Scope**: routing only. Architecture, contracts, status, and test facts stay in their topic SSOTs.
-**Last updated**: 2026-09-04.
+**Last updated**: 2026-09-11.
 
 ## When documents appear to conflict
 
-1. Use [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) and the [positioning SSOT](../../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) for what OCLive is.
+1. Use [MODULE_MAP §0](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) for Kernel / slot / Host responsibilities; [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) is an integration guide.
 2. Use [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for where slots, facilities, and side channels belong.
 3. Use [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md) plus the referenced Rust source for what executes today and who commits state.
 4. Use ROLE_PACK_SPEC, PLUGIN_V1, and SETTINGS_REFERENCE for on-disk and wire configuration.
 5. Use TECHNICAL_DEBT plus the relevant RFC for unfinished or frozen work.
 
-In short: positioning defines **what it is**; the module map defines **where it belongs**; code defines **what runs today**; contracts define **how to connect**; debt records **what is not finished**.
+This is not a universal file-precedence order. The module map owns responsibilities, source shows current behavior, topic contracts define supported integration, and debt records gaps and pauses. Existing code cannot redefine confirmed boundaries; candidate semantics cannot prove implementation compliance. Resolve conflicts by [document status and owner](../../handoff/README.md#documentation-status), keeping expected behavior and actual evidence distinct.
 
 ## Choose your role
 
@@ -35,7 +35,7 @@ In short: positioning defines **what it is**; the module map defines **where it 
 | Pack / blueprint boundary | [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md) |
 | Module map and six slots | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | Event Ring, memory proposals, and proactive-turn authorization | [EVENT_RING](../plugin-and-architecture/EVENT_RING.md) |
-| Runtime Event Stream (contract and A.2.2.2-R6 private/no-trusted-history fail-closed policy; Production not implemented) | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) |
+| Runtime Event Stream: experimental slices, Production gaps, and pauses | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) · [Technical debt](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | Plugin contract | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | Directory plugins | [DIRECTORY_PLUGINS](../plugin-and-architecture/DIRECTORY_PLUGINS.md) |
 | Remote protocol | [REMOTE_PLUGIN_PROTOCOL](../plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) |

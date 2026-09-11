@@ -2,7 +2,7 @@
 
 **A.I.Live — Pluggable Role Artery Loom** (engineering codename **oclive**). **Kernel integrator learning path:** [KERNEL_INTEGRATOR_LEARNING_PATH.md](KERNEL_INTEGRATOR_LEARNING_PATH.md)
 
-This page separates two views. The **minimal conceptual core** is one orchestration/authority boundary plus six stable ports. The **complete reference runtime** adds role-pack resolution, Event Ring, SQLite, external implementations, and host entries. Authoritative detail: [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md) and [ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md).
+This page separates **logical responsibilities** from **current reference-runtime topology**. [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) owns responsibilities. [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) and [ROLE_PACK_SPEC](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) describe current interfaces and richer formats, not a frozen future minimal API. Blueprint/slot-registry configuration is not a prerequisite for a minimal persona + visual-reference role.
 
 ---
 
@@ -10,7 +10,7 @@ This page separates two views. The **minimal conceptual core** is one orchestrat
 
 **How to read:** this is the full reference-runtime topology, not the physical boundary of a minimal core. The center is orchestration/resolution; top/bottom rows are six slot facades; outer bands are transport, persistence, external implementations, and scaffolding.
 
-Static asset (same structure as Mermaid, for slides/print):
+**Historical static reference-runtime snapshot:** “kernel” uses the older full-runtime meaning. This asset is not normative for the small Kernel or guaranteed to match the edited Mermaid. Use §2 and MODULE_MAP for current responsibility discussions.
 
 ![Kernel-centric overview](../../creator-docs/assets/oclive-kernel-centric-architecture.png)
 
@@ -73,16 +73,16 @@ flowchart TB
 
 ## 2. Minimal conceptual core (six ports → kernel)
 
-This is the smallest mental model: the kernel owns lifecycle, call/merge rules, authoritative commits, errors, and isolation; six ports provide capabilities. It is topology, not per-turn order, and does not claim that all six concrete implementations run on every path. The current co-present health gate is `prompt + llm`.
+This diagram explains confirmed responsibilities, not a new API or physical split. Hosts own concrete execution; the small Kernel defines six-slot contracts and necessary legality, not six fixed stages. Slot names denote contracts, not concrete implementations residing in the core. The co-present `prompt + llm` health gate is current reference-Host policy.
 
 ```mermaid
 flowchart TB
-  M[memory] --> K((Tool kernel<br/>one orchestration and authority boundary))
-  EM[emotion] --> K
-  EV[event] --> K
-  PR[prompt] --> K
-  LL[llm] --> K
-  AG[agent] --> K
+  H["Distro Host<br/>Input preparation / bindings / scheduling / domain application"]
+  subgraph K["Small Kernel · necessary public legality boundaries"]
+    C["Six capability contracts<br/>memory / emotion / event / prompt / llm / agent"]
+  end
+  H -->|Contract interaction, not fixed execution order| C
+  C -->|Execution result within contract, not overall product success| H
 ```
 
 Event Ring, concrete slot implementations, Repository/SQLite, resource coordination, HTTP/Tauri, and distros sit outside this minimal diagram. The source has not yet extracted this boundary into a separately compiled crate; see `K-CORE-BOUNDARY-01`.

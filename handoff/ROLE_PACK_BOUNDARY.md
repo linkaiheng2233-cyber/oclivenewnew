@@ -15,9 +15,11 @@
 
 ## 0. 三层 contract，不得混称
 
+**2026-09-11 归属澄清**：本文沿用早期名称 `Kernel Minimal Role Contract`，指 OCLive 跨发行版的最小角色数据契约，不表示小 Kernel 核心必须解析角色包、读取资产或拥有角色生命周期。小 Kernel / 六槽 / Host 权责统一见 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。角色准备与激活由外围加载适配/Host 负责，再映射为能力输入；本次不重命名现有代码、不改变下述数据要求，也未完成生命周期接线。
+
 | 层 | 只负责 | 不负责 |
 |----|--------|--------|
-| **Kernel Minimal Role Contract** | 识别最小角色定义：非空 persona prompt + 至少 1 个视觉资产，并接入角色生命周期 | 不定义关系、好感度、视觉渲染或发行版产品语义，不选择 LLM/插件/backend |
+| **Kernel Minimal Role Contract** | 定义可识别的最小角色数据：非空 persona prompt + 至少 1 个视觉资产引用；生命周期接入另由 Host 适配 | 不定义关系、好感度、视觉渲染或发行版产品语义，不选择 LLM/插件/backend |
 | **参考宿主装配蓝图** | OCLive 完整参考运行时的 `slot_registry`、backend/provider/model 路由、运行策略与扩展声明 | 不是内核最小角色格式，也不要求第三方发行版原样采用 |
 | **发行版 / 产品角色包** | ChatPro、VS Code、游戏版或第三方产品自己的 UI、资产、语音、市场元数据、版本与扩展 | 不得反向扩大 kernel minimal contract；只需通过适配器映射到最小角色数据与宿主能力装配 |
 
@@ -25,7 +27,7 @@
 
 ### 0.1 已确认的最小逻辑 contract
 
-**Kernel 只保证识别最小角色定义；发行版 richer role-pack format 由各发行版自行维护。7 图情绪集属于推荐的跨发行版标准能力，不属于进入 kernel 的必要条件；1 图 + persona prompt 即构成合法最小角色。** 这是已确认的逻辑边界，尚不代表当前加载器已能直接识别仅有这两项的目录。
+**OCLive 的最小角色数据契约只要求非空 persona prompt + 至少 1 个视觉资产引用；发行版 richer role-pack format 自行维护。7 图情绪集是推荐的跨发行版能力，不是最小角色的进入条件。** 这是数据边界，不要求小 Kernel 拥有 Role Runtime，也不代表当前 Host 加载器已能直接激活仅有这两项的目录。逻辑合格、实体可读、媒体有效和 Host 可用分别判断。
 
 | 作者侧必需内容 | 边界 |
 |--------|------|

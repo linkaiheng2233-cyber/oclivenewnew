@@ -4,13 +4,13 @@
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-09-03 · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-09-11（文档边界对齐；未重跑历史巡检） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
 ## ★ 仓库物理布局（kernel / distros · 2026-06 重组）
 
-> **巡检前 10 秒**：改的是内核还是发行版？路径错了等于改错层。
+> **巡检前 10 秒**：先查逻辑权责，再查物理路径。`kernel/` 同时包含契约与参考 Host，不等于目录内所有内容都属于小 Kernel。
 
 | 层 | 目录 | 改什么 |
 |----|------|--------|
@@ -31,13 +31,13 @@
 
 ### 一句话定位
 
-**OClive 是一颗以稳定契约组织角色能力的可嵌入工具内核：唯一回合/生命周期编排与权威状态边界，外加 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六个稳定能力端口。**
+**OCLive 以六槽契约与必要合法性边界组织能力，具体运行由发行版 Host 决定。** 巡检先读 [MODULE_MAP 权责与源码对照](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，不要把此处定位摘要当另一份架构契约。
 
 三层边界：
 
-- **最小工具内核**：编排、端口、提交权、错误与隔离。
+- **最小工具内核**：六槽能力契约与必要公共合法性/因果/错误边界；无具体调度或领域提交权。
 - **完整参考运行时**：当前 `OcliveKernel` 门面 + 具体槽实现、SQLite、Event Ring、设施和 HTTP 依赖。
-- **宿主与生态工具**：角色包、发行版、编写器、CLI、市场和云服务，按场景选择。
+- **发行版 Host 与工具**：Host 负责组合、调度和领域应用；角色包、编写器、CLI、市场和云服务按场景选择。
 
 “Linux”“Cursor”“机甲”可以作为演示比喻，但不能替代工程定义，也不能据此把所有陪伴功能归入最小内核。
 
@@ -58,7 +58,7 @@
 ### 与传统 AI 聊天软件的四条根本差异（= 愿景四主轴 V1–V4,见 §3）
 
 1. **【V1 可嵌入性】一颗内核可进入不同宿主。** 不锁死在桌面/Tauri/聊天框；但“理论可嵌入”与“某硬件已产品验证”必须分开写。
-2. **【V2 可替换性】六个稳定端口可换实现。** 精确 backend 支持按槽位查真实性矩阵，不能概括成每槽都有同样四态；普通扩展不增加第七槽，编排替换也不能复制第二条权威回合链。
+2. **【V2 可替换性】六个稳定端口可换实现。** 精确 backend 支持按槽位查真实性矩阵，不能概括成每槽都有同样四态；普通扩展不增加第七槽，当前参考 Host 不复制第二条权威回合链；这不禁止第三方 Host 按契约采用其他调度。
 3. **【V3 可携带性】角色资产可跨兼容宿主迁移。** 角色包与长期状态的可携带能力按分层契约验证；UI、语音、插件能力仍受宿主 profile 限制。
 4. **【V4 可学习与可创造】降低理解和创作门槛。** 角色创作者不必先学六槽；模块作者能只实现一个端口；维护者仍须用测试和迁移守住边界。
 
@@ -153,7 +153,7 @@ git status                                      # 确认工作树状态 / 与 or
 **正确性 checklist**
 - [ ] 核心 crate 依赖图仍严格单向（`types→contracts→runtime→host→{server,tauri}`）；CI planner、scaffold、validation、fuzz 等旁路成员按各自边界另查
 - [ ] `domain→infrastructure` 反向依赖无新增（对照 `LAYERING_BASELINE.json`）
-- [ ] `process_message`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`）仍是唯一编排 SSOT,业务逻辑未泄漏到 `distros/desktop-tauri/src/api/*`
+- [ ] `process_message`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`）在当前参考 Host 内仍是唯一主编排入口，业务逻辑未泄漏到 `distros/desktop-tauri/src/api/*`
 - [ ] 冻结项（dual_core / blueprint v3 / expert_routing）仍 feature-gated 默认不编译
 
 **愿景拷问**
@@ -294,7 +294,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 用途 | 路径 |
 |------|------|
-| 编排 SSOT | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
+| 参考 Host 主编排入口 | `kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs` |
 | Prompt 公式 | `kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/` |
 | 分层基线 | `handoff/LAYERING_BASELINE.json` |
 | 技术债总账 | `handoff/TECHNICAL_DEBT_INVENTORY.md` |

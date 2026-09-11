@@ -8,13 +8,22 @@
 
 **Release**: desktop host **0.5.2** · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
+## Start here
+
+| Reader | Entry |
+|---|---|
+| Human contributor | [Learning path](human-docs-en/README.md) |
+| Role / plugin author or integrator | [Documentation index](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) |
+| AI agent / maintainer | [AGENTS](AGENTS.md), then the task-specific [AI index](handoff/AI_READING_INDEX.md) |
+| Checking document authority or status | [Documentation layers and status](handoff/README.md#documentation-status) |
+
 ---
 
 ## What is this?
 
 **A.I.Live (OCLive)** is not “yet another fixed AI chat app,” and a centralized platform is not its essence. It is first an **embeddable tool kernel that organizes AI-character capabilities through stable contracts**:
 
-- The kernel owns one turn/lifecycle orchestration path, authoritative state commits, errors, and failure isolation
+- The small Kernel defines six-slot capability contracts, necessary causality, and legality/error boundaries; distro Hosts own composition, scheduling, and domain application ([responsibility SSOT](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities))
 - **Six stable capability ports**—memory, emotion, legacy event impact, prompt, LLM, and agent—accept replaceable implementations
 - **Role packs** (persona, scenes, prompts) ship independently
 - **Local-first** by default; cloud APIs optional (BYOK)
@@ -43,7 +52,7 @@ In `pipeline.ocblueprint`, change **slot 5 (llm)** from `ollama` to `remote` or 
 
 ### Example 3 · Integrator: one pack, many hosts
 
-The same `manifest.json` + `pipeline.ocblueprint` is validated by **desktop Tauri**, **headless HTTP `--api`**, **editor WASM**, and **oclive-cli** — format SSOT lives in `oclive_validation`, not in one app. Desktop and VS Code can share **`OCLIVE_ROLES_DIR`** and **`app.db`** (L1 pack + L3 continuity): [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md).
+Reference Hosts, the editor, and CLI reuse loading/validation capabilities, subject to each entry's supported formats. `manifest.json` / `pipeline.ocblueprint` are not mandatory files for every minimal role. The minimal definition expresses persona + visual asset references; local loading preparation does not mean runtime activation is wired ([role-pack boundary](handoff/ROLE_PACK_BOUNDARY.md)). Sharing **`OCLIVE_ROLES_DIR`** / **`app.db`** between desktop and VS Code is a reference-Host continuity arrangement, not an implemented independent Portable Memory contract: [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md).
 
 ### Example 4 · Module author: new capability only
 
@@ -69,13 +78,13 @@ Start: [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/
 | Core deliverable | Chat UI + API/extensions | **Six-slot contract + blueprint + pack format + cross-host validation** |
 | Module semantics | Extensions ad hoc | **builtin / remote / directory** unified backend surface |
 | Distribution | Community cards/files | **`.ocpak` / zip · SHA-256 · `oclive://` deep links** + market site |
-| Orchestration SSOT | Often frontend/extensions | Rust **`process_message`** fixed turn semantics |
+| Orchestration SSOT | Often frontend/extensions | Rust **`process_message`** in the current reference Host, not a universal Host pipeline |
 
 ---
 
 ## Three distros (one kernel · different HostProfile)
 
-Orchestration is **one** (`process_message`); differences are **`distro.oclive.toml` HostProfile** and host UI — **not** a second chat engine.
+Current reference distros reuse **`process_message`** and **`distro.oclive.toml` HostProfile**. This is a reference-Host maintenance boundary, not a requirement for third-party Hosts to use the same orchestration. Host scheduling must still satisfy capability contracts and necessary causality.
 
 | Distro | `distro_id` | Shape | Status |
 |--------|-------------|-------|--------|
@@ -97,7 +106,7 @@ Cross-cutting engineering, not a single feature:
 | **`oclive_validation`** | Same contract in runtime, editor WASM, CLI — no silent format drift |
 | **`process_message` + PluginHost** | Stable turn semantics; swap backends, not orchestration |
 | **Three memory stores** | Chat log / STM / LTM decoupled (deleting chat ≠ wiping AI memory) |
-| **G1–G16 + CI gates** | OOCP S0–S12, Dimension 5 **15** registered / **14** in CI, layering ratchet, doc registry |
+| **Change boundaries + CI gates** | [G1–G17](handoff/AI_CHANGE_BOUNDARIES.md), [verification rules](handoff/AI_VERIFICATION_PROTOCOL.md), OOCP, layering ratchet, and doc registry; current scope follows topic contracts/scripts, not duplicated homepage counts |
 | **Role-content vs in-pack blueprint-config split** | Creators don’t touch `slot_registry`; admins don’t pollute character content |
 | **Side channels (e.g. voice.asr)** | Voice/TTS **outside six slots** — does not pollute `process_message` |
 
@@ -109,7 +118,7 @@ Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs-en/getting-started/OCLIV
 
 Design goal: **orthogonal layers** — swap LLM without touching persona; add voice without polluting the main chain; freeze experimental cores without blocking Stable releases.
 
-**The categories below describe the complete reference runtime, not the minimal-core contents.** The minimal core keeps orchestration/authority boundaries and six ports; Event Ring, facilities, persistence, hosts, and concrete implementations compose around it. OCLive also does not mandate explicit or implicit cognition: the default favors explicit assistance for local small models, while strong-model assemblies may stay thinner. The design rule is: **make facts explicit, keep interpretations as candidates, let the model express them**.
+**The categories below describe the complete reference runtime, not minimal-core contents or six fixed stages.** Kernel / slot / Host responsibilities follow [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities); Event Ring, facilities, persistence, and concrete implementations compose outside the small Kernel. Existing crates have not physically extracted that core, and candidate semantics do not mean a new API is frozen. The default runtime favors explicit assistance for local small models; strong-model assemblies may stay thinner.
 
 ### Four module categories (map first)
 
@@ -227,7 +236,7 @@ Full index: [DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATI
 | Doc | Purpose |
 |-----|---------|
 | **[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)** | **Categorized SSOT index** (architecture · contracts · code anchors · task paths) |
-| [AGENTS.md](AGENTS.md) | **Quick gate** before editing code (G1–G16 summary) |
+| [AGENTS.md](AGENTS.md) | **Quick gate** before editing code (task-specific change boundaries) |
 | [human-docs/ai-package/README.md](human-docs/ai-package/README.md) | AI package layout vs human docs |
 
 ---

@@ -8,7 +8,7 @@
 
 This specification describes on-disk directories **aligned with the complete A.I.Live reference-host loader** (desktop Tauri and the reference headless `kernel_server`). ChatPro, VS Code, game, and third-party distros may keep their own product-pack formats and adapt them into minimal role data plus separate host capability bindings; they are not required to adopt v4 verbatim.
 
-[中文全文](../role-pack/ROLE_PACK_SPEC.md)
+[中文全文](../../creator-docs/role-pack/ROLE_PACK_SPEC.md)
 
 ---
 

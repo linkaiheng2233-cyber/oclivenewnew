@@ -2,7 +2,7 @@
 
 **Current status (2026-09-03)**: this document preserves the K0–K5 implementation record for the complete reference runtime. The K0–K5 code paths are closed, and K4 exposes complete in-process orchestration through **`OcliveKernel`**. This does not mean the minimal tool kernel has already been physically extracted into an independent crate; that work is tracked by `K-CORE-BOUNDARY-01`. **V-EMBED-01 remains Partial** because Linux/ARM or real-hardware target proof, resource budgets, and long soak are still missing; current status and scheduling live in [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
 
-**Authoritative contracts**: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
+**Scope clarification (2026-09-11):** goals, K0–K5 checkmarks, and test counts below preserve the **complete reference-runtime implementation record**. They do not prove small-Kernel extraction or full candidate-semantics compliance. Responsibilities: [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities); current integration: [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md); existing interfaces: [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md).
 
 [中文](../../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)
 

@@ -4,6 +4,8 @@
 
 This tree mirrors **`creator-docs/`** with hand-maintained English pages. **Normative contracts remain Chinese SSOT** — every mirrored topic contains a visible `中文` back-link.
 
+This README routes readers; it is not another contract owner. Distinguish [current behavior, candidate semantics, prepared work, plans, and history](../handoff/README.md#documentation-status). The `kernel/` guides describe reference-runtime deployment/lifecycle, not a frozen new minimal Kernel API. Kernel / slot / Host responsibilities live in [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities).
+
 ## Mirror policy
 
 | Principle | Detail |
@@ -33,13 +35,13 @@ When you change runtime or author-facing contracts (slots, `plugin_backends`, br
 3. Update the [coverage matrix](#mirror-coverage-matrix) row when a directory moves from **pending** to **mirrored** or **summary**.
 4. Run **`node scripts/check-doc-mirror.mjs`** (also in `npm run check:rust` and dimension5 CI) before merge.
 
-**Governance**: module definitions → [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md). Doc layer map → [handoff/README.md §文档分责](../handoff/README.md). Human ladder progress → [human-docs/README.md §文档包进度](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-26). AI doc rules G10–G16 → [AI_CHANGE_BOUNDARIES.md](../handoff/AI_CHANGE_BOUNDARIES.md).
+**Governance**: module definitions → [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md). Doc layers/status → [handoff/README](../handoff/README.md#documentation-status). Human learning → [human-docs-en/README](../human-docs-en/README.md). AI change boundaries → [AI_CHANGE_BOUNDARIES.md](../handoff/AI_CHANGE_BOUNDARIES.md). Update existing mirrors together; do not duplicate normative fact tables for AI and human readers.
 
 ---
 
 ## Mirror coverage matrix
 
-Last reviewed: **2026-07-10**. Counts are `*.md` files per directory (approximate).
+**Historical coverage snapshot: 2026-07-10.** Approximate counts below are not current coverage assertions. For a particular topic, check the linked file, its Chinese owner, and the mirror gate; a mirror's existence does not certify semantic parity.
 
 | Directory | ZH files | EN status | Notes |
 |-----------|----------|-----------|-------|

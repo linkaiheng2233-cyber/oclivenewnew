@@ -1,7 +1,7 @@
 # 08 · 资料地图（按主题折叠）
 
 > **读者**：L0–L6 完成后按需深挖的工程师。  
-> **读完能做什么**：在 AI 接手包（`creator-docs/` / `handoff/`）中按主题找 SSOT，而非 134 链平铺。  
+> **读完能做什么**：按主题找公开契约（`creator-docs/`）与工程 SSOT（`handoff/`），不把两者合称 AI 文档。
 > **耗时**：按需。  
 > **下一篇**：回 [human-docs/README](README.md) 或 [ai-package/README](ai-package/README.md)。
 
@@ -9,13 +9,15 @@
 
 ---
 
+先判读 [文档状态与 owner](../handoff/README.md#documentation-status)：导航摘要不是契约，参考实现不是目标边界，旧 RFC 的局部完成不是整个方案交付。
+
 ## 1. 架构
 
 **人类开工（按模块）** → [modules/README.md](modules/README.md)（链 MODULE_MAP，不复制表）
 
 | 文档 | 用途 |
 |------|------|
-| [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 第 1–4 设施子模块 |
+| [MODULE_MAP §0](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) · [架构导览](../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | 先分 Kernel / 六槽 / Host，再读当前参考装配 |
 | [RFC 立绘](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) / [视觉表现](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | catalog 与表现导演已交付；角色舞台 directive / gating 已交付、渲染 adapter 部分交付 |
 | [RFC Turn Thinking](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) | Fast/Deep · `fast_persistence` · 包级 latch / ephemeral · [EN](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) |
 | [RFC_PORTRAIT_FACILITY](../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY](../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | 立绘与视觉表现边界 |

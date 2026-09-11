@@ -1,20 +1,20 @@
 # A.I.Live 文档索引
 
 **SSOT 范围**：本文只负责“去哪里读”，不复制架构、契约、进度或测试表。
-**最后更新**：2026-09-04。
+**最后更新**：2026-09-11。
 **原则**：先按身份选择一条入口；遇到具体问题再查专题文档。
 
 ## 发生冲突时按什么顺序判断
 
 | 顺序 | 问题 | 只查这里 |
 |------|------|----------|
-| 1 | OCLive 的本质与最小边界是什么 | [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) · [定位 SSOT](../../handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md) |
+| 1 | 小 Kernel / 六槽 / Host 的职责边界是什么 | [MODULE_MAP §0](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)；[PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md) 是集成导览 |
 | 2 | 六槽、设施、独立通道分别属于哪里 | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | 3 | 当前一轮实际怎样执行、谁提交状态 | [BUS_FACTOR](../../handoff/BUS_FACTOR_NOTES.md) · 对应 Rust 源码 |
 | 4 | 配置和 wire 怎样写 | [ROLE_PACK_SPEC](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) · [SETTINGS_REFERENCE](../cli/SETTINGS_REFERENCE.md) |
 | 5 | 哪些只是计划或未完成能力 | [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) · 对应 RFC |
 
-简化为一句话：**定位文档定义“是什么”，模块表定义“属于哪里”，代码定义“今天怎样运行”，契约文档定义“怎样接入”，债务表定义“还没做到什么”。**
+这不是“某类文件永远压过另一类”的优先级。**模块表说明职责，源码说明今天怎样运行，专题契约说明现行接入方式，债务表说明差距与暂停项。** 源码不自动覆盖已确认边界，语义候选也不证明实现已符合；冲突按 [状态与 owner 规则](../../handoff/README.md#documentation-status) 分别记录。定位页不另创权责定义。
 
 ## 先选择你的身份
 
@@ -46,7 +46,7 @@
 | 一轮对话主链 | [内核学习路径](../../human-docs/06_KERNEL_LEARNING_PATH.md) · [关键文件锚点](../../handoff/BUS_FACTOR_NOTES.md) |
 | 模块定义与六槽关系 | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | Event Ring、记忆提案与主动回合授权 | [EVENT_RING](../plugin-and-architecture/EVENT_RING.md) |
-| Runtime Event Stream（Stage A.2.2.2-R6 已冻结私聊/无可信历史能力的失败关闭策略；Production 未实现） | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) |
+| Runtime Event Stream：分阶段实验、Production 缺口与暂停范围 | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) · [技术债](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 | DTO 与编排契约 | [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md) |
 | canonical import 与术语 | [NAMING_CONVENTIONS](../NAMING_CONVENTIONS.md) |
 | 聊天、短期与长期记忆 | [CHAT_STORAGE_ARCHITECTURE](../../handoff/CHAT_STORAGE_ARCHITECTURE.md) |
@@ -66,7 +66,7 @@
 | Agent / MCP | [AGENT_REMOTE_PROTOCOL](../plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md) |
 | Bridge API | [BRIDGE_API_REFERENCE](../plugin-and-architecture/BRIDGE_API_REFERENCE.md) |
 | HostProfile / 跨平台 | [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md) |
-| 内核生命周期 | [DISTRO_KERNEL_LIFECYCLE](../kernel/DISTRO_KERNEL_LIFECYCLE.md) |
+| 参考运行时进程生命周期（不等于 invocation 语义） | [DISTRO_KERNEL_LIFECYCLE](../kernel/DISTRO_KERNEL_LIFECYCLE.md) |
 | 蓝图扩展外壳 / ExecutionPlan / 统一资源协调 | [RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md) |
 | Scaffold Package / 自定义脚手架 | [RFC_SCAFFOLD_PACKAGE_V1](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md) |
 

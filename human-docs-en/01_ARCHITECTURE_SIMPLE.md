@@ -1,15 +1,19 @@
 # 01 · Architecture (simple)
 
-> **Last updated:** 2026-09-06
+> **Last updated:** 2026-09-11
 > **Next:** [02 Thirty-minute start](02_THIRTY_MINUTE_START.md) · **Full human edition (CN):** [human-docs/01](../human-docs/01_ARCHITECTURE_SIMPLE.md) · **Module registry:** [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
-Keep two layers separate: the **minimal conceptual core** is one turn/lifecycle orchestration and authority boundary plus six stable capability ports. The flow below is the **complete reference runtime**, so it also shows Event Ring, persistence, facilities, and hosts.
+Keep two layers separate: the **minimal conceptual core** is the six-slot capability contract and necessary public legality boundary. The flow below is the **complete reference runtime**, so it also shows Event Ring, persistence, facilities, and hosts.
 
-The Host is more than a communication bridge: the Core constrains public turn semantics, capability-result/domain-commit validity, and error boundaries; the trusted Rust Host in the current reference implementation performs product-state commits and resource operations within those constraints. Tauri APIs and HTTP are transport adapters. The current `oclive_kernel_host::OcliveKernel` is a complete reference-runtime facade that still physically assembles state, SQLite, plugins, and facilities; this does not mean a small Core crate has been extracted. The unique responsibility SSOT is [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md).
+The Host is more than a communication bridge: the small Kernel owns the six-slot contracts, necessary public legality constraints, and error boundaries; the trusted Rust Host in the current reference implementation performs product-state commits and resource operations within those constraints. Tauri APIs and HTTP are transport adapters. The current `oclive_kernel_host::OcliveKernel` is a complete reference-runtime facade that still physically assembles state, SQLite, plugins, and facilities; this does not mean a small Core crate has been extracted. The unique responsibility SSOT is [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md).
 
 For Chat Pro, Tauri API/HTTP is the transport surface while the runtime assembles `AppState`, state, and permissions; `distros/desktop-tauri/src/api/chat_backend.rs` identifies the loopback kernel as the single authoritative writer. This example does not imply one Host per distro.
 
-## One turn (co-present path)
+Start with the [Kernel/Host responsibilities and candidate boundary summary](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities), then use the [focused source comparison](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) to separate responsibility targets from current implementation. The flows here teach the current ChatPro Host.
+
+## One turn (current co-present Host path)
+
+The [SVG](../human-docs/assets/oclive-architecture-learning-map.svg) / [PNG](../human-docs/assets/oclive-architecture-learning-map.png) remain learning snapshots of the **complete reference Host**. Older “kernel” labels there do not put orchestration, SQLite, memory, or Event Ring inside the small Kernel. The assets were not regenerated in this documentation alignment.
 
 ```
 UI → Tauri/HTTP → process_message → optional Agent shortcut
@@ -18,15 +22,16 @@ UI → Tauri/HTTP → process_message → optional Agent shortcut
 ```
 
 - **Orchestration SSOT:** `kernel/crates/oclive_kernel_host/.../process_message.rs`
-- **Blueprint `steps[]` does not schedule** the first turn — Rust code does.
+- **Blueprint `steps[]` does not schedule** the first turn — the current Rust Host does.
+- **Agent shortcut:** `handled=true` sends this Host to minimal-response construction instead of the ordinary main chain; it alone does not establish the end of a public invocation. Continuing the ordinary branch does not prove that no tools ran earlier.
 
-Main source anchors: `turn_pipeline/pre.rs` → `turn_pipeline/co_present/run_middle.rs` → `turn_pipeline/post.rs` → `turn_pipeline/post/post_llm.rs`.
+Main source anchors: `turn_pipeline/pre.rs` → `turn_pipeline/co_present/run_middle.rs` → `turn_pipeline/post.rs` → `turn_pipeline/post/post_llm.rs`. This is the current reference Host path, not a fixed pipeline required of every Host.
 
 ## Context and authority
 
 Prompt context combines the typed current input, static role-pack content, runtime character state, retrieved memory/knowledge, and this turn's derived affect/event/recollection results. Module 4 assembles facts, candidates, and committed state admitted for this turn; admission does not make every semantic interpretation true. Module 5 generates the reply; post-processing edits the final output rather than re-deciding memory or events.
 
-Remember: **six slots provide capabilities; Event Ring carries trusted events; decision modules admit proposals; Rust orchestration applies and persists results.** The Host executes those constrained commits; transport and UI do not gain domain authority.
+For the current reference runtime: **six slots provide capabilities; Event Ring carries trusted events; decision modules admit proposals; Rust Host orchestration applies domain results.** Domain conditions and commit responsibility belong to the Host; public invocation constraints are not a guarantee of domain-commit success. Transport and UI do not gain domain authority.
 
 ## Three memory stores (do not conflate)
 

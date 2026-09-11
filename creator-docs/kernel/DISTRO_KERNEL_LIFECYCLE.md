@@ -1,6 +1,8 @@
 # Distro kernel lifecycle (SSOT)
 
-Cross-host **single writer** model: one `oclive-kernel-server` on `127.0.0.1:8420` owns `%LOCALAPPDATA%/OCLive/data/app.db`. Desktop, VS Code, and future distros are **HTTP clients** only.
+**Scope clarification (2026-09-11):** this page governs the reference runtime's **process/deployment lifecycle**, not Kernel invocation semantics. Attach/spawn/replace, HTTP and SQLite are not minimal-Kernel prerequisites; logical Host responsibility is not identical to a client process. See [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities).
+
+Cross-host **single writer** model: one `oclive-kernel-server` on `127.0.0.1:8420` owns `%LOCALAPPDATA%/OCLive/data/app.db`. Desktop and VS Code use **HTTP clients** in this deployment model; other integrations are not universally required to use it.
 
 ## Architecture: decision up, execution down
 

@@ -1,6 +1,8 @@
 # PLUGIN_V1 — Orchestration contract & backend enums (v2/v3/v4 blueprints · legacy six slots)
 
-**SSOT scope:** six-slot DTOs, backend enums, resolution, and slot calls inside Stable's fixed stages. Event Ring wire has a separate contract.
+**SSOT scope:** current reference-Host DTOs, backend enums, resolution, and slot calls inside its Stable stages. Event Ring wire has a separate contract.
+
+**Boundary clarification (2026-09-11):** these interfaces remain current integration references. Rich `Role` / `PromptInput`, fixed stages, and blueprint prerequisites are not automatically the future minimal Kernel API. Slots are capabilities, not fixed stages; see [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map). No wire or signatures change here.
 
 **Last updated:** 2026-09-05.
 

@@ -1,5 +1,7 @@
 # 架构解耦全景 · 模块 / 插件 / 正交轴
 
+**范围澄清（2026-09-11）**：本文展开当前完整参考运行时，不定义小 Kernel。“内核编排”指参考 Host 的 `process_message`；固定 stage、蓝图与提交策略不是所有 Host 的必需模型。职责只查 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，本页用于学习，不另立语义 SSOT。
+
 > **读者**：要把「六槽、设施、独立通道、目录插件、正交轴」一次看清的工程师或产品讨论参与者。  
 > **先读**：**§1 核心术语**（六槽 · 独立通道 · 正交 的含义与边界）。  
 > **SSOT 分工**：**模块定义与关系** → [`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md)；**六槽 DTO 与固定 stage 中的调用** → [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md)；**本文** = **脉络展开 + 插件清单 + 正交轴索引**（不替代 MODULE_MAP 定义条文）。
@@ -41,7 +43,7 @@
 
 ## 1. 核心术语：六槽 · 独立通道 · 正交
 
-> 下文是讨论架构时的 **含义 SSOT**；槽位 trait / DTO 细节仍链 [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [`MODULE_MAP`](../../handoff/MODULE_MAP_AND_HANDOFF.md)。
+> 下文是讨论当前参考装配时的 **学习摘要**；槽位 trait / DTO 细节仍链 [`PLUGIN_V1.md`](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [`MODULE_MAP`](../../handoff/MODULE_MAP_AND_HANDOFF.md)。
 
 ### 1.1 六槽（第 1–6 后端模块）
 
@@ -49,7 +51,7 @@
 
 - 宿主 **`PluginBackends`** 上的 **六个固定键**：`memory` · `emotion` · `event` · `prompt` · `llm` · `agent`。
 - v2 角色包通过 **`slot_registry`** 声明多实例，折叠成上述六键后，由 **`PluginHost::resolve_for_role`** 绑定到各槽 **trait** 实现（builtin / ollama / remote / directory 等）。
-- 当前 Stable 参考装配的普通、未被 Agent 接管的共景回合：`process_message` → **`co_present`** → pre → middle → **llm generate** → post_llm；六槽能力由内核在固定 **stage** 中按需调用（见本文 §4 表），**不是六个槽依次流过的线性管道**。普通用户回合会先尝试 Agent；`handled=true` 时走最小响应并跳过共景链。这不表示所有 OCLive 装配都必须启用六个具体实现；共景健康门槛目前是 `prompt + llm`。
+- 当前 Stable 参考装配的普通、未被 Agent 接管的共景回合：`process_message` → **`co_present`** → pre → middle → **llm generate** → post_llm；六槽能力由参考 Host 在其固定 **stage** 中按需调用（见本文 §4 表），**不是六个槽依次流过的线性管道**。普通用户回合会先尝试 Agent；`handled=true` 时走最小响应并跳过共景链。这不表示所有 OCLive 装配都必须启用六个具体实现；共景健康门槛目前是 `prompt + llm`。
 
 **意味着什么**
 

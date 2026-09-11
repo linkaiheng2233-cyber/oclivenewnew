@@ -1,6 +1,8 @@
 # 内核调度系统 — 范围重划（Rescope · 2026-06-11）
 
 **状态**：架构决策 · **不删代码** · 产品面 **收窄 + 封存扩展**
+
+**适用范围（2026-09-11 澄清）**：本文保留参考运行时的进程选择、发行版装配、降级与资源协调决策。标题中的“内核调度”不是小 Kernel 拥有六槽具体调度权；`C` 的 fail-open 是所述参考策略，不能覆盖能力契约或当前资格。统一权责见 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，暂停与后续状态见技术债；不因本页旧计划自动恢复实验。
 **最后更新**：2026-07-29（统一资源协调首个 LLM/Voice 切片已实现）
 **关联**：[DISTRO_DEFAULT_PLUGINS.md](../creator-docs/kernel/DISTRO_DEFAULT_PLUGINS.md) · [DISTRO_KERNEL_LIFECYCLE.md](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)
 

@@ -2,7 +2,7 @@
 
 **当前状态（2026-09-03）**：本文保留 K0–K5 的完整参考运行时实施留痕；K0–K5 的代码路径已收口，K4 已通过 **`OcliveKernel`** 对称暴露完整进程内编排。这不表示最小工具内核已经物理抽成独立 crate；该边界只看 `K-CORE-BOUNDARY-01`。**V-EMBED-01 仍为 Partial**：尚缺 Linux/ARM 或真实硬件靶、资源预算与长时 soak；当前状态与后续排期只以 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
-**权威契约**：[KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md) · [PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
+**阅读范围（2026-09-11 澄清）**：下文目标、K0–K5 勾选及测试数字保留为**完整参考运行时的实施记录**，不证明小 Kernel 已物理拆分或候选公共语义全部落实。当前职责只查 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)；现行集成导览见 [PURE_KERNEL_BOUNDARY](PURE_KERNEL_BOUNDARY.md)，现有接口见 [PLUGIN_V1](../plugin-and-architecture/PLUGIN_V1.md)。
 
 [English](../../creator-docs-en/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)
 

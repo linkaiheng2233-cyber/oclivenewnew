@@ -146,7 +146,7 @@ Vue invoke / HTTP --api
 
 ## 7. handoff 活跃文档（维护者深读）
 
-完整列表与分责：[`handoff/README.md`](./README.md) §活跃文件 · §文档分责。
+完整列表与分责：[`handoff/README.md`](./README.md) §活跃 SSOT · §文档分责。
 
 | 类别 | 代表文档 |
 |------|----------|
@@ -220,18 +220,18 @@ Vue invoke / HTTP --api
 
 ### 改文档
 
-1. [`handoff/README.md`](./README.md) §文档分责 — **查是否已有 SSOT**  
+1. [`handoff/README.md`](./README.md#documentation-status) — **先分清当前实现、候选、计划和历史，再查 owner**
 2. [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16  
-3. 模块关系 **只**改 MODULE_MAP；**链接代替复制**
+3. 模块关系 **只**改 MODULE_MAP；**链接代替复制**。按 [防漂移闭环](README.md#documentation-maintenance) 同步人类入口、AI 路由及已有英文镜像；源码/契约冲突分别记账，不以一方冒充另一方。
 
 ### Kernel / 六槽 / Host 权责
 
 按以下顺序阅读；本节只提供导航，不复制权责事实：
 
-1. **职责**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#0-五条铁律关系骨架) §0–§9 · [`ROLE_PACK_BOUNDARY.md`](./ROLE_PACK_BOUNDARY.md#0-三层-contract不得混称) §0–§0.5
-2. **以后依赖 / 阶段**：[`PURE_KERNEL_BOUNDARY.md`](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md#1-职责目标与当前实现) §1 · [`KERNEL_IMPLEMENTATION_PLAN.md`](../creator-docs/getting-started/KERNEL_IMPLEMENTATION_PLAN.md)；两者是现行实现/阶段参考，未来依赖与阶段仍待讨论
-3. **未来 Kernel v0 公共 contract（待讨论）**：[`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) · [`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)；这些是现行六槽接口/实现参考，不是已定的 Kernel v0 公共 contract
-4. **再讨论物理代码拆分**：回看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 中 `K-CORE-BOUNDARY-01`，并以已确认的职责、阶段和公共 contract 为前置。
+1. **候选与源码对照**：先读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#kernel-semantics-candidate) §0.2–§0.3，确认 2.2.1 候选的适用边界与当前实现差异
+2. **现有接口参考**：再读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) §4–§9 对应的六槽 trait/DTO，以及 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) 的现行实现参考；不得把参考签名写成已冻结 v0 API
+3. **边界处理**：需要判断具体调用、Host 应用、Adapter 授权或结果效果时，回到 [`MODULE_MAP_AND_HANDOFF.md §0.3`](./MODULE_MAP_AND_HANDOFF.md#kernel-source-map) 的定点源码证据与相关 SSOT；不把当前 Host 流程升格为跨 Host 固定顺序
+4. **后续 API / 物理拆分**：再看 [`PURE_KERNEL_BOUNDARY.md`](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md#1-职责目标与当前实现) §1 与 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`；均须另行授权，不在本入口冻结 API 或拆分。
 
 ### 技术债收口 / 按开发流水线走
 
@@ -269,4 +269,4 @@ node scripts/dimension5-acceptance.mjs --ci
 
 ---
 
-*入口精简版：[`AGENTS.md`](../AGENTS.md) · 人类文档包：[`human-docs/ai-package/README.md`](../human-docs/ai-package/README.md) · 文档总索引：[`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)*
+*入口精简版：[`AGENTS.md`](../AGENTS.md) · 人类学习包：[`human-docs/README.md`](../human-docs/README.md) · AI 兼容导航：[`ai-package/README.md`](../human-docs/ai-package/README.md) · 文档总索引：[`DOCUMENTATION_INDEX.md`](../creator-docs/getting-started/DOCUMENTATION_INDEX.md)*

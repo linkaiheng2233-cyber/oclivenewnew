@@ -11,13 +11,15 @@
 
 ---
 
+Start with [document status and ownership](../handoff/README.md#documentation-status): navigation is not a contract, current implementation is not the target boundary, and a completed RFC slice does not prove the whole proposal shipped.
+
 ## 1. Architecture
 
 **Module picker** → [modules/README.md](modules/README.md) (links MODULE_MAP, no copied tables)
 
 | Doc | Purpose |
 |-----|---------|
-| [OCLIVE_ARCHITECTURE_OVERVIEW](../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | Modules 1–6, facility submodules |
+| [MODULE_MAP §0](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) · [Architecture guide](../creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) | Kernel / slots / Host first, then current reference assembly |
 | [RFC Turn Thinking summary](../creator-docs-en/rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md) | Fast/Deep · persistence ([full ZH RFC](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md)) |
 | [kernel/crates/README](../kernel/crates/README.md) | Crate deps and where to edit |
 | [DESIGN_DECISIONS](../creator-docs/architecture/DESIGN_DECISIONS.md) | Trade-off log (ZH) |
@@ -116,7 +118,7 @@
 | [CHAT_STORAGE_ARCHITECTURE](../handoff/CHAT_STORAGE_ARCHITECTURE.md) | Chat vs memory |
 | [DOCUMENTATION_INDEX](../creator-docs/getting-started/DOCUMENTATION_INDEX.md) | Full contract index (ZH hub) |
 
-**Human pack progress**: [human-docs/README § progress](../human-docs/README.md#文档包进度与-ai-包同步--2026-06-26)
+**Learning route**: [human-docs-en/README](README.md). Completion/gaps/pauses: [TECHNICAL_DEBT](../handoff/TECHNICAL_DEBT_INVENTORY.md), not a duplicated human progress table.
 
 ---
 

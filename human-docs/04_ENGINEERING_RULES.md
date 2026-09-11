@@ -1,6 +1,6 @@
 # 04 · 工程约束（代码 7 条 + 文档纪律）
 
-> **最后更新**：2026-06-26  
+> **最后更新**：2026-09-11（文档职责与参考 Host 适用范围对齐）
 > **读者**：准备提内核 PR 的工程师。  
 > **读完能做什么**：避免 review 高频打回项（编排位置、DTO 字段、Prompt、`import` 路径）。  
 > **耗时**：约 25 分钟。  
@@ -9,6 +9,8 @@
 与 [`.cursor/rules/oclivenewnew.mdc`](../.cursor/rules/oclivenewnew.mdc)、[CONTRIBUTING.md §工程约束](../CONTRIBUTING.md#工程约束) **三处镜像**；变更时须同 PR 同步。
 
 ---
+
+**范围澄清（2026-09-11）**：以下代码约束针对当前参考 Host 的维护，不规定所有发行版的固定流水线或领域模型。小 Kernel 与 Host 的职责见 [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。
 
 ## 1. 编排只在 `process_message` / `*_engine`
 
@@ -20,7 +22,7 @@
 
 ## 2. 持久化走 repository trait + 迁移 SSOT
 
-**规则**：通过 `domain/repository.rs` trait 与 `infrastructure/repositories.rs` 实现；表结构以 [`kernel/crates/oclive_kernel_host/migrations/001_init.sql`](../kernel/crates/oclive_kernel_host/migrations/001_init.sql) 为准。
+**规则**：通过当前 repository 端口与实现访问持久化；表结构以实际 [迁移目录](../kernel/crates/oclive_kernel_host/migrations/) 为准，不能仅凭初始迁移推断今天的完整 schema。
 
 **违反时**：「表名/列名与迁移不一致」「禁止虚构 `memory_backend` 表」等。
 
@@ -89,13 +91,13 @@
 
 ### 8.2 人类包 vs AI 包
 
-| | human-docs（本目录） | handoff / creator-docs / AGENTS |
+| | human-docs（学习） | AGENTS / handoff（AI 工程入口） |
 |--|----------------------|----------------------------------|
-| 读者 | 人 · 顺序学 | AI · 索引 · 契约 |
+| 读者 | 人 · 顺序学 | AI / 维护者 · 按任务定位 |
 | 篇幅 | **可长、可细、排版友好** | **短、链出、不重复** |
-| 进度 | [human-docs/README 文档包进度](README.md#文档包进度与-ai-包同步--2026-06-25) | [TECHNICAL_DEBT §1](../handoff/TECHNICAL_DEBT_INVENTORY.md) |
+| 学习 / 状态 | [学习路线](README.md)，不维护第二份完成度 | 当前差距与暂停统一查 [TECHNICAL_DEBT](../handoff/TECHNICAL_DEBT_INVENTORY.md) |
 
-改架构时：**同一次 PR** 更新 MODULE_MAP（若动模块）+ 相关 human-docs 节 + 本 README 进度表日期，避免「文档进度不统一」被误当技术债。
+`creator-docs/` 是用户、创作者与集成方的专题契约，不是 AI 专属文档。改架构时按 [防漂移闭环](../handoff/README.md#documentation-maintenance) 同步职责 owner、相关学习页、AI 路由与已有英文镜像；不要维护第二份进度表。
 
 ### 8.3 写作风格（人类阅读体验）
 

@@ -1,5 +1,7 @@
 # 06 · Kernel learning path (Day 1–5 summary)
 
+**Scope clarification (2026-09-11):** this guide follows the existing Rust **reference Host**, persistence, and wiring. The historical title does not put all of them inside the small Kernel. Start with the [responsibility/source map](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map); fixed stages, DB commits, and role runtime below are current assembly facts, not a new public contract.
+
 > **Last updated:** 2026-08-31
 > **Audience:** Contributors touching `process_message`, persistence, or plugin wiring.  
 > **Full human edition (CN):** [human-docs/06](../human-docs/06_KERNEL_LEARNING_PATH.md) · **Module registry SSOT:** [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md)

@@ -1,7 +1,7 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-09-06
-**SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · 在边界内如何改**。  
+**最后更新**：2026-09-11
+**SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · Kernel/Host 权责候选及定点源码对照 · 在边界内如何改**。
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
 **改本文的条件**：新增/重命名模块或设施、变更六槽合并规则、新增编排行能力（非六槽）、或术语混淆需补对照表。**禁止**在本文堆进度叙事或复制 PLUGIN_V1 全文。
@@ -10,21 +10,63 @@
 
 ## 0. 五条铁律（关系骨架）
 
-**先分清本体与装配**：OCLive 的最小概念核心是 **唯一回合/生命周期编排 + 权威状态提交约束与故障边界 + 六个稳定能力端口**。六槽是 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类可替换能力，不是六个平级决策内核，也不要求每种具体实现都启用。当前共景路径的健康门槛仍是 `prompt + llm`；其余槽位的 `none` / Noop 语义以 [`MODULE_NONE_SEMANTICS.md`](../creator-docs/kernel/MODULE_NONE_SEMANTICS.md) 和真实性矩阵为准。
+**先分清本体与装配**：小 Kernel 的当前职责目标是 **六槽契约、必要公共合法性约束与错误/故障边界**；具体 Host 负责编排、状态应用和资源操作。六槽是 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类可替换能力，不是六个平级决策内核，也不要求每种具体实现都启用。`process_message` 的唯一性是当前参考 Host 的复用维护边界，不是所有 Host 必须采用的固定流水线。当前共景路径的健康门槛仍是 `prompt + llm`；其余槽位的 `none` / Noop 语义以 [`MODULE_NONE_SEMANTICS.md`](../creator-docs/kernel/MODULE_NONE_SEMANTICS.md) 和真实性矩阵为准。
+
+<a id="kernel-responsibilities"></a>
 
 ### 0.1 小 Kernel、合同、实现、Host 与 Adapter 的权责
 
 | 层 | 负责什么 | 不授予什么 |
 |----|----------|------------|
-| **小 Kernel（职责边界）** | 守住回合/生命周期公共语义、能力结果的有效性与合并/提交约束、错误语义和故障边界 | 不因此等同于已独立编译的 crate；Kernel v0 语义已收敛，具体 API、字段与物理拆分仍未定 |
+| **小 Kernel（职责边界）** | 守住六槽契约、必要公共合法性约束、结果/依赖的基本边界、错误与故障边界 | 不因此等同于已独立编译的 crate；不拥有 Host 具体编排、领域应用或资源授权 |
 | **六槽合同** | 规定 `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` 能力端口的输入、结果和错误边界 | 不把槽实现变成平级状态权威，也不规定某个 SQLite、HTTP 或 RichRole 产品格式 |
 | **具体槽实现** | 在合同和宿主授权内提供检索、分析、估计、组装、生成或动作结果；可由授权 Adapter 使用网络、存储、工具或 LLM | 不因获得资源访问就取得领域提交权、权限授予权或第二条回合管线；重试不会增加授权 |
-| **Host** | 负责准备输入/上下文、绑定六槽、管理资源与权限、应用结果；在当前参考实现中由可信 Rust 服务与 composition root 在 Core 约束内执行产品状态提交和资源操作 | 不是 IPC 桥、Docker 或安全沙箱；不能降低 Core 不变量，不能授予 Session、LLM 或普通插件直接权威写权；不与 Distro 天然一对一 |
+| **Host** | 负责准备输入/上下文、绑定六槽、在必要偏序约束内自主调度、管理资源与权限，并应用领域结果；当前参考实现由可信 Rust 服务与 composition root 执行产品状态和资源操作 | 不是 IPC 桥、Docker 或安全沙箱；不能降低公共合法性约束，不能把应用结果或重试变成额外授权；不与 Distro 天然一对一 |
 | **Adapter / 传输 / UI** | 把外部输入、能力调用和输出映射到 Host 获准的合同边界；持久化或资源 Adapter 可执行 Host 合法授权的写入/操作 | 不自行决定或批准领域状态更新；传输/UI 不是 Host，也不能绕过 Host 另建编排 |
 
-**Kernel v0 公共契约（语义已收敛，API 未定）**：Host 每次回合提交一次归一化调用、本次已准入上下文、能力声明和资源范围；Kernel 校验调用、输入、能力使用、依赖、结果归属与终态合法性，并允许 Host 在有限调度自由内合法调度，但不规定固定六槽流水线、唯一调用链或固定并发。能力只能消费当前调用中已声明、已准入、有效且归属当前调用的输入；必要偏序只表达执行资格与结果可见性，依赖主 LLM 的 Prompt 结果须先于该主 LLM，且未提供、跳过、失败不自动互换。六槽状态不自动互转，槽不拥有领域提交权、权限授予权或第二条回合管线；`Agent handled` 只终止当前调用未完成的常规主链。单调用终态唯一，流式片段不等于生成、领域提交或外部送达成功，终态后的片段、结果与提交无效。Host 执行领域提交与资源操作，Kernel 只守住最小授权、调用归属与终态不变量；Event Ring 与 Runtime Event Stream 均属外围，不构成六槽依赖。完整语义与排除项见 [PURE_KERNEL_BOUNDARY.md](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)。
+候选公共语义与当前源码对照见下方 §0.2–§0.3；它们记录适用边界和证据，不冻结新公共 API、固定流水线或物理拆分。
+
+<a id="kernel-semantics-candidate"></a>
+
+### 0.2 最小公共语义候选与使用范围
+
+下列是对话中 2.2.1 收口候选的边界摘要，不是八节正文的逐字替代，也不表示完整 Kernel v0 公共契约已冻结或源码已全面落实：
+
+1. 六槽是能力而非固定阶段；公共条件必须实际成立，但不指定由哪个节点检查、如何记录，也不要求把全量事实传入 Kernel。
+2. 内容合格不等于已被实际采用；某用途合法不等于任意用途合法。历史/cache/pending 的使用仍须满足适用契约、当前用途、必要依赖和调用资格，不因其形式而一律允许或禁止；数据复用不等于本轮新执行事实。当前候选将 `Acceptance` 作为具体业务事实合法成立后的派生描述，不要求新增独立原语；来源、动作和用途的对应不能被偷换。
+3. 必要依赖与当前资格分别判断；previous legality 不等于 current eligibility。结果或旧执行记录可以作为授权判断的输入，但不能自行产生或扩大领域/外部效果的授权；具体领域授权判断仍归 Host。
+4. 同一逻辑 invocation 已合法正常结束或形成有效 cutoff 后，不得再为它启动新的后续能力或成立新增的有效业务推进；此前未成立的迟到结果/片段不能重新打开它。能力完成、局部返回、取消请求、超时、断开或投递通道关闭，不能仅凭名称认定整个 invocation 已结束；实际作用范围、适用契约与调用关系已足以确立结束时即可认定，不额外要求第二信号或统一记录。
+5. cutoff 前已合法成立的结果由 Host 后续保存、展示、应用或投递，不自动因 cutoff 失效，也不因此自动成为旧 invocation 的新增有效推进；这些操作仍须满足用途、领域条件与当前授权。cutoff 不保证在途执行停止或领域/外部效果回滚；迟到回执、完成、失败与诊断可以如实说明实际事实，但不能补造此前的 Kernel result。维护副本、脱敏、更正或换新 ID 都不能成为伪造旧执行事实或绕过当前资格的理由；外部效果也不能反向证明 Kernel 结果已经成立。
+6. 分开看两组三层：`invocation logical / capability execution / domain effect`，以及 `Kernel 执行结果 / Host 应用结果 / 产品整体结果`。`Kernel 正常结束`只保证同一逻辑 invocation 在该公共契约范围内合法完成，不自动保证 Host 领域应用/持久化/投递成功；Host 可把特定应用设为产品成功条件，但不得把未满足这些条件的失败伪装成产品整体成功；后续领域失败不得反向改写已合法成立的 Kernel 执行事实。该结束与 cutoff 同作用域，不是任意局部执行完成。
+7. 能力 failure、`handled=false`、timeout 不证明无 effect，也不各自自动等于整个 invocation 结束；Host 的继续、fallback、短路或结束仍受适用契约、必要依赖和当前调用边界约束。retry 许可、重放安全、效果是否已发生、回执能否恢复分别判断，dedup 不保证全链可重跑。
+
+排除项：完整 `RoleRuntime` / `MemorySystem` / Ring / Stream / SQLite / HTTP、媒体、Authority/Workflow 框架和沙箱等不由本候选规定。契约未要求某机制，不等于禁止实现采用；不要求全局时钟、中央接纳点、统一记录或固定状态机。调查中的未知不被报告为已合法或已违规，这条审查纪律不直接规定运行时如何处理未知。
+
+<a id="kernel-source-map"></a>
+
+### 0.3 源码职责对照（2026-09-11 · `871156b5e211995dc8945c6ea569e62c9c2ff8dd`）
+
+以下是定点源码证据，不是全项目合规证明；读到的 tests 仅作源码证据，未运行。可用 `git show <本节完整 SHA>:<表内仓库相对路径>` 复现对应源码；行号均绑定该基线。`oclive_kernel_host` 仍是完整参考运行时装配，不能只从 crate 名或字段缺失推断已有独立小 Kernel。六槽 trait/DTO 细节仍见 §4–§9。“职责一致”仅表示实际工作可以归入该层，不表示该路径所有公共不变量已验证。
+
+| 边界 | 实际代码事实 | 按目标归属 | 差异与后续 |
+|---|---|---|---|
+| 六槽 contracts/types | [`kernel/crates/oclive_kernel_contracts/src/lib.rs#L55`](../kernel/crates/oclive_kernel_contracts/src/lib.rs#L55) 起重导出六槽合同及其他外围端口；[`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs#L13) 直接含 `Role`、关系与好感度字段；[`EventEstimator`](../kernel/crates/oclive_kernel_contracts/src/event_estimator.rs#L54) 的 `estimate` 直接接 `LlmClient`、人格及近期事件等输入。 | 六槽能力契约属于小 Kernel 边界；这些具体签名是现行参考接口，不是最小公共形状的证明。 | **接口仍耦合参考宿主领域数据**：`PromptInput` 尤其不能直接当作新的最小契约；也不能因 crate 名为 contracts 就把其全部导出列入小 Kernel。依赖另一能力本身不等于违规；API 取舍另行讨论。 |
+| `OcliveKernel` 完整门面 | [`kernel/crates/oclive_kernel_host/src/role_kernel.rs#L143`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs#L143) `build → AppStateBuilder::production`；[`#L203`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs#L203) health DB；[`#L225`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs#L225) `load_role_impl`；[`#L247`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs#L247) `process_message` 委托。 | Host composition root / 完整门面。 | **一致**：不是独立小 Kernel；完整装配仍在 Host。 |
+| Host 依赖与 `AppState` | [`kernel/crates/oclive_kernel_host/Cargo.toml`](../kernel/crates/oclive_kernel_host/Cargo.toml) 直接含 sqlx/reqwest/axum；[`kernel/crates/oclive_kernel_host/src/state/mod.rs#L107`](../kernel/crates/oclive_kernel_host/src/state/mod.rs#L107) 的 `AppState` 含 DB、conversation、memory repository、Ring、plugins、resources。 | Host 运行时装配与资源/持久化。 | **一致（Host职责可识别）**：依赖不表示必须启动 HTTP；不能据此称独立小 Kernel。 |
+| preflight / run / execute_turn | [`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L372`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L372) 做 `ensure_role_runtime`/`ensure_role_loaded`、锁与预取；[`#L468`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L468)–[`#L483`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L483) 将 pending transcripts 放入 `recent_turns`；[`#L513`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L513) 按 staged/origin 选择 Agent、remote 或 co_present。当前 Host 的 `execute_turn` 见 [`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs#L27`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs#L27) 与 [`#L48`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/mod.rs#L48)。 | Host 当前参考调度；必要偏序属于候选公共约束。 | **一致（Host职责可识别）**：当前流程不是所有 Host 的硬流水线。 |
+| Agent shortcut | [`try_agent_shortcut`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L195) 在 `handled=true` 时先向可选 sink 传 reply，再等待 `build_minimal_response`；`false` 返回 `None`，交给 Host 继续分支。 | Host 分支；Agent 结果与 Host 后处理分开。 | **单一字段不足以判定公共结束**：reply 已送入 sink 也不能证明后续最小响应构造成功；`handled` 不自动等于整个 invocation terminal。 |
+| Agent/tool partial effect | [`execute_tool_calls`](../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/agent_http.rs#L77) 调用工具 bridge 并把成功或错误存入工具结果；[`process`](../kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/agent_http.rs#L119) 可在此前工具调用后，因下一次 RPC 返回 `handled=false` 且无工具而结束，或遇到错误退出。 | Host/Adapter 的工具执行与结果汇总。 | **控制/错误结果不等于效果清单**：代码允许“先调用工具、后失败或返回 false”；不据此断言某次真实工具必有外部效果，也没有足够证据保证统一补偿、幂等或回执恢复。 |
+| staged / pending 复用 | 同一 [`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L468`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L468)–[`#L483`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs#L483) 将 pending transcript 复用为近期上下文。 | Host 当前数据复用。 | **证据不足**：这是具体代码事实；能否作为未来 invocation 的合法输入须由适用契约、当前用途和调用资格映射判断，不能仅凭 cache/pending 名称判定。 |
+| post / domain effect | [`post_llm.rs#L508`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post/post_llm.rs#L508) 在 `!ctx.persists_user_state()` 分支组装 `effects_persisted=false`；其余路径含 [`background profile`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post/post_llm.rs#L579)、[`chat append`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post/post_llm.rs#L688) 与 [`response assemble`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_pipeline/post/post_llm.rs#L747)。 | Host 后处理、状态应用与产品响应组装。 | **一致（Host职责可识别）**：当前响应聚合生成/应用信息，不能据此证明独立三层结果 API、统一原子 commit 或产品整体成功；此处不写用户状态也不证明此前 preflight 没有写入。 |
+| error boundary | [`kernel/crates/oclive_kernel_host/src/command_error.rs#L99`](../kernel/crates/oclive_kernel_host/src/command_error.rs#L99) 的 `CommandError`/`kernel_error_body` 与 [`kernel/crates/oclive_kernel_host/src/role_kernel.rs#L36`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs#L36) 的 `KernelError` alias；[`kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_error.rs#L9`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/turn_error.rs#L9) 的 `TurnError` 保留 `chat_stage`。 | Host/transport 错误载荷与阶段映射。 | **一致**：统一 body 不等于所有语义错误归属已合并。 |
+| HTTP/Tauri delivery | [`chat.rs#L287`](../kernel/crates/oclive_kernel_host/src/http_api/chat.rs#L287) spawn 后等待 [`process_message_stream`](../kernel/crates/oclive_kernel_host/src/http_api/chat.rs#L301)，忽略 token/done 的通道发送失败；[`chat_backend.rs#L1`](../distros/desktop-tauri/src/api/chat_backend.rs#L1) 注明生产使用 loopback HTTP 单写者，[`send_message`](../distros/desktop-tauri/src/api/chat_backend.rs#L44) 经 kernel client。 | Transport/Adapter 送达与 Host 调用分层。 | **一致（Adapter职责可识别）**：已读转发路径没有将通道发送失败传播为 cancellation；不泛化为所有断连路径，也不把 done 当客户收到。 |
+| minimal role preparation | [`LocalMinimalRoleSnapshot`](../kernel/crates/oclive_validation/src/minimal_role_local_file.rs#L16)、[`load_minimal_role_local_file`](../kernel/crates/oclive_validation/src/minimal_role_local_file.rs#L83) 及注释明确是只读准备；在 Host 的 `service/role/`、`role_kernel.rs`、`domain/chat_engine/process_message.rs` 中检索这两符号及 `MinimalRoleDefinition` 均无命中。 | Adapter 的只读准备；当前角色生命周期仍消费旧 `Role`。 | **所查入口未见接线**：快照不是角色激活；有限范围无命中不证明全仓不存在其他或间接接线。 |
+
+本表标记的“证据不足”不等于当前路径违规；它只表示本切片没有足够证据。`tests` 未运行，不作全量合规、全局“小 Kernel 不存在”或产品成功证明。
 
 权责/成功口径须区分**生成成功**、**领域提交成功**与**外部送达成功**三类结果；这不暗定未来 Core 输出包含 delivery，也不新增“领域提交完成后才准 stream”的要求。`oclive_kernel_host::OcliveKernel` 是当前**完整嵌入运行时门面**，物理上仍装配 SQLite、Event Ring、HTTP 依赖和具体设施；它不能被等同为已经独立编译出来的最小 core。物理拆薄状态只看 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`。
+
+以下五条是**当前参考 Host 的维护纪律**，不追加跨 Host 的领域系统或固定调用链要求：
 
 | # | 铁律 | 一句话 |
 |---|------|--------|
@@ -42,7 +84,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 `oclive_kernel_types::runtime_event_stream` 目前只是 Stage A.1 纯契约层；A.2.1 以版本化夹具冻结本地持久化设计，A.2.2.1 再以 OneBot v11 规范样本冻结 ACK、不确定投递、撤回非擦除与多宿主否定证据。A.2.2.2-R1/R2 只有独立开发者探针取得的一次真实 QQ 同步成功路径和一次真实提交后超时/显式对账路径；R3 只验证 AES-256-GCM 私有 locator 的跨进程存续，R4 只验证 NapCat 群历史扩展下的一次受控 ACK→locator 窗口恢复，R5 只用 synthetic-only 独立 SQLite 验证同一宿主内的跨进程 owner lease 与 fencing，R6 只冻结私聊或无可信历史能力时的失败关闭裁决。它们都不是 Production Output adapter/store、私聊/通用 OneBot 自动恢复或多宿主协调能力。当前仍没有 Production 存储/读取端口、consumer loop、Output 接线、Replay、Prompt 或回合接线，宿主级密钥恢复与多宿主 owner lease/fencing 也未关闭，不能被列为已运行模块。
 
-**稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；新增宿主入口必须委托同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。
+**当前参考运行时的稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；为此参考运行时新增入口须复用同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。这不是要求未来所有 Host 采用它的领域模型与具体调度。
 
 ---
 
@@ -75,7 +117,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 ## 3. 六槽解耦机制（共用）
 
-六槽合同的目标边界是稳定能力结果、调用边界和错误语义；目标上不规定特定的 SQLite、HTTP、RichRole 或其他产品载体。具体实现可以经授权 Adapter 使用网络、存储、工具或 LLM；这属于能力实现的资源访问，不改变 Core 的领域提交权边界。失败重试沿用原授权，不会获得额外权限。当前公开的 `oclive_kernel_types::PromptInput` 仍有 `role: &Role` 耦合，这是已知的参考运行时实现事实，不在本文替 Kernel v0 API 作决定。
+六槽合同的目标边界是稳定能力结果、调用边界和错误语义；目标上不规定特定的 SQLite、HTTP、RichRole 或其他产品载体。具体实现可以经授权 Adapter 使用网络、存储、工具或 LLM；这属于能力实现的资源访问，不改变 Host 的领域应用责任。重试仍须满足当前资格；先前授权不自动证明当前仍有效。当前公开的 `oclive_kernel_types::PromptInput` 仍有 `role: &Role` 耦合，这是已知的参考运行时实现事实，不在本文替 Kernel v0 API 作决定。
 
 ### 3.1 三层解耦
 
@@ -136,12 +178,12 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 | 项 | 内容 |
 |----|------|
-| **定义** | `MemoryRetrieval` 为 Prompt 提供 **相关记忆检索**；STM 写入与 LTM 归档由内核编排/持久化实现负责，不属于该 trait 的写权限 |
+| **定义** | `MemoryRetrieval` 为 Prompt 提供 **相关记忆检索**；STM 写入与 LTM 归档由当前 Host 编排/持久化负责，不属于该 trait 的写权限 |
 | **`plugin_backends` 键** | `memory` |
 | **Trait** | `MemoryRetrieval`（`oclive_kernel_contracts`） |
 | **合法 backend** | `builtin` · `remote` · `directory` · `local` · `none` |
 | **Builtin** | `BuiltinMemoryRetrieval` + `MemoryEngine`（STM/LTM 衰减、阈值） |
-| **主链 hook** | 槽位在 `turn_pipeline/pre.rs` 检索；内核在 `post_llm` 写入 STM/LTM |
+| **主链 hook** | 槽位在 `turn_pipeline/pre.rs` 检索；当前 Host 在 `post_llm` 编排/持久化 STM/LTM 写入 |
 | **Event Ring 接入** | 本轮已检索且与当前用户句相关的最高候选由 `builtin.memory_recollection` 提交 `kernel.memory.recall.candidate`（事件只携带记忆 ID、置信度与相关度，不复制正文）；`builtin.event_decision` 按注册基础权重与证据决定是否发出 `kernel.memory.recollection.activated`。只有已激活回忆进入专门的长文本回复上下文，默认 `weave`，且 TTL 固定为当前一轮；没有候选或未采纳时沿用原记忆 Prompt 行为 |
 | **与聊天存储** | **无关** — `chat_messages` 不进 MemoryEngine；回放见 `replay_memory_extraction` |
 | **合并** | 多 memory 实例 → 去重合并 |
@@ -185,7 +227,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 
 | 项 | 内容 |
 |----|------|
-| **定义** | Event Ring 的 legacy `event.impact` 子槽：估计本回合 **事件类型** 与 **影响因子**，再以 `kernel.chat.event_impact.estimated` 信封进入外环，驱动后续性格演化与好感 |
+| **定义** | legacy `event.impact` 能力：估计本回合 **事件类型** 与 **影响因子**；当前参考 Host 可将结果接入 Event Ring，但 Ring 不是该能力的硬依赖 |
 | **键** | `event` |
 | **Trait** | `EventEstimator` |
 | **Backend** | `builtin` · `remote` · `directory` · `none` |
@@ -195,7 +237,7 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 | **允许改** | 规则表、LLM 提示、remote |
 | **禁止** | 把 Turn Thinking 登记为第七槽 |
 
-**职责 / 不授予**：本模块负责估计事件类型与影响因子；它不是 Event Ring，也不是 Runtime Event Stream，不自行写入好感或关系状态。
+**职责 / 不授予**：本模块负责估计事件类型与影响因子；当前 Host 可将估计结果接入 Event Ring。它不是 Event Ring，也不是 Runtime Event Stream，不自行写入好感或关系状态。
 
 ---
 
@@ -430,7 +472,7 @@ flowchart TB
   PST -.-> F3["设施③ portrait"]
 ```
 
-图中的箭头表示当前普通用户 co-present 回合的数据依赖，不表示六槽按编号机械串行。Agent 短路在 `pre` 之前；异地 stub / RemoteLife 是并列分支，见 `process_message.rs`。
+图中的箭头表示当前参考 Host 的普通用户 co-present 数据依赖，不表示六槽按编号机械串行或所有 Host 的公共硬偏序；它是当前参考 Host 的运行关系图。Agent 短路在 `pre` 之前；异地 stub / RemoteLife 是并列分支，见 `process_message.rs`。
 
 ---
 

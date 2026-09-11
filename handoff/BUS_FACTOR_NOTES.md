@@ -7,7 +7,9 @@
 
 **模块关系与进度总览（先扫一眼）**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) — **模块注册表**（定义 · 六槽/设施关系 · 改动约束；进度 → TECHNICAL_DEBT）。
 
-约定：路径以仓库根 **`oclivenewnew`** 为准；桌面宿主与 Tauri 命令在 `distros/desktop-tauri/src`，内核编排在 `kernel/crates/oclive_kernel_host`。
+约定：路径以仓库根 **`oclivenewnew`** 为准；Tauri 适配在 `distros/desktop-tauri/src`，参考 Host 主编排在 `kernel/crates/oclive_kernel_host`。
+
+**适用范围（2026-09-11）**：下文是现有物理代码的维护地图，不是最小 Kernel API 或职责定义。“内核编排”、单写者与固定阶段均按完整参考运行时理解。小 Kernel / Host 权责及已读源码对照见 [MODULE_MAP §0](MODULE_MAP_AND_HANDOFF.md#kernel-source-map)；历史测试数字不代表本轮重跑。
 
 ---
 

@@ -1,8 +1,10 @@
 # OCLive 用户、创作者与插件文档
 
-**SSOT 范围**：公开使用说明、角色包契约、插件契约与集成规范。
-**最后更新**：2026-09-04。
+**本文范围**：用户/创作者/集成文档的导航。各专题拥有自己的现行契约，本页不另定义架构或格式。
+**最后更新**：2026-09-11。
 **主仓开发者**从 [human-docs](../human-docs/README.md) 开始；维护者 / AI 从 [handoff](../handoff/README.md) 开始。
+
+区分 [文档状态](../handoff/README.md#documentation-status)：现行参考 Host 的接口/格式可继续使用，但不自动等于未来最小 Kernel API；RFC、计划与历史图按其标注范围阅读。
 
 ## 按身份开始
 
@@ -21,7 +23,7 @@
 | `getting-started/` | 用户、创作者和集成方的入口；仅 `PROJECT_CURRENT_STATUS` 维护版本事实 |
 | `role-pack/` | 角色包格式、版本、迁移、身份、知识与跨宿主规则 |
 | `plugin-and-architecture/` | 六槽、目录插件、Remote、Agent 与 Bridge 契约 |
-| `kernel/` | 发行版能力、内核生命周期与模块语义 |
+| `kernel/` | 当前参考运行时的发行版能力、进程生命周期与模块实现语义；不是新小 Kernel API |
 | `testing/` | 测试分层、OOCP、输出契约与 fuzz |
 | `security/` | 安全范围、供应链与已知风险 |
 | `development/` | 发版版本、轻量化和开发维护规则 |
@@ -32,7 +34,7 @@
 
 | 主题 | 文档 |
 |------|------|
-| OCLive 本质与最小工具内核边界 | [PURE_KERNEL_BOUNDARY](getting-started/PURE_KERNEL_BOUNDARY.md) · [架构总览](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| Kernel / 六槽 / Host 权责与当前差异 | [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) · [PURE_KERNEL_BOUNDARY 导览](getting-started/PURE_KERNEL_BOUNDARY.md) |
 | 六槽、设施与独立通道归类 | [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | 角色包 vs 蓝图 | [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md) |
 | 角色包磁盘格式 | [ROLE_PACK_SPEC](role-pack/ROLE_PACK_SPEC.md) |

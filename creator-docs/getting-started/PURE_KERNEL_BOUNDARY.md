@@ -2,7 +2,8 @@
 
 本文消除“纯净内核”的两种旧含义：**最小概念核心**与当前已经可嵌入的**完整参考运行时**不是同一层。模块分层见 [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md)；职责与集成权责唯一 SSOT 见 [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)；总览图见 [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md)；实施阶段见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md)。
 
-**最后更新**：2026-09-06。
+**SSOT 范围**：本文说明最小工具内核的职责目标与当前完整嵌入运行时边界；六槽/Host/Adapter 关系与源码对照唯一以 [MODULE_MAP_AND_HANDOFF.md §0.1–§0.3](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准。
+**最后更新**：2026-09-11。
 
 [English](../../creator-docs-en/getting-started/PURE_KERNEL_BOUNDARY.md)
 
@@ -12,26 +13,7 @@
 
 ### 1.1 已确认的最小核心职责
 
-本轮已确认的职责边界是：
-
-```text
-唯一回合/生命周期编排
-  + 能力调用与合并规则
-  + 状态提交有效性约束、错误语义与故障隔离
-  + memory / emotion / event / prompt / llm / agent 六个稳定端口
-```
-
-六槽是能力接口，不是六个平级决策内核。Core 负责守住公共回合语义、能力结果与领域提交的有效性约束、错误边界和故障隔离；当前参考实现的可信 Rust Host 在这些约束内执行实际产品状态提交与资源操作。权责/成功口径须区分生成成功、领域提交成功与外部送达成功，但本页不把 delivery 暗定为未来 Core 输出，也不新增“提交完成后才准 stream”的顺序要求。具体记忆算法、情绪模型、Prompt 模板、LLM 厂商、Event Ring、SQLite、HTTP、Tauri 和角色包工具都可以围绕它装配，但不决定 OCLive 是否成立。当前共景运行路径仍要求 `prompt + llm` 通过健康检查；其余槽位可按已定义的 `none` / Noop 语义变薄。
-
-这里的“已确认”只表示职责口径收敛；Kernel v0 的公共契约语义已收敛，具体 API、字段与物理拆分仍未定。最小角色内容或加载准备也不自动成为 Core 的固定调用输入，是否硬性需要 persona 仍待相应 contract 决定。
-
-### Kernel v0 公共契约（语义已收敛，API 未定）
-
-Host 每次回合提交一次归一化调用、本次已准入上下文、能力声明和资源范围。Kernel 校验调用、输入、能力使用、依赖、结果归属与终态合法性，并允许合法调度；它不执行 Host 调度，也不规定唯一调用链或固定并发。六槽只消费本次调用中已声明且已准入的输入，返回能力结果、未提供、跳过或失败；这些状态不自动互转，槽不拥有领域状态提交权、权限授予权或第二条回合管线。
-
-必要偏序只表达执行资格与结果可见性：输入须对当前调用可用、有效且归属当前调用，不冻结依赖图、Stage 或固定顺序。Prompt 在依赖输入就绪后执行，主 LLM 在所需 Prompt 结果有效后执行；`Agent handled` 只终止当前调用未完成的常规主链，不产生全局调度、提交或 exactly-once 权力。终态唯一，终态后动作不得有效改变终态或主结果；Kernel 返回当前调用终态、终止路径、可无的主结果或失败原因。
-
-流式片段只是增量过程输出，不证明生成、领域提交或外部送达成功，三者独立；终态后的片段、结果与提交无效。这里只补最小调用关联/来源语义，不新增字段或完整 provenance 模型。Host 执行领域提交与资源操作；Kernel 不直接写 SQLite、Memory、Event 或 UI，只守住结果属于当前调用、来自已准入能力、满足能力有效性、不得重复改变终态、不得扩大权限或资源范围等不变量。Role、Memory store、Event Ring、Stream、SQLite、HTTP、UI、发行版策略、RuntimeSnapshot、关系/好感度、Agent exactly-once、事实真实性与进程沙箱均不属于该契约。完整模块权责见 [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md)。
+小 Kernel 的职责目标是六槽契约、必要公共合法性约束、结果/依赖边界、错误与故障边界；具体 Host 负责有限自由调度、领域应用、资源操作与产品侧投递。六槽是能力接口，不是六个平级决策内核。2.2.1 收口候选的边界摘要、排除项和当前源码职责对照，见 [MODULE_MAP_AND_HANDOFF.md §0.1–§0.3](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。本页不冻结新公共 API、固定流水线或物理拆分，也不以“故障边界”承诺进程级隔离。
 
 ### 1.2 当前完整嵌入运行时
 
@@ -39,7 +21,7 @@ Host 每次回合提交一次归一化调用、本次已准入上下文、能力
 
 | 层 | 当前代码锚点 | 边界 |
 |----|--------------|------|
-| **最小核心职责目标** | `oclive_kernel_contracts` 六个 trait、`process_message` / turn pipeline、核心 DTO/错误 | 职责已确认；Kernel v0 语义已收敛，具体 API、字段与物理拆分仍未定 |
+| **最小核心职责目标** | 六槽 contracts/types 与必要公共合法性边界 | 候选职责口径；不等于已独立编译的 crate 或已冻结 API |
 | **完整嵌入运行时门面** | `oclive_kernel_host::OcliveKernel` · `role_kernel.rs` | 当前可用；包含持久化、Event Ring、HTTP 依赖和默认装配，并负责实际 Host 提交/资源操作 |
 | **传输与 UI 适配** | `oclive-kernel-server`、Tauri、Vue、VS Code | 不属于 Core 或 Host 的领域权威；传输/UI 应委托同一回合入口 |
 
@@ -91,7 +73,7 @@ Host 每次回合提交一次归一化调用、本次已准入上下文、能力
 - **prompt / llm**：语言表达与 persona 注入。
 - **agent**（可选）：工具与外部世界（MCP、目录插件）。
 
-内核约束 **调用顺序、端口、错误与状态提交边界**；可信 Host 执行实际产品状态提交和资源操作。陪伴“好不好”由模型、槽实现、设施和角色包内容共同决定。强模型装配可以省略部分显式辅助；小模型装配可以使用更厚的候选生成与 Prompt 编译，但辅助信号不得冒充唯一语义真值。
+内核约束 **必要依赖、端口、错误与合法性边界**；可信 Host 负责有限自由调度、实际领域应用、资源操作和产品侧投递。陪伴“好不好”由模型、槽实现、设施和角色包内容共同决定。强模型装配可以省略部分显式辅助；小模型装配可以使用更厚的候选生成与 Prompt 编译，但辅助信号不得冒充唯一语义真值。
 
 ---
 

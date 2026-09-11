@@ -1,6 +1,6 @@
 # Agent / AI 协作说明（A.I.Live · oclivenewnew）
 
-本仓库为 **A.I.Live / OCLive** —— 开源、本地优先、以稳定契约组织角色能力的 **可嵌入工具内核及其参考运行时**（**Rust + Tauri + Vue 3**）。最小概念核心是一套权威回合编排与 **`memory` / `emotion` / `event` / `prompt` / `llm` / `agent` 六个稳定能力端口**；Event Ring、具体槽位实现、持久化、发行版与生态工具均是外围装配。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，不是项目本体或能力上限。定位 SSOT 见 [OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
+本仓库为 **A.I.Live / OCLive** —— 开源、本地优先、以稳定契约组织角色能力的 **可嵌入工具内核及其参考运行时**（**Rust + Tauri + Vue 3**）。小 Kernel 的职责口径、六槽边界以及当前 Host 实现对照，唯一以 [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md) 为准；当前参考运行时另含 Host 编排、状态应用、Event Ring、具体槽位实现、持久化、发行版与生态工具。默认角色包（如 `distros/chat-pro/roles/mumu`）为**官方示例**，不是项目本体或能力上限。定位 SSOT 见 [OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)。
 
 **人类开发者（不用 Cursor）**：请先 **[human-docs/README.md](human-docs/README.md)**（L0–L2 约 1 小时 · 排版面向人类认知）；**不要**从本文起步。
 

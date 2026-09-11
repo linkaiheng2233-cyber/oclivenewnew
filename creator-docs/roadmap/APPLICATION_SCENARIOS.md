@@ -1,6 +1,6 @@
 # 应用场景矩阵（工具内核与装配假设）
 
-本文枚举 OCLive 最小工具内核（唯一编排/权威边界 + 六个稳定能力端口）及其参考运行时可探索的产品形态。**目标是说明哪些契约可以复用、每个场景还缺什么适配与证据**；路线图设想不等于已经交付，角色包是可携带资产而不是内核代码。
+本文枚举 OCLive 最小工具内核（[六槽契约与必要合法性边界](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，具体调度/领域应用归 Host）及其参考运行时可探索的产品形态。**目标是说明哪些契约可以复用、每个场景还缺什么适配与证据**；路线图设想不等于已经交付，角色包是可携带资产而不是内核代码。
 
 本文与 [VISION_OPEN_LAB.md](VISION_OPEN_LAB.md) 记录开放实验这一种用法；与 [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) 的按月计划对照，但不绑定具体交付时间。
 

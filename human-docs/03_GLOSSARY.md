@@ -9,9 +9,11 @@
 
 ## 会话与角色 ID
 
+下列缩写、字段和运行策略描述**当前参考 Host**，不是最小 Kernel 必须公开的字段。权责查 [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，名称查 [NAMING](../creator-docs/NAMING_CONVENTIONS.md)。
+
 | 缩写 | 全称 | 含义 | 代码锚点 |
 |------|------|------|----------|
-| **`mrid`** | manifest role id | 角色包 `manifest.json` 里的角色 ID | `SendMessageRequest.role_id` |
+| **`mrid`** | manifest role id（历史简称） | 当前参考 Host 的角色 ID；来源按所加载格式解析，不代表所有包都须有 manifest | `SendMessageRequest.role_id` |
 | **`srid`** | session-scoped role id | SQLite / 缓存命名空间：默认等于 `mrid`；有 `session_id` 时变为 `{mrid}::{session_id}` | [`conversation_state_role_id`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/mod.rs) |
 | **`pl`** | plugin layer / resolved plugins | 本回合解析后的 `ResolvedRolePlugins`（六槽 `Arc<dyn …>` 句柄集） | `process_message` 内 `pl` 变量 |
 
@@ -23,18 +25,20 @@
 
 | 术语 | 含义 |
 |------|------|
-| **最小工具内核** | 唯一回合/生命周期编排、能力调用/合并、权威状态提交、错误/隔离边界，以及六个稳定能力端口；当前尚未物理抽成独立 crate |
+| **最小工具内核** | 六槽能力契约与必要公共合法性/因果/错误边界；不拥有具体调度与领域提交，当前尚未物理抽成独立 crate |
+| **发行版 Host** | 运行组合、有限自由的调度与领域应用层；不是前后端通信桥或 OS 进程的同义词 |
+| **Adapter** | 协议转换或执行已授权操作；不自行取得领域决策权 |
 | **完整参考运行时** | 当前 `oclive_kernel_host::OcliveKernel` 门面及其 SQLite、Event Ring、具体槽实现、设施和 HTTP 依赖；可嵌入，但不等于最小 core |
 | **`PluginHost`** | 按角色包 + 会话覆盖解析六槽实现；入口 [`plugin_host/mod.rs`](../kernel/crates/oclive_kernel_host/src/domain/plugin_host/mod.rs) |
-| **`slot_registry`** | v2/v3/v4 蓝图多实例槽位表（`pipeline.ocblueprint`）；新 Stable 包用 v4，权威键 `type`: memory / emotion / … |
+| **`slot_registry`** | 参考 Host 的 v2/v3/v4 蓝图多实例槽位表；该格式族新 Stable 包用 v4，不是最小角色必填项 |
 | **`plugin_backends`** | legacy 六键磁盘结构 + Rust 运行时折叠类型名 `PluginBackends`；**不是**当前蓝图 UI 的写盘真源 |
 | **`slot_registry.type`** | 与六槽键同义；**禁止**别名 `memory_backend` 等 |
-| **`OOCP`** | OCLive Open Chat Protocol；HTTP 黑盒测试场景 S0–S12 |
-| **`co_present`** | Stable 核共景主路径实现模块 |
+| **`OOCP`** | OCLive Open Chat Protocol；现行 HTTP 黑盒范围见 [OOCP_TEST_SUITE](../creator-docs/testing/OOCP_TEST_SUITE.md) |
+| **`co_present`** | 当前参考 Host 的 Stable 共景主路径实现模块 |
 | **Event Ring / 事件外环** | 当前参考运行时中的有界事件路由与权威信封设施；不是最小核心必选项、第七槽或数据库总线 |
 | **显式 / 隐式装配** | 两种可混合策略：显式模块共享契约化状态；隐式装配让模型从语境推断。OCLive 不指定唯一正统 |
 | **状态候选** | 带来源、置信度、有效期与作用域的语义判断目标形态；当前并非所有 DTO 都已实现这些字段 |
-| **[Runtime Event Stream / 角色运行事件流（规划）](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)** | 跨回合、跨通道延续角色事实与派生事件的“河流”模型；Production Stream、读取与消费者尚未实现，当前只有默认关闭、不可读回行为的 B0 trace-only 影子，不得与 Event Ring 的有界历史混称 |
+| **[Runtime Event Stream / 角色运行事件流](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)** | 外围跨回合/跨通道事件流方向；trace/shadow 与后续实验不等于正式 Production Stream。逐阶段已实现范围、缺口和暂停项查 RFC 与技术债，不与当前有界 Ring 混称 |
 | **Session（事件语境）** | 角色运行实例与隔离边界；可承载/投递属于该实例的事件，但不因此取得 Event 采纳或状态提交权 |
 | **legacy `event` 槽** | 第 3 后端模块，只估计对话事件类型/影响；不是整个 Event Ring |
 | **EventDraft** | 模块提出的事件草案；不含可信来源、注册权重和顺序 |

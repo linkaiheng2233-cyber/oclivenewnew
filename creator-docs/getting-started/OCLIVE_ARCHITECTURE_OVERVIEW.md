@@ -1,9 +1,9 @@
 # Oclive 架构总览：工具内核、六槽与外围装配
 
-**SSOT 范围**：对外架构叙述、模块编号与分层术语；模块定义见 MODULE_MAP，wire 契约见专题文档。
-**最后更新**：2026-09-06。
+**本文范围**：对外架构导览；模块定义/编号以 MODULE_MAP 为准，权威名称以 NAMING 为准，wire 契约见专题文档。本页不另立职责 SSOT。
+**最后更新**：2026-09-11（Kernel / Host 口径对齐，非实现更新）。
 
-本文是 **对外架构叙述** 与 **模块编号和分层术语** 的权威页：先定义最小工具内核，再说明当前完整运行时中的单核双态构建、**后端模块（第 1–6 模块）**、设施、独立通道和插件实现。
+本文先导读小 Kernel 的职责边界，再说明**当前完整参考运行时**的构建方式、六槽装配、设施与插件。下文固定阶段、提交顺序和部署名称均需在参考 Host 范围内理解，不上升为所有 Host 的公共要求。
 
 **模块定义 · 六槽/设施关系 · 改动约束（维护 SSOT）**：[`handoff/MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md) — 本文侧重对外叙述与编号脚注，**不**与注册表双写长表。实现细节仍以 [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)、[SETTINGS_REFERENCE.md](../cli/SETTINGS_REFERENCE.md)、[PURE_KERNEL_BOUNDARY.md](PURE_KERNEL_BOUNDARY.md)、[RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)、[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md) 与源码为准。
 
@@ -13,11 +13,11 @@
 
 ## 架构简述
 
-**Oclive** 的最小概念核心是一颗 **契约型工具内核**：它守住唯一回合/生命周期编排、能力调用与合并规则、权威状态提交约束、错误语义和故障隔离；当前参考实现的可信 Rust Host 在这些约束内执行产品状态提交与资源操作。记忆、情感、事件、Prompt、LLM、Agent 通过 **PLUGIN_V1 六个稳定能力端口**接入。六槽提供能力、证据、候选、上下文或动作结果，不是六个平级权威。职责与集成边界见 [`MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md)。
+**小 Kernel 定义六槽能力契约、必要因果和公共合法性/错误边界；发行版 Host 拥有组合、有限调度与领域应用权；Adapter 执行已授权操作。** 详见 [唯一权责 SSOT](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。PLUGIN_V1 描述现有接口，不意味着其 Rich Role/DTO 已成为新的最小公共契约。
 
 当前 `oclive_kernel_host::OcliveKernel` 是可直接嵌入的**完整参考运行时门面**，仍物理装配会话状态、SQLite、Event Ring、HTTP 依赖、具体六槽实现和设施。它复用唯一 `process_message`，但不等于已经物理抽离的最小 core；拆薄状态见 `K-CORE-BOUNDARY-01`。**复杂情感设施子模块**、专家模型设施子模块等可以服务 Prompt，却不是第七槽，也不是 OCLive 成立的必要条件。
 
-**Event Ring** 是当前参考运行时中的可复用事件设施：它形成进程内有界事件外环，不占六槽位置，也不替代 Stable 回合管线。legacy `event` 槽只估计对话事件影响；memory、传感器等来源可提出事件，由注册的决策模块采纳或拒绝，最终仍由 Rust 编排决定如何进入 Prompt、回复与持久化。没有 Event Ring 的更薄装配仍可以遵守六槽契约；公开契约见 [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md)。
+**Event Ring** 是当前参考运行时中的可复用事件设施：它形成进程内有界事件外环，不占六槽位置，也不替代 Stable 回合管线。legacy `event` 槽只估计对话事件影响；memory、传感器等来源可提出事件，由注册的决策模块采纳或拒绝，最终仍由当前 Rust 参考 Host 编排决定如何进入 Prompt、回复与持久化。没有 Event Ring 的更薄装配仍可以遵守六槽契约；公开契约见 [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md)。
 
 OCLive 不规定情绪、关系等语义必须全部显式化或全部交给模型隐式推断。默认参考实现偏向本地小模型，使用较多显式辅助；强模型装配可以更薄。推荐边界是：**事实显式化，判断候选化，表达模型化**。当前 `EmotionResult` 仍主要是七维数值；`source / confidence / TTL / scope` 等候选元数据是目标原则与技术债，不能写成已完成契约。
 
@@ -37,12 +37,12 @@ OCLive 不规定情绪、关系等语义必须全部显式化或全部交给模�
 
 | 术语 | 含义 |
 |------|------|
-| **设施模块** | **统称**：编排行内、**不进入六槽 `PluginBackends` 折叠**的内核延伸能力（含无编号设施与已登记子模块）。设施可以有自己的蓝图声明；例如 `complex_emotion` 可作为 `slot_registry.type`，但不会因此成为第七槽。**不存在**「专家模型设施模块」等中间大类。 |
+| **设施模块** | **统称**：编排行内、**不进入六槽 `PluginBackends` 折叠**的参考运行时延伸能力（含无编号设施与已登记子模块）。设施可以有自己的蓝图声明；例如 `complex_emotion` 可作为 `slot_registry.type`，但不会因此成为第七槽。**不存在**「专家模型设施模块」等中间大类。 |
 | **`{专名}设施子模块`** | 在设施模块中**登记编号**（**第 N 设施子模块**）的项；全名 = **`{专名}` + `设施子模块`**；各专名**独立**，不得把「专家模型」当作整族前缀套在其它专名上。 |
 | **专家模型**（专名） | 仅指 **专家模型设施子模块** 及其蓝图/实验核配置（条件触发子流程）；**不**包含复杂情感。 |
 | **专家路由** | **专家模型设施子模块** 的默认实现：`blueprint/includes/expert_routing.json`（**与 `dual_core` 同 feature，默认不编译**）。 |
 
-**扩展规则（设施子模块）**：新增已登记设施时，依次占用 **第 3、第 4… 设施子模块**，全名遵循 **`{新专名}设施子模块`**（须 RFC + 文档登记），**不**复用「专家模型」专名。
+**扩展规则**：当前编号及新增登记只查 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md)，命名查 [NAMING](../NAMING_CONVENTIONS.md)。本导览不再维护另一份“下一个编号”。
 
 ---
 
@@ -237,7 +237,7 @@ flowchart TB
 
 Stable 主路径以 `process_message` 完成预取与可选 Agent 短路后，进入 `turn_pipeline` 的 **pre → co-present middle → 主 LLM → post**；**不是**按模块编号线性排列。编号仍对照 **第 1–6 模块** 与 **设施子模块**。
 
-这张表描述的是**当前默认参考装配**，不是所有 OCLive 内核必须实现同样厚度的认知模型。当前代码要求共景健康路径至少有 `prompt + llm`；memory、emotion、event、agent 可以按各自 `none` / Noop 契约变薄。任何未来的强模型装配都应复用同一端口与权威边界，而不是复制第二套 `process_message`。
+这张表描述的是**当前默认参考装配**，不是所有 OCLive 内核必须实现同样厚度的认知模型。当前代码要求共景健康路径至少有 `prompt + llm`；memory、emotion、event、agent 可以按各自 `none` / Noop 契约变薄。本仓参考 Host 的调整继续复用其主链；第三方 Host 可自行调度，但须满足六槽契约与必要因果，而非被要求使用 `process_message`。
 
 | 阶段 | 代码锚点 | 顺序 |
 |------|----------|------|
@@ -324,7 +324,7 @@ RFC 与验收：[RFC_SIDE_CHANNEL_CAPABILITY_ENHANCEMENTS.md](../rfc/RFC_SIDE_CH
 
 ## 特点（摘要）
 
-- **最小工具内核**：唯一编排与权威边界 + 六个稳定能力端口
+- **最小工具内核**：[六槽契约与必要公共合法性边界](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，不是参考 Host 的固定编排或领域提交
 - **参考运行时装配**：六槽实现 + 可选设施、Event Ring、持久化与宿主适配
 - **后端模块插件模块**：按第 K 模块挂 Remote / 目录插件，**不占第 N 模块号**
 - **发行版式交付**：OOCP、角色包、`oclive-cli` 工厂、Breaking 流程

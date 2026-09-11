@@ -17,6 +17,8 @@
 | 插件 / 集成开发者 | [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 30–60 分钟 |
 | AI Agent | [AGENTS.md](AGENTS.md) | 按任务读取 SSOT |
 
+文档归属与“当前实现 / 候选 / 计划 / 历史”的区别见 [文档分责](handoff/README.md#documentation-status)。人类和 AI 使用不同阅读入口，但不维护两套架构事实。
+
 ---
 
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
@@ -27,7 +29,7 @@
 
 **A.I.Live（OCLive）** 不是“又一个定死的 AI 聊天 App”，也不以集中式平台为本体。它首先是一颗 **用稳定契约组织 AI 角色能力的可嵌入工具内核**：
 
-- 内核守住唯一回合编排、状态提交、错误与故障隔离
+- 小 Kernel 定义六槽能力契约、必要因果与合法性/错误边界；发行版 Host 负责组合、调度与领域应用（[职责 SSOT](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)）
 - **六个稳定能力端口**（记忆、情感、legacy 事件影响、Prompt、LLM、Agent）允许替换实现
 - 用 **角色包**（人设、场景、prompts）独立创作与分发内容
 - **本地优先**：对话与记忆默认在你机器上；云端 API 可选、BYOK
@@ -56,7 +58,7 @@
 
 ### 例子 3 · 集成方：同一角色包，多端复用
 
-同一份 `manifest.json` + `pipeline.ocblueprint` 被 **桌面 Tauri**、**无头 HTTP `--api`**、**编写器 WASM 校验**、**oclive-cli** 共用——格式 SSOT 在 `oclive_validation`，不在某个 App 里写死。桌面与 VS Code 可共用 **`OCLIVE_ROLES_DIR`** 与 **`app.db`**（L1 角色包 + L3 陪伴连续），见 [跨宿主记忆](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
+现有参考 Host、编写器和 CLI 复用角色包加载/校验能力，但各入口支持范围以现行格式和工具契约为准；`manifest.json` / `pipeline.ocblueprint` 不是所有最小角色都必须携带的文件。最小角色只表达 persona + 视觉资产引用，加载准备不等于运行时接入已完成，见 [角色包边界](handoff/ROLE_PACK_BOUNDARY.md)。桌面与 VS Code 共享 **`OCLIVE_ROLES_DIR`** / **`app.db`** 是当前参考 Host 的连续性方案，不等于已实现独立 Portable Memory，见 [跨宿主记忆](creator-docs/role-pack/CROSS_HOST_MEMORY.md)。
 
 ### 例子 4 · 模块作者：只写新能力，其余白送
 
@@ -82,13 +84,13 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 | 核心交付 | 聊天 UI + 接各种 API/扩展 | **六槽契约 + 蓝图 + 角色包格式 + 跨端校验** |
 | 模块语义 | 扩展各自为政 | **builtin / remote / directory** 统一 backend 面 |
 | 分发 | 社区卡片/文件 | **`.ocpak` / zip · SHA-256 · `oclive://` 深链** + 市场站 |
-| 编排 SSOT | 多由前端/扩展拼装 | Rust **`process_message`** 固定回合语义 |
+| 编排 SSOT | 多由前端/扩展拼装 | 当前参考 Host 的 Rust **`process_message`**；不是所有 Host 的固定流水线 |
 
 ---
 
 ## 三发行版（同一内核 · 不同 HostProfile）
 
-内核编排 **一套**（`process_message`）；差异在 **`distro.oclive.toml` HostProfile** 与宿主 UI，**不是** 另写一套聊天引擎。
+当前参考发行版复用 **`process_message`** 和 **`distro.oclive.toml` HostProfile**。这是本仓参考 Host 的维护边界，不要求第三方 Host 采用同一编排；Host 的调度仍须满足六槽契约与必要因果。
 
 | 发行版 | `distro_id` | 形态 | 状态 |
 |--------|-------------|------|------|
@@ -110,7 +112,7 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 | **`oclive_validation` 同源校验** | 同一契约在运行时、编写器 WASM、CLI 三处一致——改格式不会 silent 漂移 |
 | **`process_message` 主编排 + 六槽 `PluginHost`** | 回合语义稳定；换 backend 不换编排公式 |
 | **记忆三套存储解耦** | 聊天日志 / 短期 / 长期 职责分离（删聊天记录 ≠ 清空 AI 记忆） |
-| **G1–G16 改动边界 + CI 门禁** | OOCP S0–S12、Dimension 5 **15** 项、layering ratchet、doc registry——文档与代码 SSOT 绑定 |
+| **改动边界 + CI 门禁** | [G1–G17](handoff/AI_CHANGE_BOUNDARIES.md)、[验证规则](handoff/AI_VERIFICATION_PROTOCOL.md)、OOCP、layering ratchet、doc registry；检查范围以对应契约和脚本为准，不在首页复制计数 |
 | **角色内容面 vs 包内蓝图配置面分责** | 创作者改人设不会误触 `slot_registry`；管理员改后端选择不会污染角色内容 |
 | **独立通道（如 voice.asr）** | 语音/TTS 等 **不进六槽**，不污染 `process_message` 主链 |
 
@@ -122,7 +124,7 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 
 OCLive 的优化目标不是「把所有能力塞进一个 App」，而是 **正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
 
-**这张分类表描述当前完整参考运行时，不等于最小核心清单。** 最小核心只守编排/权威边界和六端口；Event Ring、设施、存储、宿主与具体实现均可在其外组合。OCLive 也不强制显式或隐式路线：默认实现偏向本地小模型的显式辅助，强模型装配可以更薄。原则是 **事实显式化，判断候选化，表达模型化**。
+**这张分类表和下图描述当前完整参考运行时，不等于最小核心清单或固定六阶段。** 小 Kernel、六槽与 Host 的分责以 [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Event Ring、设施、存储与具体实现属于外围装配。现有 crate 尚未物理拆出这一小 Kernel；候选公共语义也不等于新的 API 已冻结。OCLive 不强制显式或隐式路线：默认实现偏向本地小模型的显式辅助，强模型装配可以更薄。
 
 ### 模块四大类（先建立地图）
 
@@ -318,7 +320,7 @@ flowchart LR
 | 文档 | 用途 |
 |------|------|
 | **[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)** | **AI 深读分类目录**（架构 · 契约 · 代码锚点 · 场景路径） |
-| [AGENTS.md](AGENTS.md) | 改代码前 **精简门禁**（G1–G16 摘要） |
+| [AGENTS.md](AGENTS.md) | 改代码前 **精简门禁**（按任务读取改动边界） |
 | [human-docs/ai-package/README.md](human-docs/ai-package/README.md) | AI 包组成与人类文档分工 |
 
 ---

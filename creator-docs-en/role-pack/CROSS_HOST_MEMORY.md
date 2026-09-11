@@ -7,10 +7,12 @@
 
 ---
 
+**Scope clarification (2026-09-11):** this L1/L2/L3 arrangement shares the reference runtime. It is not an independent Portable Memory format, a storage contract for arbitrary distros, or a requirement for the small Kernel to load roles or own SQLite. Compatible formats follow ROLE_PACK_SPEC; minimal-role boundaries and wiring gaps are in [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md), logical responsibilities in [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities). Acceptance of compatible reference packs does not prove the unwired minimal-role path works.
+
 ## 1. One sentence
 
 **Role pack** = cross-distro readable **identity, content, policy** (no dynamic runtime).  
-**Kernel** = unified **load contract** (`load_role`, `config.json` semantics, `POST /chat`).  
+**Current shared reference runtime** = this integration arrangement's **load contract** (`load_role`, `config.json` semantics, `POST /chat`).
 **Each host** = **L2 private state** on its own; **L3 companionship continuity** via **shared `app.db`**.
 
 ---

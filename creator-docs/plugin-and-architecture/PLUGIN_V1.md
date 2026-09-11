@@ -1,6 +1,8 @@
 # PLUGIN_V1 — 编排层契约与后端枚举（蓝图 v2/v3/v4 · legacy 六槽）
 
-**SSOT 范围**：六槽 DTO、后端枚举、解析与 Stable 固定 stage 中的槽位调用；Event Ring wire 见独立契约。
+**SSOT 范围**：当前参考 Host 的六槽 DTO、后端枚举、解析与 Stable 固定 stage 中的调用；Event Ring wire 见独立契约。
+
+**适用边界（2026-09-11）**：这些现行接口仍是接入参考实现的依据，但不能把完整 `Role` / `PromptInput`、固定 stage 或蓝图必需项直接当作未来小 Kernel API。六槽是能力而非固定阶段；职责与差异见 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map)。本次不变更任何 wire 或签名。
 **最后更新**：2026-09-05。
 
 > **2026-06-10 起**：`builtin_v2` 为 **已废弃 wire alias**（serde 读兼容），行为等同 `builtin`；四槽无独立 V2 实现（D-SLOT-01）。下文 legacy 表中 `builtin_v2` 行仅作迁移对照。

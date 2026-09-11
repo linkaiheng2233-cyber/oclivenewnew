@@ -9,7 +9,7 @@
 
 ## 一句话
 
-**OCLive（A.I.Live）** 是开源、本地优先的 **AI 角色工具内核**：一套权威回合编排连接 `memory`、`emotion`、`event`、`prompt`、`llm`、`agent` 六个稳定能力端口。角色包、编写器、发行版和市场让它更容易创作与分发，但不是内核本体。
+**OCLive（A.I.Live）** 是开源、本地优先的 **AI 角色工具内核**。先记住：Kernel 定义六槽契约与必要合法性边界，发行版 Host 决定怎么组合、调度和应用结果。六槽是能力，不是六个固定阶段；角色、记忆系统、事件外环与持久化是外围装配。完整权责见 [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，当前代码仍包含完整参考运行时，尚未物理拆出小 Kernel。
 
 工程仓库代号 **oclive**；技术栈 **Tauri + Vue 3 + Rust**。
 
@@ -19,7 +19,7 @@
 
 | 是 | 不是 |
 |----|------|
-| **工具内核**（唯一编排/权威边界 + 六个稳定能力端口） | 又一个“定死的垂直角色记忆引擎” |
+| **工具内核**（六槽契约与必要合法性边界） | 接管 Host 的固定调度、领域提交或产品成功条件 |
 | **可选参考运行时与创作工具链**（可替换、可打包、可校验） | 必须接受整套默认模块的集中式平台 |
 | `PluginHost` 六槽与稳定契约 | 以蓝图 `steps[]` 作首轮调度 DSL 的主路径 |
 | **角色包**（身份、人格、`prompts/`）与 **蓝图**（`slot_registry`、后端路由）分责 | 把创作者字段写进六槽或 `runtime_config` 混为一谈 |
@@ -35,12 +35,12 @@
 |------|------|
 | `memory` | 记忆检索 |
 | `emotion` | 用户情感分析 |
-| `event` | 事件检测 |
+| `event` | 对话事件影响估计；不是 Event Ring / Runtime Event Stream |
 | `prompt` | Prompt 组装 |
 | `llm` | 大模型调用 |
 | `agent` | Agent / 工具 |
 
-v2 配置在蓝图 **`slot_registry`**；legacy 在 **`settings.json` → `plugin_backends`**。后端种类：`builtin` / `remote` / `directory` / `none`。
+以下配置和运行策略描述**当前参考 Host**，不是跨 Host 必选机制：v2 配置在蓝图 **`slot_registry`**；legacy 在 **`settings.json` → `plugin_backends`**。后端种类：`builtin` / `remote` / `directory` / `none`。
 
 **不占六槽**的设施子模块（如复杂情感 `narrative_hint`、专家路由）通过 Rust 固定锚点提供候选或辅助结果，不能因此取得主编排与状态提交权；复杂情感的本轮结果在回复后解析，只以去内容余韵信号影响下一轮 Prompt。见架构总览。
 
@@ -49,6 +49,8 @@ v2 配置在蓝图 **`slot_registry`**；legacy 在 **`settings.json` → `plugi
 ---
 
 ## 角色包 vs 蓝图
+
+最小角色是 persona + 视觉资产引用；关系、好感度、蓝图与槽位注册不是必填。下表是**现有 richer 参考格式**的创作分工，不是最小 contract 的文件清单；本地加载准备也不代表最小角色生命周期已接线。
 
 | 层 | 谁改 | 典型内容 |
 |----|------|----------|
@@ -79,7 +81,7 @@ flowchart LR
 ## 验收
 
 - [ ] 能说出：OCLive 的本体是“工具内核 + 六个稳定端口”；组装与分发是围绕它的工具能力
-- [ ] 能区分：`distros/chat-pro/roles/mumu` 是示例；六槽在蓝图 `slot_registry`
+- [ ] 能区分：`mumu` 是参考角色；`slot_registry` 是参考 Host 配置，不是六槽能力契约或最小角色的同义词
 
 ---
 

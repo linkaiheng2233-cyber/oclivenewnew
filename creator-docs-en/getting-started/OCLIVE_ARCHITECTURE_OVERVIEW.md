@@ -1,10 +1,10 @@
 # Oclive architecture overview: tool kernel, six ports, and reference assembly
 
-**SSOT scope:** public architecture narrative, module numbering, and layering terminology. Module definitions remain in MODULE_MAP; wire contracts remain in their focused contract pages.
+**Scope:** public architecture guide, not another responsibility SSOT. MODULE_MAP owns definitions/numbering, NAMING owns names, and topic pages own wire contracts.
 
-**Last updated:** 2026-09-06.
+**Last updated:** 2026-09-11 (Kernel / Host wording alignment, not implementation changes).
 
-This page is the **authoritative public narrative** and module taxonomy. It first defines the minimal tool kernel, then describes the complete reference runtime's six backend modules, facilities, side channels, plugin implementations, and dual build modes. Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), and source.
+This page introduces confirmed responsibilities, then describes the complete reference runtime's six-slot assembly, facilities, plugins, and build modes. Fixed stages, commit order, and deployment names below are reference-Host details, not universal Host requirements. Implementation details remain in [PLUGIN_V1.md](../../creator-docs/plugin-and-architecture/PLUGIN_V1.md), [SETTINGS_REFERENCE.md](../../creator-docs/cli/SETTINGS_REFERENCE.md), [PURE_KERNEL_BOUNDARY.md](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md), and source.
 
 [中文](../../creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)
 
@@ -12,11 +12,11 @@ This page is the **authoritative public narrative** and module taxonomy. It firs
 
 ## Architecture in brief
 
-OCLive's minimal conceptual core is a **contract-first tool kernel**: it constrains one turn/lifecycle orchestration path, capability-call/merge rules, authoritative state commits, error semantics, and failure isolation. The trusted Rust Host in the current reference implementation performs product-state commits and resource operations within those constraints. Memory, emotion, legacy event impact, prompt, LLM, and agent attach through **six stable PLUGIN_V1 capability ports**. Slots supply capabilities, evidence, candidates, context, or action results; they are not six peer authorities. Responsibility and integration boundaries are in [`MODULE_MAP_AND_HANDOFF.md`](../../handoff/MODULE_MAP_AND_HANDOFF.md).
+**The small Kernel defines six-slot contracts, necessary causality, and public legality/error boundaries. Distro Hosts own composition, bounded scheduling, and domain application; Adapters execute authorized operations.** See the [responsibility SSOT](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities). PLUGIN_V1 describes existing interfaces, not a frozen minimal API incorporating all current Rich Role/DTO fields.
 
 The current `oclive_kernel_host::OcliveKernel` is an embeddable **complete reference-runtime facade**. It still physically assembles session state, SQLite, Event Ring, HTTP dependencies, concrete slot implementations, and facilities. It reuses one `process_message`, but it is not yet a separately extracted minimal core. Complex emotion and expert-model facilities are useful reference components, not a seventh slot or a prerequisite for OCLive.
 
-**Event Ring** is a reusable facility in the reference runtime. It occupies no backend slot and does not replace the Stable turn pipeline. The legacy `event` slot estimates dialogue event impact; memory, sensors, and other registered sources may propose events, decision modules admit or reject them, and Rust orchestration remains authoritative over Prompt, reply, and persistence. A thinner assembly can follow the six-port contract without Event Ring. See [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md).
+**Event Ring** is a reusable facility in the reference runtime. It occupies no backend slot and does not replace the Stable turn pipeline. The legacy `event` slot estimates dialogue event impact; memory, sensors, and other registered sources may propose events, decision modules admit or reject them, and current Rust reference-Host orchestration decides their use in Prompt, reply, and persistence. A thinner assembly can follow the six-port contract without Event Ring. See [EVENT_RING.md](../plugin-and-architecture/EVENT_RING.md).
 
 OCLive does not mandate fully explicit affect/state modeling or fully implicit model inference. The default reference runtime uses more explicit assistance for local small models; strong-model assemblies can stay thinner. The boundary rule is: **make facts explicit, keep interpretations as candidates, let the model express them**. Today `EmotionResult` is still mainly a seven-number distribution; source/confidence/TTL/scope metadata are a target principle and technical debt, not a shipped universal contract.
 
@@ -34,12 +34,12 @@ OCLive does not mandate fully explicit affect/state modeling or fully implicit m
 
 | Term | Meaning |
 |------|---------|
-| **Facility module** | **Umbrella term**: in-orchestration kernel capabilities that **do not enter the six-field `PluginBackends` fold** (both unnumbered facilities and registered submodules). A facility may still have its own blueprint declaration: `complex_emotion`, for example, may be a `slot_registry.type` without becoming a seventh stable slot. There is **no** separate mid-layer such as “expert-model facility module.” |
+| **Facility module** | **Umbrella term**: in-orchestration reference-runtime capabilities that **do not enter the six-field `PluginBackends` fold** (both unnumbered facilities and registered submodules). A facility may still have its own blueprint declaration: `complex_emotion`, for example, may be a `slot_registry.type` without becoming a seventh stable slot. There is **no** separate mid-layer such as “expert-model facility module.” |
 | **`{Name} facility submodule`** | A **registered** item under facility modules (**facility submodule N**); full name = **`{Name}` + `facility submodule`**; each **Name** is independent—do **not** use “expert-model” as a family prefix on other names. |
 | **Expert model** (proper name) | Refers only to the **expert-model facility submodule** and its blueprint / experimental pipeline config—not complex emotion. |
 | **Expert routing** | Default implementation of the **expert-model facility submodule**: `blueprint/includes/expert_routing.json`, triggers + `steps`, optional **`slot.expert.invoke`** (v3 + `dual_core`). |
 
-**Extension (facility submodules):** submodules 3 and 4 are already registered for portrait and visual presentation. New registered facilities therefore continue with **facility submodule 5, 6, …**, using the full name **`{NewName} facility submodule`** (RFC + doc registry). Do **not** reuse the **expert-model** proper name.
+**Extension rules:** consult [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) for current numbering/registration and [NAMING](../NAMING_CONVENTIONS.md) for names. This guide does not maintain a second next-number counter.
 
 ---
 

@@ -2,7 +2,8 @@
 
 This page separates two meanings that older documents called “pure kernel”: the **minimal conceptual core** and today's embeddable **complete reference runtime** are not the same layer. Module taxonomy: [OCLIVE_ARCHITECTURE_OVERVIEW.md](OCLIVE_ARCHITECTURE_OVERVIEW.md). The unique responsibility and integration SSOT is [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md). Diagram: [KERNEL_AND_MODULES_ARCHITECTURE.md](KERNEL_AND_MODULES_ARCHITECTURE.md).
 
-**Last updated:** 2026-09-06.
+**SSOT scope:** This page states the responsibility target of the minimal tool kernel and the boundary of the current complete embedded runtime; the six-slot, Host, and Adapter relationship and source comparison are authoritative in [MODULE_MAP_AND_HANDOFF.md §0.1–§0.3](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities).
+**Last updated:** 2026-09-11.
 
 [中文](../../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md)
 
@@ -12,26 +13,7 @@ This page separates two meanings that older documents called “pure kernel”: 
 
 ### 1.1 Confirmed minimal-core responsibilities
 
-The responsibility boundary confirmed for this slice is:
-
-```text
-one turn/lifecycle orchestration path
-  + capability-call and merge rules
-  + state-commit validity constraints, errors, and failure isolation
-  + six stable ports: memory / emotion / event / prompt / llm / agent
-```
-
-The six ports are capability interfaces, not six peer decision kernels. The Core preserves public turn semantics, capability-result and domain-commit validity constraints, error boundaries, and failure isolation; the current reference implementation's trusted Rust Host performs the actual product-state commits and resource operations within those constraints. Responsibility/success terminology must distinguish generation success, domain-commit success, and external-delivery success, but this page does not make delivery a future Core output or add a “commit before streaming” ordering rule. Concrete memory/affect algorithms, Prompt templates, model vendors, Event Ring, SQLite, HTTP, Tauri, and role-pack tooling compose around this core. The current co-present health path requires `prompt + llm`; other slots may become thinner through their defined `none` / Noop semantics.
-
-“Confirmed” here means that the responsibility wording is settled. Kernel v0 contract semantics are settled; its concrete API, fields, and physical extraction remain undecided. The minimal role content and loading preparation likewise do not automatically define the Core's invocation input; whether persona is a hard Core input remains open to the relevant contract.
-
-### Kernel v0 public contract (semantics settled, API undecided)
-
-For each turn, the Host submits one normalized call with the admitted context, capability declarations, and resource scope for that call. The Kernel validates the call, inputs, capability use, dependencies, result ownership, and terminal-state legality, and permits legal scheduling; it does not perform Host scheduling or prescribe one unique chain or fixed concurrency. The six ports consume only inputs declared and admitted in the current call and return capability result, not provided, skipped, or failed; these states do not convert automatically. A port has no domain-state commit authority, permission-grant authority, or second turn pipeline.
-
-The necessary partial order expresses only execution eligibility and result visibility: inputs must be available to, valid for, and owned by the current call. It does not freeze a dependency graph, stages, or fixed order. Prompt runs after its dependency inputs are ready; the main LLM runs after the required Prompt result is valid. `Agent handled` only terminates the unfinished ordinary main chain of the current call; it grants no global scheduling, commit, or exactly-once authority. The terminal state is unique, and later actions cannot validly change it or the main result. The Kernel returns the current-call terminal state, termination path, an optional main result, or a failure reason.
-
-Streaming fragments are incremental process output; they do not prove generation success, domain-commit success, or external-delivery success, which remain independent. After termination, fragments, results, and commits are invalid. This adds only minimal call-association/source semantics, not new fields or a complete provenance model. The Host performs domain commits and resource operations; the Kernel does not write SQLite, Memory, Event, or UI directly, and instead preserves invariants such as current-call ownership, admitted-capability origin, capability validity, no duplicate terminal-state changes, and no permission/resource-scope expansion. Role, Memory store, Event Ring, Stream, SQLite, HTTP, UI, distribution policy, RuntimeSnapshot, relations/favorability, Agent exactly-once, factual truth, and process sandbox are outside this contract. See [MODULE_MAP_AND_HANDOFF.md](../../handoff/MODULE_MAP_AND_HANDOFF.md) for the responsibility boundary.
+The responsibility target for this slice is the six-slot capability contract, necessary public legality constraints, result/dependency boundaries, and error/failure boundaries. The Host retains bounded scheduling freedom, domain application, resource operations, and product-side delivery. The six ports are capability interfaces, not six peer decision kernels. A boundary summary of the 2.2.1 closeout candidate, its exclusions, and the current source comparison are in [MODULE_MAP_AND_HANDOFF.md §0.1–§0.3](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities). This page does not freeze a new public API, fixed pipeline, or physical extraction; a failure boundary does not promise process isolation.
 
 ### 1.2 Current complete embedded runtime
 
@@ -39,7 +21,7 @@ Streaming fragments are incremental process output; they do not prove generation
 
 | Layer | Current anchor | Boundary |
 |-------|----------------|----------|
-| **Minimal-core responsibility target** | six traits in `oclive_kernel_contracts`, turn pipeline, core DTO/errors | Responsibilities confirmed; Kernel v0 semantics are settled, while its concrete API, fields, and physical extraction remain undecided |
+| **Minimal-core responsibility target** | six-slot contracts/types and necessary public legality boundary | Candidate responsibility wording; this is not an independently compiled crate or a frozen API |
 | **Complete embedded-runtime facade** | `oclive_kernel_host::OcliveKernel` | Available; includes persistence, Event Ring, HTTP dependencies, defaults, and actual Host commit/resource operations |
 | **Transport/UI adapters** | kernel server, Tauri, Vue, VS Code | Outside Core and Host domain authority; must delegate to the same turn entry |
 
@@ -89,7 +71,7 @@ The default companion assembly uses backend modules plus facilities, not one bla
 - **prompt / llm**: language and persona injection.
 - **agent** (optional): tools and external world (MCP, directory plugins).
 
-The kernel constrains call order, ports, errors, and state-commit boundaries; the trusted Host performs actual product-state commits and resource operations. Quality comes from the model, slot implementations, facilities, and role content. Strong-model assemblies may omit some explicit assistance; small-model assemblies may use thicker candidate generation and Prompt compilation without making helper output the unique semantic truth.
+The kernel constrains necessary dependencies, ports, errors, and legality; the trusted Host owns bounded scheduling, domain application, resource operations, and product-side delivery. Quality comes from the model, slot implementations, facilities, and role content. Strong-model assemblies may omit some explicit assistance; small-model assemblies may use thicker candidate generation and Prompt compilation without making helper output the unique semantic truth.
 
 ---
 

@@ -2,9 +2,11 @@
 
 **读者**：准备修改 OCLive 主仓代码的 Rust / Vue 开发者。
 **目标**：30 分钟跑起来，1 小时找到所属模块，随后只读与任务有关的文档。
-**最后更新**：2026-09-04。
+**最后更新**：2026-09-11。
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
+
+**本包是学习导览，不是第二份架构契约。** 想先理解项目：读 00 定位 → 01 的 Kernel / Host 分层 → 选模块看当前源码；想判断“已经做到哪里”，再查技术债。候选、已准备、已实现和暂停的区别见 [文档状态](../handoff/README.md#documentation-status)。不必先通读全部工程交接。
 
 ## 30 分钟开始工作
 
@@ -18,7 +20,7 @@
 | 你要做什么 | 最短路径 |
 |------------|----------|
 | Vue / Chat Pro 界面 | [02 跑通](02_THIRTY_MINUTE_START.md) → [前端路径](paths/frontend.md) → [Chat Pro 开工包](modules/surfaces/frontend-chat-pro.md) |
-| Rust 内核 / 主编排 | [01 简架构](01_ARCHITECTURE_SIMPLE.md) → [06 内核路径](06_KERNEL_LEARNING_PATH.md) → [BUS_FACTOR](../handoff/BUS_FACTOR_NOTES.md) |
+| Kernel 契约 / Rust 参考 Host | [01 简架构](01_ARCHITECTURE_SIMPLE.md) → [MODULE_MAP 权责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) → [06 参考主链路径](06_KERNEL_LEARNING_PATH.md) |
 | 六槽模块 | [03 术语](03_GLOSSARY.md) → [模块选择器](modules/README.md) → 对应 `modules/slots/*.md` |
 | 插件开发 | [插件作者路径](paths/plugin-author.md) → [插件契约](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | 硬件 / 无头 / 新发行版 | [集成路径](paths/integrator.md) → [HostProfile](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
@@ -29,11 +31,11 @@
 | 层 | 文档 | 解决的问题 | 何时读 |
 |----|------|------------|--------|
 | L0 | [00 愿景](00_VISION_AND_POSITIONING.md) | 为什么做、边界是什么 | 第一天 |
-| L1 | [01 简架构](01_ARCHITECTURE_SIMPLE.md) | 用户/主动回合、六槽、Event Ring、上下文、三套记忆 | 第一天 |
+| L1 | [01 简架构](01_ARCHITECTURE_SIMPLE.md) | 先分 Kernel / 六槽 / Host，再读参考运行时的回合、事件与记忆 | 第一天 |
 | L2 | [02 跑通](02_THIRTY_MINUTE_START.md) | 构建与本地验证 | 必读 |
 | L3 | [03 术语](03_GLOSSARY.md) · [04 规则](04_ENGINEERING_RULES.md) | 代码语言与贡献纪律 | 必读 |
 | L4 | [05 调试](05_DEBUGGING.md) | 如何定位常见故障 | 遇到问题时 |
-| L5 | [06 内核路径](06_KERNEL_LEARNING_PATH.md) | 深入 `process_message` | 仅内核维护者 |
+| L5 | [06 内核路径](06_KERNEL_LEARNING_PATH.md) | 深入参考 Host 的 `process_message`，不是最小 Kernel 固定流水线 | 主链维护者按需 |
 | L6 | [07 常见任务](07_COMMON_TASKS.md) | 从任务到文件与测试 | 开工时 |
 | L7 | [08 资料地图](08_REFERENCE_MAP.md) | 查专题 SSOT | 按需 |
 

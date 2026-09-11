@@ -2,7 +2,7 @@
 
 **用途**：统一项目内核心概念的**权威名称**、crate 职责边界、canonical import 路径，以及禁止使用的别名。  
 **读者**：Rust / 前端贡献者、Cursor / Agent、姊妹仓集成方。  
-**状态**：2026-06-06 首版；2026-09-04 拆分最小工具内核与完整参考运行时，并校正蓝图折叠、调用顺序与依赖方向；与 [AGENTS.md](../AGENTS.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) 对齐。
+**状态**：2026-06-06 首版；2026-09-11 对齐 [MODULE_MAP 的 Kernel / 六槽 / Host 权责](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。本文拥有名称，不另行定义模块职责或未来公共 API。
 **范围**：文档与术语；**不**触发 crate 重命名或运行时代码变更。
 
 [English summary in §0](#0-english-summary)
@@ -13,7 +13,7 @@
 
 This page is the **naming SSOT** for OCLive. Key rules:
 
-1. **Minimal tool kernel** = one turn/lifecycle orchestration and authority boundary + six stable capability ports.
+1. **Minimal tool kernel** = six-slot capability contracts and necessary public legality/causal/error boundaries; distro Hosts own concrete scheduling and domain application.
 2. **Six host slots** = `memory` / `emotion` / legacy `event` / `prompt` / `llm` / `agent` (v2: `slot_registry`; legacy: `plugin_backends`).
 3. **Complete reference runtime** = the current embeddable `OcliveKernel` facade plus persistence, Event Ring, facilities, concrete implementations, and transport dependencies; it is not the physical minimal core.
 4. **Facility modules** = reference-runtime extensions **not** in the six slots (e.g. complex emotion, expert routing).
@@ -33,18 +33,20 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 权威名（中文） | Authoritative English | 定义 | 典型实例 / 路径 |
 |----------------|----------------------|------|-----------------|
-| **最小工具内核** | **minimal tool kernel** | 唯一回合/生命周期编排、能力调用/合并、权威状态提交、错误/隔离边界 + 六个稳定能力端口；当前是职责边界，尚未独立成 crate | `oclive_kernel_contracts` 六 trait + `process_message` 核心骨架 |
+| **最小工具内核** | **minimal tool kernel** | 六槽契约与必要公共合法性/因果/错误边界；不拥有具体调度或领域提交。职责见 MODULE_MAP，尚未独立成 crate | [职责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map)；现有 trait 不自动等于未来最小 API |
 | **完整参考运行时** | **complete reference runtime** | 当前可嵌入门面及其会话、SQLite、Event Ring、具体实现、设施与传输依赖 | `oclive_kernel_host::OcliveKernel` |
 | **内核** | **kernel** | 未加限定时优先指最小工具内核；描述现有部署物时必须写“完整参考运行时”或具体 crate | 见上两行 |
-| **内核宿主 crate** | **kernel host crate** | 编排 + 持久化 + HTTP 的 Rust 库 crate 名 | `oclive_kernel_host`（**不是**「发行版宿主」） |
-| **发行版** | **distro** | 面向用户的前端壳 + 集成逻辑 | 桌面 `oclivenewnew-tauri`、VS Code 扩展、未来游戏壳 |
-| **宿主进程** | **host process** | 运行某发行版的 OS 进程；可 attach 或 spawn 内核 | Tauri 桌面进程、VS Code extension host |
-| **单写者内核** | **single-writer kernel** | 同一时刻一个 `:8420` 进程写 `app.db` | [DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
-| **角色包** | **role pack** | 身份、人格、关系、`prompts/` 等内容 | `distros/chat-pro/roles/{id}/` |
+| **内核宿主 crate** | **kernel host crate** | 当前含参考 Host 编排、持久化、HTTP 的物理 Rust crate；crate 名不等于逻辑分层 | `oclive_kernel_host` |
+| **发行版 Host** | **distro Host** | 发行版的运行组合与调度层，负责领域应用；不是前后端通信桥或 OS 进程的同义词 | ChatPro Host；[权责 SSOT](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) |
+| **适配器** | **Adapter** | 执行已授权操作或协议转换，不自行获得领域决策权 | HTTP / Tauri / 存储适配；权责同上 |
+| **发行版** | **distro** | 面向具体使用场景的产品组合，可有 UI，也可无头运行 | Chat Pro、VS Code、游戏或服务发行版 |
+| **宿主进程** | **host process** | OS 进程；可 attach 或 spawn 当前参考运行时，不等同于逻辑 Host | Tauri 桌面进程、VS Code extension host |
+| **单写者内核** | **single-writer kernel** | 当前参考部署中 `:8420` / `app.db` 的单写者方案；不是最小 Kernel 普遍要求 | [DISTRO_KERNEL_LIFECYCLE.md](kernel/DISTRO_KERNEL_LIFECYCLE.md) |
+| **角色包** | **role pack** | 最小定义为 persona + 视觉资产引用；关系等 richer 内容由发行版定义 | [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md) |
 | **蓝图** | **blueprint** | 槽位实例、后端路由、模型、交互/记忆策略、双核开关等系统配置 | `pipeline.ocblueprint` 内 `slot_registry`、`runtime_config` 等 |
-| **契约型薄核** | **contract-first thin kernel** | 最小工具内核拥有编排、提交和错误边界；领域能力经六端口接入。Event Ring 是可选参考运行时设施，不在该词的必要定义内 | [OCLIVE_ARCHITECTURE_OVERVIEW.md](getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **契约型薄核** | **contract-first thin kernel** | “最小工具内核”的定位用语，不另增编排、提交或外围设施职责 | [MODULE_MAP](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) |
 
-> **消歧**：中文「宿主」在口语中可能指「发行版进程」或 `oclive_kernel_host` crate。文档中应写全：**发行版宿主进程** vs **内核宿主 crate（`oclive_kernel_host`）**。
+> **消歧**：分别写清 **发行版 Host（逻辑权责）**、**宿主进程（部署）**、**`oclive_kernel_host` crate（物理代码）**。三者可能重叠，但不能互相代替。下文槽位折叠、设施编号及构建态名称描述当前参考运行时，不是最小角色或所有 Host 必须实现的机制。
 
 ### 1.2 模块分类（与六槽正交）
 

@@ -1,6 +1,6 @@
 # Workspace crates 速查
 
-Rust 贡献者与 Agent：各 kernel crate 职责、依赖方向、改 X 去哪。
+Rust contributors and agents: this is a map of **current physical crates**, dependencies, and edit locations. `kernel/` includes both contracts and the complete reference runtime; directory/crate names do not define the small Kernel's responsibilities. See [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) for the confirmed boundary and source comparison. Existing DTOs/traits are not automatically the future minimal public API.
 
 **Schema 例外**：槽位/蓝图校验类型以 `oclive_validation` 为磁盘 SSOT；`oclive_kernel_types` 的 re-export 仅为 ergonomic。见 [NAMING_CONVENTIONS.md §3.3](../../creator-docs/NAMING_CONVENTIONS.md#33-schema-类型例外oclive_validation-vs-oclive_kernel_types)。
 

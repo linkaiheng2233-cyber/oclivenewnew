@@ -5,13 +5,15 @@
 
 ---
 
+**适用范围（2026-09-11）**：这是共享参考运行时的 L1/L2/L3 接入方案，不是独立 Portable Memory、跨任意发行版的通用存储契约，也不是小 Kernel 必须加载角色或持有 SQLite 的要求。相容格式仍以 ROLE_PACK_SPEC 为准；最小角色边界与接线缺口查 [ROLE_PACK_BOUNDARY](../../handoff/ROLE_PACK_BOUNDARY.md)，逻辑分层查 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)。
+
 ## 1. 一句话
 
 **角色包** = 跨发行版可读的 **身份、内容、策略**（不含动态 runtime）。  
-**内核** = 统一的 **加载规范**（`load_role`、`config.json` 语义、`POST /chat` 契约）。  
+**当前共享参考运行时** = 本接入方案中的 **加载规范**（`load_role`、`config.json` 语义、`POST /chat` 契约）。
 **各宿主** = **L2 私有状态** 自定；**L3 陪伴连续** 通过 **共用 `app.db`** 实现。
 
-“跨发行版可读”不等于“所有宿主功能完全相同”：同一包的身份、内容、策略由统一 loader/validator 读取；发行版 `HostProfile` 可以收紧六槽、关闭设施或改变 Prompt / memory / post-process 策略，宿主 UI 与语音/视觉独立通道也可不同。可携带性的硬保证是**包可校验、可加载、核心回合可运行**；功能对等须另做 capability conformance。
+“跨发行版可读”不等于“所有宿主功能完全相同”：同一包的身份、内容、策略由统一 loader/validator 读取；发行版 `HostProfile` 可以收紧六槽、关闭设施或改变 Prompt / memory / post-process 策略，宿主 UI 与语音/视觉独立通道也可不同。本参考方案的验收目标是**相容包可校验、可加载、参考回合可运行**，不证明尚未接线的最小角色路径已通过验收；功能对等须另做 capability conformance。
 
 ---
 

@@ -1,19 +1,19 @@
 # oclive 定位与差异化（Positioning & Differentiation）
 
-> 状态：当前定位 v2（2026-09-05）。本文不是 wire 契约；用于回答“OCLive 是什么、什么不是本体、凭什么存在”。实现以源码与 MODULE_MAP 为准。
-> 一句话结论：**OCLive 的本体是一颗以稳定契约组织角色能力的可嵌入工具内核：唯一编排与权威边界，外加六个稳定能力端口。组装、角色包、打包、分发、发行版与市场都是围绕它生长的工具和选择，不是使用内核的强制中心。**
+> 状态：定位导览，2026-09-11 对齐 Kernel / Host 边界。本文不是 wire 契约；权责只查 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，当前实现查源码。下列历史竞品初筛不是本轮重新核实的市场或法律结论。
+> 一句话结论：**OCLive 的本体是一颗以稳定契约组织角色能力的可嵌入工具内核：六槽能力契约与必要公共合法性边界；具体组合、调度和领域应用属于发行版 Host。组装、角色包、打包、分发、发行版与市场都是围绕它生长的工具和选择，不是使用内核的强制中心。**
 
 ---
 
 ## 0. 一句话定位
 
-> **OCLive 是一颗开源、本地优先的 AI 角色工具内核：它用稳定契约把 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类能力接到同一套回合编排和状态边界上。使用者可以采用完整参考装配，也可以只取接口、契约和所需模块，构造自己的运行工具。**
+> **OCLive 是一颗开源、本地优先的 AI 角色工具内核：它用稳定契约把 `memory`、`emotion`、legacy `event`、`prompt`、`llm`、`agent` 六类能力接到明确的能力契约与必要因果边界上，由发行版 Host 选择具体运行方式。使用者可以采用完整参考装配，也可以只取接口、契约和所需模块，构造自己的运行工具。**
 
 三层必须分开：
 
 | 层 | 是什么 | 是否属于最小本体 |
 |----|--------|------------------|
-| **工具内核** | 生命周期、唯一回合编排、调用/合并规则、权威状态提交、错误与隔离 + 六个稳定能力端口 | **是** |
+| **工具内核** | 六槽能力契约与必要公共合法性/因果/错误边界；不拥有 Host 的具体调度或领域提交 | **是** |
 | **参考运行时** | 当前 `OcliveKernel` 门面、具体六槽实现、SQLite、Event Ring、设施、HTTP 等默认装配 | 否；是可直接使用的完整实现 |
 | **创作与分发工具** | 角色包、蓝图、编写器、CLI、发行版、市场和云服务 | 否；按场景选用 |
 
@@ -52,24 +52,24 @@ OCLive 不把显式状态或隐式语境推断写成唯一正统。当前默认�
 
 ## 2. oclive 的真正空位：稳定契约的工具内核
 
-上述竞品的共同特征：**每一个都更接近一套垂直实现**。OCLive 不需要声称每个记忆或情绪算法都更强；它的独立价值是把角色能力放进稳定端口，由一套可追踪的编排和状态边界组织。组装、校验、角色包和分发让这颗内核更容易使用，但不能反过来遮住内核本身。
+上述竞品的共同特征：**每一个都更接近一套垂直实现**。OCLive 不需要声称每个记忆或情绪算法都更强；它的独立价值是把角色能力放进稳定端口，由 Host 在公共契约与必要因果边界内组织。组装、校验、角色包和分发让这颗内核更容易使用，但不能反过来遮住内核本身。
 
-### 2.1 真正独有、竞品没有的能力（皆已落地，重新论证为核心资产）
+### 2.1 参考资产与实现入口（不构成“全球独有”或“小 Kernel 已实现”的证明）
 
 | 能力 | 代码锚点 | 为什么是"组装/契约层"的核心，而非过度工程 |
 |------|----------|------------------------------------------------|
-| **唯一回合编排 + 六个稳定能力端口** | `process_message.rs`、`oclive_kernel_contracts`、`PluginHost::resolve_for_role` | 内核守住顺序、错误和提交边界；六槽定义可替换能力面。`complex_emotion` 与 Event Ring 是参考运行时设施，不是第七槽或最小核心。 |
+| **六槽契约与参考 Host 装配** | `oclive_kernel_contracts`、`process_message.rs`、`PluginHost::resolve_for_role` | 契约提供能力边界；当前参考 Host 提供具体顺序与领域提交。设施不是第七槽；当前接口不自动等于未来最小 API。 |
 | **`slot_registry` 多实例 + `groups` 只读分组** | `slot_registry`、`slot_resolver.rs` | `slot_registry` 声明可替换能力实例；`groups` 只帮助架构图归类同类型实例，不定义执行顺序、角色关系或轮流发言。 |
 | **`pipeline.ocblueprint` 蓝图作为磁盘 SSOT + `includes` 卫星合并** | `blueprint_v2.rs`、`blueprint_includes.rs` | 把"一台组装好的 oclive"序列化为一个可分享、可校验、可继承的声明文件。 |
 | **角色包（身份/人设/prompts/质量锚点）+ 打包签名** | `api/plugin_pack.rs`（SHA-256 + signature 侧车） | 把"组装结果 + 内容"打包成可分发产物（`.oclive-plugin` / `.ocpak`）。这是"分发"层。 |
 | **跨端同源校验 crate（native + WASM + TS）** | `kernel/crates/oclive_validation`（`wasm_exports.rs`） | 同一契约在运行时/编写器/CLI 三处一致校验 = 生态可信的地基。 |
-| **脚手架 CLI（init/build/dev）** | `kernel/crates/oclive-cli` | "30 分钟拼出一个 oclive"的入口：生成可独立 `cargo build` 的内核骨架。 |
+| **脚手架 CLI（init/build/dev）** | `kernel/crates/oclive-cli` | 生成参考工程的入口，不代表已生成新最小角色或独立小 Kernel；未完成范围见技术债 D-CLI-BLUEPRINT-05 / K-CORE-BOUNDARY-01。 |
 | **能力授权模型（process:spawn / network:* / mcp:*）** | `high_risk_grants.rs`、权限弹窗 | 第三方模块可安全接入的前提：高风险能力显式授权、未授权降级。 |
 | **插件市场 + `oclive://` 深链安装 + Git 索引** | `deep_link.rs`、`plugin_installer.rs`、`oclive-plugin-market` | "食材市场"——模块的发现与分发渠道。 |
-| **统一错误契约（KernelErrorBody / 错误码）** | `kernel/crates/oclive_kernel_runtime`、`KERNEL_ERROR_CODE_CONVENTION.md` | 模块跨实现互换时行为可预期的契约。 |
+| **统一错误契约（KernelErrorBody / 错误码）** | `kernel/crates/oclive_kernel_types`、`KERNEL_ERROR_CODE_CONVENTION.md` | 模块跨实现互换时行为可预期的契约。 |
 | **双核双态（Experimental 核 + 快照回滚）** | `dual_pipeline.rs`（`#[cfg(feature = "dual_core")]`，**默认不编译**） | **机制已预埋，默认关闭**，为未来 A/B 实验与模块热替换预留架构空间；解冻条件见 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) §冻结决定。 |
 
-> 边界说明：六槽 contract 与唯一编排属于核心；蓝图、角色包、校验 crate 和 CLI 是让核心可组装、可迁移、可验证的关键工具，但不是最小内核本体。目标决定它们是否是某个具体产品的必要组成。
+> 边界说明：六槽 contract 与必要公共合法性属于核心；具体编排与领域提交属于 Host；蓝图、角色包、校验 crate 和 CLI 是让核心可组装、可迁移、可验证的关键工具，但不是最小内核本体。目标决定它们是否是某个具体产品的必要组成。
 
 ### 2.1.1 官方示例角色包（非产品上限）
 
@@ -154,7 +154,7 @@ OCLive 不把显式状态或隐式语境推断写成唯一正统。当前默认�
 - **CLI** `oclive-cli`；
 - **编写器** `oclive-pack-editor`（将同一 Rust crate 编译为 WASM 校验：`wasmValidation.ts` / `wasm-pack-build.mjs`）。
 
-即：**一份权威 loader/validator，谁用谁链接（原生或 WASM），格式不每发行版重写**。此为可硬气对外/写入专利的真实差异点。
+参考工具链可复用 loader/validator（原生或 WASM）；这不要求所有发行版采用完整 Stable v4 格式。发行版维护 richer 格式并适配最小角色，详见 [ROLE_PACK_BOUNDARY](ROLE_PACK_BOUNDARY.md)。同源校验能力本身不证明所有入口已支持同样格式或形成专利结论。
 
 **诚实缺口（已据实收窄）：** 无头 `oclive_kernel_server` **确实存在且可跑**，仅依赖 **`oclive_kernel_host` + `oclive_kernel_runtime`**，不依赖 Tauri。2026-08-31 起，`oclive_kernel_host::OcliveKernel` 又提供了无需启动 HTTP/Tauri 的稳定 Rust 进程内门面，角色、完整/流式回合、SQLite、插件、Event Ring 与生命周期都复用唯一编排；`oclive-cli --project-type library --kernel-source` 可生成并编译真实调用库。**真正剩余的窄缺口**：这仍是 Rust 源码级门面而非 C ABI；host crate 仍含 HTTP 实现/依赖，且没有 Linux/ARM/真实网关资源预算与长时 soak 证据（见 [TECHNICAL_DEBT_INVENTORY §3.1](./TECHNICAL_DEBT_INVENTORY.md)）。**准确表述**："一份格式 + 一份校验 + 一份角色回合编排，已被桌面、无头服务和进程内 Rust 宿主共用；真实硬件交付与进一步瘦身仍待验证。"
 

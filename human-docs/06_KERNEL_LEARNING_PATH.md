@@ -1,5 +1,7 @@
 # 06 · 内核学习路径（Day 1–5）
 
+**范围澄清（2026-09-11）**：本文带你读现有 Rust **参考 Host** 的主链、持久化与 wiring；历史标题不表示这些都属于小 Kernel。先看 [权责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map)，再按下文学习。固定 stage、DB 提交和角色运行态是当前装配事实，不是新公共契约。
+
 > **最后更新**：2026-08-31
 > **读者**：准备改 `process_message` / 持久化 / 插件 wiring 的内核贡献者。  
 > **读完能做什么**：按时间盒读完主链；完成第一个 domain 单测 PR 草稿。  

@@ -1,5 +1,7 @@
 # 组员工作区与边界（解耦说明）
 
+**适用范围（2026-09-11 澄清）**：下图是视觉/语音团队接入当前参考 Host 的分工，不是小 Kernel 的逻辑层次图。图中的“灵魂内核”包含完整参考运行时；HTTP 与 SQLite 不属于所有发行版必需的小 Kernel。逻辑权责见 [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，本页不替代任务授权或恢复已暂停工作。
+
 > **读者**：视觉线 / 语音线组员。  
 > **核心结论**：OClive 已 **内核单写者 + HTTP 契约** 解耦；本 sprint **不需要** 读懂全仓，也 **不需要** 改 `process_message` 编排。
 

@@ -1,6 +1,6 @@
 # Application Scenario Matrix (Tool-Kernel Assembly Hypotheses)
 
-This document explores product forms that OCLive's minimal tool kernel—one orchestration/authority boundary plus six stable capability ports—and its reference runtime may support. The goal is to state which contracts can be reused and which adapters and evidence are still missing. Roadmap ideas are not shipped claims; role packs are portable assets, not kernel code.
+This document explores product forms that OCLive's minimal tool kernel—[six-slot contracts and necessary legality boundaries](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities), with scheduling/domain application owned by Hosts—and its reference runtime may support. The goal is to state which contracts can be reused and which adapters and evidence are still missing. Roadmap ideas are not shipped claims; role packs are portable assets, not kernel code.
 
 This page expands open experimentation as one optional use of the kernel. It aligns with [VISION_ROADMAP_MONTHLY.md](VISION_ROADMAP_MONTHLY.md) without binding to delivery dates.
 
