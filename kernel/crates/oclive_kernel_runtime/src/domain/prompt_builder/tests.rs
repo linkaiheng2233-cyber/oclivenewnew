@@ -2,9 +2,10 @@ use super::*;
 use crate::models::EventType;
 use crate::models::EvolutionBounds;
 use crate::models::PersonalitySource;
-use crate::models::{Memory, PersonalityVector, Role};
+use crate::models::{Memory, PersonalityVector, Role, UserRelation};
 use chrono::Utc;
 use oclive_kernel_types::PromptExtraSection;
+use sha2::{Digest, Sha256};
 fn create_test_role() -> Role {
     Role {
         memory_seed: Vec::new(),
@@ -1281,6 +1282,170 @@ fn sample_prompt_input<'a>(
         persona_override,
         previous_assistant_reply: "",
     }
+}
+
+fn sha256_hex(text: &str) -> String {
+    format!("{:x}", Sha256::digest(text.as_bytes()))
+}
+
+fn assert_characterization_hashes(
+    label: &str,
+    input: &PromptInput<'_>,
+    expected_full: &str,
+    expected_stable: &str,
+    expected_dynamic: &str,
+) {
+    let full = PromptBuilder::build_prompt(input);
+    let segments = PromptBuilder::build_prompt_segments(input);
+    // Golden hashes captured from the original renderer at 6e5da56c; fixed, not auto-updated,
+    // and intentionally do not assert ordinary and segmented outputs are equal.
+    assert_eq!(sha256_hex(&full), expected_full, "{label}: full output");
+    assert_eq!(
+        sha256_hex(&segments.stable_prefix),
+        expected_stable,
+        "{label}: stable prefix"
+    );
+    assert_eq!(
+        sha256_hex(&segments.dynamic_suffix),
+        expected_dynamic,
+        "{label}: dynamic suffix"
+    );
+}
+
+#[test]
+fn characterization_vector_prompt_output_and_role_field_behavior() {
+    let mut role = create_test_role();
+    role.name = "Vector Character".into();
+    role.description = "  Description with edges  ".into();
+    role.core_personality = "Vector core personality".into();
+    role.user_relations = vec![UserRelation {
+        id: "friend".into(),
+        name: "Known Friend Label".into(),
+        prompt_hint: "关系提示不由本段直接渲染".into(),
+        favor_multiplier: 1.0,
+        initial_favorability: 50.0,
+    }];
+    let personality = create_test_personality();
+    let memories = [];
+    let mut input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "vector latest message",
+        "家",
+        "vector scene detail",
+        None,
+    );
+    input.user_identity_template = "用户模板身份";
+    input.mutable_personality = "安全变化：最近更温柔了。\n\n用户: 这句对话不应进入主提示词";
+
+    assert_characterization_hashes(
+        "vector-known-template-sanitized",
+        &input,
+        "e704b1640c1eb8f6d02ed89e5d233851b1cab1d5d3cab1b091e4aa2f0c611845",
+        "692970e25586203849d02881b275174adcaaf09913c2ca0d764a3da4a85fe499",
+        "718e42e58620a0a6ef4c8da0c96314f2335584efd055fd45737af8dbafc7bf38",
+    );
+    let prompt = PromptBuilder::build_prompt(&input);
+    assert!(prompt.contains("核心人设:\nVector core personality\n"));
+    assert!(prompt.contains("描述:   Description with edges  \n"));
+    assert!(prompt.contains("用户模板身份"));
+    assert!(prompt.contains("当前关系：Known Friend Label（关系键 friend）"));
+    assert!(prompt.contains("安全变化：最近更温柔了。"));
+    assert!(!prompt.contains("这句对话不应进入主提示词"));
+    assert!(!prompt.contains("关系提示不由本段直接渲染"));
+}
+
+#[test]
+fn characterization_profile_persona_precedence_relation_fallback_and_empty_behavior() {
+    let mut role = create_test_role();
+    role.name = "Profile Character".into();
+    role.description = " \t ".into();
+    role.core_personality = "Profile core fallback".into();
+    role.evolution_config.personality_source = PersonalitySource::Profile;
+    let personality = create_test_personality();
+    let memories = [];
+
+    let mut override_input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "profile override message",
+        "",
+        "",
+        Some("  Profile override  "),
+    );
+    override_input.user_relation_id = "unknown-relation";
+    override_input.relation_hint = "未知关系提示";
+    assert_characterization_hashes(
+        "profile-nonblank-override-unknown-relation",
+        &override_input,
+        "2379d93d728ff48fcf0028e011a4008440ff84699bb997e7a64ff295ec55c5e6",
+        "d8c3052afd17c18fd1e5d41210492867fd896791d2bd9ca709eddb35e1bbc9cb",
+        "08ebf68828e0a5a8b53a3998e4e004ca93a3c04a01b2e7f88d3fd0550779fc47",
+    );
+    let override_prompt = PromptBuilder::build_prompt(&override_input);
+    assert!(override_prompt.contains("核心性格档案（创作者与用户设定"));
+    assert!(override_prompt.contains("Profile override\n"));
+    assert!(!override_prompt.contains("Profile core fallback"));
+    assert!(!override_prompt.contains("描述:"));
+    assert!(override_prompt.contains("当前关系：unknown-relation（关系键 unknown-relation）"));
+
+    let mut blank_override_input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "profile blank override message",
+        "",
+        "",
+        Some(" \n\t "),
+    );
+    blank_override_input.user_relation_id = "";
+    blank_override_input.relation_hint = "";
+    assert_characterization_hashes(
+        "profile-blank-override-fallback",
+        &blank_override_input,
+        "9b3492982a5b94a8c38bd0266f9f1fb1b3e961cdd08690d8d14de787a4efcb6d",
+        "8c182c66a46e0280df05399ab28a060c6c9f0370feaf642ff8dc4fcd422dd849",
+        "7b1bcb30c86518dc15ac049b7dab2c879b34e54515da3be091937a5f6e777b8c",
+    );
+    let blank_prompt = PromptBuilder::build_prompt(&blank_override_input);
+    assert!(blank_prompt.contains("Profile core fallback"));
+    assert!(!blank_prompt.contains("Profile override"));
+    assert!(!blank_prompt.contains("描述:"));
+    assert!(!blank_prompt.contains("身份语气要点"));
+    assert!(!blank_prompt.contains("当前关系："));
+
+    let mut empty_role = create_test_role();
+    empty_role.name = "Profile Empty".into();
+    empty_role.description.clear();
+    empty_role.core_personality.clear();
+    empty_role.evolution_config.personality_source = PersonalitySource::Profile;
+    let mut empty_input = sample_prompt_input(
+        &empty_role,
+        &personality,
+        &memories,
+        "profile empty message",
+        "",
+        "",
+        Some(" \t "),
+    );
+    empty_input.user_relation_id = "";
+    empty_input.relation_hint = "";
+    empty_input.topic_hint_line = "";
+    assert_characterization_hashes(
+        "profile-all-empty-role-fields",
+        &empty_input,
+        "6fa2b7416dc77c93c09c61b597db9d7983fd501fb1691e0fc91271a0e9d7dc6c",
+        "01d3b6fa8b0faa2e1b862e041ebe8851b99e67c482d6d6c24874a089b59afbb0",
+        "5c53734c00c4f23f09d5454479bd363ea002325055a49560b2cc63c668f1a635",
+    );
+    let empty_prompt = PromptBuilder::build_prompt(&empty_input);
+    assert!(empty_prompt.contains("你是Profile Empty。"));
+    assert!(empty_prompt.contains("【核心设定·不可违背】"));
+    assert!(!empty_prompt.contains("核心性格档案"));
+    assert!(!empty_prompt.contains("描述:"));
+    assert!(!empty_prompt.contains("当前关系："));
 }
 
 #[test]

@@ -4,28 +4,16 @@
 
 use super::*;
 
-use crate::models::{Memory, PersonalitySource, Role};
+use crate::models::{Memory, PersonalitySource};
 
 impl PromptBuilder {
     #[must_use]
-    pub(super) fn build_core_hard_constraint(
-        role: &Role,
-        persona_override: Option<&str>,
-    ) -> String {
+    pub(super) fn build_core_hard_constraint(role: &RolePromptContext<'_>) -> String {
         let mut core = String::new();
-        core.push_str(&format!("你是{}。\n", role.name));
+        core.push_str(&format!("你是{}。\n", role.name()));
         core.push_str("【核心设定·不可违背】以下是你不可违背的核心设定\n");
-        let persona_text = persona_override
-            .filter(|s| !s.trim().is_empty())
-            .or_else(|| {
-                if role.core_personality.trim().is_empty() {
-                    None
-                } else {
-                    Some(role.core_personality.as_str())
-                }
-            });
-        if let Some(text) = persona_text {
-            if role.evolution_config.personality_source == PersonalitySource::Profile {
+        if let Some(text) = role.persona() {
+            if role.personality_source() == PersonalitySource::Profile {
                 core.push_str(&format!(
                     "核心性格档案（创作者与用户设定，运行时 AI 不得改写；与可变档案冲突时以本段为准）:\n{}\n",
                     text.trim()
@@ -79,10 +67,13 @@ impl PromptBuilder {
     /// constraint plus the mutable personality archive narrative. Numeric seven-dim
     /// values are display-only and must not be rendered into the prompt.
     #[must_use]
-    pub(super) fn build_personality_supplement(role: &Role, mutable_personality: &str) -> String {
+    pub(super) fn build_personality_supplement(
+        role: &RolePromptContext<'_>,
+        mutable_personality: &str,
+    ) -> String {
         let mut supplement = String::new();
-        if !role.description.trim().is_empty() {
-            supplement.push_str(&format!("描述: {}\n", role.description));
+        if !role.description().trim().is_empty() {
+            supplement.push_str(&format!("描述: {}\n", role.description()));
         }
         let safe_mutable = crate::domain::profile_personality::sanitize_mutable_profile_for_prompt(
             mutable_personality,

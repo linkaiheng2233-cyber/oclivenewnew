@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-05 最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现；统一磁盘入口与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-09-12。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现；builtin Prompt 的私有角色适配见 §0.6，公开接口仍耦合旧 `Role`，统一磁盘入口与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -109,6 +109,20 @@
 **运行接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。公开的 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。涉及这些公共接口的拆分/迁移范围须另行确认，本切片未修改它们；CLI、统一磁盘入口与真实跨宿主运行验收也未完成。
 
 [加载准备测试](../kernel/crates/oclive_validation/tests/minimal_role_local_file.rs) 包含 9 项默认测试与 1 项 `media-png` 组合测试；定义文件的包内/包外链接检查复用 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs) 的临时链接夹具。测试不使用官方角色包、真实消息、宿主回合或持久化状态。
+
+### 0.6 过渡切片：builtin Prompt 私有角色适配
+
+2026-09-12，`PromptBuilder` 的普通与分段入口共用私有 [`RolePromptContext`](../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/role_context.rs)，集中选择旧 `Role` 的名字、有效人设、人设来源、描述与当前关系显示名。该投影只借用所需值，不持有或克隆完整 `Role`；它是**现有参考 builtin 实现的兼容细节，不是 Kernel 公共数据契约，也不是 Minimal Role 必需字段清单**。
+
+| 本片改变 | 明确保留的边界 |
+|---|---|
+| 核心人设与性格补充段落不再直接接收 `&Role`；用户身份段落使用已解析的关系显示名 | 原覆盖/空白回退、显示名查找、档案净化和原始文案保持不变，不添加默认关系 |
+| 普通 Prompt 与 stable/dynamic 分段共享角色字段选择 | 两种输出各自保持原字节与分段边界；不要求普通输出与分段拼接彼此相等 |
+| 读取点集中，便于后续迁移复核 | 公开 `PromptInput` / `PromptAssembler` 以及 quality-anchor / topic-hint 入口仍引用旧模型；Host、remote wire、角色生命周期均未迁移 |
+
+**验证范围**：在生产代码仍为 `6e5da56c` 时，先加入两项特征测试（四组合成输入，分别固定完整输出、stable prefix 和 dynamic suffix 的 SHA-256，并检查关键文本行为），原版 Prompt 定向测试 41 项通过；重构后沿用同一基线，[测试源码](../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/tests.rs) 不自动更新期望值。runtime 库测试 200 项、定向 Prompt 测试及 Clippy/格式检查本地通过。此证据不表示公开 Prompt 解耦、真实模型效果、角色激活或跨发行版运行已验收。
+
+**下一切片顺序**：先限定公共 Prompt 输入与旧接口的兼容迁移范围，再推进 Host 最小角色生命周期、CLI 创建/校验及跨宿主验收。不得把本私有投影直接升级成公共 schema，也不得通过补齐旧 `Role` 的产品默认值冒充 Minimal Role 接入；不由本切片恢复 Event Stream/R7 或扩展 Memory contract。
 
 ## 1. 当前参考宿主内部划分
 

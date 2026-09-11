@@ -218,6 +218,9 @@ pub fn hash_stable_prefix(stable: &str) -> u64 {
 
 pub struct PromptBuilder;
 
+mod role_context;
+use role_context::RolePromptContext;
+
 impl PromptBuilder {
     /// Whether to append a long family-oriented guardrail under user identity (friends/classmates etc. skip by default so role pack `prompt_hint` is not diluted).
     fn should_inject_family_long_guardrail(user_relation_id: &str, relation_hint: &str) -> bool {
@@ -235,19 +238,16 @@ impl PromptBuilder {
     }
 
     /// User identity section: must override generic persona lines that conflict with the chosen identity (e.g. cohabitation copy vs user playing a parent).
-    fn push_user_identity_section(prompt: &mut String, input: &PromptInput<'_>) {
+    fn push_user_identity_section(
+        prompt: &mut String,
+        input: &PromptInput<'_>,
+        relation_label: Option<&str>,
+    ) {
         if !input.user_identity_template.is_empty() {
             prompt.push_str("【用户身份】（本轮必须遵守；与人设冲突时以本段为准）\n");
             prompt.push_str(input.user_identity_template.trim());
             prompt.push_str("\n\n");
-            if !input.user_relation_id.is_empty() {
-                let label = input
-                    .role
-                    .user_relations
-                    .iter()
-                    .find(|r| r.id == input.user_relation_id)
-                    .map(|r| r.name.as_str())
-                    .unwrap_or(input.user_relation_id);
+            if let Some(label) = relation_label {
                 prompt.push_str(&format!(
                     "当前关系：{}（关系键 {}）\n",
                     label, input.user_relation_id
@@ -257,13 +257,6 @@ impl PromptBuilder {
             return;
         }
         if !input.user_relation_id.is_empty() {
-            let label = input
-                .role
-                .user_relations
-                .iter()
-                .find(|r| r.id == input.user_relation_id)
-                .map(|r| r.name.as_str())
-                .unwrap_or(input.user_relation_id);
             prompt.push_str("【用户身份】（本轮必须遵守；与人设冲突时以本段为准）\n");
             if !input.relation_hint.is_empty() {
                 prompt.push_str("身份语气要点（角色包配置，须落实）：\n");
@@ -272,7 +265,8 @@ impl PromptBuilder {
             }
             prompt.push_str(&format!(
                 "当前关系：{}（关系键 {}）\n",
-                label, input.user_relation_id
+                relation_label.unwrap_or(input.user_relation_id),
+                input.user_relation_id
             ));
             prompt.push_str(
                 "约束（通用）：称呼、距离感与话题分寸须与当前关系一致；若上文有身份语气要点，须一并落实，勿与人设或本段矛盾。\n",
@@ -296,14 +290,12 @@ impl PromptBuilder {
     #[must_use]
     pub fn build_prompt(input: &PromptInput<'_>) -> String {
         let mut prompt = String::new();
+        let role_context = RolePromptContext::from_input(input);
         let selected_reply_anchor =
             select_reply_quality_anchor(input.reply_quality_anchor, input.user_input);
 
         // Tier 0 — highest priority
-        prompt.push_str(&Self::build_core_hard_constraint(
-            input.role,
-            input.persona_override,
-        ));
+        prompt.push_str(&Self::build_core_hard_constraint(&role_context));
         let scene_block = Self::build_scene_constraint_block(input);
         if !scene_block.is_empty() {
             prompt.push_str("\n\n");
@@ -314,7 +306,8 @@ impl PromptBuilder {
         prompt.push_str("\n\n---\n底线区块\n");
         prompt.push_str(PROMPT_BLOCK_GUIDE);
         prompt.push_str("\n\n");
-        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
+        let supplement =
+            Self::build_personality_supplement(&role_context, input.mutable_personality);
         if !supplement.is_empty() {
             prompt.push_str(&supplement);
             prompt.push_str("\n\n");
@@ -360,7 +353,7 @@ impl PromptBuilder {
             prompt.push_str(&Self::build_memory_context(input.memories));
             prompt.push_str("\n\n");
         }
-        Self::push_user_identity_section(&mut prompt, input);
+        Self::push_user_identity_section(&mut prompt, input, role_context.relation_label());
         if !input.life_context_line.is_empty() {
             prompt.push_str("【日程推断】\n");
             prompt.push_str(input.life_context_line.trim());
@@ -416,12 +409,10 @@ impl PromptBuilder {
     #[must_use]
     pub fn build_prompt_segments(input: &PromptInput<'_>) -> PromptSegments {
         let mut stable_prefix = String::new();
+        let role_context = RolePromptContext::from_input(input);
         let selected_reply_anchor =
             select_reply_quality_anchor(input.reply_quality_anchor, input.user_input);
-        stable_prefix.push_str(&Self::build_core_hard_constraint(
-            input.role,
-            input.persona_override,
-        ));
+        stable_prefix.push_str(&Self::build_core_hard_constraint(&role_context));
         if !input.worldview_snippet.trim().is_empty() {
             stable_prefix.push_str("\n\n【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n");
             stable_prefix.push_str(input.worldview_snippet.trim());
@@ -436,7 +427,8 @@ impl PromptBuilder {
         dynamic_suffix.push_str("\n\n---\n底线区块\n");
         dynamic_suffix.push_str(PROMPT_BLOCK_GUIDE);
         dynamic_suffix.push_str("\n\n");
-        let supplement = Self::build_personality_supplement(input.role, input.mutable_personality);
+        let supplement =
+            Self::build_personality_supplement(&role_context, input.mutable_personality);
         if !supplement.is_empty() {
             dynamic_suffix.push_str(&supplement);
             dynamic_suffix.push_str("\n\n");
@@ -469,7 +461,7 @@ impl PromptBuilder {
             dynamic_suffix.push_str(&Self::build_memory_context(input.memories));
             dynamic_suffix.push_str("\n\n");
         }
-        Self::push_user_identity_section(&mut dynamic_suffix, input);
+        Self::push_user_identity_section(&mut dynamic_suffix, input, role_context.relation_label());
         if !input.life_context_line.is_empty() {
             dynamic_suffix.push_str("【日程推断】\n");
             dynamic_suffix.push_str(input.life_context_line.trim());
