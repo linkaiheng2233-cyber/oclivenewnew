@@ -110,7 +110,7 @@
 
 [加载准备测试](../kernel/crates/oclive_validation/tests/minimal_role_local_file.rs) 包含 9 项默认测试与 1 项 `media-png` 组合测试；定义文件的包内/包外链接检查复用 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs) 的临时链接夹具。测试不使用官方角色包、真实消息、宿主回合或持久化状态。
 
-### 0.6 过渡切片：builtin Prompt 私有角色适配
+### 0.6 过渡切片：builtin Prompt 私有角色适配与共用文本段
 
 2026-09-12，`PromptBuilder` 的普通与分段入口共用私有 [`RolePromptContext`](../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/role_context.rs)，集中选择旧 `Role` 的名字、有效人设、人设来源、描述与当前关系显示名。该投影只借用所需值，不持有或克隆完整 `Role`；它是**现有参考 builtin 实现的兼容细节，不是 Kernel 公共数据契约，也不是 Minimal Role 必需字段清单**。
 
@@ -118,11 +118,14 @@
 |---|---|
 | 核心人设与性格补充段落不再直接接收 `&Role`；用户身份段落使用已解析的关系显示名 | 原覆盖/空白回退、显示名查找、档案净化和原始文案保持不变，不添加默认关系 |
 | 普通 Prompt 与 stable/dynamic 分段共享角色字段选择 | 两种输出各自保持原字节与分段边界；不要求普通输出与分段拼接彼此相等 |
+| 普通与分段入口共用语气、内容和页脚的私有文本 helper；身份和状态段接收所需的窄值 | 字段选择仍来自旧输入，记忆证据净化与产品文案不变；这不是新的六槽输入或固定 Kernel 流水线 |
 | 读取点集中，便于后续迁移复核 | 公开 `PromptInput` / `PromptAssembler` 以及 quality-anchor / topic-hint 入口仍引用旧模型；Host、remote wire、角色生命周期均未迁移 |
 
 **验证范围**：在生产代码仍为 `6e5da56c` 时，先加入两项特征测试（四组合成输入，分别固定完整输出、stable prefix 和 dynamic suffix 的 SHA-256，并检查关键文本行为），原版 Prompt 定向测试 41 项通过；重构后沿用同一基线，[测试源码](../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/tests.rs) 不自动更新期望值。runtime 库测试 200 项、定向 Prompt 测试及 Clippy/格式检查本地通过。此证据不表示公开 Prompt 解耦、真实模型效果、角色激活或跨发行版运行已验收。
 
-**下一切片顺序**：先限定公共 Prompt 输入与旧接口的兼容迁移范围，再推进 Host 最小角色生命周期、CLI 创建/校验及跨宿主验收。不得把本私有投影直接升级成公共 schema，也不得通过补齐旧 `Role` 的产品默认值冒充 Minimal Role 接入；不由本切片恢复 Event Stream/R7 或扩展 Memory contract。
+**共用文本段回归**：另在未改生产代码的 `0ea96034` 上捕获一组合成动态输入，固定普通输出和两个分段的 3 个摘要；它覆盖临时状态、旧聊天记忆净化、身份模板、扩展段、上一轮约束与空用户输入。沿用前述 12 个摘要，重构后 Prompt 定向测试 42 项、runtime 库测试 201 项及 Clippy/格式/分层、module-compat 本地通过。Host 的远端输入快照与缓存路径选择两项纯契约测试通过；未调用真实插件服务或模型。两种布局没有被合并为同一输出。
+
+**下一切片顺序**：先将旧输入的文本准备与最终布局分开，保持私有且输出不变；随后限定公共 Prompt 输入与旧接口的兼容迁移范围，再推进 Host 最小角色生命周期、CLI 创建/校验及跨宿主验收。不得把本私有投影直接升级成公共 schema，也不得通过补齐旧 `Role` 的产品默认值冒充 Minimal Role 接入；不由本切片恢复 Event Stream/R7 或扩展 Memory contract。
 
 ## 1. 当前参考宿主内部划分
 

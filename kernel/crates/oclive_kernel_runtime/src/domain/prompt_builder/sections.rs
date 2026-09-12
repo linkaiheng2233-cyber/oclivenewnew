@@ -90,16 +90,20 @@ impl PromptBuilder {
     }
 
     #[must_use]
-    pub(super) fn build_character_status_summary(input: &PromptInput<'_>) -> String {
+    pub(super) fn build_character_status_summary(
+        user_emotion: &str,
+        scene_label: &str,
+        host_state_expression_hint: &str,
+    ) -> String {
         let mut parts = Vec::new();
-        if !input.user_emotion.trim().is_empty() {
-            parts.push(format!("用户语气线索：{}。", input.user_emotion.trim()));
+        if !user_emotion.trim().is_empty() {
+            parts.push(format!("用户语气线索：{}。", user_emotion.trim()));
         }
-        if !input.scene_label.is_empty() {
-            parts.push(format!("场景为 {}。", input.scene_label));
+        if !scene_label.is_empty() {
+            parts.push(format!("场景为 {}。", scene_label));
         }
-        if !input.host_state_expression_hint.trim().is_empty() {
-            parts.push(input.host_state_expression_hint.trim().to_string());
+        if !host_state_expression_hint.trim().is_empty() {
+            parts.push(host_state_expression_hint.trim().to_string());
         }
         if parts.is_empty() {
             return String::new();

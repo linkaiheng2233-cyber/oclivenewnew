@@ -240,51 +240,154 @@ impl PromptBuilder {
     /// User identity section: must override generic persona lines that conflict with the chosen identity (e.g. cohabitation copy vs user playing a parent).
     fn push_user_identity_section(
         prompt: &mut String,
-        input: &PromptInput<'_>,
+        user_identity_template: &str,
+        user_relation_id: &str,
+        relation_hint: &str,
         relation_label: Option<&str>,
     ) {
-        if !input.user_identity_template.is_empty() {
+        if !user_identity_template.is_empty() {
             prompt.push_str("【用户身份】（本轮必须遵守；与人设冲突时以本段为准）\n");
-            prompt.push_str(input.user_identity_template.trim());
+            prompt.push_str(user_identity_template.trim());
             prompt.push_str("\n\n");
             if let Some(label) = relation_label {
                 prompt.push_str(&format!(
                     "当前关系：{}（关系键 {}）\n",
-                    label, input.user_relation_id
+                    label, user_relation_id
                 ));
             }
             prompt.push('\n');
             return;
         }
-        if !input.user_relation_id.is_empty() {
+        if !user_relation_id.is_empty() {
             prompt.push_str("【用户身份】（本轮必须遵守；与人设冲突时以本段为准）\n");
-            if !input.relation_hint.is_empty() {
+            if !relation_hint.is_empty() {
                 prompt.push_str("身份语气要点（角色包配置，须落实）：\n");
-                prompt.push_str(input.relation_hint.trim());
+                prompt.push_str(relation_hint.trim());
                 prompt.push_str("\n\n");
             }
             prompt.push_str(&format!(
                 "当前关系：{}（关系键 {}）\n",
-                relation_label.unwrap_or(input.user_relation_id),
-                input.user_relation_id
+                relation_label.unwrap_or(user_relation_id),
+                user_relation_id
             ));
             prompt.push_str(
                 "约束（通用）：称呼、距离感与话题分寸须与当前关系一致；若上文有身份语气要点，须一并落实，勿与人设或本段矛盾。\n",
             );
-            if Self::should_inject_family_long_guardrail(
-                input.user_relation_id,
-                input.relation_hint,
-            ) {
+            if Self::should_inject_family_long_guardrail(user_relation_id, relation_hint) {
                 prompt.push_str(
                     "（家人/长辈场景补充）你必须按上述身份理解用户。若用户以父母、长辈或家人身份自居，你须以子女、晚辈或对应家人身份回应，称呼与态度须匹配；不得用「才不是」「你逗我」等话否认用户的家长或长辈身份。若人设中与当前身份冲突，以本段为准调整语气；禁止在明知用户扮演长辈时仍以同龄暧昧口吻（如反复「大笨蛋」调情）主导回复。\n",
                 );
             }
             prompt.push('\n');
-        } else if !input.relation_hint.is_empty() {
+        } else if !relation_hint.is_empty() {
             prompt.push_str("【用户身份】\n");
-            prompt.push_str(input.relation_hint);
+            prompt.push_str(relation_hint);
             prompt.push_str("\n\n");
         }
+    }
+
+    fn append_tone_block(
+        prompt: &mut String,
+        user_emotion: &str,
+        scene_label: &str,
+        host_state_expression_hint: &str,
+        previous_complex_emotion_narrative_hint: &str,
+    ) {
+        prompt.push_str("---\n语气区块\n\n");
+        let status = Self::build_character_status_summary(
+            user_emotion,
+            scene_label,
+            host_state_expression_hint,
+        );
+        if !status.is_empty() {
+            prompt.push_str(&status);
+            prompt.push_str("\n\n");
+        }
+        prompt.push_str(Self::build_authenticity_constraint());
+        prompt.push_str("\n\n");
+        if !previous_complex_emotion_narrative_hint.trim().is_empty() {
+            // The free-form hint may contain a paraphrase of the previous reply.
+            // Re-injecting that text made small local models replay old topics and
+            // actions. The current structured state already carries the affective
+            // continuity we need, so retain only a non-content-bearing reminder.
+            prompt.push_str(
+                "【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。\n\n",
+            );
+        }
+    }
+
+    fn append_content_block(
+        prompt: &mut String,
+        memories: &[Memory],
+        user_identity_template: &str,
+        user_relation_id: &str,
+        relation_hint: &str,
+        relation_label: Option<&str>,
+        life_context_line: &str,
+    ) {
+        prompt.push_str("---\n内容区块\n\n");
+        if !memories.is_empty() {
+            prompt.push_str(&Self::build_memory_context(memories));
+            prompt.push_str("\n\n");
+        }
+        Self::push_user_identity_section(
+            prompt,
+            user_identity_template,
+            user_relation_id,
+            relation_hint,
+            relation_label,
+        );
+        if !life_context_line.is_empty() {
+            prompt.push_str("【日程推断】\n");
+            prompt.push_str(life_context_line.trim());
+            prompt.push_str("\n\n");
+        }
+    }
+
+    fn append_reply_footer(
+        prompt: &mut String,
+        extra_sections: &[oclive_kernel_types::PromptExtraSection<'_>],
+        previous_assistant_reply: &str,
+        selected_reply_anchor: &str,
+        user_input: &str,
+    ) {
+        for section in extra_sections {
+            if section.title.trim().is_empty() && section.body.trim().is_empty() {
+                continue;
+            }
+            if !section.title.trim().is_empty() {
+                prompt.push('【');
+                prompt.push_str(section.title.trim());
+                prompt.push_str("】\n");
+            }
+            if !section.body.trim().is_empty() {
+                prompt.push_str(section.body.trim());
+                prompt.push_str("\n\n");
+            }
+        }
+        if let Some(prev_block) = Self::build_previous_reply_constraint(previous_assistant_reply) {
+            prompt.push_str(&prev_block);
+            prompt.push_str("\n\n");
+        }
+        if !selected_reply_anchor.is_empty() {
+            prompt.push_str(selected_reply_anchor);
+            prompt.push_str("\n\n");
+        }
+        prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
+        prompt.push_str("\n\n");
+        prompt.push_str(EMO_OUTPUT_INSTRUCTION);
+        prompt.push_str("\n\n");
+        if user_input.trim().is_empty() {
+            prompt.push_str(
+                "【本轮输入语义】\n当前没有新的用户消息。请只依据上方已标明来源的上下文决定角色是否以及如何自然回应。",
+            );
+        } else {
+            prompt.push_str(&format!("【最新用户消息】\n用户说: {}", user_input));
+        }
+        prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
+        prompt.push_str(REPLY_OUTPUT_BOUNDARY);
+        prompt.push_str("\n\n");
+        prompt.push_str(FINAL_TURN_INSTRUCTION);
     }
 
     #[must_use]
@@ -325,81 +428,33 @@ impl PromptBuilder {
         }
 
         // Block 2 — tone (status, transition, relation FSM, boundary, current state, CE hint)
-        prompt.push_str("---\n语气区块\n\n");
-        let status = Self::build_character_status_summary(input);
-        if !status.is_empty() {
-            prompt.push_str(&status);
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(Self::build_authenticity_constraint());
-        prompt.push_str("\n\n");
-        if !input
-            .previous_complex_emotion_narrative_hint
-            .trim()
-            .is_empty()
-        {
-            // The free-form hint may contain a paraphrase of the previous reply.
-            // Re-injecting that text made small local models replay old topics and
-            // actions. The current structured state already carries the affective
-            // continuity we need, so retain only a non-content-bearing reminder.
-            prompt.push_str(
-                "【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。\n\n",
-            );
-        }
+        Self::append_tone_block(
+            &mut prompt,
+            input.user_emotion,
+            input.scene_label,
+            input.host_state_expression_hint,
+            input.previous_complex_emotion_narrative_hint,
+        );
 
         // Block 3 — content (memory + user identity + schedule)
-        prompt.push_str("---\n内容区块\n\n");
-        if !input.memories.is_empty() {
-            prompt.push_str(&Self::build_memory_context(input.memories));
-            prompt.push_str("\n\n");
-        }
-        Self::push_user_identity_section(&mut prompt, input, role_context.relation_label());
-        if !input.life_context_line.is_empty() {
-            prompt.push_str("【日程推断】\n");
-            prompt.push_str(input.life_context_line.trim());
-            prompt.push_str("\n\n");
-        }
+        Self::append_content_block(
+            &mut prompt,
+            input.memories,
+            input.user_identity_template,
+            input.user_relation_id,
+            input.relation_hint,
+            role_context.relation_label(),
+            input.life_context_line,
+        );
 
         // Footer — extra sections → anchor → guardrails → user input → closing line
-        for section in input.extra_sections {
-            if section.title.trim().is_empty() && section.body.trim().is_empty() {
-                continue;
-            }
-            if !section.title.trim().is_empty() {
-                prompt.push('【');
-                prompt.push_str(section.title.trim());
-                prompt.push_str("】\n");
-            }
-            if !section.body.trim().is_empty() {
-                prompt.push_str(section.body.trim());
-                prompt.push_str("\n\n");
-            }
-        }
-        if let Some(prev_block) =
-            Self::build_previous_reply_constraint(input.previous_assistant_reply)
-        {
-            prompt.push_str(&prev_block);
-            prompt.push_str("\n\n");
-        }
-        if !selected_reply_anchor.is_empty() {
-            prompt.push_str(selected_reply_anchor.as_str());
-            prompt.push_str("\n\n");
-        }
-        prompt.push_str(KERNEL_DIALOGUE_GUARDRAILS);
-        prompt.push_str("\n\n");
-        prompt.push_str(EMO_OUTPUT_INSTRUCTION);
-        prompt.push_str("\n\n");
-        if input.user_input.trim().is_empty() {
-            prompt.push_str(
-                "【本轮输入语义】\n当前没有新的用户消息。请只依据上方已标明来源的上下文决定角色是否以及如何自然回应。",
-            );
-        } else {
-            prompt.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
-        }
-        prompt.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
-        prompt.push_str(REPLY_OUTPUT_BOUNDARY);
-        prompt.push_str("\n\n");
-        prompt.push_str(FINAL_TURN_INSTRUCTION);
+        Self::append_reply_footer(
+            &mut prompt,
+            input.extra_sections,
+            input.previous_assistant_reply,
+            selected_reply_anchor.as_str(),
+            input.user_input,
+        );
         prompt
     }
 
@@ -438,74 +493,29 @@ impl PromptBuilder {
             dynamic_suffix.push_str(&ephemeral);
         }
 
-        dynamic_suffix.push_str("---\n语气区块\n\n");
-        let status = Self::build_character_status_summary(input);
-        if !status.is_empty() {
-            dynamic_suffix.push_str(&status);
-            dynamic_suffix.push_str("\n\n");
-        }
-        dynamic_suffix.push_str(Self::build_authenticity_constraint());
-        dynamic_suffix.push_str("\n\n");
-        if !input
-            .previous_complex_emotion_narrative_hint
-            .trim()
-            .is_empty()
-        {
-            dynamic_suffix.push_str(
-                "【情绪连续性】上一轮存在情绪余韵；只保持语气变化的连续，不复述任何旧话题、动作或台词。最新消息与旧情绪不匹配时，以最新消息为准。\n\n",
-            );
-        }
-
-        dynamic_suffix.push_str("---\n内容区块\n\n");
-        if !input.memories.is_empty() {
-            dynamic_suffix.push_str(&Self::build_memory_context(input.memories));
-            dynamic_suffix.push_str("\n\n");
-        }
-        Self::push_user_identity_section(&mut dynamic_suffix, input, role_context.relation_label());
-        if !input.life_context_line.is_empty() {
-            dynamic_suffix.push_str("【日程推断】\n");
-            dynamic_suffix.push_str(input.life_context_line.trim());
-            dynamic_suffix.push_str("\n\n");
-        }
-        for section in input.extra_sections {
-            if section.title.trim().is_empty() && section.body.trim().is_empty() {
-                continue;
-            }
-            if !section.title.trim().is_empty() {
-                dynamic_suffix.push('【');
-                dynamic_suffix.push_str(section.title.trim());
-                dynamic_suffix.push_str("】\n");
-            }
-            if !section.body.trim().is_empty() {
-                dynamic_suffix.push_str(section.body.trim());
-                dynamic_suffix.push_str("\n\n");
-            }
-        }
-        if let Some(prev_block) =
-            Self::build_previous_reply_constraint(input.previous_assistant_reply)
-        {
-            dynamic_suffix.push_str(&prev_block);
-            dynamic_suffix.push_str("\n\n");
-        }
-        if !selected_reply_anchor.is_empty() {
-            dynamic_suffix.push_str(selected_reply_anchor.as_str());
-            dynamic_suffix.push_str("\n\n");
-        }
-        dynamic_suffix.push_str(KERNEL_DIALOGUE_GUARDRAILS);
-        dynamic_suffix.push_str("\n\n");
-        dynamic_suffix.push_str(EMO_OUTPUT_INSTRUCTION);
-        dynamic_suffix.push_str("\n\n");
-        if input.user_input.trim().is_empty() {
-            dynamic_suffix.push_str(
-                "【本轮输入语义】\n当前没有新的用户消息。请只依据上方已标明来源的上下文决定角色是否以及如何自然回应。",
-            );
-        } else {
-            dynamic_suffix.push_str(&format!("【最新用户消息】\n用户说: {}", input.user_input));
-        }
-        dynamic_suffix.push_str("\n\n请以角色身份自然地回复，保持一致的性格和语气。\n\n");
-        dynamic_suffix.push_str(REPLY_OUTPUT_BOUNDARY);
-        dynamic_suffix.push_str("\n\n");
-        dynamic_suffix.push_str(FINAL_TURN_INSTRUCTION);
+        Self::append_tone_block(
+            &mut dynamic_suffix,
+            input.user_emotion,
+            input.scene_label,
+            input.host_state_expression_hint,
+            input.previous_complex_emotion_narrative_hint,
+        );
+        Self::append_content_block(
+            &mut dynamic_suffix,
+            input.memories,
+            input.user_identity_template,
+            input.user_relation_id,
+            input.relation_hint,
+            role_context.relation_label(),
+            input.life_context_line,
+        );
+        Self::append_reply_footer(
+            &mut dynamic_suffix,
+            input.extra_sections,
+            input.previous_assistant_reply,
+            selected_reply_anchor.as_str(),
+            input.user_input,
+        );
 
         PromptSegments {
             stable_prefix,

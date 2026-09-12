@@ -1626,3 +1626,62 @@ fn empty_user_input_uses_non_user_semantics_in_both_prompt_paths() {
         assert!(!prompt.contains("用户说:"));
     }
 }
+
+#[test]
+fn synthetic_dynamic_content_characterization() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let mut memory = create_test_memory();
+    memory.content = "用户: 昨晚把蓝色风筝收进柜子了\n助手: 这句旧回复不应成为模板".into();
+    let memories = vec![memory];
+    let extra_sections = [
+        PromptExtraSection {
+            title: "",
+            body: "   ",
+        },
+        PromptExtraSection {
+            title: "动态证据",
+            body: "窗边的计时器还在走。",
+        },
+    ];
+    let mut input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "",
+        "夜班书房",
+        "窗外下着雨，台灯照着桌面。",
+        None,
+    );
+    input.user_emotion = "紧张";
+    input.ephemeral_personality = "临时状态：今晚更谨慎，避免打断用户。";
+    input.previous_complex_emotion_narrative_hint = "上一轮余韵：不要复述旧动作";
+    input.user_identity_template = "用户是来访的家长";
+    input.user_identity_id = "parent";
+    input.host_prompt_overlay = "当前宿主提示：保持安静陪伴。";
+    input.host_state_expression_hint = "角色收敛语气，先听后答";
+    input.extra_sections = &extra_sections;
+    input.previous_assistant_reply = "记得出门晒太阳，作业写完没？早点睡，多喝热水。";
+
+    let full = PromptBuilder::build_prompt(&input);
+    let segments = PromptBuilder::build_prompt_segments(&input);
+    // Golden hashes captured from the unmodified renderer at 0ea96034; this
+    // synthetic vector is separate from the four older 6e5da56c vectors.
+    assert_characterization_hashes(
+        "synthetic-dynamic-content",
+        &input,
+        "01181ea4058dd2b7650948ac90d1fcdf155ea16436d6d900200a6aa7cae00117",
+        "7592a6aaaeca2d52fae875345aae8d2052b8bfd29330278feb71a7a961458596",
+        "e4f69879a9aa8c8c97aa61bb39e2811e919fd60aba860f5018e4ed60622f739a",
+    );
+    assert!(full.contains("夜班书房"));
+    assert!(full.contains("临时状态：今晚更谨慎"));
+    assert!(full.contains("用户曾表达：昨晚把蓝色风筝收进柜子了"));
+    assert!(!full.contains("这句旧回复不应成为模板"));
+    assert!(full.contains("【动态证据】"));
+    assert!(full.contains("【上一轮回复约束】"));
+    assert!(full.contains("用户是来访的家长"));
+    assert!(full.contains("【本轮输入语义】"));
+    assert!(!full.contains("用户说:"));
+    assert_ne!(full, segments.full());
+}
