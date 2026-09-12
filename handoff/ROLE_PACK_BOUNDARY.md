@@ -127,6 +127,8 @@
 
 **当前实施止点**：本节只确认现有 builtin 的 legacy Role 私有适配和共同文本段复用，不要求新增文本准备对象、独立布局层或新的公共输入。小 Kernel / Host / Adapter 的已确认分工仍以 [MODULE_MAP §0.1](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；其 §0.2 候选与 §0.3 未完成接口对照，不是自动实施未来架构的授权。公开 Prompt 输入迁移、Minimal Role 生命周期、CLI 和跨宿主接入继续是尚未完成的工作，范围须另行明确；不得将私有投影升级成公共 schema、补齐旧 `Role` 的产品默认值冒充接入，或由此恢复 Event Stream/R7、扩展 Memory contract。
 
+本轮实施止点和第二片撤回结论只约束当前切片的必要性，不是永久禁止准备层、布局层或其他设计；未来有已确认需求时，可在既定权责边界内重新评估，涉及公共契约或职责变化仍须先行确认。当前不因此添加预留机制，也不恢复已撤回方案。
+
 **第二片必要性审查（2026-09-12，稳定基线 `3cde11f746537d2809ec198021488fa8454d28f7`）**：未提交方案通过局部等价测试，不等于新增层有必要。按 [AI_CHANGE_BOUNDARIES 的 G9/G12–G13](AI_CHANGE_BOUNDARIES.md) 与上述已确认边界收缩如下；此记录不新增 Kernel 职责。
 
 | 第二片对象 | 最小处置与理由 |
