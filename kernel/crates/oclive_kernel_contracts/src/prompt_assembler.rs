@@ -4,6 +4,10 @@ use oclive_kernel_types::{PromptInput, Result, Role};
 
 /// Builds the final LLM prompt string from role, scene, and turn context.
 ///
+/// This is the current reference-runtime interface. Both [`PromptInput`] and
+/// [`Self::top_topic_hint`] still depend on the complete [`Role`] model; these
+/// signatures do not define the small Kernel's minimal public input.
+///
 /// ## When to implement
 ///
 /// - **Who**: prompt assembly backends (builtin templates, Remote, directory plugin).

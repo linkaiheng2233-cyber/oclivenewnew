@@ -10,6 +10,11 @@ pub struct PromptExtraSection<'a> {
 }
 
 /// Input for the main-dialogue `build_prompt`, avoiding a long parameter list and call-site mismatches.
+///
+/// The reference Host prepares this borrowed context for its Prompt backends. It still
+/// includes the complete [`Role`] model and reference-Host relation, personality, and
+/// memory fields; this existing shape is not the small Kernel's minimal public input
+/// or the portable minimal role definition. A pure data type is not thereby domain-neutral.
 pub struct PromptInput<'a> {
     pub role: &'a Role,
     pub personality: &'a PersonalityVector,

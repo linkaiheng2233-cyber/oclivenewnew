@@ -1,13 +1,24 @@
-//! # oclive_kernel_contracts — kernel port (trait) layer
+//! # oclive_kernel_contracts — reference-runtime port layer
 //!
-//! **Role**: defines **all abstract interfaces** the orchestration layer depends on (LLM, memory, plugin host, Agent, etc.); contains **no implementation code**.
+//! **Role**: declares ports used by the complete reference runtime: the six slot contracts
+//! and additional Host, facility, and adapter ports. Its full export surface is not the
+//! small Kernel's minimal contract. Responsibility boundaries are maintained in the
+//! repository's `handoff/MODULE_MAP_AND_HANDOFF.md`.
 //!
-//! **Upstream**: depends only on [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types) (DTO / errors).
-//! **Downstream**: implementations are provided by `oclive_kernel_host`'s `domain` / `infrastructure` (re-exported by `oclivenewnew-tauri`); `oclive_kernel_runtime` re-exports during the transition period.
+//! **Current contents**: trait declarations, shared option/result types, default method
+//! bodies, and convenience helpers, including [`LlmGenerateOpts::interactive`]. This crate
+//! does not assemble the Host's complete turn workflow or its persistence services.
+//!
+//! **Dependencies**: [`oclive_kernel_types`] supplies shared data and errors; other support
+//! dependencies are listed in `Cargo.toml`.
+//! **Consumers**: `oclive_kernel_runtime` supplies builtin implementations;
+//! `oclive_kernel_host` supplies additional implementations and resource adapters, and
+//! binds the ports. Some runtime/Host modules retain compatibility re-exports; new port
+//! imports should use this crate directly.
 //!
 //! **Key decision**: decoupling the traits from Tauri makes it easy to inject mocks for headless services, embedded use, or tests; plugin authors implement the traits in this crate rather than editing the orchestration code directly.
 //!
-//! ## Trait responsibilities at a glance (single responsibility)
+//! ## Reference-runtime port responsibilities at a glance (single responsibility)
 //!
 //! | Trait | Responsibility | Typical implementer |
 //! |-------|------|------------|
