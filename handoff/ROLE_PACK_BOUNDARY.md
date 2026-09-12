@@ -119,13 +119,23 @@
 | 核心人设与性格补充段落不再直接接收 `&Role`；用户身份段落使用已解析的关系显示名 | 原覆盖/空白回退、显示名查找、档案净化和原始文案保持不变，不添加默认关系 |
 | 普通 Prompt 与 stable/dynamic 分段共享角色字段选择 | 两种输出各自保持原字节与分段边界；不要求普通输出与分段拼接彼此相等 |
 | 普通与分段入口共用语气、内容和页脚的私有文本 helper；身份和状态段接收所需的窄值 | 字段选择仍来自旧输入，记忆证据净化与产品文案不变；这不是新的六槽输入或固定 Kernel 流水线 |
-| 读取点集中，便于后续迁移复核 | 公开 `PromptInput` / `PromptAssembler` 以及 quality-anchor / topic-hint 入口仍引用旧模型；Host、remote wire、角色生命周期均未迁移 |
+| 旧角色字段选择可在私有适配点局部核对 | 公开 `PromptInput` / `PromptAssembler` 以及 quality-anchor / topic-hint 入口仍引用旧模型；Host、remote wire、角色生命周期均未迁移 |
 
 **验证范围**：在生产代码仍为 `6e5da56c` 时，先加入两项特征测试（四组合成输入，分别固定完整输出、stable prefix 和 dynamic suffix 的 SHA-256，并检查关键文本行为），原版 Prompt 定向测试 41 项通过；重构后沿用同一基线，[测试源码](../kernel/crates/oclive_kernel_runtime/src/domain/prompt_builder/tests.rs) 不自动更新期望值。runtime 库测试 200 项、定向 Prompt 测试及 Clippy/格式检查本地通过。此证据不表示公开 Prompt 解耦、真实模型效果、角色激活或跨发行版运行已验收。
 
 **共用文本段回归**：另在未改生产代码的 `0ea96034` 上捕获一组合成动态输入，固定普通输出和两个分段的 3 个摘要；它覆盖临时状态、旧聊天记忆净化、身份模板、扩展段、上一轮约束与空用户输入。沿用前述 12 个摘要，重构后 Prompt 定向测试 42 项、runtime 库测试 201 项及 Clippy/格式/分层、module-compat 本地通过。Host 的远端输入快照与缓存路径选择两项纯契约测试通过；未调用真实插件服务或模型。两种布局没有被合并为同一输出。
 
-**下一切片顺序**：先将旧输入的文本准备与最终布局分开，保持私有且输出不变；随后限定公共 Prompt 输入与旧接口的兼容迁移范围，再推进 Host 最小角色生命周期、CLI 创建/校验及跨宿主验收。不得把本私有投影直接升级成公共 schema，也不得通过补齐旧 `Role` 的产品默认值冒充 Minimal Role 接入；不由本切片恢复 Event Stream/R7 或扩展 Memory contract。
+**当前实施止点**：本节只确认现有 builtin 的 legacy Role 私有适配和共同文本段复用，不要求新增文本准备对象、独立布局层或新的公共输入。小 Kernel / Host / Adapter 的已确认分工仍以 [MODULE_MAP §0.1](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；其 §0.2 候选与 §0.3 未完成接口对照，不是自动实施未来架构的授权。公开 Prompt 输入迁移、Minimal Role 生命周期、CLI 和跨宿主接入继续是尚未完成的工作，范围须另行明确；不得将私有投影升级成公共 schema、补齐旧 `Role` 的产品默认值冒充接入，或由此恢复 Event Stream/R7、扩展 Memory contract。
+
+**第二片必要性审查（2026-09-12，稳定基线 `3cde11f746537d2809ec198021488fa8454d28f7`）**：未提交方案通过局部等价测试，不等于新增层有必要。按 [AI_CHANGE_BOUNDARIES 的 G9/G12–G13](AI_CHANGE_BOUNDARIES.md) 与上述已确认边界收缩如下；此记录不新增 Kernel 职责。
+
+| 第二片对象 | 最小处置与理由 |
+|---|---|
+| `legacy_preparation.rs`、`layout.rs`、`PreparedPromptText` | 撤回。它们引入五段文本中间表示及准备/布局分层，主要服务未来输入迁移；§0.6 的既有私有角色适配已经足以标明当前 legacy 耦合，公共边界并未要求这些新机制。 |
+| `mod.rs` 的 preparation → layout 接线 | 恢复为稳定基线。保留现有普通/分段入口和共同文本 helper，不改六槽合同、Host 编排或 Adapter 行为。 |
+| 新增纯布局四组合测试、准备对象跨借用期测试 | 随新抽象撤回；不为了测试尚未要求的中间对象而保留实现。稳定基线原有 42 项 Prompt 测试与 15 个固定输出摘要原样保留。 |
+
+本次纠偏后的运行源码与上述稳定基线一致；只有本节的当前实现止点与审查记录变更。它不是公开 Prompt 解耦、生命周期接入或物理拆分的完成声明。
 
 ## 1. 当前参考宿主内部划分
 
