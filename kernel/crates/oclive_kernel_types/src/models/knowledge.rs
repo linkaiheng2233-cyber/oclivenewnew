@@ -132,7 +132,8 @@ impl KnowledgeIndex {
         out
     }
 
-    /// Merge event keywords from retrieval results for [`crate::domain::event_detector::EventDetector`].
+    /// Merge event keywords from retrieval results for the runtime-side `EventDetector`
+    /// (`oclive_kernel_runtime::domain::event_detector::EventDetector`).
     #[must_use]
     pub fn merge_event_augment(chunks: &[&KnowledgeChunk]) -> KnowledgeEventAugment {
         let mut by_event: HashMap<EventType, Vec<String>> = HashMap::new();

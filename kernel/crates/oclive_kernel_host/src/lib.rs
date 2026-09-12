@@ -2,10 +2,13 @@
 // Legacy `crate::domain::*` re-exports from runtime are deprecated; allow until ratchet reaches zero.
 #![allow(deprecated)]
 
-//! Headless OCLive kernel: HTTP API, [`AppState`], orchestration, and infrastructure.
+//! Headless reference-runtime facade: HTTP API, [`AppState`], orchestration, and infrastructure.
 //!
 //! `oclive-kernel-server` and `oclivenewnew-tauri --api` link this crate directly.
 //! The Tauri desktop shell (`oclivenewnew-tauri`) depends on this crate for IPC impls and re-exports.
+//!
+//! This crate is the reference Host (composition root plus infrastructure); it is not the minimal
+//! Kernel contract surface. Responsibility boundaries: `handoff/MODULE_MAP_AND_HANDOFF.md` §0.1–§0.3.
 
 pub mod command_error;
 pub mod domain;

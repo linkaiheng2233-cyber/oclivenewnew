@@ -219,10 +219,10 @@ pub struct Role {
     /// `pipeline.ocblueprint` v2 → `groups` (architecture-diagram grouping; optional)
     #[serde(default, skip_serializing_if = "slot_groups_is_empty")]
     pub slot_groups: Option<BTreeMap<String, oclive_validation::SlotGroupEntry>>,
-    /// Index after loading `knowledge/` (in-memory only; populated by [`crate::infrastructure::storage::RoleStorage`])
+    /// Index after loading `knowledge/` (in-memory only; populated by the host-side `RoleStorage`)
     #[serde(skip)]
     pub knowledge_index: Option<Arc<KnowledgeIndex>>,
-    /// Role pack `ui.json` (in-memory only; populated by [`crate::infrastructure::storage::RoleStorage`])
+    /// Role pack `ui.json` (in-memory only; populated by the host-side `RoleStorage`)
     #[serde(skip)]
     pub ui_config: UiConfig,
     /// Role pack `author.json` (optional; in-memory only)
@@ -273,7 +273,7 @@ pub struct Role {
     /// Runtime-only diagnostic when a present adult extension was isolated.
     #[serde(skip)]
     pub adult_extension_error: Option<String>,
-    /// `user_identities/` catalog (in-memory only; populated by [`RoleStorage::finish_role_pack_load`]).
+    /// `user_identities/` catalog (in-memory only; populated by the host-side `RoleStorage::finish_role_pack_load`).
     #[serde(skip)]
     pub user_identity_catalog: Option<Arc<UserIdentityCatalog>>,
     /// v3 blueprint `runtime_config` (loaded by the host; creator packs usually omit it or leave dual-core off).
@@ -286,13 +286,13 @@ pub struct Role {
     /// when this host has no matching capability provider.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub blueprint_extensions: BTreeMap<String, BlueprintExtensionDecl>,
-    /// Scene id list (manifest `scenes` + the `scenes/` subdirectory); populated by [`RoleStorage::finish_role_pack_load`].
+    /// Scene id list (manifest `scenes` + the `scenes/` subdirectory); populated by the host-side `RoleStorage::finish_role_pack_load`.
     #[serde(skip)]
     pub scene_ids: Arc<[String]>,
-    /// `scene.json` parse results cached by scene id; populated by [`RoleStorage::get_scene_config`].
+    /// `scene.json` parse results cached by scene id; populated by the host-side `RoleStorage::get_scene_config`.
     #[serde(skip)]
     pub scene_config_cache: Arc<RwLock<HashMap<String, Arc<DiskSceneConfig>>>>,
-    /// Scene text-material cache (`desc:{scene}` / `away:{char}:{user}`); populated by [`RoleStorage`].
+    /// Scene text-material cache (`desc:{scene}` / `away:{char}:{user}`); populated by the host-side `RoleStorage`.
     #[serde(skip)]
     pub scene_text_cache: Arc<RwLock<HashMap<String, Arc<str>>>>,
     /// Directory the role pack was loaded from (runtime only).

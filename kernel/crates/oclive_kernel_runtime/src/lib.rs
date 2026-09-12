@@ -5,7 +5,10 @@
 //! **Upstream**: [`oclive_kernel_contracts`](https://docs.rs/oclive_kernel_contracts), [`oclive_kernel_types`](https://docs.rs/oclive_kernel_types).
 //! **Downstream**: `oclive_kernel_server`, `distros/desktop-tauri` (paths / kernel discovery only).
 //!
-//! **Key decision**: DTOs and port traits live in `oclive_kernel_types` / `oclive_kernel_contracts`; import them directly — this crate does not re-export them.
+//! **Key decision**: DTOs and port traits live in `oclive_kernel_types` /
+//! `oclive_kernel_contracts`; import them from those canonical crates.
+//! Compatibility re-exports remain at this crate root and in some domain
+//! modules; they do not change the canonical ownership of those definitions.
 
 pub mod app_data_migration;
 pub mod distro_oclive_file;

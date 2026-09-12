@@ -1,6 +1,9 @@
-//! # oclive_kernel_types — pure data-structure layer
+//! # oclive_kernel_types — shared reference-runtime data and model helpers
 //!
-//! **Role**: kernel-shared **DTOs, error types, and config structs** (`Role`, `SendMessageRequest`, `AppError`, etc.); **contains no business logic or I/O**.
+//! **Role**: shared DTOs, error types, and config structs (`Role`,
+//! `SendMessageRequest`, `AppError`, etc.), together with model helpers such as
+//! Role configuration derivations and KnowledgeIndex retrieval. This crate's
+//! full export surface is not the small Kernel's minimal contract.
 //!
 //! **Upstream**: [`oclive_validation`](https://docs.rs/oclive_validation) (blueprint / manifest validation types such as `SlotRegistryEntry`).
 //! **Downstream**: `oclive_kernel_contracts`, `oclive_kernel_runtime`, and `distros/desktop-tauri` model re-exports.
@@ -9,7 +12,9 @@
 //! re-exported for convenience. A future split may move validation-only types behind a narrower boundary
 //! so `oclive_kernel_types` can version independently without pulling the full validation crate surface.
 //!
-//! **Key decision**: types and behavior are kept separate so the contract crate can be versioned independently; prefer importing from this crate root or from [`models`] / [`error`].
+//! **Key decision**: shared data and error definitions are provided separately
+//! from the complete reference Host; prefer importing from this crate root or
+//! from [`models`] / [`error`].
 //!
 //! ## Public-export audit (maintenance convention)
 //!
