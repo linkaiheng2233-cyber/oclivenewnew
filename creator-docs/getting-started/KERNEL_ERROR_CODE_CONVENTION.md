@@ -1,13 +1,13 @@
 # 内核错误码与 JSON 体规范（单一事实来源）
 
-**状态**：现行契约（与 `oclive_kernel_runtime::KernelErrorBody`、`AppError::code` 实现一致）。
+**状态**：现行契约（与 `oclive_kernel_types::KernelErrorBody`、`AppError::code` 实现一致）。
 
 ## 1. 机器码 `code`（唯一命名规则）
 
 - **形态**：仅使用 **`SCREAMING_SNAKE_CASE`**（大写 ASCII + 下划线）。
 - **来源**：
   - 绝大多数错误对应 [`AppError`](../../kernel/crates/oclive_kernel_types/src/error.rs) 变体，**`code` 必须与 `AppError::code()` 返回值一致**（如 `ROLE_NOT_FOUND`、`LLM_ERROR`、`TXN_*`）。
-  - **目录插件宿主 `ApiError`**（`distros/desktop-tauri/src/api/error.rs`）：与 `KernelErrorBody` **同形 JSON 单行**（`code` 仍为 `SCREAMING_SNAKE_CASE`，如 **`API_PLUGIN_NOT_FOUND`**）。
+  - **目录插件宿主 `ApiError`**：类型定义在参考 Host 的 [`kernel/crates/oclive_kernel_host/src/command_error.rs`](../../kernel/crates/oclive_kernel_host/src/command_error.rs)；`distros/desktop-tauri/src/api/error.rs` 是**再导出入口**（仍是有效兼容路径，不是定义处）。其载荷与 `KernelErrorBody` **同形 JSON 单行**（`code` 仍为 `SCREAMING_SNAKE_CASE`，如 **`API_PLUGIN_NOT_FOUND`**）。
   - **HTTP `POST /chat` 路由边界**（请求校验、`spawn_blocking` panic 等）与 **`AppError::EmptyMessage`**（Tauri `send_message` / HTTP 空消息校验共用 **`EMPTY_MESSAGE`**）使用 crate 内常量模块 **`http_chat_codes`**（与实现同仓，避免字面量漂移）：
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`
@@ -21,6 +21,7 @@
 | `code` | 上节机器码。 |
 | `message` | 技术向英文句（`AppError` 的 `Display` 或路由层构造）；用户可见本地化由宿主用 **`code` → i18n**（如前端 `apiErrors.*`）。 |
 | `hint` | 可选；内核默认省略；HTTP 试聊可为中文「下一步」。 |
+| `context` | 可选 JSON 上下文，用于宿主错误子分类和本地化，例如 `{"kind":"plugin_backends_directory_slot"}`。本例不穷举取值，也不改变既有取值的兼容约定。 |
 
 ## 3. 传输层（仅包装不同，字段相同）
 
@@ -43,13 +44,13 @@
 ## 6. 相关实现与补丁说明
 
 - Rust：[`kernel/crates/oclive_kernel_types/src/error.rs`](../../kernel/crates/oclive_kernel_types/src/error.rs)（`KernelErrorBody`、`AppError`、`http_chat_codes`）。
-- HTTP：`kernel/crates/oclive_kernel_host/src/http_api.rs`。
+- HTTP：`kernel/crates/oclive_kernel_host/src/http_api/`（路由模块 `mod.rs`、`chat.rs` 等）。
 - 补丁摘要：`handoff/A2_KERNEL_JSON_ERROR_PATCH.md`。
 - **A3（崩溃上报与用户可见错误扫尾）**：[`handoff/archive/A3_CLOSURE_SUMMARY.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.md) · [`handoff/archive/A3_CLOSURE_SUMMARY.en.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md)。
 
 ## 7. 目录插件 RPC 字符串 → `ApiError` 映射
 
-`map_directory_rpc_url_error`（`oclive_kernel_host::command_error`）将目录插件 spawn 相关 plain-text 失败映射为：
+`map_directory_rpc_url_error`（[`kernel/crates/oclive_kernel_host/src/command_error.rs`](../../kernel/crates/oclive_kernel_host/src/command_error.rs) 中的同名函数）把目录插件的 plain-text 失败映射为**下列选列分支**（非全部匹配规则；未列子串按该函数内其余分支与最终兜底处理）：
 
 | 子串 / 前缀 | `ApiError` → `code` |
 |-------------|---------------------|

@@ -2,14 +2,14 @@
 
 [中文](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)
 
-**Status**: current contract (matches `oclive_kernel_runtime::KernelErrorBody` and `AppError::code`).
+**Status**: current contract (matches `oclive_kernel_types::KernelErrorBody` and `AppError::code`).
 
 ## 1. Machine `code` (one naming rule only)
 
 - **Shape**: **`SCREAMING_SNAKE_CASE`** only (uppercase ASCII + underscores).
 - **Origin**:
   - Most errors map to [`AppError`](../../kernel/crates/oclive_kernel_types/src/error.rs); **`code` must equal `AppError::code()`** (e.g. `ROLE_NOT_FOUND`, `LLM_ERROR`, `TXN_*`).
-  - **Host directory-plugin `ApiError`** (`distros/desktop-tauri/src/api/error.rs`): same **one-line `KernelErrorBody` JSON** (`code` stays `SCREAMING_SNAKE_CASE`, e.g. **`API_PLUGIN_NOT_FOUND`**).
+  - **Host directory-plugin `ApiError`**: the type is defined in the reference Host at [`kernel/crates/oclive_kernel_host/src/command_error.rs`](../../kernel/crates/oclive_kernel_host/src/command_error.rs); `distros/desktop-tauri/src/api/error.rs` is only a **re-export entry** (still a valid compatibility path, not the definition). Its payload is the same **one-line `KernelErrorBody` JSON** (`code` stays `SCREAMING_SNAKE_CASE`, e.g. **`API_PLUGIN_NOT_FOUND`**).
   - **HTTP `POST /chat` boundary** (request checks, `spawn_blocking` panic, etc.) uses the in-crate constant module **`http_chat_codes`** (no duplicate string literals):
     - `EMPTY_MESSAGE`
     - `INVALID_ROLE_PATH`
@@ -23,6 +23,7 @@
 | `code` | Machine code from §1. |
 | `message` | Technical English (`AppError` `Display` or route-built); user-facing copy comes from **`code` → i18n** (e.g. `apiErrors.*`). |
 | `hint` | Optional; omitted by default in kernel; HTTP try-chat may add a local-language next step. |
+| `context` | Optional JSON context for host-side error sub-classification and localization, e.g. `{"kind":"plugin_backends_directory_slot"}`. This example does not enumerate the possible values, and it does not change compatibility conventions for existing values. |
 
 ## 3. Transport (wrapper only; fields identical)
 
@@ -45,7 +46,7 @@ Sidecars use **JSON-RPC numeric `code` + lowercase snake `message` names**; see 
 ## 6. Code and patch notes
 
 - Rust: [`kernel/crates/oclive_kernel_types/src/error.rs`](../../kernel/crates/oclive_kernel_types/src/error.rs) (`KernelErrorBody`, `AppError`, `http_chat_codes`).
-- HTTP: `distros/desktop-tauri/src/http_api.rs`.
+- HTTP: `kernel/crates/oclive_kernel_host/src/http_api/` (route modules such as `mod.rs`, `chat.rs`).
 - Patch summary: `handoff/A2_KERNEL_JSON_ERROR_PATCH.md`.
 - **A3 (crash reporting & user-visible error polish)**: [`handoff/archive/A3_CLOSURE_SUMMARY.en.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) · [`handoff/archive/A3_CLOSURE_SUMMARY.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.md).
 

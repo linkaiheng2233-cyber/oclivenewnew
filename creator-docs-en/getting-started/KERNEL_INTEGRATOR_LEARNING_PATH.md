@@ -46,6 +46,6 @@ For **headless HTTP**, **embedded**, and **hardware** teams shipping an oclive-c
 
 ## Relation to this repo
 
-- **Contracts** (`KernelErrorBody`, DTOs) live in **`oclive_kernel_runtime`** + [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md).  
-- Complete orchestration is maintained once in **`kernel/crates/oclive_kernel_host`**, with the thin desktop shell under `distros/desktop-tauri`. Trusted Rust hosts use it through **`OcliveKernel`**. `oclive-cli ... --project-type library --kernel-source` links that full facade; manually linking only `oclive_kernel_runtime` still provides pure contracts/policy only.
+- **Contracts**: DTOs and `KernelErrorBody` live in **`oclive_kernel_types`**; port traits live in **`oclive_kernel_contracts`**; naming and payload rules in [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md).
+- Complete orchestration is maintained once in **`kernel/crates/oclive_kernel_host`**, with the thin desktop shell under `distros/desktop-tauri`. Trusted Rust hosts use it through **`OcliveKernel`**. `oclive-cli ... --project-type library --kernel-source` links that full facade; manually linking only `oclive_kernel_runtime` provides the reference engines and helpers but not the complete Host orchestration facade.
 - Embedded hosts may trim peripheral pieces, but should preserve the **error JSON shape** and Event Ring authority boundary. Do not build a second pipeline around internal `AppState`.

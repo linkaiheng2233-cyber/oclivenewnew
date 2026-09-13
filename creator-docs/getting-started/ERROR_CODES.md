@@ -6,11 +6,12 @@
 
 ## 1) 运行时 HTTP API（`/chat`）错误体（与内核 / Tauri 同源）
 
-`POST /chat` 失败时返回 JSON，**`error` 与 `oclive_kernel_runtime::KernelErrorBody` 同形**（与 Tauri `invoke` 失败载荷为**同一 JSON 单行**时可互解析）：
+`POST /chat` 失败时返回 JSON，**`error` 与 `oclive_kernel_types::KernelErrorBody` 同形**（与 Tauri `invoke` 失败载荷为**同一 JSON 单行**时可互解析）：
 
 - `code`：**`SCREAMING_SNAKE_CASE`** 机器码，与内核 [`AppError::code`](../../kernel/crates/oclive_kernel_types/src/error.rs) 一致。
 - `message`：内核 `Display`（默认英文技术句）；本地化由发行版用 `code` 映射。
 - `hint`：可选「下一步」；HTTP 可为试聊附加中文提示。
+- `context`：可选 JSON 上下文，用于宿主错误子分类和本地化；形状与取值约定见 [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) §2。
 
 返回体（示例）：
 
@@ -69,6 +70,8 @@
 
 **事务类**：[`AppError::TransactionError`](../../kernel/crates/oclive_kernel_types/src/error.rs) 的 `code` 为**动态字符串**（如好感/记忆事务子步骤），不在上表逐条列出；`oclive explain <CODE>` 仅覆盖静态 `AppError` 变体与 HTTP 补充码。
 
+**聊天记录追加失败（普通共景聊天）**：记录追加分支吸收该错误，不把它直接作为顶层错误返回；若回合最终成功返回，响应通过 `chat_persist_failed=true` 与 `chat_persist_error` 说明记录保存失败。其他步骤的错误仍按各自路径处理。
+
 ### 1.5) 首装常见：Ollama 与角色目录（A2.1 子集）
 
 | 现象 | 常见原因 | 建议下一步 |
@@ -84,7 +87,7 @@
 |------|------------|------|
 | **插件市场目录**（粘贴 `plugins.json` 分享链接 →「加载」） | 在线拉取失败时自动读 `app_data` 下 **`plugin_index_cache.json`**（若曾成功加载过），返回 `offlineMode=true` 与 `warning` | 检查网络、代理；确认链接为可访问的 raw JSON；可设 **`OCLIVE_PLUGIN_INDEX_URL`** 作开发镜像；换链接或稍后重试 |
 | **首次从未同步成功** | 缓存可能为空，列表无条目 | 至少成功同步一次，或使用「从文件夹 / zip 安装」等离线路径 |
-| **Ollama / Remote LLM** | 超时或不可达时由对话路径返回 **`KernelErrorBody` JSON**（如 `LLM_ERROR`）；极旧日志可能仍为 `[CODE]` 前缀 | 见 **§1.5** 与前端 `apiErrors` 映射 |
+| **Ollama / Remote LLM** | 普通共景聊天的已核对主 LLM 分支在生成失败时转为**兜底回复**；若后续回合处理成功，响应通过 `reply_is_fallback=true` 与 `llm_fallback_reason` 说明降级。其他步骤仍可能失败，其他 LLM 调用路径也可能返回错误体（如 `LLM_ERROR`）；极旧日志可能仍为 `[CODE]` 前缀 | 见 **§1.5** 与前端 `apiErrors` 映射 |
 | **Tauri 常见补充（JSON；旧版见 `[CODE]` 回退）** | 首轮对话前自检失败、未先加载角色 | `STARTUP_HEALTH_FAILED`：manifest / 槽位 / DB；`ROLE_RUNTIME_NOT_READY`：请先 `load_role` 或在 UI 选择角色；directory 槽等相关码见 `apiErrors` |
 
 GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未单独映射的机器码会走 **`apiErrors.UNKNOWN_WITH_CODE`**。发版前可先依赖上述文档自助排障。
@@ -105,7 +108,7 @@ GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未�
 | 层 | 载荷 | `code` 形态 | 典型通道 |
 |----|------|-------------|----------|
 | **侧车 JSON-RPC** | `{ "jsonrpc":"2.0", "error": { "code": <int>, "message": "<string>" } }` | **整数**（如 `-32603`、`-32010`） | Remote 插件 / LLM HTTP 侧车 |
-| **内核 `KernelErrorBody`** | `{ "code": "<SCREAMING_SNAKE>", "message": "<string>", "hint"? }` | **字符串**（如 `LLM_ERROR`、`ROLE_NOT_FOUND`） | Tauri `invoke`、HTTP `POST /chat` 失败体 |
+| **内核 `KernelErrorBody`** | `{ "code": "<SCREAMING_SNAKE>", "message": "<string>", "hint"?, "context"? }` | **字符串**（如 `LLM_ERROR`、`ROLE_NOT_FOUND`） | Tauri `invoke`、HTTP `POST /chat` 失败体 |
 
 **禁止混用**：不得在内核 `error.code` 使用 JSON-RPC 整数码；侧车响应也不得用 `LLM_ERROR` 字符串作为 `error.code`。宿主将侧车失败包装为 `AppError::OllamaError` → 对外 **`LLM_ERROR`** 字符串码。
 

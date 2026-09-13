@@ -207,7 +207,8 @@ This page is the **naming SSOT** for OCLive. Key rules:
 
 | 类型 | 真定义位置 | 过渡 re-export 路径 | 备注 |
 |------|-----------|---------------------|------|
-| DTO / `AppError` | `oclive_kernel_types` | `oclive_kernel_runtime::*`、`host::error::*`、`tauri::error::*` | runtime `lib.rs` 标明 **transitional** |
+| DTO | `oclive_kernel_types` | 兼容入口：`oclive_kernel_host::models::*`，以及 `oclive_kernel_runtime` 实际公开再导出的部分类型 | 仅覆盖各模块实际公开项，**不**表示全量 DTO 均可经这些入口导入 |
+| `AppError` | `oclive_kernel_types::AppError` | 兼容入口：Host 与桌面 crate 的 `error` 模块（`oclive_kernel_host::error::*`、`crate::error::*`） | 同上；新代码遵循 §4.2 |
 | Trait 端口 | `oclive_kernel_contracts` | `oclive_kernel_runtime::…`、`host::domain::ports::*` | ports **无 trait 定义** |
 | 引擎模块 | `oclive_kernel_runtime::domain::*` | `oclive_kernel_host::domain::*`（`pub use`） | host 内可用 `crate::domain::` |
 | 编排入口 | `oclive_kernel_host::domain::chat_engine::process_message` | ~~`oclivenewnew_tauri::domain::process_message`~~（**P1 Done**：tauri 不再 re-export `domain`） |

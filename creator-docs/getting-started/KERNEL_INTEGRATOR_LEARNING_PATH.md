@@ -44,6 +44,6 @@
 
 ## 与主应用仓库的关系
 
-- **契约**（DTO、`KernelErrorBody`）以 **`oclive_kernel_runtime`** 与 [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) 为准。  
-- **完整宿主编排**只在 `kernel/crates/oclive_kernel_host` 维护一份，桌面薄壳位于 `distros/desktop-tauri`。可信 Rust 宿主应通过 **`OcliveKernel`** 使用它；`oclive-cli ... --project-type library --kernel-source` 已链接完整门面，而仅手工依赖 `oclive_kernel_runtime` 仍只有纯契约/策略。
+- **契约**：DTO 与 `KernelErrorBody` 以 **`oclive_kernel_types`** 为准，端口 trait 以 **`oclive_kernel_contracts`** 为准；命名与载荷规则见 [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md)。
+- **完整宿主编排**只在 `kernel/crates/oclive_kernel_host` 维护一份，桌面薄壳位于 `distros/desktop-tauri`。可信 Rust 宿主应通过 **`OcliveKernel`** 使用它；`oclive-cli ... --project-type library --kernel-source` 已链接完整门面，而仅手工依赖 `oclive_kernel_runtime` 只提供参考引擎与辅助功能，不包含完整 Host 编排门面。
 - 嵌入式可裁剪外围，但应保持 **错误 JSON 形状** 与 Event Ring 权威边界一致，便于共用 FAQ、编写器和诊断工具；不要直接依赖内部 `AppState` 拼第二条编排。

@@ -15,6 +15,7 @@ On `POST /chat` failures, JSON uses **`error` = `KernelErrorBody`** (same fields
 - `code`: **`SCREAMING_SNAKE_CASE`**, aligned with [`AppError::code`](../../kernel/crates/oclive_kernel_types/src/error.rs).
 - `message`: kernel `Display` (default English technical text); shells localize via `code`.
 - `hint`: optional next step; HTTP may attach extra hints for editor try-chat.
+- `context`: optional JSON context for host-side error sub-classification and localization; shape and value conventions in [KERNEL_ERROR_CODE_CONVENTION.md](KERNEL_ERROR_CODE_CONVENTION.md) §2.
 
 Example:
 
@@ -71,6 +72,8 @@ Example:
 
 **Transactions**: [`AppError::TransactionError`](../../kernel/crates/oclive_kernel_types/src/error.rs) uses a **dynamic** `code` string; not listed above. `oclive explain` covers static `AppError` variants and HTTP supplement codes only.
 
+**Chat transcript append failure (ordinary co-present chat)**: the transcript-append branch absorbs that error and does not return it directly as a top-level error; if the turn ultimately returns success, the response reports the storage failure via `chat_persist_failed=true` and `chat_persist_error`. Errors from other steps are still handled by their own paths.
+
 ### 1.5) First install: Ollama and role paths (subset)
 
 | Symptom | Common cause | Next step |
@@ -86,7 +89,7 @@ Example:
 |----------|------------------|-------------|
 | **Community plugin index** (workbench → Community index → **Sync online index**) | If online `plugins.json` fails, the host reads **`plugin_index_cache.json`** under app data, returns `offlineMode=true` and a `warning` string (technical); UI + toast use i18n for the headline | Check network, proxy, firewall; set **`OCLIVE_PLUGIN_INDEX_URL`** to a reachable mirror; sync again when online |
 | **Never synced successfully** | Cache may be empty; list stays empty | Complete one successful sync, or install from folder / zip offline |
-| **Ollama / Remote LLM** | Chat path returns **`KernelErrorBody` JSON** (e.g. `LLM_ERROR`); very old logs may still show `[CODE]` prefixes | See **§1.5** and frontend `apiErrors` mapping |
+| **Ollama / Remote LLM** | In ordinary co-present chat, the reviewed main-LLM branch turns a generation failure into a **fallback reply**; if the later turn handling succeeds, the response reports the degradation via `reply_is_fallback=true` and `llm_fallback_reason`. Other steps can still fail, and other LLM call paths can still return an error body (e.g. `LLM_ERROR`); very old logs may still show `[CODE]` prefixes | See **§1.5** and frontend `apiErrors` mapping |
 | **Extra Tauri hints (JSON; legacy `[CODE]` fallback)** | First-chat startup checks or missing runtime row | `STARTUP_HEALTH_FAILED`: manifest, slots, DB; `ROLE_RUNTIME_NOT_READY`: call `load_role` / pick the role in UI; directory-slot codes in `apiErrors` |
 
 If the GUI still shows raw English backend strings, track under **A6** cleanup; unknown machine codes fall back to **`apiErrors.UNKNOWN_WITH_CODE`**. Self-serve with the table above first.
