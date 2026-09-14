@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-06
+> **最后更新**：2026-09-14
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -224,14 +224,17 @@ Vue invoke / HTTP --api
 2. [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16  
 3. 模块关系 **只**改 MODULE_MAP；**链接代替复制**。按 [防漂移闭环](README.md#documentation-maintenance) 同步人类入口、AI 路由及已有英文镜像；源码/契约冲突分别记账，不以一方冒充另一方。
 
+<a id="kernel-slot-reading"></a>
+
 ### Kernel / 六槽 / Host 权责
 
 按以下顺序阅读；本节只提供导航，不复制权责事实：
 
-1. **候选与源码对照**：先读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#kernel-semantics-candidate) §0.2–§0.3，确认 2.2.1 候选的适用边界与当前实现差异
-2. **现有接口参考**：再读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) §4–§9 对应的六槽 trait/DTO，以及 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) 的现行实现参考；不得把参考签名写成已冻结 v0 API
-3. **边界处理**：需要判断具体调用、Host 应用、Adapter 授权或结果效果时，回到 [`MODULE_MAP_AND_HANDOFF.md §0.3`](./MODULE_MAP_AND_HANDOFF.md#kernel-source-map) 的定点源码证据与相关 SSOT；不把当前 Host 流程升格为跨 Host 固定顺序
-4. **后续 API / 物理拆分**：再看 [`PURE_KERNEL_BOUNDARY.md`](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md#1-职责目标与当前实现) §1 与 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`；均须另行授权，不在本入口冻结 API 或拆分。
+1. **候选与源码对照**：先读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#kernel-semantics-candidate) §0.2–§0.3，确认 2.2.1 候选的适用边界与当前实现差异；历史证据按其绑定 SHA 阅读，不因文档更新重标为本轮全量验证
+2. **接续六槽讨论**：读 [Base / Extension 已确认方向](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 与 [已确认的最低结果承诺](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions)，再审 [六槽统一模板候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate)、[逐槽/组合审阅](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review)、[小 Kernel 公共面组合](MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) 和 [接口表达建议](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal)；最后一项是表示稿，不是现行 Rust/wire 或迁移授权。不再重复询问已决项，也不得把主控语义审阅稿当作已获批 API
+3. **现有接口参考**：再读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) §4–§9 对应的六槽 trait/DTO，以及 [`PLUGIN_V1.md`](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) 的现行实现参考；不得把参考签名写成已冻结 v0 API
+4. **边界处理**：需要判断具体调用、Host 应用、Adapter 授权或结果效果时，回到 [`MODULE_MAP_AND_HANDOFF.md §0.3`](./MODULE_MAP_AND_HANDOFF.md#kernel-source-map) 的定点源码证据与相关 SSOT；不把当前 Host 流程升格为跨 Host 固定顺序。已收口区域仅在出现新反例时局部重开，外围问题一旦足以划界即回台账，不继续展开内部治理
+5. **后续 API / 物理拆分**：再看 [`PURE_KERNEL_BOUNDARY.md`](../creator-docs/getting-started/PURE_KERNEL_BOUNDARY.md#1-职责目标与当前实现) §1 与 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 的 `K-CORE-BOUNDARY-01`；均须另行授权，不在本入口冻结 API 或拆分。
 
 ### 技术债收口 / 按开发流水线走
 

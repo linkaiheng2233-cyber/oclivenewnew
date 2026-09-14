@@ -2,13 +2,15 @@
 
 **Scope clarification (2026-09-11):** this guide follows the existing Rust **reference Host**, persistence, and wiring. The historical title does not put all of them inside the small Kernel. Start with the [responsibility/source map](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map); fixed stages, DB commits, and role runtime below are current assembly facts, not a new public contract.
 
-> **Last updated:** 2026-08-31
+> **Last updated:** 2026-09-14
 > **Audience:** Contributors touching `process_message`, persistence, or plugin wiring.  
 > **Full human edition (CN):** [human-docs/06](../human-docs/06_KERNEL_LEARNING_PATH.md) · **Module registry SSOT:** [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 ---
 
 ## Top 6 before a kernel PR
+
+**Resuming the six-slot design:** read the [Base / Extension boundaries](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) and the [confirmed decisions](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions), followed by the [uniform per-slot candidate](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate), [per-slot review](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review), [composition of the small Kernel public surface](../handoff/MODULE_MAP_AND_HANDOFF.md#small-kernel-composition), and [interface representation proposal](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal). Base contracts provide a common language, not a ceiling on module capabilities. The representation draft is not the current integration API, and the controller's semantic review does not prove the Rust interfaces have been adapted. Day 1–5 below is a source-reading path for the reference Host, not a requirement to implement all its domain systems before integrating a slot.
 
 1. [kernel/crates/README.md](../kernel/crates/README.md) — dependency graph  
 2. [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md) — module registry · per-slot boundaries  

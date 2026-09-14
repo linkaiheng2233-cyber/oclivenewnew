@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-11。
+**最后更新**：2026-09-14。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 ## 文档分责
@@ -45,6 +45,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | AI 改代码或文档 | [AI_CHANGE_BOUNDARIES](AI_CHANGE_BOUNDARIES.md) | [AI_READING_INDEX](AI_READING_INDEX.md) |
 | 接手主编排 / DB | [BUS_FACTOR_NOTES](BUS_FACTOR_NOTES.md) | [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md) |
 | 改模块或槽位 | [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md) | [SLOT_BACKEND_REALITY_MATRIX](SLOT_BACKEND_REALITY_MATRIX.md) |
+| 接续六槽基础契约讨论 | [已确认方向](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) · [公共承诺决策](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions) | [统一模板候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) · [逐槽审阅](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review) · [公共面组合](MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) · [接口表达建议](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal) · [AI 阅读顺序](AI_READING_INDEX.md#kernel-slot-reading) |
 | 做全仓审查 | [AI_VERIFICATION_PROTOCOL](AI_VERIFICATION_PROTOCOL.md) | [RECURRING_OPTIMIZATION_PLAYBOOK](RECURRING_OPTIMIZATION_PLAYBOOK.md) |
 | 看当前债务 / 冻结 | [TECHNICAL_DEBT_INVENTORY](TECHNICAL_DEBT_INVENTORY.md) | — |
 | 改角色包边界 | [ROLE_PACK_BOUNDARY](ROLE_PACK_BOUNDARY.md) | [角色包规范](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
@@ -127,3 +128,49 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 纯文档门禁：`git diff --check` · `node scripts/check-doc-registry.mjs` · `node scripts/check-markdown-links.mjs --tracked` · `node scripts/check-stale-paths.mjs --docs-only` · `node scripts/check-doc-mirror.mjs`。链接脚本检查其范围内受跟踪 Markdown 的本地目标路径（排除 archive 等目录），不验证所有章节锚点或语义；新增/改动锚点须另查。镜像门禁也不证明逐字语义等价。这些检查不替代人工审查，不要求启动服务或运行 Rust/外部探测。
 
 **本轮验证记录（2026-09-11）**：在仓库根目录执行上述五项静态门禁，均通过；另以只读脚本核对变更文件 UTF-8/无 BOM、本文与 MODULE_MAP 的显式边界锚点、源码行号不越界及仅 Markdown 写集。源码对照基线见 MODULE_MAP §0.3。未运行 Rust/产品测试、服务或真实外部探测；本记录不代表远端 CI、历史证据重放或全仓运行语义验收。
+
+### 六槽讨论的文档收尾与接续（2026-09-14）
+
+**上一轮记录，保留其范围与证据；当时的待决状态及接续计划由下节更新。**
+
+- **基线与依据**：仓库 HEAD 为 `34c2783071c49e4061bc796ac4bf73a2870a7925`；本次整理的是维护者在当前对话确认的六槽方向，不是新一轮源码测绘。MODULE_MAP §0.3 的历史证据仍绑定其原 SHA，未替换为本轮证据。
+- **文档分工**：定义与未决项只在 [MODULE_MAP §0.4–§0.5](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 维护；本页、[AI 接续路径](AI_READING_INDEX.md#kernel-slot-reading) 与人类 [学习页](../human-docs/06_KERNEL_LEARNING_PATH.md) / [英文镜像](../human-docs-en/06_KERNEL_LEARNING_PATH.md) 只导航和解释阅读范围。桌面 DeepSeek 交接文档未改，不另建第二份定义。
+- **验证范围**：仅本地文档静态检查；在仓库根执行 `git diff --check`、`node scripts/check-doc-registry.mjs`、`node scripts/check-stale-paths.mjs --docs-only`、`node scripts/check-doc-mirror.mjs`、`node scripts/check-markdown-links.mjs`，以及用链接脚本显式检查本次五份文档，均通过。编码与新增显式锚点另查；中英新增段落人工对照，不将镜像门禁当作翻译或语义证明。
+- **保护与未运行**：开工前已有的技术债台账两行改动原样保留，不代为提交或改状态。本轮不改源码、配置、数据库、证据或现行 wire；未运行构建、行为测试、服务、真实模型/外部流量或历史请求重放，未 commit / push。Event Stream/R7、R1–R4 和外围 Host 恢复/context 修复继续暂停。
+- **当时的接续计划（现由下节替代）**：先确认 §0.5 两项输出语义，再按统一模板补齐候选；旧锚点 [six-slot-open-decisions](MODULE_MAP_AND_HANDOFF.md#six-slot-open-decisions) 保留，当前结论以该节的已确认状态为准，不再作为活跃待决入口。
+
+### 六槽统一候选整理（2026-09-14 · 后续确认后）
+
+**概念稿 1 的整理记录；后续逐槽审阅修订见下节，原证据不升级为新稿验收。**
+
+- **依据与交付范围**：维护者先后确认两项结果承诺后，授权整理完整六槽候选。定义只在 [MODULE_MAP §0.4–§0.7](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) 维护；主文档用完整七项模板取代原摘要表，记录决策变更和概念反例检查，未另建六份平行 SSOT。
+- **证据级别**：概念稿 1 是文档候选，不是整份契约已批准、API 已发布或现有实现已通过验证。对照依据为当前对话与既有边界；本轮不重跑源码测绘，也不把假设案例记为执行过的测试。
+- **写集与保护**：仅主文档、AI 索引、本页及中英学习页；保留前轮修改，技术债台账原有两行不动。HEAD 仍为 `34c2783071c49e4061bc796ac4bf73a2870a7925`；未 commit / push，未改桌面交接文档、源码、配置、数据库或现行 wire。
+- **验收口径**：只进行文档静态门禁、编码/锚点/模板完整性检查与文字自审；不以其替代 Rust/产品测试、独立模型复核或远端 CI。具体门禁仍用本页已有命令，不运行构建、行为测试、服务、模型、外部流量或历史请求重放。
+- **本轮文档结果**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror、默认范围及本轮五文件的 Markdown 链接检查均通过；另核对六槽各七项模板齐备、新增显式锚点与 UTF-8/无 BOM/统一 LF。原权责/候选/历史源码对照段未改，技术债台账哈希与开工时一致；中英新增导航按语义人工对照。以上仅为文档与结构检查证据。
+- **接续入口**：审阅 [统一候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) 与 [未定稿部分](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review)，再决定是否进入公共数据形状/适配计划；不重复询问两项已决语义。Event Stream/R7、R1–R4 和外围 Host 恢复/context 修复继续暂停。
+
+### 六槽逐槽审阅与组合（2026-09-14 · 概念稿 1.1）
+
+- **授权与分工**：维护者要求先逐槽审阅，再组合 Kernel，最后由 DeepSeek 落实。本轮由主控完成语义审阅与文档整理；沿用 OCLive 工程门禁，模型分工按本次用户指定覆盖第二流水线的默认派发安排。未自动派发子 Agent，未声称独立模型复核；本机通用 `dev-pipeline` 技能缺失，以本仓已存在规则为准。
+- **唯一正文**：[MODULE_MAP §0.6–§0.8](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) 保存审阅稿、删除见证与公共面组合；AI/人类中英入口仅链接。§0.1–§0.3 原权责与历史源码证据保持不变。本轮是语义自审，不新增源码全量合规结论，也不把概念稿记为 API 发布或物理 Kernel 完工。
+- **交接止点**：对话中交付 DeepSeek 的下一阶段任务书；先做六槽候选到现行接口的有限映射和实施备料，由主控据此确定公共表示与精确写集后才进入代码实施。不要求 DeepSeek 再重建全部 Kernel/Host，也不让它自行以 DTO、兼容桥或默认值填平未决语义。桌面文档仍只用于 DeepSeek 回传。
+- **写集与冻结**：只更新此前在改的五份 Markdown，技术债台账原有改动原样保留；不改 Rust、配置、数据库、现行 wire，不 commit / push。Event Stream/R7、R1–R4 及 Host 恢复/context 修复保持暂停。
+- **验收范围**：本次修订需重新进行文档静态门禁、显式锚点、编码、受保护段与写集检查；不运行构建、行为测试、服务、模型或外部探测。概念案例不是运行测试，后续公开接口实施仍须按 applicable 工程门禁验证。
+- **本次静态结果**：仓库根的 `git diff --check`、doc registry、stale-paths（docs-only）、doc mirror、默认范围及五文件 Markdown 链接检查均通过；另核对六槽七项模板、40 处目标锚点引用、UTF-8/无 BOM/统一 LF、旧职责/历史证据与参考接口区未改，台账 SHA256 与开工时一致。Git 的 LF→CRLF 提示保留说明，不报告为编码错误；中英导航人工对照。本结果仅覆盖文档，不是可执行契约验收。
+
+### 六槽接口方案准备（2026-09-14 · 概念稿 1.2 / 表示稿 0.1）
+
+- **依据与正文**：维护者确认 Agent 的机器可读任务完成声明留在增强契约，并确认同槽多实现与单实现多增强的区别；已决语义归 [MODULE_MAP §0.4–§0.5](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension)，模板更新在 §0.6，主控接口表达建议在 [§0.9](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal)。表示建议仍是草案，不把对方向的确认扩大为对 Rust 签名、错误载体或迁移写集的批准。
+- **证据与接续**：此前 DeepSeek §45–§46 的有限对照只作实施备料，不从“字段缺失”推导语义缺失，也不从工具被调用/`handled=false` 推导已发生外部效果或安全重放承诺。下一包审查表示稿能否兑现最低承诺、哪些旧接口只能有限适配，并回传具体签名建议、精确写集与验证计划；主控复核后才进入代码实施，不恢复旧 S1–S5 方案。
+- **分工与保护**：按用户指定由主控规划/审查、DeepSeek 执行有限对照与后续获准实施；任务书在对话交付，桌面文档仅供回传。仓库 HEAD 为 `34c2783071c49e4061bc796ac4bf73a2870a7925`，已有五份导航/定义文档在本轮继续编辑；技术债台账既有改动原样保留。未改 Rust、配置、数据库或现行 wire，未 commit / push；Event Stream/R7、R1–R4、外围 Host 恢复/context 修复与真实流量继续暂停。
+- **验收界限**：只运行本页列出的文档静态检查及编码、锚点、保护范围核对；未运行 Rust/产品测试、构建、服务、模型、数据库实验或外部探测。未来改公开 API 仍须 `cargo test --workspace --doc`，不能以本轮文档门禁或单个 crate 的 doctest 代替。表示稿审查不等于实现已验证。
+- **本次文档结果**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror、默认范围及本次五文件的 Markdown 链接检查通过；另核对 UTF-8/无 BOM/统一 LF、显式锚点、六槽七项模板以及受保护区域。§0.1–§0.3 与参考说明 §1 以后的原文未改，台账哈希与开工一致；中英导航逐句对照。Git 的 LF→CRLF 提示不计为编码错误；上述结果只证明文档静态检查，不是代码验收。
+
+### B1 接口实施准备（2026-09-14 · 表示稿 0.2）
+
+- **已决与建议分开**：[MODULE_MAP §0.5](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions) 补入维护者确认的异步、已知取消/超时原因和线程亲和边界；[§0.9](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal) 同步为表示稿 0.2。它们不批准某个宏、Future 装箱或错误枚举；旧语义/历史源码区不重开。
+- **当前交接物**：本机 `.cursor/plans/six-slot-base-b1.plan.md` 保存主控的完整 B1 Rust 绑定建议、五文件写集、测试矩阵和止点，待用户转交 DeepSeek 4.1 Flash 落实。该目录被 Git 忽略，计划不是已提交文档或第二份语义 SSOT；跨机器交接须附全文，不能只转不存在的本机路径。桌面文档仍仅供 worker 回传。
+- **本轮边界**：仅同步 MODULE_MAP、本页和本地计划；不改 Rust、Cargo/现行 wire、技术债或已有中英/AI 导航改动，不 commit/push。Rust 建议尚未编译；不能称 B1 已实现、参考适配已完成或小 Kernel 已完工。文档门禁须对本轮文字重跑，前节 PASS 不升级为本轮证据。
+- **后续验收**：沿第一流水线，由主控复核实际公共签名、独立 Base-only 正负例及 G8 workspace doctest 等适用证据后再建本地回滚点。已决线程边界不再重复提问；新增公共承诺/兼容责任分叉仍须裁决。Event Stream/R7、R1–R4、Host 恢复/context 与真实流量继续暂停。
+- **本轮静态证据**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror、默认 Markdown 范围和上述两份文档/本地计划的显式链接检查通过；编码为 UTF-8 无 BOM/统一 LF，显式锚点无重复。台账、AI/中英导航及 MODULE_MAP 原职责/历史段哈希保持不变。只验证文档与保护范围，不表示 Rust 建议编译通过；Git 的 LF→CRLF 提示单独保留。
