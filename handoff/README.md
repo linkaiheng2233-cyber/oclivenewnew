@@ -1,8 +1,10 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-14。
+**最后更新**：2026-09-15。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
+
+**六槽 B1 当前交接状态**：见 [B1 本地收口](#six-slot-b1-closure)。本页较早的“待实施／尚未编译”属于当时记录，不是当前开工指令。
 
 ## 文档分责
 
@@ -169,8 +171,35 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 
 ### B1 接口实施准备（2026-09-14 · 表示稿 0.2）
 
+**历史实施准备记录；当前交付与未验证范围以 [B1 本地收口](#six-slot-b1-closure) 为准，以下原始证据保留。**
+
 - **已决与建议分开**：[MODULE_MAP §0.5](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions) 补入维护者确认的异步、已知取消/超时原因和线程亲和边界；[§0.9](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal) 同步为表示稿 0.2。它们不批准某个宏、Future 装箱或错误枚举；旧语义/历史源码区不重开。
 - **当前交接物**：本机 `.cursor/plans/six-slot-base-b1.plan.md` 保存主控的完整 B1 Rust 绑定建议、五文件写集、测试矩阵和止点，待用户转交 DeepSeek 4.1 Flash 落实。该目录被 Git 忽略，计划不是已提交文档或第二份语义 SSOT；跨机器交接须附全文，不能只转不存在的本机路径。桌面文档仍仅供 worker 回传。
 - **本轮边界**：仅同步 MODULE_MAP、本页和本地计划；不改 Rust、Cargo/现行 wire、技术债或已有中英/AI 导航改动，不 commit/push。Rust 建议尚未编译；不能称 B1 已实现、参考适配已完成或小 Kernel 已完工。文档门禁须对本轮文字重跑，前节 PASS 不升级为本轮证据。
 - **后续验收**：沿第一流水线，由主控复核实际公共签名、独立 Base-only 正负例及 G8 workspace doctest 等适用证据后再建本地回滚点。已决线程边界不再重复提问；新增公共承诺/兼容责任分叉仍须裁决。Event Stream/R7、R1–R4、Host 恢复/context 与真实流量继续暂停。
 - **本轮静态证据**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror、默认 Markdown 范围和上述两份文档/本地计划的显式链接检查通过；编码为 UTF-8 无 BOM/统一 LF，显式锚点无重复。台账、AI/中英导航及 MODULE_MAP 原职责/历史段哈希保持不变。只验证文档与保护范围，不表示 Rust 建议编译通过；Git 的 LF→CRLF 提示单独保留。
+
+<a id="six-slot-b1-closure"></a>
+
+### B1 本地收口（2026-09-15）
+
+**状态：B1 独立 Base Rust 绑定与 Base-only 夹具已实现、主控复核并本地验收（Locally verified）；生产适配与旧 Host 接线未实施。** 这是 B1 切片收口，不是小 Kernel 全部完工、稳定 API 发布或参考 Host 全量合规证明。语义定义仍由 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 拥有，本节只记录实现与验收范围。
+
+- **代码回滚点**：`b19622f5496bb8931cfc0459f6206b2e21ee0176`，`feat(kernel): add independent six-slot Base bindings`；父基线 `0547c5b10fa008e328f5ca883743cb51fba0b41f`。本地提交，未 push；本节不提供远端 CI 通过结论。
+- **精确代码范围**：[types 请求／错误](../kernel/crates/oclive_kernel_types/src/slot_base.rs)、[contracts 六个 trait／BaseCallFuture](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)、[独立夹具](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)，以及两个 crate 的 `lib.rs` 显式导出。共五文件；旧接口、现行 wire、Cargo 配置／锁文件和 Host 行为未改。
+- **验证证明到哪里**：受控内存夹具覆盖六槽独立接入、显式材料选择、空结果／错误、Prompt 逐字直通、线程亲和与栈借用、Pending 唤醒及可选增强；不由此推导真实 I/O 调度、跨线程适配、取消传播、远端停止或领域／外部效果恢复。公开 rustdoc 的共同绑定说明及六 trait 链接已检查。
+
+以下为主控在上述代码提交前实际重跑并验收的证据；本次文档收尾未把它们重标为新一轮 Rust 测试：
+
+| 验证 | 命令与结果 |
+|---|---|
+| 局部测试 | `cargo test --locked --offline -p oclive_kernel_types --lib -j 1`：46 passed；`-p oclive_kernel_contracts --lib -j 1`：3 passed；`-p oclive_kernel_contracts --test base_only_fixture -j 1`：16 passed；均 exit 0 |
+| 公共文档示例 | `cargo test --locked --offline --workspace --doc -j 1`：exit 0；contracts 11 passed（含两项 compile-fail）。`oclive_validation_wasm` 的 cdylib doctest 不支持警告保留，不计为已执行测试 |
+| 静态／边界门禁 | `cargo clippy --locked --offline -p oclive_kernel_types -p oclive_kernel_contracts --all-targets -j 1 -- -D warnings`、`cargo fmt --all -- --check`、`check-domain-layering.mjs`、`npm run check:module-compat`、`check-stale-paths.mjs`、`git diff --check` 均 exit 0 |
+| 公开文档 | `cargo doc --locked --offline -p oclive_kernel_contracts -p oclive_kernel_types --no-deps -j 1`：exit 0；另检查公开页面与链接，不仅以构建成功作为可见性证据 |
+
+worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验证；主控检查断言并重跑最终版本，未声称亲自重复该临时变异实验。桌面交接文档保存原回传，本页不复制全部实验记录。
+
+**本次收尾文档检查**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror，以及四份已改导航文档／本地历史计划的显式 Markdown 链接检查均通过。中英新增导航人工对照；镜像／链接门禁不替代语义审查。本次不重跑 Rust，也不改 MODULE_MAP、技术债状态或代码；Git 的 LF→CRLF 提示不计为编码损坏。
+
+**接续止点**：B1 不再重复实施。本机忽略目录中的旧计划已标为历史执行稿；跨机器交接以本节、代码提交和夹具为准，不依赖该本机文件。B2／生产 Adapter／旧 Host 接线须另行确定范围并授权；不因 B1 完成自动删除旧方法、改产品 fallback、承诺全部增强或把 `K-CORE-BOUNDARY-01` 标为 Done。未运行 Host 全量回归、服务、真实模型、数据库实验或外部流量；Event Stream/R7、R1–R4 及 Host 恢复/context 修复继续暂停。
