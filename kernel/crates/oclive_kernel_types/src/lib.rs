@@ -45,6 +45,7 @@ pub mod proactive_event;
 pub mod prompt;
 pub mod runtime_event_stream;
 pub mod runtime_event_trace;
+pub mod slot_base;
 pub mod slot_extension;
 
 pub use agent::{
@@ -88,6 +89,12 @@ pub use runtime_event_stream::{
 pub use runtime_event_trace::{
     RuntimeEventTraceDiagnostics, RuntimeEventTraceErrorKind,
     RUNTIME_EVENT_TRACE_DIAGNOSTICS_SCHEMA_VERSION,
+};
+// Six-slot Base requests and call-failure carrier (B1 surface; `handoff/MODULE_MAP_AND_HANDOFF.md` §0.4–§0.9).
+// Added alongside the legacy DTOs above, without changing them.
+pub use slot_base::{
+    AgentBaseRequest, BaseCallError, BaseCallErrorKind, EmotionBaseRequest, EventBaseRequest,
+    LlmBaseRequest, MemoryBaseRequest, PromptBaseRequest,
 };
 pub use slot_extension::SlotExtension;
 

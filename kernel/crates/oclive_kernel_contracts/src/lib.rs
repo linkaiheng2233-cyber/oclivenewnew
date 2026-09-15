@@ -57,6 +57,7 @@ pub mod reply_post_processor;
 pub(crate) mod repository;
 pub(crate) mod resource_coordination;
 pub(crate) mod slot_backend_factory;
+pub(crate) mod slot_base;
 pub(crate) mod slot_resolver;
 pub mod theater_director;
 pub(crate) mod user_emotion_analyzer;
@@ -91,6 +92,12 @@ pub use resource_coordination::{
     ResourceSnapshotSource,
 };
 pub use slot_backend_factory::SlotBackendFactoryPort;
+// Independent six-slot Base traits (B1 binding: `handoff/MODULE_MAP_AND_HANDOFF.md` §0.4–§0.9).
+// Added alongside the reference ports above; not wired into the reference Host yet, and no
+// legacy implementation is claimed to satisfy them.
+pub use slot_base::{
+    AgentBase, BaseCallFuture, EmotionBase, EventBase, LlmBase, MemoryBase, PromptBase,
+};
 pub use slot_resolver::SlotRegistryResolver;
 pub use theater_director::{
     TheaterDirectorBackendKind, TheaterDirectorEffectiveConfig, TheaterDirectorPromptProvider,
