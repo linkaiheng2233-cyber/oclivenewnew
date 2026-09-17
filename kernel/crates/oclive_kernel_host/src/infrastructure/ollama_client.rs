@@ -138,11 +138,184 @@ pub struct OllamaResponse {
     pub eval_count: Option<u64>,
 }
 
+/// Per-call knobs for one non-streaming request, as accepted by
+/// [`OllamaClient::generate_with_settings`].
+///
+/// This is the parameter bundle the legacy entry and the Base adapter share; it carries the
+/// caller's sampling values and optional Deep-session opts without inventing defaults of its own.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct OllamaGenerateSettings<'a> {
+    /// Caller-supplied temperature; `None` leaves the value out of the request `options`.
+    pub(crate) temperature: Option<f32>,
+    /// Caller-supplied `top_p`; `None` leaves the value out of the request `options`.
+    pub(crate) top_p: Option<f32>,
+    /// Optional Deep-session knobs (keep-alive, metrics, token/context caps).
+    pub(crate) opts: Option<&'a OllamaGenerateOpts>,
+}
+
+/// Result of one non-streaming call on the shared path.
+///
+/// It keeps the decoded body — including [`OllamaResponse::done`], which
+/// [`OllamaGenerateResult`] does not carry — next to the optional bench timings derived for this
+/// call. It is internal plumbing between the shared path and its two projections; it is not part of
+/// any public wire.
+#[derive(Debug)]
+pub(crate) struct OllamaCallResponse {
+    pub(crate) body: OllamaResponse,
+    pub(crate) metrics: OllamaGenerateMetrics,
+}
+
+impl OllamaCallResponse {
+    /// Builds the per-call value from an already decoded body; bench timings are derived only when
+    /// the call asked for metrics, exactly as the legacy entry did.
+    pub(crate) fn from_response(body: OllamaResponse, want_metrics: bool) -> Self {
+        let metrics = if want_metrics {
+            OllamaGenerateMetrics {
+                total_duration_ns: body.total_duration,
+                load_duration_ns: body.load_duration,
+                prompt_eval_duration_ns: body.prompt_eval_duration,
+                prompt_eval_count: body.prompt_eval_count,
+                eval_duration_ns: body.eval_duration,
+                eval_count: body.eval_count,
+            }
+        } else {
+            OllamaGenerateMetrics::default()
+        };
+        Self { body, metrics }
+    }
+
+    /// The legacy projection: exactly what [`OllamaGenerateResult`] carries, and nothing else.
+    ///
+    /// It deliberately does **not** look at [`OllamaResponse::done`]: the legacy entry never did,
+    /// and this repair does not change legacy behaviour. The real entry
+    /// ([`OllamaClient::generate_with_opts`]) calls this method, so a test can assert the legacy
+    /// projection of a given decoded body through the same function instead of a copy.
+    pub(crate) fn into_legacy_result(self) -> OllamaGenerateResult {
+        OllamaGenerateResult {
+            response: self.body.response,
+            metrics: self.metrics,
+        }
+    }
+
+    /// The provider completion check for the Base path, returning text or a human-readable reason.
+    ///
+    /// This is deliberately **not** part of the legacy entry: this provider's `POST /api/generate`
+    /// response carries `done`, so a call that came back with `done = false` did not finish
+    /// normally. With `done = true` the decoded text is returned verbatim — including empty or
+    /// whitespace-only text, which is a normal result and not an error here.
+    ///
+    /// `Ok` therefore means "this call returned text without violating this provider's completion
+    /// flag"; it says nothing about content quality, task success, domain commit, tool effects or
+    /// the end of any invocation.
+    pub(crate) fn project_base(self) -> std::result::Result<String, String> {
+        if !self.body.done {
+            return Err(
+                "incomplete Ollama response: done is false, generated text (if any) was not \
+                 returned as a normal result"
+                    .to_string(),
+            );
+        }
+        Ok(self.body.response)
+    }
+}
+
+/// One non-streaming call that did not complete normally, with the facts this layer could still read.
+///
+/// `known_timeout` is decided where the real `reqwest::Error` is still in hand, by asking that error
+/// whether it is a timeout. `error` keeps the original message so both projections can stay
+/// byte-compatible with the legacy text. Nothing downstream re-derives the reason from the message.
+#[derive(Debug)]
+pub(crate) struct OllamaCallFailure {
+    pub(crate) known_timeout: bool,
+    pub(crate) error: AppError,
+}
+
+impl OllamaCallFailure {
+    /// Projection for the legacy entries: the original [`AppError`], unchanged.
+    pub(crate) fn into_legacy_error(self) -> AppError {
+        self.error
+    }
+}
+
+/// Handles a `reqwest` error from one non-streaming step, keeping a timeout fact it already knows.
+///
+/// Both the `send()` and the body-read step go through this, so a timeout is recorded where the
+/// typed error exists rather than being inferred later from text. The error is borrowed, so the same
+/// value can still be formatted into the original message.
+fn transport_failure(e: &reqwest::Error, message: String) -> OllamaCallFailure {
+    OllamaCallFailure {
+        known_timeout: e.is_timeout(),
+        error: AppError::OllamaError(message),
+    }
+}
+
+/// Decodes the already-read body of a non-streaming response and derives its metrics.
+///
+/// This is the one place the status check, the body decoding and their error text live. The shared
+/// request path calls it; so do the unit tests, so an assertion about the 800 / 400 character
+/// truncation or about a missing field exercises production code rather than a copy of it.
+///
+/// # Errors
+///
+/// Returns [`AppError::OllamaError`] with the original message when the status is not successful or
+/// the body cannot be decoded as [`OllamaResponse`].
+pub(crate) fn decode_non_streaming_body(
+    status: reqwest::StatusCode,
+    body: &str,
+    base_url: &str,
+    model: &str,
+    want_metrics: bool,
+) -> Result<OllamaCallResponse> {
+    if !status.is_success() {
+        return Err(AppError::OllamaError(format!(
+            "HTTP {} — {} (请求: POST {}/api/generate, model={})",
+            status,
+            body.chars().take(800).collect::<String>(),
+            base_url,
+            model
+        )));
+    }
+
+    let ollama_response: OllamaResponse = serde_json::from_str(body).map_err(|e| {
+        AppError::OllamaError(format!(
+            "Failed to parse response: {} — body: {}",
+            e,
+            body.chars().take(400).collect::<String>()
+        ))
+    })?;
+
+    Ok(OllamaCallResponse::from_response(
+        ollama_response,
+        want_metrics,
+    ))
+}
+
 /// Ollama HTTP client.
 pub struct OllamaClient {
     base_url: String,
     client: Client,
     timeout: Duration,
+}
+
+/// Builds the `POST /api/generate` body for one non-streaming text-generation call.
+///
+/// This is the one place that body is assembled for the two text-generation entries. The shared
+/// request path and any test that needs the exact body both go through it, so the two cannot drift
+/// apart.
+pub(crate) fn non_streaming_request(
+    model: &str,
+    prompt: &str,
+    temperature: Option<f32>,
+    top_p: Option<f32>,
+    opts: Option<&OllamaGenerateOpts>,
+) -> OllamaRequest {
+    OllamaRequest {
+        model: model.to_string(),
+        prompt: prompt.to_string(),
+        stream: false,
+        options: OllamaRequestOptions::from_generate(temperature, top_p, opts),
+        keep_alive: opts.and_then(|o| o.keep_alive.clone()),
+    }
 }
 
 fn normalize_base_url(url: String) -> String {
@@ -293,15 +466,51 @@ impl OllamaClient {
         top_p: Option<f32>,
         opts: Option<&OllamaGenerateOpts>,
     ) -> Result<OllamaGenerateResult> {
-        let url = format!("{}/api/generate", self.base_url);
+        let response = self
+            .generate_with_settings(
+                model,
+                prompt,
+                OllamaGenerateSettings {
+                    temperature,
+                    top_p,
+                    opts,
+                },
+            )
+            .await
+            .map_err(OllamaCallFailure::into_legacy_error)?;
+        Ok(response.into_legacy_result())
+    }
 
-        let request = OllamaRequest {
-            model: model.to_string(),
-            prompt: prompt.to_string(),
-            stream: false,
-            options: OllamaRequestOptions::from_generate(temperature, top_p, opts),
-            keep_alive: opts.and_then(|o| o.keep_alive.clone()),
-        };
+    /// The non-streaming text-generation path these two entries share: request preparation, send,
+    /// body read, status check and decode.
+    ///
+    /// The legacy entry [`OllamaClient::generate_with_opts`] and the B2-C1 Base adapter both call
+    /// it, so there is one such chain for text generation rather than two. (Other non-streaming
+    /// requests in this module — `preload`, `list_models`, `create_model_from_path` — keep their own
+    /// paths and are untouched.) Callers that need the decoded body itself, or facts the
+    /// convenience type [`OllamaGenerateResult`] drops such as [`OllamaResponse::done`], can use
+    /// this method; those needing the legacy behaviour project through
+    /// [`OllamaCallResponse::into_legacy_result`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OllamaCallFailure`] — carrying whether the step itself knew the call timed out,
+    /// plus the original [`AppError::OllamaError`] message — when the request cannot be sent, the
+    /// body cannot be read, the HTTP status is not successful, or the body cannot be decoded as
+    /// [`OllamaResponse`].
+    pub(crate) async fn generate_with_settings(
+        &self,
+        model: &str,
+        prompt: &str,
+        settings: OllamaGenerateSettings<'_>,
+    ) -> std::result::Result<OllamaCallResponse, OllamaCallFailure> {
+        let OllamaGenerateSettings {
+            temperature,
+            top_p,
+            opts,
+        } = settings;
+        let url = format!("{}/api/generate", self.base_url);
+        let request = non_streaming_request(model, prompt, temperature, top_p, opts);
 
         let response = self
             .client
@@ -310,48 +519,24 @@ impl OllamaClient {
             .timeout(self.timeout)
             .send()
             .await
-            .map_err(|e| AppError::OllamaError(format!("Request failed: {}", e)))?;
+            .map_err(|e| transport_failure(&e, format!("Request failed: {}", e)))?;
 
         let status = response.status();
         let body = response
             .text()
             .await
-            .map_err(|e| AppError::OllamaError(format!("Failed to read response body: {}", e)))?;
+            .map_err(|e| transport_failure(&e, format!("Failed to read response body: {}", e)))?;
 
-        if !status.is_success() {
-            return Err(AppError::OllamaError(format!(
-                "HTTP {} — {} (请求: POST {}/api/generate, model={})",
-                status,
-                body.chars().take(800).collect::<String>(),
-                self.base_url,
-                model
-            )));
-        }
-
-        let ollama_response: OllamaResponse = serde_json::from_str(&body).map_err(|e| {
-            AppError::OllamaError(format!(
-                "Failed to parse response: {} — body: {}",
-                e,
-                body.chars().take(400).collect::<String>()
-            ))
-        })?;
-
-        let metrics = if opts.is_some_and(|o| o.want_metrics) {
-            OllamaGenerateMetrics {
-                total_duration_ns: ollama_response.total_duration,
-                load_duration_ns: ollama_response.load_duration,
-                prompt_eval_duration_ns: ollama_response.prompt_eval_duration,
-                prompt_eval_count: ollama_response.prompt_eval_count,
-                eval_duration_ns: ollama_response.eval_duration,
-                eval_count: ollama_response.eval_count,
-            }
-        } else {
-            OllamaGenerateMetrics::default()
-        };
-
-        Ok(OllamaGenerateResult {
-            response: ollama_response.response,
-            metrics,
+        decode_non_streaming_body(
+            status,
+            &body,
+            &self.base_url,
+            model,
+            opts.is_some_and(|o| o.want_metrics),
+        )
+        .map_err(|error| OllamaCallFailure {
+            known_timeout: false,
+            error,
         })
     }
     /// # Errors
@@ -624,5 +809,220 @@ mod tests {
         let result = client.health_check().await;
         assert!(result.is_ok());
         assert!(!result.unwrap());
+    }
+
+    /// B2-C1(R1): facts the shared non-streaming path must keep, how the two projections read
+    /// them, and what the production decode/error functions produce. No test here performs a
+    /// network call: the only transport facts are the ones this module already recorded before it
+    /// turned an error into text.
+    mod b2_c1 {
+        use super::super::{decode_non_streaming_body, OllamaCallResponse, OllamaResponse};
+
+        fn sample(response: &str, done: bool) -> String {
+            format!(
+                r#"{{"response":{},"model":"llama2","created_at":"2024-01-01T00:00:00Z","done":{done}}}"#,
+                serde_json::to_string(response).expect("sample text must encode")
+            )
+        }
+
+        /// Decodes through the production decode function (status 200, no metrics).
+        fn decode_ok(body: &str) -> OllamaCallResponse {
+            decode_non_streaming_body(
+                reqwest::StatusCode::OK,
+                body,
+                "http://localhost:11434",
+                "llama2",
+                false,
+            )
+            .expect("production decode must accept this sample")
+        }
+
+        /// The production HTTP-status error text for one non-success response.
+        fn http_error(status: reqwest::StatusCode, body: &str) -> String {
+            decode_non_streaming_body(status, body, "http://localhost:11434", "llama2", false)
+                .expect_err("non-success status must fail")
+                .to_string()
+        }
+
+        /// The production parse error text for one body.
+        fn parse_error(body: &str) -> String {
+            decode_non_streaming_body(
+                reqwest::StatusCode::OK,
+                body,
+                "http://localhost:11434",
+                "llama2",
+                false,
+            )
+            .expect_err("undecodable body must fail")
+            .to_string()
+        }
+
+        #[test]
+        fn b2_c1_decoded_body_keeps_the_done_flag() {
+            let incomplete = decode_ok(&sample("partial answer", false));
+            assert!(!incomplete.body.done);
+            assert_eq!(incomplete.body.response, "partial answer");
+
+            let complete = decode_ok(&sample("finished", true));
+            assert!(complete.body.done);
+        }
+
+        #[test]
+        fn b2_c1_completion_check_returns_complete_text_verbatim() {
+            for text in ["finished answer", "", "   ", "line one\nline two"] {
+                let call = decode_ok(&sample(text, true));
+                let projected = call.project_base().expect("done=true must return the text");
+                assert_eq!(projected, text, "text must not be trimmed or rewritten");
+            }
+        }
+
+        #[test]
+        fn b2_c1_legacy_projection_keeps_an_incomplete_response_successful() {
+            // Same decoded response, both real projections: the legacy entry keeps its old
+            // behaviour, the Base projection does not hand partial text back as a normal result.
+            for text in ["partial answer", ""] {
+                let legacy = decode_ok(&sample(text, false)).into_legacy_result();
+                assert_eq!(
+                    legacy.response, text,
+                    "legacy text must pass through unchanged"
+                );
+
+                let reason = decode_ok(&sample(text, false))
+                    .project_base()
+                    .expect_err("done=false must not return text");
+                assert!(
+                    reason.contains("done is false"),
+                    "reason should name the actual fact, got: {reason}"
+                );
+                assert!(
+                    text.is_empty() || !reason.contains(text),
+                    "the partial text must not be presented as a normal result"
+                );
+            }
+        }
+
+        #[test]
+        fn b2_c1_legacy_projection_keeps_complete_text_and_whitespace() {
+            for text in ["finished answer", "", "   ", "line one\nline two"] {
+                let legacy = decode_ok(&sample(text, true)).into_legacy_result();
+                assert_eq!(legacy.response, text, "legacy text must not be trimmed");
+            }
+        }
+
+        #[test]
+        fn b2_c1_metrics_cover_all_six_fields_and_both_switches() {
+            let body = r#"{
+                "response": "Hello there!",
+                "model": "llama2",
+                "created_at": "2024-01-01T00:00:00Z",
+                "done": true,
+                "total_duration": 1000000,
+                "load_duration": 12000000,
+                "prompt_eval_duration": 34000000,
+                "prompt_eval_count": 21,
+                "eval_duration": 56000000,
+                "eval_count": 12
+            }"#;
+
+            let wanted = decode_non_streaming_body(
+                reqwest::StatusCode::OK,
+                body,
+                "http://localhost:11434",
+                "llama2",
+                true,
+            )
+            .expect("production decode must accept this sample");
+            let m = &wanted.metrics;
+            assert_eq!(m.total_duration_ns, Some(1_000_000));
+            assert_eq!(m.load_duration_ns, Some(12_000_000));
+            assert_eq!(m.prompt_eval_duration_ns, Some(34_000_000));
+            assert_eq!(m.prompt_eval_count, Some(21));
+            assert_eq!(m.eval_duration_ns, Some(56_000_000));
+            assert_eq!(m.eval_count, Some(12));
+            // the legacy millisecond conversions the old entry reports
+            assert_eq!(m.prompt_eval_ms(), Some(34));
+            assert_eq!(m.load_ms(), Some(12));
+
+            let unwanted = decode_ok(body);
+            let n = &unwanted.metrics;
+            assert_eq!(n.total_duration_ns, None);
+            assert_eq!(n.load_duration_ns, None);
+            assert_eq!(n.prompt_eval_duration_ns, None);
+            assert_eq!(n.prompt_eval_count, None);
+            assert_eq!(n.eval_duration_ns, None);
+            assert_eq!(n.eval_count, None);
+            assert_eq!(n.prompt_eval_ms(), None);
+            // the response text is unaffected by the metrics switch
+            assert_eq!(unwanted.into_legacy_result().response, "Hello there!");
+        }
+
+        #[test]
+        fn b2_c1_non_success_status_uses_the_production_error_text() {
+            let cases = [
+                (reqwest::StatusCode::INTERNAL_SERVER_ERROR, "boom"),
+                (reqwest::StatusCode::NOT_FOUND, ""),
+                (reqwest::StatusCode::BAD_GATEWAY, "upstream 502"),
+            ];
+            for (status, body) in cases {
+                let text = http_error(status, body);
+                let expected = format!(
+                    "Ollama error: HTTP {} — {} (请求: POST http://localhost:11434/api/generate, model=llama2)",
+                    status,
+                    body.chars().take(800).collect::<String>()
+                );
+                assert_eq!(text, expected);
+            }
+        }
+
+        #[test]
+        fn b2_c1_http_error_truncates_at_800_chars_with_multibyte_text() {
+            // 1200 CJK characters: a byte-based cut would split a character, and a naive limit
+            // would keep far more than 800.
+            let body: String = "响".repeat(1200);
+            let text = http_error(reqwest::StatusCode::BAD_REQUEST, &body);
+            let kept: String = body.chars().take(800).collect();
+            assert!(text.contains(&kept), "800 characters must be kept intact");
+            assert_eq!(
+                text.matches('响').count(),
+                800,
+                "exactly 800 characters, not 800 bytes"
+            );
+            assert!(text.starts_with("Ollama error: HTTP 400 Bad Request — "));
+        }
+
+        #[test]
+        fn b2_c1_parse_error_uses_the_production_error_text_and_400_char_truncation() {
+            let truncated = "{\"response\":\"truncated\",\"model\":\"llama2\"";
+            let text = parse_error(truncated);
+            assert!(text.starts_with("Ollama error: Failed to parse response: "));
+            assert!(text.contains(" — body: "));
+            assert!(text.ends_with(truncated), "short bodies are kept in full");
+
+            let long_body: String = "甲".repeat(900);
+            let long_text = parse_error(&long_body);
+            let kept: String = long_body.chars().take(400).collect();
+            assert!(long_text.ends_with(&kept));
+            assert_eq!(long_text.matches('甲').count(), 400);
+        }
+
+        #[test]
+        fn b2_c1_missing_required_field_fails_through_the_production_decode() {
+            // The wire type requires response/model/created_at/done: omitting one is a decode
+            // failure, not a defaulted value.
+            let body = r#"{"response":"hi","model":"llama2","created_at":"2024-01-01T00:00:00Z"}"#;
+            let text = parse_error(body);
+            assert!(text.starts_with("Ollama error: Failed to parse response: "));
+            assert!(text.contains("done"));
+            assert!(text.ends_with(body));
+        }
+
+        #[test]
+        fn b2_c1_sample_must_actually_be_decodable() {
+            // Guards the samples above: the wire type requires response/model/created_at/done.
+            let decoded: OllamaResponse =
+                serde_json::from_str(&sample("x", true)).expect("sample must decode");
+            assert!(decoded.done);
+            assert_eq!(decoded.model, "llama2");
+        }
     }
 }
