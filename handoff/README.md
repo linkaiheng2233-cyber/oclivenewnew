@@ -203,3 +203,19 @@ worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验
 **本次收尾文档检查**：`git diff --check`、doc registry、stale-paths（docs-only）、doc mirror，以及四份已改导航文档／本地历史计划的显式 Markdown 链接检查均通过。中英新增导航人工对照；镜像／链接门禁不替代语义审查。本次不重跑 Rust，也不改 MODULE_MAP、技术债状态或代码；Git 的 LF→CRLF 提示不计为编码损坏。
 
 **接续止点**：B1 不再重复实施。本机忽略目录中的旧计划已标为历史执行稿；跨机器交接以本节、代码提交和夹具为准，不依赖该本机文件。B2／生产 Adapter／旧 Host 接线须另行确定范围并授权；不因 B1 完成自动删除旧方法、改产品 fallback、承诺全部增强或把 `K-CORE-BOUNDARY-01` 标为 Done。未运行 Host 全量回归、服务、真实模型、数据库实验或外部流量；Event Stream/R7、R1–R4 及 Host 恢复/context 修复继续暂停。
+
+<a id="six-slot-b2-adaptation"></a>
+
+### 六槽 Base 逐槽参考适配状态（2026-09-17）
+
+**范围**：本节点只登记逐槽 Base 参考适配的实施与验收状态、源码入口和接线止点。六槽语义定义仍由 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 拥有，本节不复制槽位定义，也不把任一片的完成写成六槽完工、Stable 发布或参考 Host 已迁移。
+
+| 片 | 状态 | 源码入口 | 接线止点 |
+|---|---|---|---|
+| B2-C1 LLM | 主控本地验收并已提交（`62072037a7d82996721e94463960e32851dba341`，`feat(kernel): add independently verified Ollama Base adapter`，982+/65−） | [具体 Ollama 非流式适配](../kernel/crates/oclive_kernel_host/src/infrastructure/base_llm.rs) | 具体类型 `OllamaBaseAdapter`，未注册到任何 Host；生产装配、观察/资源包装与远端授权链均未接入 |
+| B2-C2 Memory | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_memory.rs)、[共享字面匹配 rule](../kernel/crates/oclive_kernel_runtime/src/domain/memory_engine.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_memory.rs) | `KeywordMemoryBase` 只处理本次显式材料与字面查询；未接 `slot_runner`／`AppState`／数据库／插件路径，旧 `rank_memories` 与 `MemoryRetrieval` 未改 |
+| 后续 Prompt / Emotion / Event / Agent | 未开始 | — | 逐槽独立任务与验收；旧路径无法诚实适配时保留明确限制，不为凑齐六个实现返回默认值或扩 Base |
+
+**推进口径**：每片主控验收后独立本地提交，再进入下一槽；顺序是工程推进顺序，不是 Kernel 执行流水线。生产接线、旧接口整体迁移、ChatPro 接入与远端 CI 结论都不由本节点推断。
+
+**B2-C2 主控验收（2026-09-17）**：实际重跑 runtime 的 `b2_c2_` 单测 10 项、`base_memory` 集成测试 3 项、`domain::memory_engine::tests` 14 项（与前述 10 项有重叠，不相加作独立用例数）、`domain::memory_retrieval::tests` 2 项，以及 B1 `base_only_fixture` 16 项，均通过；`cargo test --locked --offline --workspace --doc -j 1`、runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-paths/doc-registry/Markdown 链接与 diff 检查通过。runtime rustdoc 构建通过并实查公开模块/类型页面、边界正文和链接；保留 5 条未改文件上的既有警告，不记为零警告。生产匹配 helper 的共享调用、原文/顺序/重复保留和受保护文件哈希经源码复核。worker 的 runtime 全量 211 项记录仅作补充，未冒充主控重跑；未运行真实 I/O、模型、Host 产品链或网络探测。本片不证明语义检索、持久化恢复或旧 Host 已迁移。

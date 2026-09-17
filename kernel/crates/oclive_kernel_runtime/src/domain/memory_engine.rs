@@ -39,12 +39,19 @@ impl MemoryEngine {
         self.short_term.clear();
     }
 
+    /// Selects the memories whose content contains `keyword`, using this crate's literal text
+    /// matching rule.
+    ///
+    /// The keyword is lower-cased once per call and matched without trimming, tokenising or
+    /// interpreting it (see the crate-internal `matches_keyword_literal` rule). Matches keep their
+    /// input order and duplicates; an empty keyword selects every entry. Callers get full
+    /// [`Memory`] values, so this keeps working for paths that need ids and weights.
     #[must_use]
     pub fn search_memories(keyword: &str, memories: &[Memory]) -> Vec<Memory> {
         let keyword_lower = keyword.to_lowercase();
         memories
             .iter()
-            .filter(|m| m.content.to_lowercase().contains(&keyword_lower))
+            .filter(|m| matches_keyword_literal(&m.content, &keyword_lower))
             .cloned()
             .collect()
     }
@@ -302,6 +309,24 @@ impl Default for MemoryEngine {
     }
 }
 
+/// The literal text-matching rule this crate's memory search uses.
+///
+/// `keyword` is expected already lower-cased by the caller; each candidate is lower-cased here and
+/// compared with [`str::contains`]. The rule is a plain substring search:
+///
+/// - it does not trim, tokenise, stem, normalise Unicode, expand synonyms or interpret the keyword
+///   as an instruction, a pattern or a query language;
+/// - the keyword is matched against the whole candidate, so an empty keyword selects every
+///   candidate, including empty ones;
+/// - matches keep their input order, their duplicates and their original text.
+///
+/// It is the single implementation of that rule: the legacy [`MemoryEngine::search_memories`] and
+/// the Base reference implementation in [`super::base_memory`] both call it, so neither can drift
+/// apart from the other.
+pub(super) fn matches_keyword_literal(candidate: &str, keyword_lower: &str) -> bool {
+    candidate.to_lowercase().contains(keyword_lower)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -359,6 +384,65 @@ mod tests {
 
         let results = MemoryEngine::search_memories("咖啡", &memories);
         assert_eq!(results.len(), 1);
+    }
+
+    /// B2-C2: the shared literal-matching helper is the rule the legacy search actually uses.
+    ///
+    /// The helper takes an already lower-cased keyword by contract, so callers lower-case once (the
+    /// legacy search does that in [`MemoryEngine::search_memories`]). The expectation comes from
+    /// spelling out the documented rule for chosen fixtures, not from calling the helper twice.
+    #[test]
+    fn b2_c2_literal_matcher_is_a_plain_lowercased_substring_test() {
+        assert!(matches_keyword_literal("Alice 不喜欢咖啡", "咖啡"));
+        assert!(matches_keyword_literal("Coffee", "coffee"));
+        // Callers lower-case first, so an upper-cased query reaches the helper lower-cased.
+        assert!(matches_keyword_literal("coffee", &"COFFEE".to_lowercase()));
+        assert!(!matches_keyword_literal("Coffee", "tea"));
+        // Empty keyword: the documented rule selects everything, including empty text.
+        assert!(matches_keyword_literal("", ""));
+        assert!(matches_keyword_literal("anything", ""));
+        // No trimming and no tokenising: the keyword is compared as written.
+        assert!(!matches_keyword_literal("coffee", " coffee"));
+        assert!(!matches_keyword_literal("coffee", "cof fee"));
+        // A term that looks like an instruction is still a literal substring.
+        assert!(!matches_keyword_literal("咖啡", "请排除咖啡"));
+    }
+
+    /// B2-C2: the legacy search keeps its signature, its full `Memory` values, its input order, its
+    /// duplicates and its empty-keyword behaviour after the extraction.
+    #[test]
+    fn b2_c2_legacy_search_keeps_order_duplicates_and_fields() {
+        let memories = vec![
+            create_test_memory("second", "Coffee again", 0.9),
+            create_test_memory("first", "咖啡与牛奶", 0.1),
+            create_test_memory("dup", "Coffee again", 0.2),
+        ];
+
+        let hits = MemoryEngine::search_memories("coffee", &memories);
+        assert_eq!(
+            hits.len(),
+            2,
+            "case-insensitive literal match, duplicates kept"
+        );
+        assert_eq!(hits[0].id, "second");
+        assert_eq!(hits[1].id, "dup");
+        // fields survive the projection to full Memory values
+        assert_eq!(hits[0].content, "Coffee again");
+        assert_eq!(hits[0].importance, 0.9);
+        assert_eq!(hits[0].role_id, "test_role");
+
+        let all = MemoryEngine::search_memories("", &memories);
+        assert_eq!(
+            all.len(),
+            memories.len(),
+            "empty keyword selects every entry"
+        );
+
+        let none = MemoryEngine::search_memories("unrelated", &memories);
+        assert!(none.is_empty());
+
+        let empty_input: Vec<Memory> = Vec::new();
+        assert!(MemoryEngine::search_memories("", &empty_input).is_empty());
     }
 
     #[test]
