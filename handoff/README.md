@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-15。
+**最后更新**：2026-09-18。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽 B1 当前交接状态**：见 [B1 本地收口](#six-slot-b1-closure)。本页较早的“待实施／尚未编译”属于当时记录，不是当前开工指令。
@@ -206,7 +206,7 @@ worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验
 
 <a id="six-slot-b2-adaptation"></a>
 
-### 六槽 Base 逐槽参考适配状态（2026-09-17）
+### 六槽 Base 逐槽参考适配状态（2026-09-18）
 
 **范围**：本节点只登记逐槽 Base 参考适配的实施与验收状态、源码入口和接线止点。六槽语义定义仍由 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 拥有，本节不复制槽位定义，也不把任一片的完成写成六槽完工、Stable 发布或参考 Host 已迁移。
 
@@ -214,8 +214,13 @@ worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验
 |---|---|---|---|
 | B2-C1 LLM | 主控本地验收并已提交（`62072037a7d82996721e94463960e32851dba341`，`feat(kernel): add independently verified Ollama Base adapter`，982+/65−） | [具体 Ollama 非流式适配](../kernel/crates/oclive_kernel_host/src/infrastructure/base_llm.rs) | 具体类型 `OllamaBaseAdapter`，未注册到任何 Host；生产装配、观察/资源包装与远端授权链均未接入 |
 | B2-C2 Memory | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_memory.rs)、[共享字面匹配 rule](../kernel/crates/oclive_kernel_runtime/src/domain/memory_engine.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_memory.rs) | `KeywordMemoryBase` 只处理本次显式材料与字面查询；未接 `slot_runner`／`AppState`／数据库／插件路径，旧 `rank_memories` 与 `MemoryRetrieval` 未改 |
-| 后续 Prompt / Emotion / Event / Agent | 未开始 | — | 逐槽独立任务与验收；旧路径无法诚实适配时保留明确限制，不为凑齐六个实现返回默认值或扩 Base |
+| B2-C3 Prompt | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_prompt.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_prompt.rs) | `LiteralMaterialAssembler` **只接受严格空字符串 `requirements`**（非空一律 `Unsupported`，不做包含判定）；空要求时按输入顺序逐字连接材料。未接 `slot_runner`／`AppState`／ChatPro；旧 `PromptBuilder`、`PromptAssembler` 端口与 Host 调用链未改 |
+| 后续 Emotion / Event / Agent | 未开始 | — | 逐槽独立任务与验收；旧路径无法诚实适配时保留明确限制，不为凑齐六个实现返回默认值或扩 Base |
 
 **推进口径**：每片主控验收后独立本地提交，再进入下一槽；顺序是工程推进顺序，不是 Kernel 执行流水线。生产接线、旧接口整体迁移、ChatPro 接入与远端 CI 结论都不由本节点推断。
 
 **B2-C2 主控验收（2026-09-17）**：实际重跑 runtime 的 `b2_c2_` 单测 10 项、`base_memory` 集成测试 3 项、`domain::memory_engine::tests` 14 项（与前述 10 项有重叠，不相加作独立用例数）、`domain::memory_retrieval::tests` 2 项，以及 B1 `base_only_fixture` 16 项，均通过；`cargo test --locked --offline --workspace --doc -j 1`、runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-paths/doc-registry/Markdown 链接与 diff 检查通过。runtime rustdoc 构建通过并实查公开模块/类型页面、边界正文和链接；保留 5 条未改文件上的既有警告，不记为零警告。生产匹配 helper 的共享调用、原文/顺序/重复保留和受保护文件哈希经源码复核。worker 的 runtime 全量 211 项记录仅作补充，未冒充主控重跑；未运行真实 I/O、模型、Host 产品链或网络探测。本片不证明语义检索、持久化恢复或旧 Host 已迁移。
+
+**B2-C3 主控验收（2026-09-18）**：复核 §58 返修版本并实际重跑 runtime `b2_c3_` 8 项、`base_prompt` 外部测试 6 项、旧 `domain::prompt_builder::tests` 42 项、`base_memory` 外部测试 3 项与 B1 `base_only_fixture` 16 项，均通过；显式复用同一实例的成功→Unsupported→再成功测试已落实。`cargo test --locked --offline --workspace --doc -j 1` 通过：contracts 11、host 2、runtime 6、types 16、validation 3；本片模块示例实际运行并严格断言，类型示例仅编译，不能把 runtime 6 项都算成本片运行证据。保留 validation wasm 的 cdylib 不支持 doctest 提示，不计为已执行测试。
+
+runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-paths/doc-registry、本页 Markdown 链接与 diff 检查均通过；runtime rustdoc 构建及公开模块/类型页面的示例、边界正文和互链实查通过，5 条警告均在未改文件。主控核对生产逻辑与公共面没有随返修扩大，§58 对此前编译/执行及调用序列证据的更正成立；桌面旧全文前缀核对一致。本片只证明有限参考实现与独立调用，不证明任意自然语言组装要求、抗提示注入、Host 产品链或真实模型效果；未运行 Host 全量、宽 CI、模型/服务/网络/数据库实验，未 push，冻结项不变。

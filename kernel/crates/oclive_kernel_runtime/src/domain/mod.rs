@@ -2,6 +2,7 @@
 
 pub mod affect_policy;
 pub mod base_memory;
+pub mod base_prompt;
 pub mod builtin_reply_post_processor;
 pub mod chat_engine;
 pub mod chat_llm_fallback;
