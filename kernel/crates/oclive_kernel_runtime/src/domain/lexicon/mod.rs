@@ -310,9 +310,13 @@ fn match_ascii_word_boundary(haystack: &str, needle: &str) -> Option<usize> {
 fn english_negation_before(prefix: &str) -> bool {
     let trimmed =
         prefix.trim_end_matches(|ch: char| !ch.is_ascii_alphanumeric() && ch != '\'' && ch != '’');
+    // The same separator predicate as before, but the separator's *width* is kept: the token starts
+    // after the whole character, so `trimmed[index + ch.len_utf8()..]` is always a char boundary.
     let token_start = trimmed
-        .rfind(|ch: char| !ch.is_ascii_alphanumeric() && ch != '\'' && ch != '’')
-        .map_or(0, |index| index + 1);
+        .char_indices()
+        .rev()
+        .find(|(_, ch)| !ch.is_ascii_alphanumeric() && *ch != '\'' && *ch != '’')
+        .map_or(0, |(index, ch)| index + ch.len_utf8());
     let token = &trimmed[token_start..];
     matches!(token, "no" | "not" | "never") || token.ends_with("n't") || token.ends_with("n’t")
 }
@@ -518,5 +522,149 @@ mod tests {
         assert_eq!(score(&suggestion, EmotionDimension::Anger), 0.0);
         assert_eq!(score(&suggestion, EmotionDimension::Neutral), 1.0);
         assert_eq!(top1(&suggestion), EmotionDimension::Neutral);
+    }
+
+    // ===== B2-C4-R1: UTF-8 boundary regression on the shared negation helper =====
+    //
+    // `is_negated` calls `english_negation_before` for every hit, regardless of the entry's
+    // `match_mode`, so a multi-byte character before an English token used to reach a byte slice
+    // that started inside a character. These tests use the real `Lexicon::analyze` and the real
+    // helper; they do not reference `KeywordEmotionBase`, so the shared fix stays independently
+    // committable.
+
+    /// The rule marker of the hit for `word`, or `None` when that entry did not match.
+    fn hit_negated(suggestion: &LexiconSuggestion, word: &str) -> Option<bool> {
+        suggestion
+            .hits
+            .iter()
+            .find(|hit| hit.word == word)
+            .map(|hit| hit.negated)
+    }
+
+    /// The labels of the hit for `word`, or `None` when that entry did not match.
+    fn hit_labels(suggestion: &LexiconSuggestion, word: &str) -> Option<Vec<EmotionDimension>> {
+        suggestion
+            .hits
+            .iter()
+            .find(|hit| hit.word == word)
+            .map(|hit| hit.labels.clone())
+    }
+
+    /// The words of all hits, in the order `Lexicon::analyze` produced them.
+    fn hit_words(suggestion: &LexiconSuggestion) -> Vec<String> {
+        suggestion.hits.iter().map(|hit| hit.word.clone()).collect()
+    }
+
+    #[test]
+    fn b2_c4_utf8_mixed_material_is_analysed_without_panicking() {
+        // The original C4 counter-example: two subjects, one multi-byte comma, two Chinese entries.
+        let suggestion = analyze("Alice 很难过，Bob 很开心");
+        assert_eq!(
+            hit_negated(&suggestion, "开心"),
+            Some(false),
+            "the joy entry must match and stay unnegated: {:?}",
+            suggestion.hits
+        );
+        assert_eq!(hit_negated(&suggestion, "难过"), Some(false));
+        assert!(
+            !suggestion.hits.iter().any(|hit| hit.negated),
+            "no rule marker may fire in this material: {:?}",
+            suggestion.hits
+        );
+
+        // A *Chinese* substring entry after a multi-byte character reaches the same helper.
+        let suggestion = analyze("中a开心");
+        assert_eq!(
+            hit_negated(&suggestion, "开心"),
+            Some(false),
+            "the Chinese substring entry must match: {:?}",
+            suggestion.hits
+        );
+        assert_eq!(
+            hit_labels(&suggestion, "开心"),
+            Some(vec![EmotionDimension::Joy])
+        );
+
+        // Mixed script before an English space-boundary entry.
+        let suggestion = analyze("中a happy");
+        assert_eq!(hit_negated(&suggestion, "happy"), Some(false));
+        assert_eq!(
+            hit_labels(&suggestion, "happy"),
+            Some(vec![EmotionDimension::Joy])
+        );
+
+        // Multi-byte text followed by an English entry, with nothing else matching.
+        let suggestion = analyze("中文，happy");
+        assert_eq!(
+            hit_words(&suggestion),
+            vec!["happy".to_string()],
+            "only the English entry matches here: {:?}",
+            suggestion.hits
+        );
+        assert_eq!(hit_negated(&suggestion, "happy"), Some(false));
+        assert_eq!(score(&suggestion, EmotionDimension::Joy), 1.0);
+    }
+
+    #[test]
+    fn b2_c4_utf8_english_negation_tokens_still_fire_after_multibyte_text() {
+        let cases = [
+            ("中文，not happy", "happy", true),
+            ("中文，not 开心", "开心", true),
+            ("中a not happy", "happy", true),
+            ("中文，happy", "happy", false),
+        ];
+        for (text, word, expected) in cases {
+            let suggestion = analyze(text);
+            assert_eq!(
+                hit_negated(&suggestion, word),
+                Some(expected),
+                "{text:?} must report is_negated={expected} for {word:?}: {:?}",
+                suggestion.hits
+            );
+        }
+    }
+
+    #[test]
+    fn b2_c4_utf8_helper_boundary_table() {
+        // The token must start after the *whole* separator character, whatever its UTF-8 width,
+        // and the existing separator predicate / token set must be unchanged.
+        let cases = [
+            ("énot", true),    // 2-byte separator
+            ("，never", true), // 3-byte separator
+            ("🙂not", true),   // 4-byte separator
+            (" not", true),    // 1-byte ASCII separator
+            ("not", true),     // no separator at all
+            ("", false),       // empty prefix
+            ("，", false),     // separator only, empty token
+            ("， ", false),    // separator plus trailing separator
+            ("中文，not", true),
+            ("；never", true),
+            ("isn't", true),
+            ("isn’t", true),
+            ("'not", false), // straight apostrophe is not a separator; token becomes "'not"
+            ("’not", false), // curly apostrophe is not a separator either
+            ("，happy", false),
+            ("，nothing", false),
+        ];
+        for (prefix, expected) in cases {
+            assert_eq!(
+                english_negation_before(prefix),
+                expected,
+                "english_negation_before({prefix:?})"
+            );
+        }
+    }
+
+    #[test]
+    fn b2_c4_utf8_hits_order_is_lexicon_order_in_mixed_material() {
+        // Fact recorded here because it shapes the C4 assertions: in this material the entries that
+        // actually match are the Chinese ones (`开心` inside `很开心`, `难过` inside `很难过`), not
+        // the English words, and the order is the lexicon's traversal order — not text order.
+        let suggestion = analyze("Alice 很难过，Bob 很开心");
+        assert_eq!(
+            hit_words(&suggestion),
+            vec!["开心".to_string(), "难过".to_string()],
+            "hits must keep the lexicon's traversal order (text order is the reverse)"
+        );
     }
 }
