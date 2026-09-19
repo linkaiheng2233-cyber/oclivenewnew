@@ -3,6 +3,7 @@
 pub mod affect_policy;
 pub mod base_agent;
 pub mod base_emotion;
+pub mod base_event;
 pub mod base_memory;
 pub mod base_prompt;
 pub mod builtin_reply_post_processor;
