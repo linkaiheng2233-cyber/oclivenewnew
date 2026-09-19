@@ -2,7 +2,7 @@
 
 **范围澄清（2026-09-11）**：本文带你读现有 Rust **参考 Host** 的主链、持久化与 wiring；历史标题不表示这些都属于小 Kernel。先看 [权责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map)，再按下文学习。固定 stage、DB 提交和角色运行态是当前装配事实，不是新公共契约。
 
-> **最后更新**：2026-09-15
+> **最后更新**：2026-09-19
 > **读者**：准备改 `process_message` / 持久化 / 插件 wiring 的内核贡献者。  
 > **读完能做什么**：按时间盒读完主链；完成第一个 domain 单测 PR 草稿。  
 > **耗时**：约 3–5 个工作日（维护者带教可 1–2 天）。  
@@ -13,6 +13,8 @@
 ---
 
 ## 内核 PR 前必读 Top 6
+
+**只想了解或接入新的 Base，不必先学完整 ChatPro。** 从 [B1 + B2 阶段总收口](../handoff/README.md#six-slot-stage-closure) 进入，再按 [逐槽实现／验收表](../handoff/README.md#six-slot-b2-adaptation) 查看源码、公开说明与独立调用测试；先确认该实现支持的输入和结果承诺是否适合你的用途。有限参考实现不等于全功能模块，Event 的真实模型分析质量及旧 Host 生产接线仍未验证；下面的 Day 1–5 继续只服务于参考 Host 开发。
 
 **如果你接着看六槽设计**：先读 [Base / Extension 边界](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 和 [已确认决策](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions)，再看 [统一模板候选](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate)、[逐槽审阅](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review)、[怎样组合小 Kernel 公共面](../handoff/MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) 与 [接口表达建议](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal)。基础契约是共同语言，不是模块能力上限；表示稿本身不替代现行 wire 或证明旧 Host 已适配。已实现的独立 Base Rust 绑定、示例和局部验收范围见 [B1 本地收口](../handoff/README.md#six-slot-b1-closure)，不等于稳定 API 发布或生产接线完成。下面的 Day 1–5 是参考 Host 的源码学习路线，不是要求先实现其全部领域系统才能接入六槽。
 

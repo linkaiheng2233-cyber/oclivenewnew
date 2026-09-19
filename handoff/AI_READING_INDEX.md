@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-15
+> **最后更新**：2026-09-19
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -229,6 +229,8 @@ Vue invoke / HTTP --api
 ### Kernel / 六槽 / Host 权责
 
 按以下顺序阅读；本节只提供导航，不复制权责事实：
+
+**接手当前阶段先读 [B1 + B2 总收口](README.md#six-slot-stage-closure) 与 [逐槽实现／验收表](README.md#six-slot-b2-adaptation)**：不重复开启已完成切片，不把历史待实施状态当作当前指令。下列候选正文仍用于理解语义，不以总收口代替真实模型质量、Host 接线或发布兼容验收。
 
 1. **候选与源码对照**：先读 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md#kernel-semantics-candidate) §0.2–§0.3，确认 2.2.1 候选的适用边界与当前实现差异；历史证据按其绑定 SHA 阅读，不因文档更新重标为本轮全量验证
 2. **接续六槽讨论**：读 [Base / Extension 已确认方向](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 与 [已确认的最低结果承诺](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions)，再审 [六槽统一模板候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate)、[逐槽/组合审阅](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review)、[小 Kernel 公共面组合](MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) 和 [接口表达建议](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal)；表示稿本身不替代现行 wire 或授权旧 Host 迁移。已实施的独立 Rust 绑定、源码入口、验收证据和止点另见 [B1 本地收口](README.md#six-slot-b1-closure)。不重复 B1 开工，也不将其扩大为全部参考接口已适配或稳定 API 已发布

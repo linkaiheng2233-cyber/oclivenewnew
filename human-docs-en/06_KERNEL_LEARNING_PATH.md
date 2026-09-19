@@ -2,13 +2,15 @@
 
 **Scope clarification (2026-09-11):** this guide follows the existing Rust **reference Host**, persistence, and wiring. The historical title does not put all of them inside the small Kernel. Start with the [responsibility/source map](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map); fixed stages, DB commits, and role runtime below are current assembly facts, not a new public contract.
 
-> **Last updated:** 2026-09-15
+> **Last updated:** 2026-09-19
 > **Audience:** Contributors touching `process_message`, persistence, or plugin wiring.  
 > **Full human edition (CN):** [human-docs/06](../human-docs/06_KERNEL_LEARNING_PATH.md) · **Module registry SSOT:** [MODULE_MAP_AND_HANDOFF.md](../handoff/MODULE_MAP_AND_HANDOFF.md)
 
 ---
 
 ## Top 6 before a kernel PR
+
+**You do not need to learn all of ChatPro before understanding or integrating the new Base surface.** Start with the [B1 + B2 stage closure](../handoff/README.md#six-slot-stage-closure), then use the [per-slot implementation and verification table](../handoff/README.md#six-slot-b2-adaptation) to find source, public documentation, and independent-call tests. First check whether the implementation's supported inputs and result commitments fit your use. Limited reference implementations are not full-featured modules; Event's real-model analysis quality and legacy Host production wiring remain unverified. Day 1–5 below still concerns reference Host development only.
 
 **Resuming the six-slot design:** read the [Base / Extension boundaries](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) and the [confirmed decisions](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions), followed by the [uniform per-slot candidate](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate), [per-slot review](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review), [composition of the small Kernel public surface](../handoff/MODULE_MAP_AND_HANDOFF.md#small-kernel-composition), and [interface representation proposal](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal). Base contracts provide a common language, not a ceiling on module capabilities. The representation draft itself neither replaces the current wire contract nor proves that the legacy Host has been adapted. See [B1 local closure](../handoff/README.md#six-slot-b1-closure) for the implemented independent Base Rust bindings, examples, and local verification scope; this is not a stable API release or completed production wiring. Day 1–5 below is a source-reading path for the reference Host, not a requirement to implement all its domain systems before integrating a slot.
 

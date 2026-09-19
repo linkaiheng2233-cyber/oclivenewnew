@@ -4,7 +4,7 @@
 **最后更新**：2026-09-19。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
-**六槽 B1 当前交接状态**：见 [B1 本地收口](#six-slot-b1-closure)。本页较早的“待实施／尚未编译”属于当时记录，不是当前开工指令。
+**六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
 
 ## 文档分责
 
@@ -183,6 +183,8 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 
 ### B1 本地收口（2026-09-15）
 
+**本节是 B1 当时的范围与验收记录；后续 B2 及当前止点见 [阶段总收口](#six-slot-stage-closure)。** 不用下面的“须另行授权”重复开启已经完成的 B2 切片。
+
 **状态：B1 独立 Base Rust 绑定与 Base-only 夹具已实现、主控复核并本地验收（Locally verified）；生产适配与旧 Host 接线未实施。** 这是 B1 切片收口，不是小 Kernel 全部完工、稳定 API 发布或参考 Host 全量合规证明。语义定义仍由 [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) 拥有，本节只记录实现与验收范围。
 
 - **代码回滚点**：`b19622f5496bb8931cfc0459f6206b2e21ee0176`，`feat(kernel): add independent six-slot Base bindings`；父基线 `0547c5b10fa008e328f5ca883743cb51fba0b41f`。本地提交，未 push；本节不提供远端 CI 通过结论。
@@ -219,7 +221,7 @@ worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验
 | B2-C5 Event | 主控本地验收通过（**限本片离线结构 Locally verified；真实分析质量未验证**；回滚点见本节 Git 历史） | [组合 LlmBase 的有限 Event 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_event.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_event.rs) | `LlmEventAnalyzer<'g>` 只**借用**装配方给定的 `&'g dyn LlmBase`（可为栈上、非 `'static`、非 `Send/Sync`），把本次 `material`/`context` 组织为一个只含这两项成员的 JSON 载荷并**每次调用至多生成一次**（无重试、无规则 fallback）；响应按**私有首行约定**投影：`ANALYSIS`+非空正文 ⇒ `Ok(Some(正文))`，严格 `NO_ANALYSIS`（可带一个行终止符）⇒ `Ok(None)` 只表示后端自报无适用分析，其余形状 ⇒ `Failed` 格式违约，后端 `Err` **原样传播**。不接 `slot_runner`／`AppState`／ChatPro／工具；**未绑定/未调用具体真实模型、未接 Host 产品链**（本实现确实委托 `LlmBase::generate`，生成调用本身存在）；未改 types/contracts、旧 `EventEstimator`/`event_impact_ai`/C1 与冻结项。**历史事实保留**：此前关键词路线（`StateChangeCueAnalyzer`）未获准入、未实施（见桌面 §63 与 C6 实施任务书 §2） |
 | B2-C6 Agent | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [有限纯计算 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_agent.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_agent.rs) | `ScalarCountAgent` **只承接唯一任务文本** `请统计材料中 Unicode 标量值的个数`（`trim` 后整句完全相等才匹配）；`context` 是**被计数的材料**（非空不拒绝），`None` 报「未提供计数材料」、`Some("")` 正确计为 0；`Unsupported` 是**唯一**错误来源（其余四类 N/A）。不接 `slot_runner`／`AppState`／ChatPro／工具／模型／MCP；旧 `AgentProvider`、`handled`、MCP 与权限链未改，也**未**因此证明兼容 |
 
-**推进口径**：每片主控验收后独立本地提交，再进入下一槽；顺序是工程推进顺序，不是 Kernel 执行流水线。生产接线、旧接口整体迁移、ChatPro 接入与远端 CI 结论都不由本节点推断。
+**推进口径**：各片已按独立本地提交推进，当前统一止于 [阶段总收口](#six-slot-stage-closure)，不再自动进入“下一槽”。该顺序是工程推进顺序，不是 Kernel 执行流水线。生产接线、旧接口整体迁移、ChatPro 接入与远端 CI 结论都不由本节点推断。
 
 **B2-C2 主控验收（2026-09-17）**：实际重跑 runtime 的 `b2_c2_` 单测 10 项、`base_memory` 集成测试 3 项、`domain::memory_engine::tests` 14 项（与前述 10 项有重叠，不相加作独立用例数）、`domain::memory_retrieval::tests` 2 项，以及 B1 `base_only_fixture` 16 项，均通过；`cargo test --locked --offline --workspace --doc -j 1`、runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-paths/doc-registry/Markdown 链接与 diff 检查通过。runtime rustdoc 构建通过并实查公开模块/类型页面、边界正文和链接；保留 5 条未改文件上的既有警告，不记为零警告。生产匹配 helper 的共享调用、原文/顺序/重复保留和受保护文件哈希经源码复核。worker 的 runtime 全量 211 项记录仅作补充，未冒充主控重跑；未运行真实 I/O、模型、Host 产品链或网络探测。本片不证明语义检索、持久化恢复或旧 Host 已迁移。
 
@@ -263,3 +265,45 @@ runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-pa
 **B2-C5 主控验收（2026-09-19，限离线结构）**：R1 的真实局部借用、跨 Pending 输入读取、独立完整输入预期、JSON 边界及错误传播已实读复核；主控在该 Rust 版本独立运行 `b2_c5_` 单测 **7**、`base_event` 外测 **4**、workspace doctest（runtime **13**／contracts **11**／host **2**／types **16**／validation **3**，Event 为 **1 运行 + 1 compile**）、runtime Clippy、fmt 检查、rustdoc 与文档检查，均通过。公开页面与模块链接已实查，**5 条既有 rustdoc 警告**均在未改文件。随后 R2 只修文档；主控最终复算三份 Rust 哈希不变，核对 C6 **2991 字符**连续历史块及 C4 完整历史块与基线一致，并重跑文档注册、本页链接与 diff 检查通过；**没有把前轮 Rust 测试记成本次文档收尾重新执行**。B1／相邻 Base／layering／module-compat／stale-paths 沿用原片记录，不扩大为主控新证据。
 
 **C5 收口范围与止点**：桌面 §70 及其前 **1309624 字节**身份已核对；§69 的格式化命令范围偏差与备份轮次更正保留，事后内容相符不独立证明历史动作时序。验收只覆盖该参考实现的输入组织、委托、语法投影、错误透明与独立借用调用；**真实模型分析质量、具体后端胜任性及 Host 产品链均未验证**，不宣布 Event 语义质量合格、Stable API 已发布或小 Kernel 全部完工。未接 ChatPro，未运行 runtime／Host 全量、宽 CI、模型／服务／网络／数据库实验，未 push；不改变 MODULE_MAP、公共契约或冻结项。
+
+<a id="six-slot-stage-closure"></a>
+
+### B1 + B2 阶段总收口（2026-09-19）
+
+**结论：本轮“边界收敛 → 独立 Base 绑定 → 六槽有限参考实现”阶段已本地收口，状态为 Locally verified。** 源码核对基线为 `e8b74b01b4080fddd51d0d003bf36df3247c70e7`；本次总收口只整理文档与复验既有独立调用，不修改 Rust、现行 wire 或产品行为。不以这一结论宣布全局最小性、全部实现合规、Stable 发布或物理拆分完成。
+
+| 层次 | 本阶段交付与证据入口 | 收口限度 |
+|---|---|---|
+| 职责与最低语义 | [MODULE_MAP §0.1–§0.9](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)；已决项、候选与历史源码证据保持各自效力 | 没有发现需重开既有权责的新反例；不将所有候选文字升级为已发布兼容规范 |
+| 独立 Rust 公共调用面 | [B1 代码、夹具与验收](#six-slot-b1-closure) | 已有可编译调用面；不是旧端口／wire 的替换，不等于独立最小 crate 或零外围依赖发行包 |
+| 六槽有限参考实现 | [逐槽表及各片验收](#six-slot-b2-adaptation) | 六槽均有具体实现与对应本地证据；只在各自声明范围内验收，不表示六个全功能模块，Event 特别限于离线结构 |
+| 旧 Host 与外围系统 | [源码职责对照](MODULE_MAP_AND_HANDOFF.md#kernel-source-map)、[技术债](TECHNICAL_DEBT_INVENTORY.md) | 本阶段没有完成旧 Host 迁移、产品接线、恢复治理或真实后端质量验收；不因总收口解冻 |
+
+**跨槽复核结果**（本次读源码和既有断言，不新增公共规则）：
+
+- 六个请求类型与六个单方法 trait 继续分开；共同绑定／错误以 B1 源码为准。无完整 Role、领域状态或统一权限句柄被加入基础请求；也不禁止 Host 显式提供领域文本。未调用、正常空内容与失败的已有区别未被参考实现的默认值覆盖。
+- `BaseCallFuture` 的借用、动态调用与非 `Send` 返回约束仍如实公开；不把它写成跨线程保证、取消协议、invocation 终态或新的 Authority 系统。已知错误保留与实际副作用、重试安全分别判断。
+- Event 借用 LLM 是 **`LlmEventAnalyzer` 的具体组合**，不是所有 Event 实现必须依赖 LLM，也没有引入 Emotion 前置要求。Prompt 的空 requirements、Emotion 的非空 context 拒绝、Memory 的字面匹配、Agent 的单一计数任务，以及 C1 的 Ollama 参数／完成判据，均为各自实现约定，不提升为 Kernel Base 限制。
+- C1 是独立具体适配器而非生产装配；C2–C6 不因拥有 `impl ...Base` 就证明旧 Host 已迁移。公开类型可调用、任务语义兑现、产品可用与外部效果是不同验收问题。旧方法未因新 Base 增加而被删除，未把参考实现的私有输出约定设为统一协议。
+
+**后续事项与重新开工条件**：
+
+| 事项 | 当前处理 | 何时另开工作 |
+|---|---|---|
+| 真实后端／分析质量 | 未验证，尤其 Event 的格式投影不能证明主体、否定、条件及 `NO_ANALYSIS` 判断正确 | 选定具体绑定、质量目标、数据和调用授权后做限定验证；不因此重开六槽定义 |
+| 旧 Host 适配、资源／权限包装和产品回归 | 未接线；不默认迁移，也不以源码能编译替代产品验收 | 维护者选定具体消费路径与允许的行为变化后单独立项 |
+| 公共发布、兼容版本和可选增强互通 | B1 已有实现；完整版本／协商／发布规则仍未定稿，未发布 Stable | 实际第三方发布或扩展互通需要时明确兼容责任；不预建注册表／协商框架 |
+| 物理打包／拆分及外围债务 | `K-CORE-BOUNDARY-01` 继续 OPEN；Host 恢复/context、Event Stream/R7、R1–R4 继续冻结 | 维护者独立授权；不把这些工作自动塞进本阶段，也不把延期当作风险消失 |
+
+**本轮同基线复验**（cwd 为仓库根；源码基线同上；以下是本轮新执行，不沿用 worker 数字）：
+
+| 命令 | 结果与证明范围 |
+|---|---|
+| `cargo test --locked --offline -p oclive_kernel_contracts --test base_only_fixture -j 1` | **16 passed**；B1 独立调用、错误、借用与增强边界的受控夹具 |
+| `cargo test --locked --offline -p oclive_kernel_runtime --test base_memory --test base_prompt --test base_emotion --test base_event --test base_agent -j 1` | **3 / 6 / 7 / 4 / 6 passed**，按命令中 target 顺序列出；五个有限实现的独立外部调用，Event 使用替身，不证明真实模型质量 |
+| `cargo test --locked --offline -p oclive_kernel_host --test base_llm_adapter -j 1` | **1 passed**；仅构造与公共借用调用，Future 不 poll、不发请求，不证明真实生成、超时或服务可达 |
+| 文档门禁 | `check-doc-registry.mjs`、`check-markdown-links.mjs`（仅本轮六份文档）、`check-stale-paths.mjs --docs-only`、`check-doc-mirror.mjs`、`git diff --check` 均 exit 0；新增中英文导航另做人工对应核对，不以镜像门禁替代语义审查 |
+
+合计 **43 项**来自上述互不重叠的 target，只说明这组定向回归通过，不是六槽全部能力、整个 workspace 或产品的覆盖率。各片单测、doctest、Clippy、rustdoc 与更广回归仍按原验收段的日期和执行者读取；本次纯文档未重新运行这些项目，也未运行 runtime／Host 全量、宽 CI、真实模型／网络／数据库实验。未变更公共 API，故不以文档收尾触发 G8 的新一轮 API 验收。
+
+**止点与防漂移**：本阶段不再无边界找样本或重复测绘。只有新的源码证据或具体使用需求足以挑战既有公共承诺时才局部重开；普通实现限制留在实现说明，外围问题追到足以划界即止。历史验收段保留原文与证据归属，当前状态以本节及逐槽表为入口。跨机器接手使用已跟踪源码／文档／Git 历史；忽略的本机计划和桌面交接是补充记录，不是调用或理解 Base 的必备输入。未 push，不提供当前远端 CI 结论。

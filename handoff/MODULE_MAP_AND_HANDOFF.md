@@ -1,10 +1,12 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-09-14
+**最后更新**：2026-09-19（仅补阅读效力提示；下方候选版本与历史证据基线未重标）
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · Kernel/Host 权责候选及定点源码对照 · 在边界内如何改**。
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
 **改本文的条件**：新增/重命名模块或设施、变更六槽合并规则、新增编排行能力（非六槽）、或术语混淆需补对照表。**禁止**在本文堆进度叙事或复制 PLUGIN_V1 全文。
+
+**阅读效力**：§0.4–§0.9 中“未冻结具体 Rust/API”等表述限定该概念／表示稿本身，不否定后续独立 B1 绑定的存在，也不表示整个 API 已作为 Stable 发布。实际绑定、有限参考实现与验收范围另见 [阶段总收口](README.md#six-slot-stage-closure)；实现不会反向将某个 provider、词表、任务词汇或私有协议升级为本文的共同要求。§0.3 行号仍绑定其历史 SHA，不因这条导航更新变为当前全仓证据。
 
 ---
 
