@@ -1,6 +1,7 @@
 //! Pure domain logic (no `AppState`, Tauri, or SQL). Orchestration glue stays in `oclive_kernel_host` (`chat_engine::process_message`).
 
 pub mod affect_policy;
+pub mod base_agent;
 pub mod base_emotion;
 pub mod base_memory;
 pub mod base_prompt;

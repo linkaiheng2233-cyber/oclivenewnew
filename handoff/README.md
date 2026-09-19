@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-18。
+**最后更新**：2026-09-19。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽 B1 当前交接状态**：见 [B1 本地收口](#six-slot-b1-closure)。本页较早的“待实施／尚未编译”属于当时记录，不是当前开工指令。
@@ -216,7 +216,8 @@ worker §49 的去掉唤醒后失败／还原后通过属于 worker 的负向验
 | B2-C2 Memory | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_memory.rs)、[共享字面匹配 rule](../kernel/crates/oclive_kernel_runtime/src/domain/memory_engine.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_memory.rs) | `KeywordMemoryBase` 只处理本次显式材料与字面查询；未接 `slot_runner`／`AppState`／数据库／插件路径，旧 `rank_memories` 与 `MemoryRetrieval` 未改 |
 | B2-C3 Prompt | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_prompt.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_prompt.rs) | `LiteralMaterialAssembler` **只接受严格空字符串 `requirements`**（非空一律 `Unsupported`，不做包含判定）；空要求时按输入顺序逐字连接材料。未接 `slot_runner`／`AppState`／ChatPro；旧 `PromptBuilder`、`PromptAssembler` 端口与 Host 调用链未改 |
 | B2-C4 Emotion | 主控本地验收通过（Locally verified；共享 UTF-8 修复与 C4 实现分开提交，回滚点见本节 Git 历史） | [原生 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_emotion.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_emotion.rs)、[共享边界回归](../kernel/crates/oclive_kernel_runtime/src/domain/lexicon/mod.rs) | `KeywordEmotionBase` 只报告本次材料的词表线索；无命中为 `Ok(None)`，中立条目命中仍有报告。非空 `context` 在分析前返回 `Unsupported`；材料内指令仍是数据。未接 Host／ChatPro，不把词表类别或否定标记升级为已确认的人物情绪；共享修复只改变分隔字符之后的 UTF-8 切片边界，未改词库、匹配／否定规则与旧七维映射 |
-| 后续 Event / Agent | 未开始 | — | 逐槽独立任务与验收；旧路径无法诚实适配时保留明确限制，不为凑齐六个实现返回默认值或扩 Base |
+| B2-C5 Event | **候选未准入，未实施；本轮停止该线** | — | 主控裁决：`StateChangeCueAnalyzer` 尚未给出子句分割、邻近窗口、重叠标记与跨句连接的可执行定义，不能由词面检出直接宣布完整框定/连接分析成立（见桌面交接 §63 与 C6 实施任务书 §2）。不选择自有词表、**不解冻 `event_detector.rs`**、不新增模型调用、不新建 `base_event`；Event 留作明确的未落实项，今后另定路线 |
+| B2-C6 Agent | 主控本地验收通过（Locally verified；回滚点见本节 Git 历史） | [有限纯计算 Base 实现](../kernel/crates/oclive_kernel_runtime/src/domain/base_agent.rs)、[外部调用闭环测试](../kernel/crates/oclive_kernel_runtime/tests/base_agent.rs) | `ScalarCountAgent` **只承接唯一任务文本** `请统计材料中 Unicode 标量值的个数`（`trim` 后整句完全相等才匹配）；`context` 是**被计数的材料**（非空不拒绝），`None` 报「未提供计数材料」、`Some("")` 正确计为 0；`Unsupported` 是**唯一**错误来源（其余四类 N/A）。不接 `slot_runner`／`AppState`／ChatPro／工具／模型／MCP；旧 `AgentProvider`、`handled`、MCP 与权限链未改，也**未**因此证明兼容 |
 
 **推进口径**：每片主控验收后独立本地提交，再进入下一槽；顺序是工程推进顺序，不是 Kernel 执行流水线。生产接线、旧接口整体迁移、ChatPro 接入与远端 CI 结论都不由本节点推断。
 
@@ -233,3 +234,18 @@ runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-pa
 `cargo test --locked --offline --workspace --doc -j 1` 通过：runtime **8**、contracts **11**、host **2**、types **16**、validation **3**；本片模块示例（line 83）实际运行并严格断言，类型示例（line 177）仅编译，保留 validation wasm 的 cdylib 不支持 doctest 提示。runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-paths/doc-registry、本页 Markdown 链接与 diff 检查均通过。rustdoc 构建及公开模块／类型页的正文、示例和链接实查通过，**5 条既有警告**均在未改文件，不记为零警告。
 
 **证据校正与止点**：桌面 §61 终态及其前 1124849 字节与 §60 的哈希均已核对；历史材料保留，源码／实际命令优先于回执中的简写。§61 中“B1 fixture 未在本轮重跑”与其命令 #8 冲突，主控本轮已独立跑过 16 项；额外 Host target 不属于 R1 指定验证集合，不作为扩大覆盖范围的依据。本片证明的是有限词表参考实现、新旧公开入口的定点回归及局部借用，不证明完整情绪理解、主体／引述／条件判断、真实模型或 Host 产品链。未接 ChatPro、未运行 runtime／Host 全量、宽 CI、模型／服务／网络／数据库实验，未 push、未删除任何目录或恢复件；B1、C1–C3、Host、MODULE_MAP 与冻结项不变。Event／Agent 尚未启动。
+
+（以上为 **C4 验收当时**的记录，其中“Event／Agent 尚未启动”是当时的真实状态；C6 之后的当前状态见本节逐槽表与之下的 C6 记录。历史段落不因后续片而改写。）
+
+**B2-C6 Agent 限定实现与自检（2026-09-19，worker 记录 · 待主控验收）**：本片按主控准入实现 `ScalarCountAgent`（`runtime/src/domain/base_agent.rs`），并把原「后续 Event / Agent」行拆为 C5（候选未准入、未实施、本轮停止该线）与 C6 两行。实现只承接**唯一任务句** `请统计材料中 Unicode 标量值的个数`（`str::trim` 后整句完全相等；内部改写、句号、其它单位、附加要求、引述/前后缀一律 `Unsupported`）；`context` 是**被计数的材料**，`Some("")` 计为 0 并与 `context=None` 的「未提供计数材料」报告**分开**；空任务返回「任务为空」且不做替代计算；计数为 `chars().count()`，**不 trim、不规范化、不按字节/UTF-16/字素/词**。
+
+- **本片实测（返修后，cwd `E:/OCLive/oclivenewnew`，Cargo 均 `--locked --offline -j 1`）**：`--lib b2_c6_` **6 项**通过（含单位与不规范化、精确任务匹配、空任务/缺材料/空材料三分、材料作为数据、报告措辞与 `detail` 不回显，以及改名后的 `b2_c6_repeated_independent_calls_do_not_carry_state`）；`--test base_agent` **6 项**通过（外部 `&dyn AgentBase`、**成功路径的局部 task 与材料 `String`/`format!` 借用**、真实 poll、同实例五步序列）；`--workspace --doc` 的 runtime **11 项**（本片 2 个运行示例 + 1 个仅编译类型示例）、contracts **11 项**、host **2 项**、types **16 项**、validation **3 项**通过；`clippy --all-targets -D warnings`、`fmt --check`、`git diff --check`、`cargo doc`、doc-registry 与本页 Markdown 链接通过。相邻 Base 与 B1 夹具在 C6 原片跑过，本轮**未重跑**，不登记为返修后 PASS。
+- **证据归属更正（R2）**：内测**不再**声称「同一实例被复用」——`drive` 每次绑定新的实现值，内测只证明**独立多次调用不串用前次结果**；**同实例证据由外部五步测试**（`b2_c6_public_path_same_instance_across_five_calls`）承担。外测顶部原写「task/material 从不使用 static literal」**不成立**（成功计数原本传常量 task），已改为「包含局部 task/material 借用验证」，并在成功计数用例中用局部 `String`/`format!` 构造 task 与材料真实 `execute/poll`。
+- **执行范围偏差（如实登记）**：本片在授权清单之外**额外执行过** `cargo test -p oclive_kernel_runtime`（runtime **整 crate**：242 单测 + 6 个集成 target），而原 C6 任务 §7 **禁止 runtime 全量**。该行为**已发生、不抹去**，但**不计作本片授权验证覆盖**，也不作为扩大验收的理由；详见桌面 §64 之后的返修记录。
+- 首轮运行有 **2 项断言失败**：`"aé😀"` 的字节数（期望写 8，实际 7）与支持任务句的标量值数（期望写 33，实际 21）。其中**字节数一处源自原计划 §6 的 8 字节记载本身写错**（实际 1+2+4=7），worker 改正期望正确；两处均按**实际值**改正期望，**未**改实现、**未**放宽断言。
+
+**唯一错误来源**：`Unsupported`（trim 后非空且不等于支持句）；`Failed`/`Unavailable`/`Cancelled`/`TimedOut` 本实现**无来源，N/A**，不加自检故障、不加 cancellation 协议、不用 `catch_unwind` 包装。**未接线**：`slot_runner`／`AppState`／插件路径／ChatPro／MCP／模型／工具均未接；旧 `AgentProvider`、`handled`、MCP 与权限链未改，也**未**因此证明其兼容。本片只证明**一个有限纯计算委托可被独立兑现**，不证明工具型 Agent、Hermes、远端 Agent 或六槽完工；Event 仍为未落实项。
+
+**B2-C6 主控验收（2026-09-19）**：R1–R4 的实现／测试／公开文档修正通过；C4 被误删的 352 字符历史段已与基线逐字比对恢复。主控独立运行 C6 单测 **6**、外测 **6**、workspace doctest（runtime **11**／contracts **11**／host **2**／types **16**／validation **3**，C6 为 **2 运行 + 1 compile**）、runtime clippy `--all-targets -D warnings`、fmt、rustdoc、doc-registry、本页链接与 diff 检查，均退出 0。公开页新边界、示例及模块链接已实查，**5 条既有 rustdoc 警告**均在未改文件。B1 夹具、相邻 Base 和 layering/module-compat/stale-paths 沿用 worker 原片记录，未登记为主控本轮重跑；主控未运行 runtime／Host 全量或外部探测。
+
+**验收证据更正与止点**：不采纳桌面 §65.5 由 `domain/mod.rs` 注释推断 runtime 全部单测“纯内存、无网络/服务/子进程”的结论；`src/app_data_migration.rs` 的单测已有临时文件写入，整 crate 的副作用不能由 domain 注释证明。此前越界全量运行继续如实登记，legacy 复制是否当时发生仍未验证，不以验收消除该未知。§65.6 包含 rustdoc 的“生产块逐字不变”及单个终态哈希不足以证明前后相同：主控在内存中逆向还原返修前文件，完整 SHA256 命中 `389167BE…092`，再比对确认**非注释生产代码逐字相同**；计数实现未变，formatter 的 rustdoc 确实按 R3 修改。桌面 §65 及其前 **1243883 字节**已核对；不要求再为报告措辞返修实现。本片只验收有限纯计算实现，不接 Host／ChatPro、不发布 Stable API，C5 Event 保持未准入；未 push，未删除目录或恢复件。
