@@ -7,7 +7,7 @@ use crate::domain::event_estimator::{BuiltinEventEstimator, EventEstimator};
 use crate::domain::local_plugin_bridge::{
     LocalPluginCapability, LocalPluginProviderDescriptor, LocalPluginRegistry,
 };
-use crate::domain::memory_retrieval::{BuiltinMemoryRetrieval, MemoryRetrieval};
+use crate::domain::memory_retrieval::MemoryRetrieval;
 use crate::domain::noop_slot_backends::{
     NoopAgentProvider, NoopEventEstimator, NoopLlmClient, NoopMemoryRetrieval, NoopPromptAssembler,
     NoopUserEmotionAnalyzer,
@@ -124,6 +124,15 @@ pub struct BackendRegistry {
     directory_agent_cache: RwLock<BTreeMap<String, Arc<dyn AgentProvider>>>,
 }
 
+/// CP-B3-ALL unit M: the builtin memory backend this registry installs.
+///
+/// Private, pure construction: no MCP, no network, no database, no role pack. Production
+/// initialisation and the offline registry test call exactly this function, so the test observes
+/// the assembled backend rather than a separately constructed instance.
+fn builtin_memory_backend() -> Arc<dyn MemoryRetrieval> {
+    Arc::new(oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval)
+}
+
 impl BackendRegistry {
     fn remote_plugin_group(&self) -> &PluginRemoteGroup {
         self.remote_plugin_group.get_or_init(|| {
@@ -160,7 +169,7 @@ impl BackendRegistry {
         let llm_none: Arc<dyn LlmClient> = Arc::new(NoopLlmClient);
         let remote_http_client = remote_plugin::build_shared_remote_http_client();
         Self {
-            memory_builtin: Arc::new(BuiltinMemoryRetrieval),
+            memory_builtin: builtin_memory_backend(),
             memory_remote: OnceLock::new(),
             emotion_builtin: Arc::new(BuiltinUserEmotionAnalyzer),
             emotion_remote: OnceLock::new(),
@@ -382,5 +391,59 @@ mod tests {
         assert!(out.narrative_hint.is_empty());
         assert!(out.labels.is_empty());
         assert!(!out.degraded_to_builtin);
+    }
+
+    /// CP-B3-ALL unit M: the backend the registry's private factory installs is the one that
+    /// answers the current retrieval need — a matched low-weight row wins over a non-matching
+    /// high-weight row, and the query really reaches the selector.
+    #[test]
+    fn cp_b3_all_memory_builtin_backend_filters_by_query() {
+        use crate::models::Memory;
+        use chrono::Utc;
+        use oclive_kernel_types::MemoryRetrievalInput;
+
+        let backend = builtin_memory_backend();
+        let memory = |id: &str, content: &str, importance: f64| Memory {
+            id: id.to_string(),
+            role_id: "role".to_string(),
+            content: content.to_string(),
+            importance,
+            weight: 1.0,
+            created_at: Utc::now(),
+            scene_id: None,
+            mention_count: 1,
+            accessed_at: None,
+        };
+        let memories = [
+            memory("high-unmatched", "今天星期三", 1.0),
+            memory("low-matched", "用户喜欢咖啡", 0.2),
+        ];
+        let ranked = backend
+            .rank_memories(MemoryRetrievalInput {
+                memories: &memories,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 8,
+            })
+            .expect("rank");
+        assert_eq!(
+            ranked.len(),
+            1,
+            "only the matched row may survive a query hit"
+        );
+        assert_eq!(ranked[0].id, "low-matched");
+
+        // A query that matches nothing keeps the documented Host compatibility fallback: the
+        // previous all-candidate weighted selection.
+        let fallback = backend
+            .rank_memories(MemoryRetrievalInput {
+                memories: &memories,
+                user_query: "完全不相关词",
+                scene_id: None,
+                limit: 8,
+            })
+            .expect("rank");
+        let ids: Vec<&str> = fallback.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(ids, vec!["high-unmatched", "low-matched"]);
     }
 }

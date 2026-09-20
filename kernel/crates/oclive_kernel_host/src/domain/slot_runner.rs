@@ -854,4 +854,221 @@ mod tests {
         assert_eq!(ids.len(), ranked.len());
         assert!(ids.contains("a"));
     }
+
+    // ---------------------------------------------------------------------------------------
+    // CP-B3-ALL unit M: the new builtin provider through the real consumer paths. Tests only —
+    // production routing, merge policy and limit semantics are untouched by this unit.
+    // ---------------------------------------------------------------------------------------
+
+    fn query_memories() -> Vec<Memory> {
+        vec![
+            Memory {
+                id: "high-unmatched".into(),
+                role_id: "r".into(),
+                content: "今天星期三".into(),
+                importance: 1.0,
+                weight: 1.0,
+                created_at: Utc::now(),
+                scene_id: None,
+                mention_count: 1,
+                accessed_at: None,
+            },
+            Memory {
+                id: "low-matched".into(),
+                role_id: "r".into(),
+                content: "用户喜欢咖啡".into(),
+                importance: 0.2,
+                weight: 1.0,
+                created_at: Utc::now(),
+                scene_id: None,
+                mention_count: 1,
+                accessed_at: None,
+            },
+            Memory {
+                id: "mid-matched".into(),
+                role_id: "r".into(),
+                content: "用户喜欢咖啡和茶".into(),
+                importance: 0.6,
+                weight: 1.0,
+                created_at: Utc::now(),
+                scene_id: None,
+                mention_count: 1,
+                accessed_at: None,
+            },
+        ]
+    }
+
+    fn query_plugins() -> crate::domain::plugin_host::ResolvedRolePlugins {
+        crate::domain::plugin_host::ResolvedRolePlugins {
+            memory: Arc::new(oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval),
+            emotion: Arc::new(crate::domain::noop_slot_backends::NoopUserEmotionAnalyzer),
+            event: Arc::new(crate::domain::noop_slot_backends::NoopEventEstimator),
+            prompt: Arc::new(crate::domain::noop_slot_backends::NoopPromptAssembler),
+            llm: Arc::new(crate::domain::noop_slot_backends::NoopLlmClient),
+            agent: Arc::new(crate::domain::noop_slot_backends::NoopAgentProvider),
+            complex_emotion: Arc::new(
+                crate::domain::complex_emotion::BuiltinKeywordComplexEmotionProvider,
+            ),
+            slots: None,
+            merged_agent_directory_plugin_ids: Vec::new(),
+        }
+    }
+
+    /// The single-instance consumer path (`pl.memory`, no registry) forwards the query to the new
+    /// builtin provider and returns only the matched rows in the existing weighted order.
+    #[test]
+    fn cp_b3_all_memory_single_instance_consumer_answers_the_query() {
+        let pl = query_plugins();
+        let mems = query_memories();
+        let ranked = SlotRunner::rank_memories(
+            &pl,
+            MemoryRetrievalInput {
+                memories: &mems,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 8,
+            },
+        )
+        .expect("rank");
+        let ids: Vec<&str> = ranked.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(ids, vec!["mid-matched", "low-matched"]);
+
+        // limit still truncates after the weighted order, and 0 still selects nothing.
+        let limited = SlotRunner::rank_memories(
+            &pl,
+            MemoryRetrievalInput {
+                memories: &mems,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 1,
+            },
+        )
+        .expect("rank");
+        assert_eq!(limited.len(), 1);
+        assert_eq!(limited[0].id, "mid-matched");
+        let none = SlotRunner::rank_memories(
+            &pl,
+            MemoryRetrievalInput {
+                memories: &mems,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 0,
+            },
+        )
+        .expect("rank");
+        assert!(none.is_empty());
+
+        // An empty query keeps selecting every candidate (the documented convention), and a
+        // non-matching query keeps the Host compatibility fallback.
+        assert_eq!(
+            SlotRunner::rank_memories(
+                &pl,
+                MemoryRetrievalInput {
+                    memories: &mems,
+                    user_query: "",
+                    scene_id: None,
+                    limit: 8,
+                },
+            )
+            .expect("rank")
+            .len(),
+            mems.len()
+        );
+        assert_eq!(
+            SlotRunner::rank_memories(
+                &pl,
+                MemoryRetrievalInput {
+                    memories: &mems,
+                    user_query: "完全不相关词",
+                    scene_id: None,
+                    limit: 8,
+                },
+            )
+            .expect("rank")
+            .len(),
+            mems.len()
+        );
+    }
+
+    /// Multi-instance merge stays dedup-merge by id, keeps the existing sort/limit and skips a
+    /// failing instance — with the new provider as one of the instances.
+    #[test]
+    fn cp_b3_all_memory_merge_policy_is_unchanged() {
+        struct FailingRetrieval;
+        impl MemoryRetrieval for FailingRetrieval {
+            fn rank_memories(
+                &self,
+                _input: MemoryRetrievalInput<'_>,
+            ) -> crate::error::Result<Vec<Memory>> {
+                Err(crate::error::AppError::InvalidParameter(
+                    "instance failed".into(),
+                ))
+            }
+            fn build_context(
+                &self,
+                memories: &[Memory],
+                max_tokens: usize,
+            ) -> crate::models::MemoryContext {
+                crate::domain::memory_engine::MemoryEngine::build_context(memories, max_tokens)
+            }
+            fn search_memories(&self, keyword: &str, memories: &[Memory]) -> Vec<Memory> {
+                crate::domain::memory_engine::MemoryEngine::search_memories(keyword, memories)
+            }
+        }
+
+        let instances: [(String, Arc<dyn MemoryRetrieval>); 3] = [
+            (
+                "failing".into(),
+                Arc::new(FailingRetrieval) as Arc<dyn MemoryRetrieval>,
+            ),
+            (
+                "query".into(),
+                Arc::new(oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval)
+                    as Arc<dyn MemoryRetrieval>,
+            ),
+            (
+                "builtin".into(),
+                Arc::new(BuiltinMemoryRetrieval) as Arc<dyn MemoryRetrieval>,
+            ),
+        ];
+        let mems = query_memories();
+        let ranked = SlotRunner::memory_merge_rank(
+            &instances,
+            MemoryRetrievalInput {
+                memories: &mems,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 8,
+            },
+        )
+        .expect("merge");
+        // Dedup by id: the union of the two successful instances, each id once.
+        let ids: HashSet<&str> = ranked.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(ids.len(), ranked.len());
+        assert_eq!(ranked.len(), mems.len());
+        assert!(ids.contains("low-matched"));
+        assert!(ids.contains("high-unmatched"));
+
+        // The merge order stays the existing importance×weight order over the deduped union.
+        let importances: Vec<f64> = ranked.iter().map(|m| m.importance).collect();
+        for pair in importances.windows(2) {
+            assert!(
+                pair[0] >= pair[1],
+                "merge must keep the existing weighted order: {importances:?}"
+            );
+        }
+
+        // limit still applies to the merged union.
+        let limited = SlotRunner::memory_merge_rank(
+            &instances,
+            MemoryRetrievalInput {
+                memories: &mems,
+                user_query: "咖啡",
+                scene_id: None,
+                limit: 1,
+            },
+        )
+        .expect("merge");
+        assert_eq!(limited.len(), 1);
+    }
 }

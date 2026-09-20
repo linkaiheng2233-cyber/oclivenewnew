@@ -27,6 +27,7 @@ pub mod policy;
 pub mod profile_personality;
 pub mod prompt_assembler;
 pub mod prompt_builder;
+pub mod query_memory;
 pub mod relation_engine;
 pub mod remote_life_prompt;
 pub mod repository;

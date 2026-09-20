@@ -39,6 +39,9 @@ pub mod user_llm_env;
 pub mod virtual_time_sync;
 
 pub mod agent;
+#[allow(dead_code)]
+// CP-B3-ALL unit A: Host-private Base view; the reference Host still binds `Arc<dyn AgentProvider>`, so only tests drive it today
+pub(crate) mod agent_base_binding;
 pub mod agent_context;
 pub mod chat_engine;
 pub mod debug_trace;
@@ -48,6 +51,9 @@ pub mod dual_pipeline;
 pub mod dual_pipeline_registry;
 #[cfg(feature = "dual_core")]
 pub mod dual_pipeline_steps;
+#[allow(dead_code)]
+// CP-B3-ALL unit E: Host-private Base view; the reference Host still binds `Arc<dyn EventEstimator>`, so only tests drive it today
+pub(crate) mod event_base_binding;
 pub mod event_estimator;
 pub mod event_impact_ai;
 pub mod event_ring;

@@ -89,6 +89,37 @@ mod tests {
         }
     }
 
+    /// A primary that refuses with the typed authorisation error.
+    struct RefusingPrimary;
+
+    #[async_trait]
+    impl AgentProvider for RefusingPrimary {
+        async fn process(&self, _input: AgentInput) -> Result<AgentOutput> {
+            Err(AppError::HighRiskCapabilityNotGranted {
+                capability: "process:spawn".into(),
+                id: "mcp-server-1".into(),
+            })
+        }
+    }
+
+    /// A fallback that records every call, so "the fallback was not used" is counted rather than
+    /// assumed from the returned error alone.
+    #[derive(Default)]
+    struct CountingFallback {
+        calls: std::sync::atomic::AtomicUsize,
+    }
+
+    #[async_trait]
+    impl AgentProvider for CountingFallback {
+        async fn process(&self, _input: AgentInput) -> Result<AgentOutput> {
+            self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(AgentOutput {
+                handled: true,
+                reply: "fallback".into(),
+            })
+        }
+    }
+
     #[tokio::test]
     async fn primary_success_skips_fallback() {
         let fb = FallbackAgentProvider::new(
@@ -107,5 +138,35 @@ mod tests {
         let fb = FallbackAgentProvider::new(Arc::new(ErrPrimary), Arc::new(OkFallback), "remote");
         let out = fb.process(AgentInput::default()).await.expect("ok");
         assert_eq!(out.reply, "fallback");
+    }
+
+    /// CP-B3-ALL unit A (tests only): a typed authorisation refusal is re-raised instead of being
+    /// delegated to the builtin fallback, so the grant decision is not bypassed — and the typed
+    /// refusal reaches the caller unchanged.
+    #[tokio::test]
+    async fn cp_b3_all_agent_authorization_denial_does_not_fall_back() {
+        let fallback = Arc::new(CountingFallback::default());
+        let fb = FallbackAgentProvider::new(
+            Arc::new(RefusingPrimary),
+            Arc::clone(&fallback) as Arc<dyn AgentProvider>,
+            "remote",
+        );
+
+        let error = fb
+            .process(AgentInput::default())
+            .await
+            .expect_err("a refusal is not a fallback trigger");
+        match error {
+            AppError::HighRiskCapabilityNotGranted { capability, id } => {
+                assert_eq!(capability, "process:spawn");
+                assert_eq!(id, "mcp-server-1");
+            }
+            other => panic!("the typed refusal must be re-raised unchanged: {other:?}"),
+        }
+        assert_eq!(
+            fallback.calls.load(std::sync::atomic::Ordering::SeqCst),
+            0,
+            "the builtin fallback must not be called for a refusal"
+        );
     }
 }

@@ -195,10 +195,11 @@ pub struct PromptSegments {
 impl PromptSegments {
     #[must_use]
     pub fn full(&self) -> String {
-        let mut out = String::with_capacity(self.stable_prefix.len() + self.dynamic_suffix.len());
-        out.push_str(&self.stable_prefix);
-        out.push_str(&self.dynamic_suffix);
-        out
+        // CP-B3-ALL unit P: the two prepared halves are joined by the crate's one connection core.
+        super::base_prompt::concat_prepared_text(&[
+            self.stable_prefix.as_str(),
+            self.dynamic_suffix.as_str(),
+        ])
     }
 
     #[must_use]
@@ -390,55 +391,69 @@ impl PromptBuilder {
         prompt.push_str(FINAL_TURN_INSTRUCTION);
     }
 
-    #[must_use]
-    pub fn build_prompt(input: &PromptInput<'_>) -> String {
-        let mut prompt = String::new();
+    /// CP-B3-ALL unit P: the ordered product blocks of the ordinary (non-segmented) layout.
+    ///
+    /// The preparation stays here — Tier0 core + scene, baseline block (guide, personality
+    /// supplement, ephemeral archive, worldview), tone block, content block, and the footer
+    /// (extra sections → previous-reply constraint → anchor → guardrails → user input → closing).
+    /// The existing `append_*` renderers are reused as-is; only the **join** moved to the crate's
+    /// one connection core ([`super::base_prompt::concat_prepared_text`]), which
+    /// [`Self::build_prompt`] applies to exactly these fragments in order.
+    ///
+    /// The fragments include the layout's own separators because those separators are part of the
+    /// product bytes; the core adds nothing of its own.
+    fn prepare_prompt_blocks(input: &PromptInput<'_>) -> Vec<String> {
         let role_context = RolePromptContext::from_input(input);
         let selected_reply_anchor =
             select_reply_quality_anchor(input.reply_quality_anchor, input.user_input);
+        let mut blocks: Vec<String> = Vec::with_capacity(16);
 
-        // Tier 0 — highest priority
-        prompt.push_str(&Self::build_core_hard_constraint(&role_context));
+        // Tier 0 — highest priority: core hard constraint, then the scene constraint when present.
+        blocks.push(Self::build_core_hard_constraint(&role_context));
         let scene_block = Self::build_scene_constraint_block(input);
         if !scene_block.is_empty() {
-            prompt.push_str("\n\n");
-            prompt.push_str(&scene_block);
+            blocks.push("\n\n".to_string());
+            blocks.push(scene_block);
         }
 
-        // Block 1 — baseline (personality supplement + worldview)
-        prompt.push_str("\n\n---\n底线区块\n");
-        prompt.push_str(PROMPT_BLOCK_GUIDE);
-        prompt.push_str("\n\n");
+        // Block 1 — baseline (personality supplement + worldview).
+        blocks.push("\n\n---\n底线区块\n".to_string());
+        blocks.push(PROMPT_BLOCK_GUIDE.to_string());
+        blocks.push("\n\n".to_string());
         let supplement =
             Self::build_personality_supplement(&role_context, input.mutable_personality);
         if !supplement.is_empty() {
-            prompt.push_str(&supplement);
-            prompt.push_str("\n\n");
+            blocks.push(supplement);
+            blocks.push("\n\n".to_string());
         }
         let ephemeral = Self::build_ephemeral_archive_block(input.ephemeral_personality);
         if !ephemeral.is_empty() {
-            prompt.push_str(&ephemeral);
+            blocks.push(ephemeral);
         }
         if !input.worldview_snippet.trim().is_empty() {
-            prompt.push_str(
-                "【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n",
+            blocks.push(
+                "【世界观设定】（角色包知识；与闲聊记忆冲突时以本段为权威事实，但不得覆盖【用户身份】与安全红线。）\n"
+                    .to_string(),
             );
-            prompt.push_str(input.worldview_snippet.trim());
-            prompt.push_str("\n\n");
+            blocks.push(input.worldview_snippet.trim().to_string());
+            blocks.push("\n\n".to_string());
         }
 
-        // Block 2 — tone (status, transition, relation FSM, boundary, current state, CE hint)
+        // Block 2 — tone (status, transition, relation FSM, boundary, current state, CE hint).
+        let mut tone = String::new();
         Self::append_tone_block(
-            &mut prompt,
+            &mut tone,
             input.user_emotion,
             input.scene_label,
             input.host_state_expression_hint,
             input.previous_complex_emotion_narrative_hint,
         );
+        blocks.push(tone);
 
-        // Block 3 — content (memory + user identity + schedule)
+        // Block 3 — content (memory + user identity + schedule).
+        let mut content = String::new();
         Self::append_content_block(
-            &mut prompt,
+            &mut content,
             input.memories,
             input.user_identity_template,
             input.user_relation_id,
@@ -446,16 +461,32 @@ impl PromptBuilder {
             role_context.relation_label(),
             input.life_context_line,
         );
+        blocks.push(content);
 
-        // Footer — extra sections → anchor → guardrails → user input → closing line
+        // Footer — extra sections → anchor → guardrails → user input → closing line.
+        let mut footer = String::new();
         Self::append_reply_footer(
-            &mut prompt,
+            &mut footer,
             input.extra_sections,
             input.previous_assistant_reply,
             selected_reply_anchor.as_str(),
             input.user_input,
         );
-        prompt
+        blocks.push(footer);
+
+        blocks
+    }
+
+    /// The ordinary layout: product blocks prepared above, joined by the crate's connection core.
+    ///
+    /// The core receives no additional requirement text because every known product organization
+    /// rule is already executed by the preparation above; this is not "clearing" a caller's
+    /// non-empty requirement, and the Base entry keeps rejecting non-empty requirements.
+    #[must_use]
+    pub fn build_prompt(input: &PromptInput<'_>) -> String {
+        let blocks = Self::prepare_prompt_blocks(input);
+        let fragments: Vec<&str> = blocks.iter().map(String::as_str).collect();
+        super::base_prompt::concat_prepared_text(&fragments)
     }
 
     /// Deep + Ollama prefix-cache path: stable persona/worldview/scene first;

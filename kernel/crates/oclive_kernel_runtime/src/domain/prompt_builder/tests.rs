@@ -1685,3 +1685,270 @@ fn synthetic_dynamic_content_characterization() {
     assert!(!full.contains("用户说:"));
     assert_ne!(full, segments.full());
 }
+
+// ---------------------------------------------------------------------------------------------
+// CP-B3-ALL unit P: pre-change baseline samples for the shared connection core.
+//
+// The three digests per case were recorded from the renderer **as it stood before** unit P touched
+// production code (commit 54b5d7a4). They are frozen constants: never recomputed from the new
+// helper, and never adjusted after seeing a refactor result. Any byte change must fail here.
+// ---------------------------------------------------------------------------------------------
+
+/// `(label, full, stable_prefix, dynamic_suffix)` sha256 hex digests, captured pre-change.
+const CP_B3_ALL_PROMPT_PRE_CHANGE_BASELINE: [(&str, &str, &str, &str); 5] = [
+    (
+        "plain",
+        "4fe836da55c431c7f1e60d3e6bcdc4c32e45c02174d99ba21d6fa7c780dedfa6",
+        "5d68018313d8b405ca4c8360c70d66721f249b3b063be5f021b91151053d241e",
+        "5e6ebce171d0eab2b911dcf346d4aa0c429e40cc600ceabab992fcb7e827e335",
+    ),
+    (
+        "scene_worldview_crlf",
+        "02b029d6c663d31919b57391fe8e3062f4f48d62d5e2fbdcfd131854cb1002ff",
+        "ea491959a2410f1b38354331034499debe85210fc13ba9b47a107be04da07e89",
+        "44fa1ad554ccfb70af1ba382dc5fbe10e123586f0b0bcad0d71a858010b86273",
+    ),
+    (
+        "memory_identity",
+        "7aa8842836791e1401a8f9f534b82ddbc23911c427ec4dc24294a3a10ae6dab0",
+        "1aac150e6b10def7e034c68668962e19805c37d15794d1cd836c2ac20ec92484",
+        "85c1051ad425f4bb6206791e8539cbe892bde10d302bcc554ca118a661e8718d",
+    ),
+    (
+        "extra_sections_blank",
+        "7fd414cb82bfe48e022f0ec594767921ecac0015637c604abe248cbfdfc36d06",
+        "0d44cf3094aea8429996cbdf15e0cac4f7f5b3bd5246395f6e5f801a6911b180",
+        "7084642796dfc196670d05e4f1a4335f6f0c988df1eea3cb067baa984db76a70",
+    ),
+    (
+        "anchor_previous_reply",
+        "3df56e4900c6175e7b2fb6534d42e40e0ee747c5076d1e1f946649102e46851f",
+        "f362f75cdcac28063dcbf7ebfaa3635ec2c819820df2bc51ec0527a6c2f6b7c8",
+        "39731dfcfc542362f9f905986921464cfb363c95cb446613dabefea5a9e77ddf",
+    ),
+];
+
+fn cp_b3_all_prompt_assert_baseline(label: &str, input: &PromptInput<'_>) -> String {
+    let (_, expected_full, expected_stable, expected_dynamic) =
+        CP_B3_ALL_PROMPT_PRE_CHANGE_BASELINE
+            .iter()
+            .find(|(name, ..)| *name == label)
+            .expect("the label must be part of the frozen baseline table");
+    let full = PromptBuilder::build_prompt(input);
+    let segments = PromptBuilder::build_prompt_segments(input);
+    assert_eq!(sha256_hex(&full), *expected_full, "{label}: full output");
+    assert_eq!(
+        sha256_hex(&segments.stable_prefix),
+        *expected_stable,
+        "{label}: stable prefix"
+    );
+    assert_eq!(
+        sha256_hex(&segments.dynamic_suffix),
+        *expected_dynamic,
+        "{label}: dynamic suffix"
+    );
+    full
+}
+
+#[test]
+fn cp_b3_all_prompt_pre_change_baseline_is_byte_stable() {
+    let role = create_test_role();
+    let personality = create_test_personality();
+
+    // 1) plain input.
+    let empty: [Memory; 0] = [];
+    let input_plain = sample_prompt_input(
+        &role,
+        &personality,
+        &empty,
+        "普通输入",
+        "家",
+        "普通场景细节",
+        None,
+    );
+    let full_plain = cp_b3_all_prompt_assert_baseline("plain", &input_plain);
+    assert!(
+        full_plain.contains(KERNEL_DIALOGUE_GUARDRAILS),
+        "the un-replaceable guardrail must stay in the ordinary layout"
+    );
+
+    // 2) scene + worldview + CRLF/Unicode material.
+    let mut crlf_role = create_test_role();
+    crlf_role.core_personality = "核心设定\r\n第二行\u{3000}尾".to_string();
+    let mut input_scene = sample_prompt_input(
+        &crlf_role,
+        &personality,
+        &empty,
+        "场景输入",
+        "雨夜",
+        "第一行\r\n第二行",
+        None,
+    );
+    input_scene.worldview_snippet = "世界观\r\n片段\u{3000}尾";
+    let full_scene = cp_b3_all_prompt_assert_baseline("scene_worldview_crlf", &input_scene);
+    assert!(
+        full_scene.contains("核心设定\r\n第二行\u{3000}尾"),
+        "CRLF/ideographic-space material must survive byte for byte"
+    );
+    assert!(
+        full_scene.contains("世界观\r\n片段\u{3000}尾"),
+        "the worldview snippet must survive byte for byte"
+    );
+    assert!(full_scene.contains("第一行\r\n第二行"));
+
+    // 3) memories + user identity: content block order relative to the footer guardrail.
+    let mut first = create_test_memory();
+    first.content = "用户喜欢咖啡".to_string();
+    let mut second = create_test_memory();
+    second.id = "2".to_string();
+    second.content = "用户怕冷".to_string();
+    let memories = [first, second];
+    let mut input_memory = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "记忆相关输入",
+        "家",
+        "场景细节",
+        None,
+    );
+    input_memory.user_identity_template = "用户身份模板：朋友·小明";
+    input_memory.user_identity_id = "friend-1";
+    input_memory.life_context_line = "今天下雨。";
+    let full_memory = cp_b3_all_prompt_assert_baseline("memory_identity", &input_memory);
+    let memory_header =
+        "关于用户的记忆（已按相关性排序；请勿在回复中复述编号、括号或「重要性」等系统字样）:";
+    let memory_at = full_memory
+        .find(memory_header)
+        .expect("the memory block must be prepared");
+    let guardrail_at = full_memory
+        .find(KERNEL_DIALOGUE_GUARDRAILS)
+        .expect("the guardrail must be prepared");
+    assert!(
+        memory_at < guardrail_at,
+        "content block must precede the footer guardrail"
+    );
+    assert!(full_memory.contains("用户喜欢咖啡"));
+    assert!(full_memory.contains("用户怕冷"));
+
+    // 4) extra sections + blank conditional branches.
+    let extra_sections = [
+        PromptExtraSection {
+            title: "补充段落",
+            body: "补充正文",
+        },
+        PromptExtraSection {
+            title: "",
+            body: "",
+        },
+    ];
+    let mut input_extra = sample_prompt_input(
+        &role,
+        &personality,
+        &empty,
+        "额外段输入",
+        "家",
+        "场景细节",
+        None,
+    );
+    input_extra.extra_sections = &extra_sections;
+    input_extra.worldview_snippet = "   ";
+    input_extra.life_context_line = "";
+    input_extra.mutable_personality = "";
+    input_extra.ephemeral_personality = "";
+    let full_extra = cp_b3_all_prompt_assert_baseline("extra_sections_blank", &input_extra);
+    assert!(full_extra.contains("补充正文"));
+    assert!(
+        !full_extra.contains("【世界观设定】"),
+        "a blank worldview snippet must keep the conditional branch skipped"
+    );
+
+    // 5) quality anchor + previous reply + persona override.
+    let mut input_anchor = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "上一轮之后的输入",
+        "家",
+        "场景细节",
+        Some("胶囊人设"),
+    );
+    input_anchor.reply_quality_anchor = "自定义锚点：不要重复。";
+    input_anchor.previous_assistant_reply = "上一轮回复内容";
+    input_anchor.user_emotion = "sad";
+    input_anchor.previous_complex_emotion_narrative_hint = "上一轮提示";
+    let full_anchor = cp_b3_all_prompt_assert_baseline("anchor_previous_reply", &input_anchor);
+    assert!(full_anchor.contains("自定义锚点：不要重复。"));
+    assert!(
+        full_anchor.contains("【上一轮回复约束】"),
+        "a non-empty previous reply must keep producing the constraint block"
+    );
+    assert!(
+        !full_anchor.contains("上一轮回复内容"),
+        "the previous reply text itself is never re-injected as a template"
+    );
+    assert!(full_anchor.contains("胶囊人设"));
+}
+
+/// CP-B3-ALL unit P: the product layout and the segmented layout really go through the crate's one
+/// connection core, and the core itself adds nothing to the bytes it is given.
+#[test]
+fn cp_b3_all_prompt_layouts_use_the_shared_connection_core() {
+    use crate::domain::base_prompt::concat_prepared_text;
+
+    // The core's own contract: in-order, duplicates kept, no separator, no normalisation.
+    assert_eq!(concat_prepared_text(&[]), "");
+    assert_eq!(concat_prepared_text(&[""]), "");
+    assert_eq!(concat_prepared_text(&["b", "a", "b"]), "bab");
+    assert_eq!(
+        concat_prepared_text(&["ab", "c"]),
+        concat_prepared_text(&["a", "bc"])
+    );
+    assert_eq!(
+        concat_prepared_text(&["A\r\n", "B\u{3000}"]),
+        "A\r\nB\u{3000}"
+    );
+
+    let role = create_test_role();
+    let personality = create_test_personality();
+    let mut memory = create_test_memory();
+    memory.content = "用户喜欢咖啡".to_string();
+    let memories = [memory];
+    let mut input = sample_prompt_input(
+        &role,
+        &personality,
+        &memories,
+        "连接核心输入",
+        "家",
+        "场景细节",
+        None,
+    );
+    input.life_context_line = "今天下雨。";
+
+    // build_prompt == the prepared blocks joined by the core, in that order.
+    let blocks = PromptBuilder::prepare_prompt_blocks(&input);
+    assert!(
+        blocks.len() >= 6,
+        "the layout must prepare several ordered blocks, got {}",
+        blocks.len()
+    );
+    let fragments: Vec<&str> = blocks.iter().map(String::as_str).collect();
+    let joined = concat_prepared_text(&fragments);
+    assert_eq!(
+        PromptBuilder::build_prompt(&input),
+        joined,
+        "the ordinary layout must be exactly its prepared blocks joined by the shared core"
+    );
+
+    // segments.full() == the two prepared halves joined by the same core.
+    let segments = PromptBuilder::build_prompt_segments(&input);
+    assert_eq!(
+        segments.full(),
+        concat_prepared_text(&[
+            segments.stable_prefix.as_str(),
+            segments.dynamic_suffix.as_str()
+        ])
+    );
+    // The halves keep their own boundaries and length telemetry.
+    assert_eq!(segments.stable_len(), segments.stable_prefix.len());
+}

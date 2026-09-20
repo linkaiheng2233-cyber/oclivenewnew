@@ -81,6 +81,45 @@ const UNSUPPORTED_REQUIREMENTS_DETAIL: &str =
     "LiteralMaterialAssembler supports only an empty `requirements`; it concatenates the given \
      material verbatim and does not process additional assembly requirements";
 
+/// CP-B3-ALL unit P: the one connection core shared by every prompt-assembly path in this crate.
+///
+/// It joins already-prepared text fragments **verbatim, in order**, with no separator, no trimming
+/// and no re-ordering, and it consumes nothing else: no `Role`, no requirement text, no host state.
+/// Preparing the fragments is the caller's job — [`LiteralMaterialAssembler`] and
+/// [`BuiltinPromptAssembler`](super::prompt_assembler::BuiltinPromptAssembler) prepare theirs from
+/// `request.materials`, while [`PromptBuilder`](super::prompt_builder::PromptBuilder) prepares
+/// ordered product blocks (core / baseline / tone / content / footer) and
+/// [`PromptSegments::full`](super::prompt_builder::PromptSegments::full) prepares the two segment
+/// halves. None of them re-implements the join.
+///
+/// This core is deliberately **not** a requirement processor: a caller that still has an unfulfilled
+/// assembly requirement must not clear that requirement and pass it as material instead.
+pub(crate) fn concat_prepared_text(fragments: &[&str]) -> String {
+    let mut out = String::with_capacity(fragments.iter().map(|fragment| fragment.len()).sum());
+    for fragment in fragments {
+        out.push_str(fragment);
+    }
+    out
+}
+
+/// The one implementation behind both literal Base entries.
+///
+/// Agreement (unchanged from B2-C3): only an empty `requirements` is supported, and a successful
+/// call returns the supplied material concatenated verbatim. Every non-empty `requirements` —
+/// including white space only — is [`BaseCallErrorKind::Unsupported`] before any assembly happens.
+pub(crate) fn assemble_literal_material(
+    materials: &[&str],
+    requirements: &str,
+) -> std::result::Result<String, BaseCallError> {
+    if !requirements.is_empty() {
+        return Err(BaseCallError {
+            kind: BaseCallErrorKind::Unsupported,
+            detail: Some(UNSUPPORTED_REQUIREMENTS_DETAIL.to_string()),
+        });
+    }
+    Ok(concat_prepared_text(materials))
+}
+
 /// A limited reference [`PromptBase`] implementation that concatenates prepared material verbatim.
 ///
 /// See the [module documentation](self) for the exact assembly agreement, the supported input
@@ -105,15 +144,7 @@ impl PromptBase for LiteralMaterialAssembler {
     /// non-empty white space — because this implementation does not process additional assembly
     /// requirements. It has no other failure source: no I/O, no model call, no retry.
     fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
-        Box::pin(async move {
-            if !request.requirements.is_empty() {
-                return Err(BaseCallError {
-                    kind: BaseCallErrorKind::Unsupported,
-                    detail: Some(UNSUPPORTED_REQUIREMENTS_DETAIL.to_string()),
-                });
-            }
-            Ok(request.materials.concat())
-        })
+        Box::pin(async move { assemble_literal_material(request.materials, request.requirements) })
     }
 }
 
@@ -239,5 +270,69 @@ mod b2_c3_tests {
             BaseCallErrorKind::Unsupported
         );
         assert_eq!(drive(&["two"], "").unwrap(), "two");
+    }
+}
+
+#[cfg(test)]
+mod cp_b3_all_prompt_tests {
+    use std::task::{Context, Poll, Waker};
+
+    use super::*;
+
+    fn drive(materials: &[&str], requirements: &str) -> Result<String, BaseCallError> {
+        let mut future = LiteralMaterialAssembler.assemble(PromptBaseRequest {
+            materials,
+            requirements,
+        });
+        let waker = Waker::noop();
+        let mut cx = Context::from_waker(waker);
+        match future.as_mut().poll(&mut cx) {
+            Poll::Ready(outcome) => outcome,
+            Poll::Pending => panic!("this implementation has no pending path"),
+        }
+    }
+
+    /// CP-B3-ALL unit P: the Base entry is exactly the shared connection core behind the
+    /// empty-requirements agreement — no second join, no extra bytes.
+    #[test]
+    fn cp_b3_all_prompt_base_entry_is_the_shared_core() {
+        for materials in [
+            &["a"][..],
+            &[""][..],
+            &["a", "b"][..],
+            &["b", "a", "b"][..],
+            &["ab", "c"][..],
+            &["", "A", ""][..],
+            &["  "][..],
+            &["核心\r\n", "第二行\u{3000}"][..],
+        ] {
+            let expected = concat_prepared_text(materials);
+            assert_eq!(
+                drive(materials, "").expect("an empty requirements value is supported"),
+                expected,
+                "{materials:?} must be the shared core's join"
+            );
+            assert_eq!(
+                assemble_literal_material(materials, "").expect("same agreement"),
+                expected
+            );
+        }
+    }
+
+    /// CP-B3-ALL unit P: the requirement agreement is unchanged — any non-empty value is refused
+    /// before any assembly, with the same kind and the same human-readable detail.
+    #[test]
+    fn cp_b3_all_prompt_requirement_agreement_is_unchanged() {
+        let materials = ["A", "B"];
+        for requirements in ["逐字保留", " ", "\n", "\t", "\u{3000}"] {
+            let error = drive(&materials, requirements)
+                .expect_err("non-empty requirements must not assemble");
+            assert_eq!(error.kind, BaseCallErrorKind::Unsupported);
+            assert_eq!(
+                error.detail.as_deref(),
+                Some(UNSUPPORTED_REQUIREMENTS_DETAIL)
+            );
+        }
+        assert_eq!(drive(&materials, "").expect("empty requirements"), "AB");
     }
 }

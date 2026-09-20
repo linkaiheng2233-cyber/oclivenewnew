@@ -1,4 +1,5 @@
-//! Pluggable facade for event impact estimation; defaults to [`estimate_event_impact`](super::event_impact_ai::estimate_event_impact).
+//! Pluggable facade for event impact estimation; defaults to the shared core of
+//! [`event_impact_ai`](super::event_impact_ai).
 #![allow(clippy::too_many_arguments)]
 
 use crate::domain::event_impact_ai::EventImpactEstimate;
@@ -15,6 +16,12 @@ pub struct BuiltinEventEstimator;
 
 #[async_trait]
 impl EventEstimator for BuiltinEventEstimator {
+    /// The product estimate entry: it runs the one shared execution
+    /// `super::event_impact_ai::estimate_event_impact_core` exactly
+    /// once and returns its **numeric** projection.
+    ///
+    /// It passes no Base context, because the product call has none; the same core's narrative
+    /// projection is read only by the crate-private Base view, and this entry never inspects it.
     async fn estimate(
         &self,
         llm: &Arc<dyn LlmClient>,
@@ -27,7 +34,7 @@ impl EventEstimator for BuiltinEventEstimator {
         recent_events: &[Event],
         knowledge_augment: Option<&KnowledgeEventAugment>,
     ) -> Result<EventImpactEstimate> {
-        super::event_impact_ai::estimate_event_impact(
+        let core = super::event_impact_ai::estimate_event_impact_core(
             llm,
             ollama_model,
             user_message,
@@ -37,8 +44,10 @@ impl EventEstimator for BuiltinEventEstimator {
             recent_events,
             knowledge_augment,
             true,
+            None,
         )
-        .await
+        .await?;
+        Ok(core.estimate)
     }
 }
 
