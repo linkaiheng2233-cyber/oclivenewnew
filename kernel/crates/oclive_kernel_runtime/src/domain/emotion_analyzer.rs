@@ -3,11 +3,42 @@
 //! Seven-dimension emotion analysis via the embedded lexicon (JSON) with
 //! weighted scoring. The lexicon produces multi-label suggestions; complex
 //! emotion arbitration is left to the main LLM (B stage).
+//!
+//! CP-B3-C2: `analyze_material` (a `pub(crate)` entry, so it has no public page of its own) is this
+//! crate's **one** lexicon analysis entry. It is the only
+//! place that loads the embedded lexicon and runs its matching, and it returns the lexicon's own
+//! suggestion unchanged. Two projections exist on top of it: [`EmotionAnalyzer::analyze`] projects
+//! the suggestion's scores into the seven-dimension type, while
+//! [`crate::domain::base_emotion`]'s Base implementations project the same suggestion's matched
+//! entries into a clue report. Sharing that entry shares the **analysis**, not the projections:
+//! each call is one analysis, and calling a seven-dimension entry and a Base entry is two analyses.
 
-use crate::domain::lexicon::Lexicon;
+use crate::domain::lexicon::{Lexicon, LexiconSuggestion};
 use crate::error::Result;
 use crate::models::Emotion;
 pub use oclive_kernel_types::EmotionResult;
+
+/// Runs this crate's one lexicon analysis for `text`.
+///
+/// This is the shared analysis entry behind both projections this crate offers: the seven-dimension
+/// result ([`Lexicon::to_emotion_result`], used by [`EmotionAnalyzer::analyze`]) and the Base clue
+/// report built by [`crate::domain::base_emotion`]. It returns the lexicon's suggestion as-is — it
+/// chooses no projection, decides nothing about the material, and does not interpret the scores.
+/// Entries excluded by the negation heuristic stay in the suggestion's matched list, so a caller can
+/// still tell "no entry matched" from "an entry matched and was negated".
+///
+/// # Errors
+///
+/// Returns the embedded lexicon's load/validation error unchanged (the lexicon is parsed and
+/// validated once inside a `OnceLock`). Nothing here retries, substitutes a fallback analysis or
+/// turns a failure into an empty suggestion.
+///
+/// A call performs one lexicon run. There is no cache, no shared "latest result" and no
+/// deduplication between calls, so two calls are two analyses by construction.
+pub(crate) fn analyze_material(text: &str) -> Result<LexiconSuggestion> {
+    let lexicon = crate::domain::lexicon::lexicon()?;
+    Ok(lexicon.analyze(text))
+}
 
 /// Emotion analyzer.
 pub struct EmotionAnalyzer;
@@ -31,8 +62,8 @@ impl EmotionAnalyzer {
     /// assert!(result.joy > 0.0);
     /// ```
     pub fn analyze(text: &str) -> Result<EmotionResult> {
-        let lexicon = crate::domain::lexicon::lexicon()?;
-        let suggestion = lexicon.analyze(text);
+        // The shared analysis entry; only this projection differs from the Base view's.
+        let suggestion = analyze_material(text)?;
         Ok(Lexicon::to_emotion_result(&suggestion))
     }
 
@@ -174,5 +205,151 @@ mod tests {
         let line = EmotionAnalyzer::format_for_prompt(&result);
         assert!(line.contains("sad"), "line={}", line);
         assert!(line.contains("强度"));
+    }
+}
+
+#[cfg(test)]
+mod cp_b3_c2_tests {
+    use super::*;
+    use crate::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+
+    /// The seven components in a fixed order, so a comparison covers every field rather than only
+    /// the one that usually differs.
+    fn components(result: &EmotionResult) -> [f64; 7] {
+        [
+            result.joy,
+            result.sadness,
+            result.anger,
+            result.fear,
+            result.surprise,
+            result.disgust,
+            result.neutral,
+        ]
+    }
+
+    /// CP-B3-C2: the legacy entry, the registered builtin type and the shared analysis entry's own
+    /// projection agree **field by field**, and a hand-written sample table pins the actual values —
+    /// so "the same helper compared against itself" is not the only compatibility evidence. The
+    /// sample values below were read off the embedded lexicon's entries (`开心` joy w3, `难过`
+    /// sadness w3, `嗯`/`好的` neutral w1, no `不开心` entry, no entry for `今天星期三`) and the
+    /// existing `b2_c4_*`/`test_*` expectations.
+    #[test]
+    fn cp_b3_c2_legacy_entries_match_the_shared_projection() {
+        const SAMPLES: [(&str, [f64; 7]); 8] = [
+            ("我很开心", [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            ("我很难过", [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            ("难过开心", [1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            ("嗯嗯好的", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            ("我不开心", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            ("今天星期三", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            ("中a happy", [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+            ("unhappy", [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+        ];
+
+        for (material, expected) in SAMPLES {
+            let legacy = EmotionAnalyzer::analyze(material).expect("analysis must succeed");
+            assert_eq!(
+                components(&legacy),
+                expected,
+                "{material}: the legacy entry's sample values"
+            );
+            assert!(
+                legacy.extension.is_none(),
+                "{material}: the legacy entry invents no extension"
+            );
+
+            let builtin = BuiltinUserEmotionAnalyzer;
+            let via_builtin =
+                <BuiltinUserEmotionAnalyzer as oclive_kernel_contracts::UserEmotionAnalyzer>::analyze(
+                    &builtin, material,
+                )
+                .expect("analysis must succeed");
+            assert_eq!(
+                components(&via_builtin),
+                expected,
+                "{material}: the registered builtin type"
+            );
+            assert_eq!(
+                components(&via_builtin),
+                components(&legacy),
+                "{material}: legacy and builtin must not drift"
+            );
+
+            let suggestion = analyze_material(material).expect("the shared analysis entry");
+            let projected = Lexicon::to_emotion_result(&suggestion);
+            assert_eq!(
+                components(&projected),
+                expected,
+                "{material}: the shared entry's own projection"
+            );
+        }
+    }
+
+    /// CP-B3-C2: the shared analysis entry returns the lexicon's suggestion unchanged, so the
+    /// entries that matched stay visible even when the numeric projection falls back to `neutral`.
+    ///
+    /// This is a fact about the **suggestion**, not about `EmotionResult`: it is what makes the Base
+    /// clue report able to distinguish "no entry matched" from "an entry matched and was negated",
+    /// while the seven-dimension fallback cannot.
+    #[test]
+    fn cp_b3_c2_shared_entry_keeps_hits_when_scores_fall_back() {
+        let no_clue = analyze_material("今天星期三").expect("analysis must succeed");
+        assert!(no_clue.hits.is_empty(), "no entry matches this material");
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&no_clue)),
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            "no usable hit still projects onto the compatible neutral fallback"
+        );
+
+        let negated = analyze_material("我不开心").expect("analysis must succeed");
+        assert_eq!(negated.hits.len(), 1, "the negated entry is still a hit");
+        assert!(
+            negated.hits[0].negated,
+            "the negation heuristic must have fired"
+        );
+        assert_eq!(negated.hits[0].word, "开心");
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&negated)),
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            "a negated-only hit projects onto the same fallback"
+        );
+
+        let neutral = analyze_material("嗯嗯好的").expect("analysis must succeed");
+        let words: Vec<&str> = neutral.hits.iter().map(|hit| hit.word.as_str()).collect();
+        assert_eq!(words, vec!["嗯", "好的"], "the neutral entries are hits");
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&neutral)),
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            "a genuine neutral hit lands on the same value as no hit"
+        );
+    }
+
+    /// CP-B3-C2: two calls are two analyses — the shared entry caches nothing and carries no state
+    /// between calls, so a material analysed twice yields the same suggestion twice and an empty
+    /// material is a normal result rather than an error.
+    #[test]
+    fn cp_b3_c2_shared_entry_is_stateless_and_empty_material_is_ok() {
+        let first = analyze_material("我很开心").expect("analysis must succeed");
+        let second = analyze_material("我很开心").expect("analysis must succeed");
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&first)),
+            components(&Lexicon::to_emotion_result(&second))
+        );
+        assert_eq!(first.hits.len(), second.hits.len());
+
+        let empty = analyze_material("").expect("an empty material is a normal result");
+        assert!(empty.hits.is_empty());
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&empty)),
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+        );
+
+        // A second, different material in between does not leak into the next analysis.
+        let _ = analyze_material("我很难过").expect("analysis must succeed");
+        let third = analyze_material("我很开心").expect("analysis must succeed");
+        assert_eq!(
+            components(&Lexicon::to_emotion_result(&third)),
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        );
     }
 }

@@ -335,3 +335,18 @@ runtime `clippy --all-targets -D warnings`、fmt、分层/module-compat/stale-pa
 **证据口径补充**：缺 `done`／空 body 的用例直接验证生产 decoder，并未执行完整共享等待路径；借用跨 Pending 的证据来自 `RecordingCall<'p>` 持有引用并在每次 poll 读取，而非仅凭调用后 String 仍可使用。两请求的 wake 断言是共用计数器合计至少 2；每请求入口次数 1、poll 次数 2 分别断言。上文统计与未跟踪状态为 worker 交付快照，最终提交范围以 Git 为准；Host／桌面 check 等沿用项已由本轮主控重跑。
 
 **收口与回滚**：本片只让已批准的 builtin 非流式 with-opts 装配执行完成检查，Kernel Base 公共面、旧 generate/tag/流式委托和其他槽未扩张。作为独立本地提交收口，可用该提交的 `git revert` 回退；提交前基线为 `34d483febbef231d77b6b5dbf767c2af67c509ef`。未 push，未执行真实请求、完整 AppState／整回合、数据库实验或质量试跑；没有远端 CI／全量发布结论，不自动开启下一片。
+
+### CP-B3-C2：builtin Emotion 具体实现的 Base 能力适配（2026-09-21 · Implemented / 本片 Locally verified（待主控验收））
+
+**目标**：让参考 Host 已注册的内置情绪分析具体类型 `BuiltinUserEmotionAnalyzer`（`plugin_backends.emotion = builtin` 绑定的就是它）除现行七维端口外**也能承担 Base 视图**，并与 `KeywordEmotionBase` 共用同一份私有 Base 路径和**同一个**词表分析入口；不改 Kernel 契约、不改 Host 装配、不改产品行为。
+
+**实际改动**（两个源码文件，均属 `oclive_kernel_runtime`）：
+
+- `domain/emotion_analyzer.rs`：新增 `pub(crate) fn analyze_material(text) -> Result<LexiconSuggestion>` —— **本片所涉及的 legacy 七维入口与两个 Base 入口共用的分析入口**（唯一词表加载 + 单次 `analyze`，错误原样传播）；`EmotionAnalyzer::analyze` 改为取同一 suggestion 经既有 `Lexicon::to_emotion_result` 投影，公开签名、七维与 `extension` 均不变。
+- `domain/base_emotion.rs`：抽出私有 `base_clue_report(text, context)`（先执行既有 `context` 判定，再调上述入口，再按 `hits` 判 `None` 或构造既有报告）；`KeywordEmotionBase` 与新增的 `impl EmotionBase for BuiltinUserEmotionAnalyzer` 都委托它，不复制词表、匹配、报告渲染与错误映射；模块文档新增一个可运行例（同一 builtin 实例经两个 canonical trait，显式消歧、严格 `match`）。
+
+**证据与限制**：新增内测统一 `cp_b3_c2_` 前缀共 **10 项**（`cargo test -p oclive_kernel_runtime --lib cp_b3_c2_` → **10 passed**，`--list` 同数），覆盖：具体类型同时满足两 trait 并经 `&dyn`/`Box<dyn>` **真跑**（`Pending` 即失败）；两 Base 实现逐字一致 + 独立逐字报告锚点；无命中/中性命中/全否定三分（七维对三者都是兼容 `neutral` 回退，Base 视图仍能区分，全否定仍算命中）；`context` 矩阵与同一实例复用序列；本地借用；七维与 Base 各自投影。既有回归**只运行不修改**：`b2_c4_` **17 passed**、`domain::emotion_analyzer::tests` **10 passed**、`domain::lexicon::tests` **18 passed**、外部 `--test base_emotion` **7 passed**、B1 `base_only_fixture` **16 passed**。编译/静态/文档：runtime 与 host `cargo check` 0、`--workspace --doc` 0、clippy（runtime lib+tests `-D warnings`）0、`cargo fmt --all -- --check` 0、`cargo doc -p oclive_kernel_runtime --no-deps` 0（该 crate 5 条 rustdoc 警告全部为既有，本片两个文件零新增；新 impl 已在实际生成的 builtin 类型页与模块页核对）。**首轮失败如实记录**：先写的能力测试首轮为 `E0277 BuiltinUserEmotionAnalyzer: EmotionBase is not satisfied`（预期红），实现后转绿；`cargo fmt --check` 首轮 1 处格式差异，已只在本片两文件内格式化。
+
+**边界（不得扩大）**：这是"现有 builtin 具体实现可经 Base 或现行七维端口调用"的**适配基础**，不是迁移——参考 Host 仍绑定 `Arc<dyn UserEmotionAnalyzer>` 并只消费七维，**没有任何产品消费者读取 Base 报告**。两个入口各自调用即**两次分析**，没有单次调用双结果，也没有缓存、最近结果或去重；七维不从报告反推、报告不从七维生成。共同的是分析入口：legacy 七维用 `Lexicon::to_emotion_result` 投影，两个 Base 实现共用 `base_clue_report`/`build_report`；这不等于"七维与 Base 共用同一个投影函数"。`none`/Remote/Directory 未新增 Base 视图、未映射新错误、未补跑 builtin、未改授权与降级；七维数值（含 `neutral` 兼容回退）、Host 装配、领域应用与回退全部保持。**未迁移**：其他后端、其他五槽、流式与外围治理。**未验证**：真实模型/HTTP/服务、完整 `AppState` 与整回合（桌面目标需 loopback 网络与完整宿主，本轮 NOT RUN）、产品侧 Base 消费。**待主控验收**，未 commit/push。
+
+**主控收口（2026-09-21 · Locally verified）**：上述待验收状态为 worker 交付快照，本片现通过主控复核。两个 Rust 文件及两份 CHANGELOG 与前序已审查、定向验证的字节身份一致；C2 记录之前的 README 历史块与原 HEAD 比对一致（统一换行并仅消除末尾空白），C1 验收与回滚段没有被移入 C2。本轮另独立复跑 `cargo test --locked --offline -j 1 -p oclive_kernel_runtime --lib cp_b3_c2_`，**10 passed**；其余已核对的同版本回归、doctest、编译和静态证据沿用，不倒填为本轮重跑。文档收尾按 doc-registry、本页链接与 diff 检查验证。以原基线 `ba3fcaf821ed8dca52864efc710e53f405c90b61` 之上的独立本地提交建立回滚点，未 push；能力增量不等于产品侧开始消费 Base 报告，未扩大上文的未迁移及未验证范围。

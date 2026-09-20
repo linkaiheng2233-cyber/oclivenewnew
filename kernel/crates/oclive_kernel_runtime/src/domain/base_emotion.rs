@@ -1,11 +1,31 @@
 //! B2-C4: a limited [`EmotionBase`] reference implementation backed by this crate's lexicon.
 //!
 //! [`KeywordEmotionBase`] reports **material-level lexicon clues** for the text it is given. It
-//! reuses the existing embedded lexicon and its matching rules through the crate's private
-//! `domain::lexicon::lexicon` entry point; it does not re-implement matching, does
+//! reuses the existing embedded lexicon and its matching rules through this crate's one analysis
+//! entry (`domain::emotion_analyzer::analyze_material`, which owns the lexicon load and the single
+//! match run); it does not re-implement matching, does
 //! not call a model, and does not go through the seven-dimension result or the prompt tone line
 //! (`EmotionAnalyzer::analyze`, `EmotionResult`, `format_for_prompt`) — those stay exactly as they
 //! are on the old path.
+//!
+//! # CP-B3-C2: which types serve this view, and what that does not mean
+//!
+//! [`BuiltinUserEmotionAnalyzer`] — the concrete type the reference Host registers for
+//! `plugin_backends.emotion = builtin` — implements [`EmotionBase`] as well, through the same
+//! private path as [`KeywordEmotionBase`]. Both implementations therefore share the analysis entry,
+//! the `context` agreement, the report text and the failure projection, so they cannot drift.
+//!
+//! Sharing the analysis is **not** a shared single execution:
+//!
+//! - each call performs its own analysis; calling a seven-dimension entry and a Base entry is two
+//!   analyses, and there is no cache, no "latest result" and no call that returns both views;
+//! - the seven-dimension result is **not** converted into this report and this report is **not**
+//!   reverse-engineered into scores;
+//! - the reference Host still binds `Arc<dyn UserEmotionAnalyzer>` and reads the seven-dimension
+//!   result, so **no product consumer reads this report today**. That the builtin type can serve the
+//!   Base view is an additive capability of the implementation, not a product migration.
+//!
+//! See the example at the end of this documentation for both entry points on one real instance.
 //!
 //! # What a successful result claims
 //!
@@ -71,12 +91,16 @@
 //! source, so it does not manufacture those kinds, and it does not add retries, fallback, I/O or
 //! model calls.
 //!
-//! The type is stateless, is **not wired into any Host** (nothing registers it with `AppState`,
-//! `slot_runner`, the plugin paths or the ChatPro pipeline), and reuses the borrowed local
-//! [`BaseCallFuture`] shape without adding `Send`, `Sync`, `'static` or executor requirements. The
-//! work is finite synchronous work inside the asynchronous call surface and is finished on the
-//! first poll; that says nothing about real asynchronous I/O, parallel scheduling or cancellation
-//! propagation.
+//! Both implementations are stateless and reuse the borrowed local [`BaseCallFuture`] shape without
+//! adding `Send`, `Sync`, `'static` or executor requirements. The work is finite synchronous work
+//! inside the asynchronous call surface and is finished on the first poll; that says nothing about
+//! real asynchronous I/O, parallel scheduling or cancellation propagation. The contract's future is
+//! allowed to wait — finishing on the first poll is a fact about this computation, not a promise that
+//! every [`EmotionBase`] implementation must make.
+//!
+//! [`KeywordEmotionBase`] is **not wired into any Host** (nothing registers it with `AppState`,
+//! `slot_runner`, the plugin paths or the ChatPro pipeline). The registered type is
+//! [`BuiltinUserEmotionAnalyzer`], and the product consumes only its seven-dimension port.
 //!
 //! # Example
 //!
@@ -107,15 +131,76 @@
 //!     Poll::Pending => panic!("this implementation finishes on the first poll"),
 //! }
 //! ```
+//!
+//! # Example: the registered builtin type, through both traits
+//!
+//! The concrete type the reference Host registers can be called through either trait. Both methods
+//! are named `analyze`, so the calls below are written explicitly; the material and the context are
+//! local values that stay usable after the calls.
+//!
+//! ```
+//! use std::task::{Context, Poll, Waker};
+//!
+//! use oclive_kernel_contracts::{EmotionBase, UserEmotionAnalyzer};
+//! use oclive_kernel_runtime::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+//! use oclive_kernel_types::EmotionBaseRequest;
+//!
+//! let builtin = BuiltinUserEmotionAnalyzer;
+//! let material = String::from("我很开心");
+//!
+//! // The seven-dimension port the reference Host consumes: explicit call on this instance.
+//! let scored = UserEmotionAnalyzer::analyze(&builtin, material.as_str()).expect("analysis");
+//! assert_eq!(scored.joy, 1.0);
+//! assert_eq!(scored.sadness, 0.0);
+//! assert!(scored.extension.is_none(), "no extension is invented here");
+//!
+//! // The Base view of the same instance: one real poll, no request and no model.
+//! let request = EmotionBaseRequest {
+//!     material: material.as_str(),
+//!     context: None,
+//! };
+//! let mut future = EmotionBase::analyze(&builtin, request);
+//! let waker = Waker::noop();
+//! let mut cx = Context::from_waker(waker);
+//! match future.as_mut().poll(&mut cx) {
+//!     Poll::Ready(Ok(Some(report))) => {
+//!         assert!(report.contains("`开心`"), "{report}");
+//!         assert!(report.contains("词表候选类别：joy"), "{report}");
+//!     }
+//!     Poll::Ready(Ok(None)) => panic!("`我很开心` must form a lexicon clue"),
+//!     Poll::Ready(Err(error)) => panic!("unexpected failure: {error}"),
+//!     Poll::Pending => panic!("this implementation finishes on the first poll"),
+//! }
+//!
+//! // Both calls borrowed the local material, so it is still usable here.
+//! assert_eq!(material, "我很开心");
+//! ```
+//!
+//! Those two calls are two analyses of the same material, not one analysis delivering two views, and
+//! each keeps its own projection: `scored` is the numeric result the product consumes (including its
+//! existing `neutral` fallback when the material has no usable hit), while `report` is the clue-level
+//! Base text. Neither value is derived from the other.
 
 use oclive_kernel_contracts::{BaseCallFuture, EmotionBase};
 use oclive_kernel_types::{BaseCallError, BaseCallErrorKind, EmotionBaseRequest};
 
-use super::lexicon::{lexicon, EmotionDimension, LexiconHit, LexiconSuggestion};
+use super::emotion_analyzer::analyze_material;
+use super::lexicon::{EmotionDimension, LexiconHit};
+use super::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
 
 /// Reported once per call, after the per-entry lines.
 const LIMITS: &str = "以上为词表级线索，不是任何人的已确认情绪状态；否定标记只说明现有规则是否触发，\
 不能确认整句否定，也不能由 false 确认情绪肯定；每条目只处理首个匹配；未判定主体、引述归属或条件是否成立。";
+
+/// The one rejection text for a non-empty `context`.
+///
+/// Both Base implementations share it, so this is a reuse of the existing Base detail rather than a
+/// second machine-readable protocol: machine decisions must not be read from `detail` at all, and
+/// the kind stays [`BaseCallErrorKind::Unsupported`].
+const CONTEXT_REJECTION: &str =
+    "KeywordEmotionBase does not process additional context or analysis \
+                                 requirements; pass `None` (or an empty string) to analyse the \
+                                 material's lexicon clues";
 
 /// The lexicon category name for one dimension.
 ///
@@ -168,6 +253,35 @@ fn load_failure(error: &oclive_kernel_types::AppError) -> BaseCallError {
     }
 }
 
+/// The Base view's one internal path: the `context` judgement, then this crate's shared analysis,
+/// then the clue report.
+///
+/// [`KeywordEmotionBase`] and [`BuiltinUserEmotionAnalyzer`] both delegate here, so the agreement —
+/// the `context` branches, the `None`-versus-report decision, the report text, the shared rejection
+/// detail and the failure projection — is written once and cannot drift between them. It runs **one**
+/// analysis per call (the crate's [`analyze_material`] entry) and never looks at the
+/// seven-dimension projection: nothing here derives a report from scores.
+fn base_clue_report(
+    text: &str,
+    context: Option<&str>,
+) -> std::result::Result<Option<String>, BaseCallError> {
+    // The context judgement comes first: an unsupported requirement is reported before any analysis
+    // happens, so it can never be bypassed by a material that would return `None`.
+    if context.is_some_and(|context| !context.is_empty()) {
+        return Err(BaseCallError {
+            kind: BaseCallErrorKind::Unsupported,
+            detail: Some(CONTEXT_REJECTION.to_string()),
+        });
+    }
+
+    let suggestion = analyze_material(text).map_err(|error| load_failure(&error))?;
+
+    if suggestion.hits.is_empty() {
+        return Ok(None);
+    }
+    Ok(Some(build_report(&suggestion.hits)))
+}
+
 /// A limited [`EmotionBase`] implementation that reports lexicon clues for the given material.
 ///
 /// See the [module documentation](self) for the exact agreement, the `context` handling, what a
@@ -195,35 +309,50 @@ impl EmotionBase for KeywordEmotionBase {
         &'a self,
         request: EmotionBaseRequest<'a>,
     ) -> BaseCallFuture<'a, Option<String>> {
-        Box::pin(async move {
-            // The context judgement comes first: an unsupported requirement is reported before any
-            // analysis happens, so it can never be bypassed by a material that would return `None`.
-            if request.context.is_some_and(|context| !context.is_empty()) {
-                return Err(BaseCallError {
-                    kind: BaseCallErrorKind::Unsupported,
-                    detail: Some(
-                        "KeywordEmotionBase does not process additional context or analysis \
-                         requirements; pass `None` (or an empty string) to analyse the material's \
-                         lexicon clues"
-                            .to_string(),
-                    ),
-                });
-            }
+        Box::pin(async move { base_clue_report(request.material, request.context) })
+    }
+}
 
-            let lexicon = lexicon().map_err(|error| load_failure(&error))?;
-            let suggestion: LexiconSuggestion = lexicon.analyze(request.material);
-
-            if suggestion.hits.is_empty() {
-                return Ok(None);
-            }
-            Ok(Some(build_report(&suggestion.hits)))
-        })
+/// CP-B3-C2: the registered builtin analyzer serves the Base view too.
+///
+/// [`BuiltinUserEmotionAnalyzer`] is the concrete type the reference Host registers for
+/// `plugin_backends.emotion = builtin`. This implementation gives that same type the Base
+/// capability through the same private path as [`KeywordEmotionBase`], and both paths call this
+/// crate's one analysis entry — so the clue report and the seven-dimension result come from one
+/// shared analysis implementation, while each trait call is still its own analysis (there is no
+/// cache and no single call that returns both views).
+///
+/// What this does **not** change: the reference Host keeps binding
+/// `Arc<dyn UserEmotionAnalyzer>` and reading the seven-dimension result, so nothing in the product
+/// reads this report, and the seven-dimension values — including the compatible `neutral` fallback
+/// for material with no usable hit — are untouched. Compatibility of the old numeric entry is the
+/// point; this report is not converted into scores and the scores are not reverse-engineered into a
+/// report.
+///
+/// The `context` branches, the report's wording and limits, and the two failure sources are the ones
+/// documented on this module and shared with [`KeywordEmotionBase`]; the rejection `detail` is that
+/// same shared Base text rather than a second protocol.
+impl EmotionBase for BuiltinUserEmotionAnalyzer {
+    /// Reports the lexicon entries matched by `request.material`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`BaseCallErrorKind::Unsupported`] for any non-empty `request.context`, and
+    /// [`BaseCallErrorKind::Failed`] if the embedded lexicon cannot be loaded or validated — the same
+    /// two sources as [`KeywordEmotionBase`], with the same kinds and the same shared detail text.
+    fn analyze<'a>(
+        &'a self,
+        request: EmotionBaseRequest<'a>,
+    ) -> BaseCallFuture<'a, Option<String>> {
+        Box::pin(async move { base_clue_report(request.material, request.context) })
     }
 }
 
 #[cfg(test)]
 mod b2_c4_tests {
     use std::task::{Context, Poll, Waker};
+
+    use crate::domain::lexicon::lexicon;
 
     use super::*;
 
@@ -654,5 +783,279 @@ mod b2_c4_tests {
         );
         assert_eq!(drive("今天星期三", None).unwrap(), None);
         assert!(drive("我很难过", None).unwrap().unwrap().contains("`难过`"));
+    }
+}
+
+#[cfg(test)]
+mod cp_b3_c2_tests {
+    use std::task::{Context, Poll, Waker};
+
+    use super::*;
+    use crate::domain::emotion_analyzer::EmotionAnalyzer;
+    use crate::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+    use oclive_kernel_contracts::UserEmotionAnalyzer;
+
+    /// Drives one Base call on a real slot value with a no-op waker. Answering `Pending` fails the
+    /// calling test instead of being skipped: this implementation is pure computation, and no test
+    /// here fabricates a pending path for it.
+    fn drive_base(
+        slot: &dyn EmotionBase,
+        material: &str,
+        context: Option<&str>,
+    ) -> std::result::Result<Option<String>, BaseCallError> {
+        let request = EmotionBaseRequest { material, context };
+        let mut future = slot.analyze(request);
+        let waker = Waker::noop();
+        let mut cx = Context::from_waker(waker);
+        match future.as_mut().poll(&mut cx) {
+            Poll::Ready(outcome) => outcome,
+            Poll::Pending => panic!("this implementation has no pending path"),
+        }
+    }
+
+    /// The seven components in a fixed order.
+    fn components(result: &oclive_kernel_types::EmotionResult) -> [f64; 7] {
+        [
+            result.joy,
+            result.sadness,
+            result.anger,
+            result.fear,
+            result.surprise,
+            result.disgust,
+            result.neutral,
+        ]
+    }
+
+    /// The registered builtin type's seven-dimension result for `material`, with **every** component
+    /// and the extension envelope checked against hand-written expectations — never only `neutral`.
+    fn scored(material: &str, expected: [f64; 7]) -> oclive_kernel_types::EmotionResult {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let result =
+            UserEmotionAnalyzer::analyze(&builtin, material).expect("analysis must succeed");
+        assert_eq!(
+            components(&result),
+            expected,
+            "{material}: seven-dimension result"
+        );
+        assert!(
+            result.extension.is_none(),
+            "{material}: no extension is invented"
+        );
+        result
+    }
+
+    /// CP-B3-C2: the registered builtin concrete type serves **both** existing traits.
+    ///
+    /// Written before the implementation existed, so the first run failed to compile with
+    /// `EmotionBase is not implemented for BuiltinUserEmotionAnalyzer`.
+    #[test]
+    fn cp_b3_c2_builtin_type_satisfies_both_traits() {
+        fn require_emotion_base<T: EmotionBase>() {}
+        fn require_user_emotion_analyzer<T: UserEmotionAnalyzer>() {}
+        require_emotion_base::<BuiltinUserEmotionAnalyzer>();
+        require_user_emotion_analyzer::<BuiltinUserEmotionAnalyzer>();
+    }
+
+    /// CP-B3-C2: one bound builtin instance really serves the Base slot — as a `&dyn` slot and as a
+    /// boxed slot — and a `Pending` answer would fail rather than silently pass.
+    #[test]
+    fn cp_b3_c2_builtin_serves_the_base_slot_through_a_trait_object() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let slot: &dyn EmotionBase = &builtin;
+        let report = drive_base(slot, "我很开心", None)
+            .expect("analysis must succeed")
+            .expect("this material must form a lexicon clue");
+        assert!(report.contains("`开心`"), "{report}");
+        assert!(report.contains("词表候选类别：joy"), "{report}");
+
+        let boxed: Box<dyn EmotionBase> = Box::new(BuiltinUserEmotionAnalyzer);
+        let boxed_report = drive_base(boxed.as_ref(), "我很难过", None)
+            .expect("analysis must succeed")
+            .expect("this material must form a lexicon clue");
+        assert!(boxed_report.contains("`难过`"), "{boxed_report}");
+    }
+
+    /// CP-B3-C2: the two Base implementations agree verbatim on a batch of materials, and a fully
+    /// literal anchor pins the exact report text — so "both wrong in the same way" is excluded.
+    #[test]
+    fn cp_b3_c2_builtin_and_keyword_base_views_agree_verbatim() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        for material in [
+            "我很开心",
+            "我不开心",
+            "难过开心",
+            "嗯嗯好的",
+            "今天星期三",
+            "Alice 很难过，Bob 很开心",
+            "他说“我很开心”，我没有这么说",
+            "如果明天成功，我会开心",
+            "中a happy",
+            "中a not happy",
+            "unhappy",
+            "",
+        ] {
+            assert_eq!(
+                drive_base(&builtin, material, None),
+                drive_base(&KeywordEmotionBase, material, None),
+                "{material}: the two Base implementations must not drift"
+            );
+        }
+
+        // Independent, fully literal expectation (not produced by `build_report`).
+        let anchor = "词表线索：材料命中词表条目 `开心`（词表候选类别：joy；规则标记：is_negated=false）\n\
+                      以上为词表级线索，不是任何人的已确认情绪状态；否定标记只说明现有规则是否触发，\
+                      不能确认整句否定，也不能由 false 确认情绪肯定；每条目只处理首个匹配；\
+                      未判定主体、引述归属或条件是否成立。";
+        assert_eq!(
+            drive_base(&builtin, "我很开心", None).unwrap().unwrap(),
+            anchor
+        );
+        assert_eq!(
+            drive_base(&KeywordEmotionBase, "我很开心", None)
+                .unwrap()
+                .unwrap(),
+            anchor
+        );
+    }
+
+    /// CP-B3-C2: no clue, a genuine neutral hit and an all-negated hit stay distinct in the Base
+    /// view even though the seven-dimension result is the same compatible fallback for all three.
+    #[test]
+    fn cp_b3_c2_builtin_distinguishes_no_clue_neutral_and_negated() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let slot: &dyn EmotionBase = &builtin;
+        let fallback = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0];
+
+        // The legacy numeric projection cannot tell these three apart.
+        let no_clue = scored("今天星期三", fallback);
+        let neutral_hit = scored("嗯嗯好的", fallback);
+        let negated_hit = scored("我不开心", fallback);
+        assert_eq!(components(&no_clue), components(&neutral_hit));
+        assert_eq!(components(&neutral_hit), components(&negated_hit));
+
+        // The Base view can, and it keeps every distinction the lexicon itself still carries.
+        assert_eq!(drive_base(slot, "今天星期三", None).unwrap(), None);
+        assert_eq!(
+            drive_base(slot, "嗯嗯好的", None).unwrap().unwrap(),
+            "词表线索：材料命中词表条目 `嗯`（词表候选类别：neutral；规则标记：is_negated=false）\n\
+             材料命中词表条目 `好的`（词表候选类别：neutral；规则标记：is_negated=false）\n"
+                .to_string() + LIMITS
+        );
+        let negated_report = drive_base(slot, "我不开心", None).unwrap().unwrap();
+        assert_eq!(
+            negated_report,
+            "词表线索：材料命中词表条目 `开心`（词表候选类别：joy；规则标记：is_negated=true）\n"
+                .to_string()
+                + LIMITS
+        );
+        // A negated hit is still a hit: the report must not read as "neutral emotion confirmed".
+        assert!(negated_report.contains("`开心`"), "{negated_report}");
+        assert!(
+            !negated_report.contains("词表候选类别：neutral"),
+            "no neutral entry may be invented from the fallback: {negated_report}"
+        );
+        assert!(
+            negated_report.contains("否定标记只说明现有规则是否触发"),
+            "{negated_report}"
+        );
+
+        // Both Base implementations must agree on all three cases as well.
+        for material in ["今天星期三", "嗯嗯好的", "我不开心"] {
+            assert_eq!(
+                drive_base(slot, material, None),
+                drive_base(&KeywordEmotionBase, material, None),
+                "{material}"
+            );
+        }
+    }
+
+    /// CP-B3-C2: the `context` agreement is unchanged — `None` and an empty string mean the same,
+    /// any non-empty context is rejected before analysis — and one bound instance is reused across
+    /// success, rejection, no-clue and success.
+    #[test]
+    fn cp_b3_c2_builtin_context_matrix_on_one_reused_instance() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let slot: &dyn EmotionBase = &builtin;
+
+        assert_eq!(
+            drive_base(slot, "我很开心", None),
+            drive_base(slot, "我很开心", Some(""))
+        );
+
+        let expected_detail = drive_base(&KeywordEmotionBase, "我很开心", Some("Bob"))
+            .expect_err("non-empty context must be rejected")
+            .detail;
+        for context in [" ", "\n", "\t", "\u{3000}", "分析对象是 Bob"] {
+            let error = drive_base(slot, "我很开心", Some(context))
+                .expect_err("non-empty context must be rejected");
+            assert_eq!(
+                error.kind,
+                BaseCallErrorKind::Unsupported,
+                "unexpected kind for context {context:?}"
+            );
+            assert_eq!(
+                error.detail, expected_detail,
+                "the shared Base detail must not drift for context {context:?}"
+            );
+        }
+        assert_eq!(
+            drive_base(slot, "", Some("分析对象是 Bob"))
+                .unwrap_err()
+                .kind,
+            BaseCallErrorKind::Unsupported,
+            "an empty material must not short-circuit the context check"
+        );
+
+        // One reused instance: success -> rejected -> no clue -> success.
+        assert!(drive_base(slot, "我很开心", None).unwrap().is_some());
+        assert_eq!(
+            drive_base(slot, "我很开心", Some("Bob")).unwrap_err().kind,
+            BaseCallErrorKind::Unsupported
+        );
+        assert_eq!(drive_base(slot, "今天星期三", None).unwrap(), None);
+        assert!(drive_base(slot, "我很难过", None)
+            .unwrap()
+            .unwrap()
+            .contains("`难过`"));
+    }
+
+    /// CP-B3-C2: the Base call borrows local material and context for this poll only; both are still
+    /// usable afterwards. This proves local borrowing — not crossing a `Pending`, not "no clone" and
+    /// not anything about threads or `Send`.
+    #[test]
+    fn cp_b3_c2_builtin_borrows_local_material_and_context() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let slot: &dyn EmotionBase = &builtin;
+        let material = String::from("我很开心");
+        let context = String::new();
+
+        let report = drive_base(slot, material.as_str(), Some(context.as_str()))
+            .expect("analysis must succeed")
+            .expect("this material must form a lexicon clue");
+        assert!(report.contains("`开心`"), "{report}");
+
+        assert_eq!(material, "我很开心");
+        assert!(context.is_empty());
+    }
+
+    /// CP-B3-C2: the seven-dimension entry and the Base entry are two projections of one shared
+    /// analysis implementation, but not one execution: running both for the same material performs
+    /// two analyses. This test only documents the values each view produces for the same input.
+    #[test]
+    fn cp_b3_c2_both_views_of_one_material_keep_their_own_projection() {
+        let builtin = BuiltinUserEmotionAnalyzer;
+        let material = "我不开心";
+
+        let legacy = EmotionAnalyzer::analyze(material).expect("analysis must succeed");
+        let via_builtin = UserEmotionAnalyzer::analyze(&builtin, material).expect("analysis");
+        assert_eq!(components(&legacy), components(&via_builtin));
+
+        let report = drive_base(&builtin, material, None)
+            .expect("analysis must succeed")
+            .expect("a negated hit is still a clue");
+        // The report says "an entry matched and was negated"; the numbers say the compatible
+        // neutral fallback. Neither view is derived from the other.
+        assert!(report.contains("is_negated=true"), "{report}");
+        assert_eq!(components(&legacy), [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
     }
 }
