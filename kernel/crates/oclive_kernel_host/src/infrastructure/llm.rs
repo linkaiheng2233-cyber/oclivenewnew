@@ -89,7 +89,7 @@ pub(crate) fn b2_c1_merge_options(
     }
 }
 
-fn log_ollama_metrics(
+pub(crate) fn log_ollama_metrics(
     model: &str,
     metrics: &crate::infrastructure::ollama_client::OllamaGenerateMetrics,
 ) {

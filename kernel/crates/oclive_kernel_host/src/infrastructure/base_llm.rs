@@ -35,11 +35,18 @@
 //!
 //! This adapter is **not registered anywhere**: the reference Host does not call it, and building
 //! one sends no request — the actual call only happens when a caller polls
-//! [`LlmBase::generate`]. The production composition
-//! (`AppState`, `SharedOllamaClient`, `CoordinatedExternalLlm`, `PerformanceLlmClient` and the
-//! resource / authorization wrappers) is untouched and not replaced; this adapter does not provide
-//! those observation, gating or fallback promises, and a deployment that wires it still owes
-//! whatever authorization, resource and scheduling rules apply to it.
+//! [`LlmBase::generate`]. The production composition (`AppState`, `SharedOllamaClient`,
+//! `CoordinatedExternalLlm`, `PerformanceLlmClient` and the resource / authorization wrappers) is
+//! untouched by this adapter and not replaced by it; this adapter does not provide those
+//! observation, gating or fallback promises, and a deployment that wires it still owes whatever
+//! authorization, resource and scheduling rules apply to it.
+//!
+//! Independent of that, the reference Host does have a **private** non-streaming binding that uses
+//! the same completion judgement (the `pub(crate)` module `infrastructure::base_llm_binding`,
+//! deliberately not linked here because it is not part of this public page); it is wired into the
+//! builtin assembly for `generate_with_opts`. That is a separate, Host-private piece of composition:
+//! it does not register this public adapter, and it does not make the Base trait itself usable from
+//! a `Send` boundary for arbitrary implementations.
 //!
 //! There is no streaming, tag, metrics or structured-output promise here. Cancellation has no
 //! protocol: dropping the returned future means the caller stopped waiting, nothing more.
@@ -69,27 +76,7 @@ use oclive_kernel_types::{BaseCallError, BaseCallErrorKind, LlmBaseRequest};
 
 use super::llm::b2_c1_merge_options;
 use super::llm_params;
-use super::ollama_client::{OllamaCallFailure, OllamaClient};
-
-/// Projects one failed non-streaming call onto a Base call result.
-///
-/// The only machine-readable fact used here is the one the shared path recorded while it still held
-/// the typed `reqwest::Error`: whether that step knew the call timed out. Nothing is inferred from
-/// the error text, and no error-name table is applied. Every other failure — request error, body
-/// read error, non-success status, parse failure — is projected as [`BaseCallErrorKind::Failed`].
-/// Cancellation is deliberately absent: this chain has no cancellation source, so there is nothing
-/// to report.
-fn base_error_from_failure(failure: OllamaCallFailure) -> BaseCallError {
-    let kind = if failure.known_timeout {
-        BaseCallErrorKind::TimedOut
-    } else {
-        BaseCallErrorKind::Failed
-    };
-    BaseCallError {
-        kind,
-        detail: Some(failure.error.to_string()),
-    }
-}
+use super::ollama_client::OllamaClient;
 
 /// A concrete Ollama non-streaming [`LlmBase`] implementation.
 ///
@@ -131,6 +118,41 @@ impl OllamaBaseAdapter {
     }
 }
 
+/// Projects one shared non-streaming call result into the Base view.
+///
+/// This is the Base view's single entry point: the public C1 adapter
+/// ([`OllamaBaseAdapter`]) calls it. The Host's checked non-streaming binding does **not** call it —
+/// it projects the same result itself in [`super::base_llm_binding::project_checked_call`], keeping
+/// the caller-side metrics and the original `AppError` instead of round-tripping through a
+/// `BaseCallError`. What both views genuinely share is the underlying completion judgement
+/// ([`super::ollama_client::OllamaCallResponse::project_base`]) and the transport
+/// (`generate_with_settings`); neither re-implements them.
+///
+/// A `done = true` reply returns its text verbatim — including empty and whitespace-only text, which
+/// is a normal result — while `done = false` becomes `Failed` with the provider's reason. A transport
+/// failure keeps the kind the transport recorded (`TimedOut` only when it knew that) and its original
+/// diagnostic text; nothing here parses that text.
+pub(crate) fn project_ollama_call(
+    result: std::result::Result<
+        super::ollama_client::OllamaCallResponse,
+        super::ollama_client::OllamaCallFailure,
+    >,
+) -> std::result::Result<String, BaseCallError> {
+    match result {
+        Ok(call) => match call.project_base() {
+            Ok(text) => Ok(text),
+            Err(reason) => Err(BaseCallError {
+                kind: BaseCallErrorKind::Failed,
+                detail: Some(reason),
+            }),
+        },
+        Err(failure) => Err(BaseCallError {
+            kind: failure.base_error_kind(),
+            detail: Some(failure.base_detail()),
+        }),
+    }
+}
+
 impl LlmBase for OllamaBaseAdapter {
     /// Generates text for `request.input` with this adapter's bound client, model and options.
     ///
@@ -145,20 +167,12 @@ impl LlmBase for OllamaBaseAdapter {
             // the rest, and a bound `None` stays `None`.
             let (temperature, top_p) = llm_params::main_chat_options();
             let settings = b2_c1_merge_options(self.options.as_ref(), (temperature, top_p));
-            match self
+            // One shared execution, then the one shared Base projection.
+            let call = self
                 .client
                 .generate_with_settings(&self.model, request.input, settings.request_settings())
-                .await
-            {
-                Ok(call) => match call.project_base() {
-                    Ok(text) => Ok(text),
-                    Err(reason) => Err(BaseCallError {
-                        kind: BaseCallErrorKind::Failed,
-                        detail: Some(reason),
-                    }),
-                },
-                Err(failure) => Err(base_error_from_failure(failure)),
-            }
+                .await;
+            project_ollama_call(call)
         })
     }
 }
@@ -200,10 +214,11 @@ mod b2_c1_tests {
     fn b2_c1_known_timeout_projects_to_timed_out() {
         // The fact comes from the shared path, not from this text: the message deliberately does
         // NOT contain any timeout wording, and the projection must still report a timeout.
-        let projected = base_error_from_failure(failure(
+        let projected = project_ollama_call(Err(failure(
             "Request failed: error sending request for url (http://127.0.0.1:1/api/generate)",
             true,
-        ));
+        )))
+        .expect_err("a failure stays a failure");
         assert_eq!(projected.kind, BaseCallErrorKind::TimedOut);
         assert!(projected
             .detail
@@ -214,21 +229,23 @@ mod b2_c1_tests {
 
     #[test]
     fn b2_c1_body_read_timeout_also_projects_to_timed_out() {
-        let projected = base_error_from_failure(failure(
+        let projected = project_ollama_call(Err(failure(
             "Failed to read response body: connection closed before message completed",
             true,
-        ));
+        )))
+        .expect_err("a failure stays a failure");
         assert_eq!(projected.kind, BaseCallErrorKind::TimedOut);
     }
 
     #[test]
     fn b2_c1_failure_kind_follows_the_recorded_fact_not_the_text() {
         // Exact misleading phrase: no timeout was recorded, so it must stay Failed.
-        let misleading = base_error_from_failure(failure(
+        let misleading = project_ollama_call(Err(failure(
             "HTTP 500 Internal Server Error — Request failed: operation timed out \
              (请求: POST http://localhost:11434/api/generate, model=m)",
             false,
-        ));
+        )))
+        .expect_err("a failure stays a failure");
         assert_eq!(misleading.kind, BaseCallErrorKind::Failed);
         assert!(misleading
             .detail
@@ -239,7 +256,8 @@ mod b2_c1_tests {
         // Plain failure without any keyword. The harness wraps the message once, exactly as the
         // shared path builds it.
         let plain_message = "Failed to read response body: connection reset by peer";
-        let plain = base_error_from_failure(failure(plain_message, false));
+        let plain = project_ollama_call(Err(failure(plain_message, false)))
+            .expect_err("a failure stays a failure");
         assert_eq!(plain.kind, BaseCallErrorKind::Failed);
         let expected = format!("Ollama error: {plain_message}");
         assert_eq!(

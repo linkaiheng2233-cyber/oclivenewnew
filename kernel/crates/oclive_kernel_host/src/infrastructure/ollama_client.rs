@@ -235,6 +235,21 @@ impl OllamaCallFailure {
     pub(crate) fn into_legacy_error(self) -> AppError {
         self.error
     }
+
+    /// The Base reason for this same failure, from the fact the transport recorded — never from the
+    /// message text.
+    pub(crate) fn base_error_kind(&self) -> oclive_kernel_types::BaseCallErrorKind {
+        if self.known_timeout {
+            oclive_kernel_types::BaseCallErrorKind::TimedOut
+        } else {
+            oclive_kernel_types::BaseCallErrorKind::Failed
+        }
+    }
+
+    /// The original human-readable diagnostic this failure already carries.
+    pub(crate) fn base_detail(&self) -> String {
+        self.error.to_string()
+    }
 }
 
 /// Handles a `reqwest` error from one non-streaming step, keeping a timeout fact it already knows.

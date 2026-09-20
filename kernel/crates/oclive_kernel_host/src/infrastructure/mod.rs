@@ -27,6 +27,7 @@ pub mod app_data_migration;
 pub mod backend_registry;
 pub(crate) mod background_process;
 pub mod base_llm;
+pub(crate) mod base_llm_binding;
 pub mod cache;
 pub mod capability_registry;
 pub mod chat_storage;

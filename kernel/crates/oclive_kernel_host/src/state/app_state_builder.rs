@@ -13,7 +13,6 @@ use crate::infrastructure::coordinated_llm::CoordinatedExternalLlm;
 use crate::infrastructure::db::DbManager;
 use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::llm::SharedOllamaClient;
 use crate::infrastructure::ollama_client::OllamaClient;
 use crate::infrastructure::performance_llm::PerformanceLlmClient;
 use crate::infrastructure::policy_registry::{
@@ -207,8 +206,16 @@ impl AppStateBuilder {
                     std::env::var("OLLAMA_BASE_URL")
                         .unwrap_or_else(|_| "http://localhost:11434".to_string()),
                 ));
-                let raw_fallback: Arc<dyn LlmClient> =
-                    Arc::new(SharedOllamaClient(Arc::clone(&client)));
+                // CP-B3-C1: the concrete non-streaming sink stays inside the same observation
+                // wrapper; only the object being observed changes, so the guard, the adapter ids
+                // and the resource profile are untouched. Only `generate_with_opts` applies the
+                // provider completion check; `generate` and the tag, stream and probe methods still
+                // delegate to the same client exactly as before.
+                let raw_fallback: Arc<dyn LlmClient> = Arc::new(
+                    crate::infrastructure::base_llm_binding::LlmWithCheckedCompletion::new(
+                        Arc::clone(&client),
+                    ),
+                );
                 let fallback: Arc<dyn LlmClient> =
                     Arc::new(CoordinatedExternalLlm::new_with_profile(
                         raw_fallback,
