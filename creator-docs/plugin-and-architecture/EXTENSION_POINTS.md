@@ -48,7 +48,7 @@
 | 类型 | 位置 | 用途 |
 |------|------|------|
 | `SlotExtension { schema_id, data }` | `oclive_kernel_types::slot_extension` | 槽插件输出的 opaque JSON 信封；`schema_id` 标识 payload 语义 |
-| `EmotionResult.extension` | `emotion.rs` | 七维情绪之外的异构投射（如 CHS 三维）；`#[serde(default)]`，省略时无扩展 |
+| `EmotionResult.extension` | `emotion.rs` | 七维情绪之外的异构投射（如 CHS：三维情绪投射识别算法，与 VAD/PAD 同族的维度模型；历史候选，未实现）；`#[serde(default)]`，省略时无扩展 |
 | `ComplexEmotionOutput.extension` | `complex_emotion.rs` | 复杂情感侧车可附带私有字段 |
 | `PromptInput.extra_sections` | `prompt.rs` | 宿主编排的通用 Prompt 段 `{ title, body }[]`；在回复质量锚点**之前**按序渲染为 `【title】\nbody` |
 

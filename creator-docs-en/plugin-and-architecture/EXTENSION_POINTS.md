@@ -52,7 +52,7 @@ Aligned with [PLUGIN_V1.md](PLUGIN_V1.md): current packs declare instances and b
 | Type | Location | Role |
 |------|----------|------|
 | `SlotExtension { schema_id, data }` | `oclive_kernel_types::slot_extension` | Opaque JSON envelope for slot plugin output; `schema_id` names the payload schema |
-| `EmotionResult.extension` | `emotion.rs` | Heterogeneous projections beyond seven-dim scores (e.g. CHS triple); `#[serde(default)]`, absent when omitted |
+| `EmotionResult.extension` | `emotion.rs` | Heterogeneous projections beyond seven-dim scores (e.g. CHS: a three-dimensional emotion-projection recognition algorithm, same VAD/PAD dimensional-model family; historical candidate, never implemented); `#[serde(default)]`, absent when omitted |
 | `ComplexEmotionOutput.extension` | `complex_emotion.rs` | Optional private fields from complex-emotion sidecars |
 | `PromptInput.extra_sections` | `prompt.rs` | Host-orchestrated generic prompt blocks `{ title, body }[]`; rendered **before** the reply-quality anchor as `【title】\nbody` in order |
 
