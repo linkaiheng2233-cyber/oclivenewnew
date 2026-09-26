@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Conflict between explicit text tasks and anti-parroting rules**: the shared dynamic footer of builtin ordinary/segmented prompts now explicitly permits user-requested restatement, summarization, rewriting and quotation while requiring preservation of subject, negation, scope and conditions. Ordinary chat still avoids mechanical repetition; factual, authorization and safety boundaries remain unchanged. The final duplication check no longer unconditionally forbids matching the source text. No task classifier, model call or public interface was added; actual model adherence still requires live revalidation.
+
 ### Added
 
 - **CP-B3-ALL P: shared connection core for the builtin Prompt**: `oclive_kernel_runtime`'s `domain/base_prompt.rs` gains `concat_prepared_text` and `assemble_literal_material`, and the `prompt_builder` preparation blocks (`prepare_prompt_blocks`/`build_prompt`), `PromptSegments::full()` and the Base entry of `BuiltinPromptAssembler` now share that one connection rule. The byte digests of five pre-change inputs (CRLF, U+3000, empty worldview, anchor turn) recompute unchanged, and the product layout, segment boundaries, `stable_len` and gating behaviour are unchanged; a non-empty `requirements` is still `Unsupported`, and the Base entry still keeps material verbatim, in order and with duplicates. This unit is a byte-equivalent refactor, not a new Prompt capability.

@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **明确文本任务与防复读规则的冲突**：内置普通/分段 Prompt 的共用动态尾部明确允许用户主动要求的复述、总结、改写与引用，要求保留主体、否定、限定和条件；日常聊天仍避免机械复读，事实、权限与安全边界不变。同步收紧末尾的去重检查，不再一律禁止成品与原文相同。未新增任务识别器、模型调用或公共接口；模型实际遵循情况仍须真实复验。
+
 ### Added
 
 - **CP-B3-ALL P：内置 Prompt 的共享连接核心**：`oclive_kernel_runtime` 的 `domain/base_prompt.rs` 新增 `concat_prepared_text` 与 `assemble_literal_material`，`prompt_builder` 的准备块（`prepare_prompt_blocks`/`build_prompt`）、`PromptSegments::full()` 与 `BuiltinPromptAssembler` 的 Base 入口改为共用同一连接规则。改前五组输入（含 CRLF、U+3000、空世界观、锚点轮）的逐字节摘要复算不变，产品布局、segments 边界与 `stable_len`、门控行为均未变；`requirements` 非空仍为 `Unsupported`，Base 入口对材料逐字、保序、保重复。此单元是字节等价重构，不是新的 Prompt 能力。
