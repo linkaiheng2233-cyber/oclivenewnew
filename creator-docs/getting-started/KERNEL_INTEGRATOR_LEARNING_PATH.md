@@ -6,7 +6,7 @@
 
 ## 从六槽 Base 出发（约 10 分钟）
 
-先运行 `cargo run -p oclive_kernel_runtime --example base_first_host`，再看 [示例源码](../../kernel/crates/oclive_kernel_runtime/examples/base_first_host.rs) 和 [Base-only 夹具](../../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)。示例由一个外部小 Host 按需选择 `MemoryBase`、`PromptBase`、`LlmBase`；Memory 可以省略，Emotion／Event／Agent 不参与这一回合。它使用两项有限的内存参考实现和一个本地 Echo LLM，不读取完整 `Role`、数据库或 ChatPro 配置，不启动网络／真实模型。示例的单次 poll 只适用于这些立即完成的实现，真实 Host 须用自己的执行器驱动 `BaseCallFuture`。
+先运行 `cargo run -p oclive_kernel_runtime --example base_first_host`，再看 [示例源码](../../kernel/crates/oclive_kernel_runtime/examples/base_first_host.rs) 和 [Base-only 夹具](../../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)。示例由一个外部小 Host 按需选择 `MemoryBase`、`PromptBase`、`LlmBase`；Memory 可以省略，Emotion／Event／Agent 不参与这一回合。它还验证额外 Prompt 要求被判 `Unsupported` 时不会继续调用 LLM。示例使用两项有限的内存参考实现和一个本地 Echo LLM，不读取完整 `Role`、数据库或 ChatPro 配置，不启动网络／真实模型。单次 poll 只适用于这些立即完成的实现，真实 Host 须用自己的执行器驱动 `BaseCallFuture`。
 
 **验收方向**：先证明 Base 请求、正常空值与错误可独立调用，再核具体实现是否兑现自己的承诺，最后才验证 Host／发行版的适配与产品回合。六槽是可选能力而非固定六阶段；本示例既不是通用 Host 编排器，也不证明物理上已有独立的小 Kernel 发布包或 Stable API。
 
