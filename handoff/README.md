@@ -6,6 +6,8 @@
 
 **六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
 
+**ChatPro 接入验收**：沿内核向外的分层工作范围、现有证据与未证边界见 [Host 接入检查单](CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md)；发行版 smoke 是下游回归，不反向定义六槽 Base。
+
 ## 文档分责
 
 以下只分配文档职责；具体模块、格式和行为由对应专题拥有。
