@@ -67,6 +67,28 @@ const CODE_SKIP_PREFIXES = [
   'scripts/lib/',
 ];
 
+// These test files construct isolated role packs under their own scenario roots.
+// Keep the exception on this one rule; all other path checks still inspect them.
+const ISOLATED_ROLES_FIXTURES = new Set([
+  'kernel/crates/oclive_kernel_host/tests/a_turn_harness/http_entry.rs',
+  'kernel/crates/oclive_kernel_host/tests/a_turn_harness/http_idempotency.rs',
+  'kernel/crates/oclive_kernel_host/tests/a_turn_harness/live.rs',
+  'kernel/crates/oclive_kernel_host/tests/a_turn_harness/main.rs',
+  'kernel/crates/oclive_kernel_host/tests/a_turn_harness/support/fixture.rs',
+  'distros/desktop-tauri/tests/crash_restart_recovery.rs',
+  'distros/desktop-tauri/tests/cross_transport_loopback_live.rs',
+]);
+
+function isIsolatedRolesFixtureJoin(line, rel) {
+  if (!ISOLATED_ROLES_FIXTURES.has(rel)) return false;
+  const receivers = [...line.matchAll(/([A-Za-z_][\w.]*)\.join\(['"]roles['"]\)/g)]
+    .map((match) => match[1]);
+  return receivers.length > 0
+    && receivers.every((receiver) => [
+      'root', 'scenario_root', 'self.root', 'fixture.root',
+    ].includes(receiver));
+}
+
 const CODE_DIRS = [
   'kernel/crates',
   'distros',
@@ -354,6 +376,7 @@ function scanCodeLine(line, rel, ext) {
     if (
       !/resolve_project_roles_dir|chat_pro_roles_dir|chat-pro/.test(line)
       && !/app_data|out\.join|dir\.path\(\)|args\.output/.test(line)
+      && !isIsolatedRolesFixtureJoin(line, rel)
     ) {
       hits.push('monorepo .join("roles") without distros/chat-pro/roles');
     }
@@ -369,6 +392,22 @@ function scanCodeLine(line, rel, ext) {
 }
 
 let violations = 0;
+
+if (argv.has('--self-test')) {
+  const fixture = 'kernel/crates/oclive_kernel_host/tests/a_turn_harness/main.rs';
+  const production = 'kernel/crates/oclive_kernel_host/src/lib.rs';
+  const hasRolesHit = (line, rel) => scanCodeLine(line, rel, '.rs')
+    .includes('monorepo .join("roles") without distros/chat-pro/roles');
+  if (hasRolesHit('let roles = root.join("roles");', fixture)
+    || hasRolesHit('let roles = fixture.root.join("roles");', fixture)
+    || !hasRolesHit('let roles = repo_root.join("roles");', fixture)
+    || !hasRolesHit('let roles = root.join("roles");', production)
+    || !hasRolesHit('let roles = root.join("roles") && repo_root.join("roles");', fixture)) {
+    throw new Error('isolated fixture roles-path rule failed');
+  }
+  console.log('check-stale-paths: isolated fixture roles-path self-test OK');
+  process.exit(0);
+}
 
 function report(rel, lineNo, label) {
   console.error(`::error file=${rel},line=${lineNo},title=stale-path-check::${label}`);
