@@ -229,13 +229,25 @@ async function scenarioRolePortability() {
   console.log('[e2e-distro] scenario: role-portability');
   const rolePath = path.join(rolesDir, 'mumu');
   const profiles = [
-    { distroId: 'desktop', profile: 'desktop.oclive.toml', sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true },
-    { distroId: 'vscode', profile: 'vscode.oclive.toml', sceneId: 'vscode', prompt: 'concise', agent: false, complexEmotion: false },
-    { distroId: 'theater', profile: 'theater.oclive.toml', sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true },
+    {
+      distroId: 'desktop',
+      profile: 'distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml',
+      sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true, modeSwitch: true,
+    },
+    {
+      distroId: 'vscode',
+      profile: 'examples/distro-profiles/vscode.oclive.toml',
+      sceneId: 'vscode', prompt: 'concise', agent: false, complexEmotion: false, modeSwitch: false,
+    },
+    {
+      distroId: 'theater',
+      profile: 'distros/desktop-tauri/resources/distro-profiles/theater.oclive.toml',
+      sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true, modeSwitch: true,
+    },
   ];
 
   for (const entry of profiles) {
-    const profile = path.join(repoRoot, 'examples', 'distro-profiles', entry.profile);
+    const profile = path.join(repoRoot, entry.profile);
     if (!fs.existsSync(profile)) {
       throw new Error(`missing distro profile: ${profile}`);
     }
@@ -255,6 +267,7 @@ async function scenarioRolePortability() {
           || health.distro_profile_hash !== expectedHash
           || summary?.distroId !== entry.distroId
           || summary?.promptProfile !== entry.prompt
+          || summary?.allowModeSwitch !== entry.modeSwitch
           || summary?.enabledModules?.includes('agent') !== entry.agent
           || summary?.enabledModules?.includes('complex_emotion') !== entry.complexEmotion) {
         throw new Error(`${entry.distroId} effective profile mismatch: ${JSON.stringify(health)}`);
