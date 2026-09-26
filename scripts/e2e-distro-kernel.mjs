@@ -4,7 +4,7 @@
  * Usage: node scripts/e2e-distro-kernel.mjs [--scenario spawn|attach|role-snapshot|bundled-first|theater|role-portability|all]
  */
 import { spawn, spawnSync } from 'child_process';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -229,9 +229,9 @@ async function scenarioRolePortability() {
   console.log('[e2e-distro] scenario: role-portability');
   const rolePath = path.join(rolesDir, 'mumu');
   const profiles = [
-    { distroId: 'desktop', profile: 'desktop.oclive.toml', sceneId: 'home' },
-    { distroId: 'vscode', profile: 'vscode.oclive.toml', sceneId: 'vscode' },
-    { distroId: 'theater', profile: 'theater.oclive.toml', sceneId: 'home' },
+    { distroId: 'desktop', profile: 'desktop.oclive.toml', sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true },
+    { distroId: 'vscode', profile: 'vscode.oclive.toml', sceneId: 'vscode', prompt: 'concise', agent: false, complexEmotion: false },
+    { distroId: 'theater', profile: 'theater.oclive.toml', sceneId: 'home', prompt: 'full', agent: true, complexEmotion: true },
   ];
 
   for (const entry of profiles) {
@@ -245,6 +245,20 @@ async function scenarioRolePortability() {
     });
     try {
       await waitReady();
+      const healthRes = await apiFetch(`http://127.0.0.1:${port}/health`, {
+        headers: { Accept: 'application/json' },
+      });
+      const health = await healthRes.json();
+      const summary = health.active_profile_summary;
+      const expectedHash = createHash('sha256').update(fs.readFileSync(profile)).digest('hex');
+      if (!healthRes.ok || health.distro_id !== entry.distroId
+          || health.distro_profile_hash !== expectedHash
+          || summary?.distroId !== entry.distroId
+          || summary?.promptProfile !== entry.prompt
+          || summary?.enabledModules?.includes('agent') !== entry.agent
+          || summary?.enabledModules?.includes('complex_emotion') !== entry.complexEmotion) {
+        throw new Error(`${entry.distroId} effective profile mismatch: ${JSON.stringify(health)}`);
+      }
       const loadRes = await apiFetch(`http://127.0.0.1:${port}/role/load`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
