@@ -428,6 +428,29 @@ pub async fn reconnect_with_policy(
 #[cfg(test)]
 mod tests {
     use super::find_desktop_distro_profile_path_from_anchors;
+    use oclive_kernel_host::domain::host_profile::{
+        load_host_profile_file, LocalLlmRuntimeMode, PromptProfile,
+    };
+
+    #[test]
+    fn bundled_distro_profiles_parse_as_intended_host_policy() {
+        let profiles = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("resources")
+            .join("distro-profiles");
+        let desktop = load_host_profile_file(&profiles.join("desktop.oclive.toml"))
+            .expect("bundled Chat Pro profile must parse");
+        assert_eq!(desktop.distro_id, "desktop");
+        assert_eq!(desktop.llm_runtime.mode, LocalLlmRuntimeMode::Performance);
+        assert_eq!(desktop.prompt_profile, PromptProfile::Full);
+
+        let theater = load_host_profile_file(&profiles.join("theater.oclive.toml"))
+            .expect("bundled theater profile must parse");
+        assert_eq!(theater.distro_id, "theater");
+        assert_eq!(
+            theater.theater.director_plugin.as_deref(),
+            Some("com.oclive.theater_director_official")
+        );
+    }
 
     #[test]
     fn monorepo_prefers_chat_pro_profile_over_ollama_only_lab() {
