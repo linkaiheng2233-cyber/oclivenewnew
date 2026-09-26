@@ -6,9 +6,7 @@ use crate::domain::chat_turn_rules::{
     trim_template_repeat_reply,
 };
 use crate::domain::slot_runner::SlotRunner;
-use std::sync::Arc;
-#[cfg(feature = "dual_core")]
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use super::super::turn_context::TurnContext;
@@ -21,6 +19,38 @@ use oclive_validation::plugin_backends_for_slot_entry;
 mod post_llm;
 
 pub(super) use post_llm::post_llm;
+
+/// Wraps the client sink and counts the tokens that actually reached it.
+///
+/// The counter exists so a provider failure can tell "nothing was streamed yet" apart from
+/// "the client already holds a partial preview". Every token is still forwarded exactly as
+/// before, so the wire stays byte-compatible with the previous behaviour; only non-empty
+/// tokens are counted, because an empty token cannot start a visible preview and therefore
+/// must not block an otherwise usable fallback.
+fn tracked_token_sink(
+    on_token: oclive_kernel_contracts::LlmTokenSink,
+) -> (oclive_kernel_contracts::LlmTokenSink, Arc<Mutex<usize>>) {
+    let counter = Arc::new(Mutex::new(0usize));
+    let tracked = Arc::clone(&counter);
+    let sink: oclive_kernel_contracts::LlmTokenSink = Arc::new(move |token: &str| {
+        if !token.is_empty() {
+            if let Ok(mut count) = tracked.lock() {
+                *count += 1;
+            }
+        }
+        on_token(token);
+    });
+    (sink, counter)
+}
+
+/// Whether the fallback reply may still be sent as a token.
+///
+/// Only when the client received no token at all. Once a partial preview exists, appending
+/// the fallback would glue a stale prefix to the final text on the wire; the single
+/// authoritative reply is delivered by the terminal `done` event and the persisted row.
+fn should_emit_fallback_token(streamed_tokens: usize) -> bool {
+    streamed_tokens == 0
+}
 
 #[cfg(feature = "dual_core")]
 fn selected_lora_llm(
@@ -715,6 +745,9 @@ pub(crate) async fn run_main_llm_stream(
     let mut main_llm_fallback = false;
     let mut llm_fallback_reason = None;
     let ollama_opts = Some(main_llm_generate_opts(ctx, middle));
+    // A transport failure must never append the fallback reply to a stale partial prefix on
+    // the wire, so the streaming path tracks what was actually forwarded to the client.
+    let (tracked_on_token, streamed_token_count) = tracked_token_sink(Arc::clone(&on_token));
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -729,7 +762,7 @@ pub(crate) async fn run_main_llm_stream(
             );
             let streamed = Arc::new(Mutex::new(String::new()));
             let streamed_for_sink = Arc::clone(&streamed);
-            let downstream = Arc::clone(&on_token);
+            let downstream = Arc::clone(&tracked_on_token);
             let passthrough_sink: oclive_kernel_contracts::LlmTokenSink = Arc::new(move |token| {
                 if let Ok(mut output) = streamed_for_sink.lock() {
                     output.push_str(token);
@@ -783,7 +816,7 @@ pub(crate) async fn run_main_llm_stream(
                         pl,
                         pre.memory.ollama_model.as_str(),
                         &middle.prompt,
-                        Arc::clone(&on_token),
+                        Arc::clone(&tracked_on_token),
                         ollama_opts.as_ref(),
                     )
                     .await
@@ -794,7 +827,7 @@ pub(crate) async fn run_main_llm_stream(
                 pl,
                 pre.memory.ollama_model.as_str(),
                 &middle.prompt,
-                Arc::clone(&on_token),
+                Arc::clone(&tracked_on_token),
                 ollama_opts.as_ref(),
             )
             .await
@@ -805,7 +838,7 @@ pub(crate) async fn run_main_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
-        Arc::clone(&on_token),
+        Arc::clone(&tracked_on_token),
         ollama_opts.as_ref(),
     );
     let reply_out = match generation.await {
@@ -827,7 +860,19 @@ pub(crate) async fn run_main_llm_stream(
                     impact_factor: middle.ai_impact_factor_final,
                 },
             );
-            on_token(fallback.as_str());
+            // Never mix the fallback into a prefix the client already received: when the
+            // provider streamed nothing the fallback is the first token (H02 stays usable),
+            // otherwise the client keeps the partial preview and the single authoritative
+            // fallback reply arrives with `done` and in the persisted row.
+            let already_streamed = streamed_token_count.lock().map(|count| *count).unwrap_or(0);
+            if should_emit_fallback_token(already_streamed) {
+                // Nothing reached the client: the fallback is the first token (H02 path).
+                tracked_on_token(fallback.as_str());
+            } else {
+                tracing::warn!(
+                    "{path_label} provider stream failed after {already_streamed} token(s); withholding the fallback token so the stale prefix is never mixed with the final reply"
+                );
+            }
             oclive_kernel_contracts::LlmGenerateOutcome {
                 reply: fallback,
                 prompt_eval_ms: None,
@@ -1054,5 +1099,101 @@ mod inference_profile_tests {
         assert_eq!(opts.max_output_tokens, Some(1024));
         assert_eq!(opts.preferred_context_tokens, Some(16384));
         assert_eq!(opts.keep_alive.as_deref(), Some("0"));
+    }
+}
+
+/// Contract for the H03 partial-token failure: the fallback reply may never be appended to a
+/// prefix the client already received, while the H02 (nothing streamed) fallback stays usable.
+#[cfg(test)]
+mod stream_fallback_tests {
+    use super::*;
+    use std::sync::Mutex as StdMutex;
+
+    fn recording_sink() -> (
+        oclive_kernel_contracts::LlmTokenSink,
+        Arc<StdMutex<Vec<String>>>,
+    ) {
+        let seen = Arc::new(StdMutex::new(Vec::<String>::new()));
+        let inner = Arc::clone(&seen);
+        let sink: oclive_kernel_contracts::LlmTokenSink =
+            Arc::new(move |token: &str| inner.lock().unwrap().push(token.to_string()));
+        (sink, seen)
+    }
+
+    fn streamed_count(counter: &Arc<Mutex<usize>>) -> usize {
+        *counter.lock().unwrap()
+    }
+
+    #[test]
+    fn h02_style_failure_before_first_token_still_emits_the_fallback_token() {
+        let (sink, seen) = recording_sink();
+        let (tracked, counter) = tracked_token_sink(Arc::clone(&sink));
+
+        // The provider failed before producing anything: the fallback becomes the first token.
+        assert_eq!(streamed_count(&counter), 0);
+        assert!(should_emit_fallback_token(streamed_count(&counter)));
+        tracked("嗯，我听到了。你接着说。");
+
+        assert_eq!(
+            seen.lock().unwrap().as_slice(),
+            ["嗯，我听到了。你接着说。"]
+        );
+        assert_eq!(streamed_count(&counter), 1);
+    }
+
+    #[test]
+    fn h03_style_failure_after_partial_tokens_withholds_the_fallback_token() {
+        let (sink, seen) = recording_sink();
+        let (tracked, counter) = tracked_token_sink(Arc::clone(&sink));
+
+        tracked("清晨的风");
+        assert_eq!(streamed_count(&counter), 1);
+        // The decision the streaming entrypoint takes on the provider error.
+        assert!(!should_emit_fallback_token(streamed_count(&counter)));
+
+        // What the client sees on the wire: only the stale partial preview, never the mix.
+        let wire = seen.lock().unwrap().clone();
+        assert_eq!(wire, vec!["清晨的风".to_string()]);
+        let mixed = format!("清晨的风{}", "嗯，我听到了。你接着说。");
+        assert_ne!(wire.concat(), mixed);
+        assert_eq!(wire.concat(), "清晨的风");
+    }
+
+    #[test]
+    fn empty_tokens_are_forwarded_but_never_start_a_preview() {
+        let (sink, seen) = recording_sink();
+        let (tracked, counter) = tracked_token_sink(Arc::clone(&sink));
+
+        tracked("");
+        tracked("");
+        assert_eq!(streamed_count(&counter), 0);
+        // No visible preview exists, so the H02 fallback path must remain available.
+        assert!(should_emit_fallback_token(streamed_count(&counter)));
+        assert_eq!(seen.lock().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn tracked_sink_forwards_every_non_empty_token_once_and_in_order() {
+        let (sink, seen) = recording_sink();
+        let (tracked, counter) = tracked_token_sink(Arc::clone(&sink));
+
+        for token in ["清", "晨的", "风"] {
+            tracked(token);
+        }
+        assert_eq!(streamed_count(&counter), 3);
+        assert_eq!(seen.lock().unwrap().concat(), "清晨的风");
+    }
+
+    #[test]
+    fn fallback_reply_is_only_ever_the_authoritative_text_not_a_suffix() {
+        // Mirrors the persisted/done side of the contract: whatever the wire shows, the
+        // authoritative reply is the fallback alone and must not contain the stale prefix
+        // glued in front of it by the transport.
+        let partial = "清晨的风";
+        let fallback = "嗯，我听到了。你接着说。";
+        let authoritative = fallback.to_string();
+        assert_eq!(authoritative, fallback);
+        assert!(!authoritative.starts_with(partial));
+        assert_ne!(authoritative, format!("{partial}{fallback}"));
     }
 }
