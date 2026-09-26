@@ -29,4 +29,16 @@ M-V1 的主控限定验收、两条已消耗身份及原始树见本机 `.cursor
 
 下一片只在**真实选用能力或产品接入边界出现明确缺口**时开启，并写出一个可观察的通过条件及最小测试面。优先使用已有隔离夹具；实际模型质量、真实音频、独立浏览器发行形态及所有崩溃窗口不因本片成为 Host 门槛。ChatPro 发布回归继续下游独立管理。
 
+### 后续按变更触发回归
+
+| 变更面 | 最小相关回归；扩大条件 |
+|---|---|
+| 六槽 DTO/trait/共同错误 | `base_only_fixture`；只对受影响的具体实现再跑对应 `base_*` 外测。公共边界变化须先复核 [模块注册表](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)，不能由 ChatPro 用例倒推新增要求 |
+| 参考 Host 的 Memory/Prompt/LLM 选择或交接 | `cp_b3_v1_`、受影响的 `cp_b3_all_` 过滤项与 `process_message_golden_path`；LLM 完成语义变化时加 `cp_b3_c1_`。仅有明确未覆盖的产品行为变化，才设计**新身份**的隔离回合；M-V1 的旧身份不复用 |
+| 桌面 IPC/HTTP 身份或流式桥 | `cross_transport_recovery_contract` 和受影响的前端定向测试；只有这层的实际转发语义变化，才决定是否增加受管 loopback/桌面回合，不把其作为每次内核改动的常规门槛 |
+| 发行版 profile、捆绑或发布件 | 对应 profile 解析与 `e2e-distro-kernel` smoke；真实安装包/模型/语音另按发布目标单独验，不回写 Base 合格结论 |
+| 仅文档和证据索引 | 链接、镜像、登记与 `git diff --check`；不重跑业务身份或模型样本 |
+
+表内命令是相关性入口，不是所有提交的统一 CI 套餐；现有测试的具体范围和结果以上表已注明的边界为准。
+
 **另记而不抢主线**：[`ChatBackend::from_app`](../distros/desktop-tauri/src/api/chat_backend.rs) 在缺 `SharedKernelConnection` 时只靠 `debug_assert!` 约束 `Local` 分支；正常 `.setup` 同时注册连接与状态，尚无生产可触发该异常路径的证据。已数到 12 个调用点。它是发布异常路径的待评估项，**不是本片失败或必须先修的架构门槛**；若以后要改为发布构建拒绝本地后端，先核测试/其他 Host 的显式本地用途，再裁定改法。
