@@ -49,6 +49,18 @@ pub async fn process_message(
     process_message_with_origin(state, req, TurnOrigin::User).await
 }
 
+/// Read or wait for an existing logical user turn. Never starts a new turn,
+/// including when talking to a different database after a host restart.
+///
+/// # Errors
+/// Returns conflict for a changed payload, or unconfirmed if no result is available.
+pub async fn recover_message(
+    state: &AppState,
+    req: &SendMessageRequest,
+) -> Result<SendMessageResponse> {
+    super::request_receipt::recover(state.db_manager.as_ref(), req).await
+}
+
 /// Processes one message with an explicit semantic origin.
 ///
 /// Embedded hosts use this entrypoint for sensor/system turns. Those origins may read role context
@@ -122,6 +134,7 @@ pub async fn process_proactive_turn(
     let (authorization, event_id, correlation_id) = permit.into_parts();
     let proposal = authorization.proposal;
     let req = SendMessageRequest {
+        client_request_id: None,
         role_id: proposal.role_id,
         user_message: String::new(),
         scene_id: proposal.scene_id,
@@ -161,18 +174,43 @@ async fn run_with_origin_boundary(
     origin: TurnOrigin,
 ) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
     if origin == TurnOrigin::User {
-        return run(
-            state,
-            req,
-            on_token,
-            origin,
-            TurnInput::UserMessage(req.user_message.as_str()),
-            None,
-        )
-        .await;
+        if req.client_request_id.is_none() {
+            return run(
+                state,
+                req,
+                on_token,
+                origin,
+                TurnInput::UserMessage(req.user_message.as_str()),
+                None,
+            )
+            .await;
+        }
+        return super::request_receipt::execute(state.db_manager.as_ref(), req, async {
+            run(
+                state,
+                req,
+                on_token,
+                origin,
+                TurnInput::UserMessage(req.user_message.as_str()),
+                None,
+            )
+            .await
+            .map_err(Into::into)
+        })
+        .await
+        .map_err(|source| ProcessMessageError::stage("request_receipt", source));
     }
 
+    if req.client_request_id.is_some() {
+        return Err(ProcessMessageError::stage(
+            "request_receipt",
+            crate::error::AppError::InvalidParameter(
+                "client_request_id is only valid for user turns".into(),
+            ),
+        ));
+    }
     let sanitized_req = SendMessageRequest {
+        client_request_id: None,
         role_id: req.role_id.clone(),
         user_message: String::new(),
         scene_id: req.scene_id.clone(),

@@ -18,6 +18,16 @@
 
 **Do not** route `MemoryEngine` or archive LLM through chat JSON files. **Deleting chat logs never clears memory tables.**
 
+## Ordinary user-turn identity and result recovery
+
+`SendMessageRequest.client_request_id` is optional for legacy callers. An identified ordinary user send uses a canonical non-nil UUID, created once per intentional send and retained across transports. Host admission in `chat_engine/request_receipt.rs` precedes the entire turn pipeline: a durable SQLite receipt keys the role/session scope and UUID, checks the typed request payload hash, and admits only its first caller. Matching running requests wait up to 30 seconds; matching completed requests return the stored `SendMessageResponse`. A changed payload produces `CHAT_REQUEST_CONFLICT`. Staged adult generations retain their separate identity protocol.
+
+`POST /chat/recover` accepts `SendMessageRequest` (`role_id`, not `role_path`); Tauri exposes the same operation as `recover_message`. Recovery only reads/waits for an existing receipt: it does not load a role, claim a request, start generation, or apply turn state. The frontend reuses the original request after a stream transport failure and calls this recovery operation. A missing receipt, unavailable older endpoint, unresolved execution, or unreadable result produces `CHAT_REQUEST_UNCONFIRMED`; the UI asks the user to check history. Even if the initial request never reached Host, automatic recovery does not resend it.
+
+Migration `040_chat_request_receipts.sql` stores the full authoritative response after turn completion, before returning it. Admission and all turn side effects are **not** one transaction: a crash, cancellation, persistence failure or receipt-write failure may leave an uncertain result. There is no lease takeover, TTL reclamation, or automatic re-execution. This is an at-most-once admission boundary for identified requests, not an exactly-once delivery guarantee. Calls without an identity preserve their legacy behavior.
+
+History-row deletion invalidates responses referencing those rows. Explicit session/role/scene clearing also invalidates matching receipts even when no history rows exist; scene clearing conservatively invalidates all pending receipts for that role because their final validated scene is not yet known. Tombstones retain consumed identities while removing cached response text. Clearing does not cancel an already executing pipeline; it prevents recovery from its invalidated receipt. Receipts are local coordination state and are excluded from chat/persona/memory exports.
+
 ## Portable-state boundary
 
 | State | Portable artifact | Rule |

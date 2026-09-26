@@ -39,6 +39,10 @@
 | `DB_ERROR` | 数据库错误 | `app.db` 损坏、磁盘满、事务失败 | 检查数据目录可写；备份后重建库；见日志 `Database error` |
 <!-- code:DB_MIGRATION_FAILED -->
 | `DB_MIGRATION_FAILED` | 数据库迁移失败 | 迁移 SQL 校验失败、版本冲突、磁盘不可写 | 备份 `app.db`；查看 `migration_failed.json` 与启动日志 |
+<!-- code:CHAT_REQUEST_CONFLICT -->
+| `CHAT_REQUEST_CONFLICT` | 同一回合标识携带了不同内容 | 流式与普通重试没有保留相同请求 | 停止重试，先核对聊天记录；新发送使用新标识 |
+<!-- code:CHAT_REQUEST_UNCONFIRMED -->
+| `CHAT_REQUEST_UNCONFIRMED` | 请求可能已经执行，结果未确认 | 执行未完成、异常退出或结果记录不可用 | 先核对聊天记录，不自动换新标识重新发送 |
 <!-- code:ROLE_RUNTIME_NOT_READY -->
 | `ROLE_RUNTIME_NOT_READY` | 尚未加载角色 | 未 `load_role` 或未在 UI 选角色 | 先加载角色再发消息 |
 <!-- code:STARTUP_HEALTH_FAILED -->

@@ -22,6 +22,8 @@ pub mod models;
 pub mod role_kernel;
 pub mod service;
 pub mod state;
+#[cfg(feature = "test-faults")]
+pub(crate) mod test_faults;
 pub mod utils;
 
 pub use role_kernel::{

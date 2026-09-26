@@ -18,6 +18,9 @@ doctest = false
 default = []
 dual_core = []
 tauri-commands = ["dep:tauri"]
+# CP-INT B9-B11 R1: default-off compile-time gate for the C3 receipt-window fault point. `default`
+# must NOT include it, so a normal build contains no fault path, no arm key, and no fault log text.
+test-faults = []
 
 [dependencies]
 tauri = { version = "2", optional = true, default-features = false }

@@ -19,3 +19,5 @@ pub use llm::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome};
 pub use oclive_kernel_contracts::{AgentProvider, EventEstimator, SlotRegistryResolver};
 pub use plugin_host::PluginHostPort;
 pub use turn_thinking_state::TurnThinkingStatePort;
+
+pub(crate) mod chat_request;

@@ -32,6 +32,15 @@ pub mod http_chat_codes {
 /// The frontend should prefer mapping i18n via [`Self::code`] (`apiErrors` / `UNKNOWN_WITH_CODE`) rather than parsing the English `message`.
 #[derive(Error, Debug)]
 pub enum AppError {
+    /// A logical turn ID was reused for a different request payload.
+    #[error("Chat request ID conflicts with its original payload")]
+    ChatRequestConflict,
+
+    /// The request may have executed; never automatically resend under a new ID.
+    #[error(
+        "Chat request outcome is unconfirmed; check conversation history before sending again"
+    )]
+    ChatRequestUnconfirmed,
     /// **When**: SQLx / transaction failure (not schema migration). **Show**: retry or contact support.
     #[error("Database error: {0}")]
     DatabaseError(String),
@@ -113,6 +122,8 @@ impl AppError {
     #[must_use]
     pub fn code(&self) -> &'static str {
         match self {
+            AppError::ChatRequestConflict => "CHAT_REQUEST_CONFLICT",
+            AppError::ChatRequestUnconfirmed => "CHAT_REQUEST_UNCONFIRMED",
             AppError::DatabaseError(_) => "DB_ERROR",
             AppError::DbMigrationFailed(_) => "DB_MIGRATION_FAILED",
             AppError::PluginManifestInvalid(_) => "PLUGIN_MANIFEST_INVALID",
@@ -198,6 +209,8 @@ impl AppError {
     #[must_use]
     pub fn with_chat_stage(self, stage: &'static str) -> Self {
         match self {
+            Self::ChatRequestConflict => Self::ChatRequestConflict,
+            Self::ChatRequestUnconfirmed => Self::ChatRequestUnconfirmed,
             Self::DatabaseError(m) => Self::DatabaseError(format!("send_message[{stage}]: {m}")),
             Self::DbMigrationFailed(m) => {
                 Self::DbMigrationFailed(format!("send_message[{stage}]: {m}"))

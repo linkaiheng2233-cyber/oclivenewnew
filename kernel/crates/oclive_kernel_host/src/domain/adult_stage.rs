@@ -157,6 +157,7 @@ pub async fn generate_adult_staged_beat(
         sequence: request.sequence,
     });
     let send = SendMessageRequest {
+        client_request_id: None,
         role_id: role_id.to_string(),
         user_message: ADULT_CONTINUATION_INPUT.to_string(),
         scene_id: Some(scene_id.clone()),

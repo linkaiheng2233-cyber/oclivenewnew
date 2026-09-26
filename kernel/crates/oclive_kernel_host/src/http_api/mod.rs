@@ -48,6 +48,9 @@ pub const API_TOKEN_HEADER: &str = "x-oclive-api-token";
 
 #[derive(Debug, Deserialize)]
 pub struct ChatApiRequest {
+    /// Logical turn identity shared by stream/plain requests; omitted by legacy clients.
+    #[serde(default)]
+    pub client_request_id: Option<String>,
     pub role_path: String,
     pub message: String,
     #[serde(default)]
@@ -134,6 +137,7 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
 
     let protected = Router::new()
         .route("/chat", post(chat::chat))
+        .route("/chat/recover", post(chat::recover_chat))
         .route("/chat/stream", post(chat::chat_stream))
         .route(
             "/chat/adult-stage/begin",

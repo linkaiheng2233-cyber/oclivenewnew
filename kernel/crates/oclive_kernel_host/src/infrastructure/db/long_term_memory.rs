@@ -244,13 +244,14 @@ impl DbManager {
             "UPDATE long_term_memory SET weight = {weight_cases}, accessed_at = {accessed_cases} \
              WHERE role_id = ? AND id IN ({placeholders})"
         );
-        let mut q = sqlx::query(&sql).bind(role_id);
+        let mut q = sqlx::query(&sql);
         for w in &weights {
             q = q.bind(w);
         }
         for a in &accessed {
             q = q.bind(a);
         }
+        q = q.bind(role_id);
         q.execute(&self.pool)
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;

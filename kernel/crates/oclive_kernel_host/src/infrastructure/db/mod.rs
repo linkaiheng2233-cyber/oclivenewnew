@@ -1,6 +1,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 mod adult_stage;
+pub(crate) mod chat_request;
 mod chat_turn_atomic;
 pub mod memory_merge;
 #[macro_use]
@@ -120,6 +121,17 @@ impl DbManager {
             long_term_row_counts: DashMap::new(),
             short_term_row_counts: DashMap::new(),
         }
+    }
+
+    /// Wait for the SQLite pool to close.
+    ///
+    /// This is the same step [`OcliveKernel::shutdown`](crate::role_kernel::OcliveKernel::shutdown)
+    /// performs. A host that owns an [`AppState`](crate::state::AppState) directly must await it
+    /// before releasing the database directory: dropping the state alone lets connections close
+    /// asynchronously, which keeps file handles open (notably on Windows) and makes the directory
+    /// undeletable for an unbounded time.
+    pub async fn close_pool(&self) {
+        self.pool.close().await;
     }
 
     /// Highest successfully applied migration version, if the tracking table exists.

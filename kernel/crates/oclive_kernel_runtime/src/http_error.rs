@@ -34,6 +34,8 @@ pub fn app_error_from_http_response(status: u16, text: &str) -> AppError {
 #[must_use]
 pub fn app_error_from_kernel_body(body: &KernelErrorBody) -> AppError {
     match body.code.as_str() {
+        "CHAT_REQUEST_CONFLICT" => AppError::ChatRequestConflict,
+        "CHAT_REQUEST_UNCONFIRMED" => AppError::ChatRequestUnconfirmed,
         http_chat_codes::EMPTY_MESSAGE => AppError::EmptyMessage,
         http_chat_codes::INVALID_ROLE_PATH => AppError::InvalidParameter(body.message.clone()),
         http_chat_codes::LOAD_ROLE_TASK_PANIC => AppError::Unknown(body.message.clone()),

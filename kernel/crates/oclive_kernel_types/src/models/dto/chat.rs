@@ -39,8 +39,12 @@ impl TurnOrigin {
 }
 
 /// Primary chat invoke payload (`send_message`).
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct SendMessageRequest {
+    /// Optional UUID for one logical user turn. Reuse across stream/plain retries,
+    /// never across intentional new sends. Hosts persist the outcome before replay.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client_request_id: Option<String>,
     pub role_id: String,
     pub user_message: String,
     #[serde(default)]

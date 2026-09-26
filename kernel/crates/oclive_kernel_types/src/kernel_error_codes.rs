@@ -8,6 +8,8 @@ use crate::error::{http_chat_codes, AppError};
 #[must_use]
 pub fn app_error_codes_sampled() -> Vec<&'static str> {
     vec![
+        AppError::ChatRequestConflict.code(),
+        AppError::ChatRequestUnconfirmed.code(),
         AppError::DatabaseError(String::new()).code(),
         AppError::DbMigrationFailed(String::new()).code(),
         AppError::PluginManifestInvalid(String::new()).code(),

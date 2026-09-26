@@ -5,6 +5,8 @@
  * Gate: `node scripts/check-error-codes-drift.mjs`
  */
 export const KERNEL_STATIC_ERROR_CODES = [
+  'CHAT_REQUEST_CONFLICT',
+  'CHAT_REQUEST_UNCONFIRMED',
   'DB_ERROR',
   'DB_MIGRATION_FAILED',
   'EMPTY_MESSAGE',

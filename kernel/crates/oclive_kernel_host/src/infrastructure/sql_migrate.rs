@@ -3,6 +3,7 @@
 use oclive_kernel_runtime::{find_monorepo_root, ENV_ROLES_DIR};
 use sha2::{Digest, Sha256};
 use sqlx::sqlite::SqlitePool;
+use sqlx::Executor;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -355,12 +356,12 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
 
         let started = std::time::Instant::now();
         let mut tx = db.begin().await.map_err(|e| e.to_string())?;
-        for statement in split_sql_statements(&sql) {
-            sqlx::query(&statement)
-                .execute(&mut *tx)
-                .await
-                .map_err(|e| format!("migration {file_name}: {e}\nSQL: {statement}"))?;
-        }
+        // SQLite parses the entire batch, including trigger bodies and quoted
+        // semicolons. Keep DDL and the migration ledger in the same transaction.
+        (&mut *tx)
+            .execute(sql.as_str())
+            .await
+            .map_err(|e| format!("migration {file_name}: {e}"))?;
         let elapsed_ms = started.elapsed().as_millis() as i64;
         sqlx::query(
             "INSERT INTO _sqlx_migrations (version, description, success, checksum, execution_time)
@@ -376,37 +377,6 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
         tx.commit().await.map_err(|e| e.to_string())?;
     }
     Ok(())
-}
-
-/// Strip `--` line comments first, then split on `;`.
-///
-/// Naively splitting on `;` would break when a `;` appears in a comment line
-/// (e.g. `-- foo; bar.`) because the loose tail would be sent to SQLite as a
-/// statement and fail. We strip comments line-by-line first; we do **not**
-/// attempt to handle string-literal `;` because our migrations don't use them
-/// in DDL — if that ever changes, replace with a real tokenizer.
-fn split_sql_statements(sql: &str) -> Vec<String> {
-    let stripped: String = sql
-        .lines()
-        .map(strip_line_comment)
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    stripped
-        .split(';')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(str::to_string)
-        .collect()
-}
-
-/// Drop everything after `--` on a single line; preserves leading whitespace
-/// so multi-line statements still parse correctly.
-fn strip_line_comment(line: &str) -> String {
-    match line.find("--") {
-        Some(idx) => line[..idx].trim_end().to_string(),
-        None => line.to_string(),
-    }
 }
 
 #[cfg(test)]
@@ -437,38 +407,6 @@ mod tests {
             .into_iter()
             .find(|candidate| is_migrations_dir(candidate));
         assert_eq!(found.as_deref(), Some(migrations.as_path()));
-    }
-
-    #[test]
-    fn split_drops_pure_comment_line() {
-        let sql = "-- only a comment";
-        assert!(split_sql_statements(sql).is_empty());
-    }
-
-    #[test]
-    fn split_handles_semicolon_inside_comment() {
-        let sql =
-            "-- chat history (kernel-owned; independent from memory).\nCREATE TABLE foo (id INT);";
-        let stmts = split_sql_statements(sql);
-        assert_eq!(stmts.len(), 1);
-        assert!(stmts[0].starts_with("CREATE TABLE foo"));
-    }
-
-    #[test]
-    fn split_keeps_trailing_inline_comment() {
-        let sql = "CREATE TABLE foo (id INT); -- trailing\nCREATE TABLE bar (id INT);";
-        let stmts = split_sql_statements(sql);
-        assert_eq!(stmts.len(), 2);
-        assert!(stmts[0].contains("foo"));
-        assert!(stmts[1].contains("bar"));
-    }
-
-    #[test]
-    fn split_preserves_multiline_statement() {
-        let sql = "CREATE TABLE foo (\n  id INT,\n  name TEXT\n);";
-        let stmts = split_sql_statements(sql);
-        assert_eq!(stmts.len(), 1);
-        assert!(stmts[0].contains("name TEXT"));
     }
 
     #[test]
@@ -577,7 +515,13 @@ mod tests {
                 .expect("name")
                 .to_string_lossy()
                 .into_owned();
-            if !name.ends_with(".sql") || name.starts_with("039_") {
+            if !name.ends_with(".sql")
+                || name
+                    .split('_')
+                    .next()
+                    .and_then(|v| v.parse::<u32>().ok())
+                    .is_none_or(|v| v >= 39)
+            {
                 continue;
             }
             std::fs::copy(&path, tmp.path().join(&name)).expect("copy migration");
@@ -623,5 +567,101 @@ mod tests {
             old_source.is_none(),
             "pre-039 rows keep NULL emotion_source"
         );
+    }
+    #[tokio::test]
+    async fn native_batch_preserves_trigger_literals_comments_and_rolls_back_failure() {
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .expect("pool");
+        let tmp = tempfile::tempdir().expect("tempdir");
+        std::fs::write(tmp.path().join("001_batch.sql"),
+            "-- comment; ignored\nCREATE TABLE source(v TEXT); CREATE TABLE audit(v TEXT);\nCREATE TRIGGER capture AFTER INSERT ON source BEGIN INSERT INTO audit VALUES ('semi;--literal'); INSERT INTO audit VALUES (NEW.v); END;\nINSERT INTO source VALUES ('value');").expect("write");
+        run_sql_migrations(&pool, tmp.path())
+            .await
+            .expect("native batch");
+        let values: Vec<String> = sqlx::query_scalar("SELECT v FROM audit ORDER BY rowid")
+            .fetch_all(&pool)
+            .await
+            .expect("audit");
+        assert_eq!(values, vec!["semi;--literal", "value"]);
+        std::fs::write(
+            tmp.path().join("002_failure.sql"),
+            "CREATE TABLE rollback_probe(v TEXT); INSERT INTO missing_table VALUES (1);",
+        )
+        .expect("write");
+        assert!(run_sql_migrations(&pool, tmp.path()).await.is_err());
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE name='rollback_probe'")
+                .fetch_one(&pool)
+                .await
+                .expect("rollback");
+        assert_eq!(count, 0);
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM _sqlx_migrations WHERE version=2")
+                .fetch_one(&pool)
+                .await
+                .expect("ledger");
+        assert_eq!(count, 0);
+    }
+
+    #[tokio::test]
+    async fn migration_040_fresh_and_upgrade_keep_history_and_install_receipt_triggers() {
+        let full = find_migrations_dir().expect("migrations");
+        for upgrade in [false, true] {
+            let pool = crate::infrastructure::sqlite_pool::connect_memory()
+                .await
+                .expect("pool");
+            let tmp = tempfile::tempdir().expect("tempdir");
+            if upgrade {
+                for entry in std::fs::read_dir(&full).expect("read") {
+                    let path = entry.expect("entry").path();
+                    let name = path.file_name().expect("name").to_string_lossy();
+                    if name.ends_with(".sql")
+                        && name
+                            .split('_')
+                            .next()
+                            .and_then(|v| v.parse::<u32>().ok())
+                            .is_some_and(|v| v < 40)
+                    {
+                        std::fs::copy(&path, tmp.path().join(name.as_ref())).expect("copy");
+                    }
+                }
+                run_sql_migrations(&pool, tmp.path())
+                    .await
+                    .expect("pre-040");
+                pool.execute("INSERT INTO chat_sessions(session_id,role_id,scene_id,created_at,updated_at) VALUES('old','old','default','t','t'); INSERT INTO chat_messages(id,session_id,turn_index,sender,content,created_at) VALUES('old-msg','old',0,'assistant','keep me','t');").await.expect("old history");
+            }
+            run_sql_migrations(&pool, &full)
+                .await
+                .expect("040 production runner");
+            run_sql_migrations(&pool, &full)
+                .await
+                .expect("idempotent migration");
+            let installed: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM _sqlx_migrations WHERE version=40 AND success=1",
+            )
+            .fetch_one(&pool)
+            .await
+            .expect("ledger");
+            assert_eq!(installed, 1);
+            let triggers: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='trigger' AND name IN ('chat_request_message_deleted','chat_request_session_deleted')").fetch_one(&pool).await.expect("triggers");
+            assert_eq!(triggers, 2);
+            if upgrade {
+                let content: String =
+                    sqlx::query_scalar("SELECT content FROM chat_messages WHERE id='old-msg'")
+                        .fetch_one(&pool)
+                        .await
+                        .expect("history retained");
+                assert_eq!(content, "keep me");
+                pool.execute("INSERT INTO chat_request_receipts(scope_key,request_id,payload_sha256,session_namespace,role_id,scene_id,status,response_json,assistant_message_id) VALUES('scope','id','hash','old','old','default','completed','cached','old-msg'); DELETE FROM chat_messages WHERE id='old-msg';").await.expect("delete");
+                let result: (String, Option<String>) =
+                    sqlx::query_as("SELECT status,response_json FROM chat_request_receipts")
+                        .fetch_one(&pool)
+                        .await
+                        .expect("receipt");
+                assert_eq!(result, ("unconfirmed".into(), None));
+            }
+            pool.close().await;
+        }
     }
 }

@@ -1,5 +1,7 @@
 /** 内核 `KernelErrorBody.code`（`SCREAMING_SNAKE_CASE`）→ 文案（见 `toFriendlyErrorMessage`）。 */
 export default {
+  CHAT_REQUEST_CONFLICT: '这次发送的标识与原消息不一致，已停止重试。请先查看聊天记录。',
+  CHAT_REQUEST_UNCONFIRMED: '这条消息可能已处理，但结果尚未确认。请先查看聊天记录，避免重复发送。',
   EMPTY_MESSAGE: '消息不能为空或仅含空格/换行，请输入至少一个可见字符。',
   INVALID_ROLE_PATH:
     '角色路径不是有效目录。请传入包含 pipeline.ocblueprint（推荐）或 legacy manifest.json 的角色目录绝对路径。',

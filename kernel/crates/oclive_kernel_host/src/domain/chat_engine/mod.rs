@@ -13,6 +13,7 @@ pub mod plugin_resolve;
 mod presence;
 mod process_message;
 pub(crate) mod relation_snapshot;
+mod request_receipt;
 mod scene;
 pub(crate) mod staged;
 pub mod turn_context;
@@ -22,7 +23,7 @@ pub mod turn_prefetch;
 
 pub use process_message::{
     process_message, process_message_stream, process_message_stream_with_origin,
-    process_message_with_origin, process_proactive_turn,
+    process_message_with_origin, process_proactive_turn, recover_message,
 };
 
 use turn_context::TurnContext;
@@ -453,6 +454,7 @@ mod tests {
         let response = super::process_message(
             &state,
             &SendMessageRequest {
+                client_request_id: None,
                 role_id: srid.to_string(),
                 user_message: "Hello there".to_string(),
                 scene_id: None,

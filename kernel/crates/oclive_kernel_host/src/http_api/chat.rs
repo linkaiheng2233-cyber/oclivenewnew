@@ -179,6 +179,7 @@ pub(crate) async fn chat(
     state.insert_http_api_role(role.id.clone(), Arc::clone(&role));
 
     let req = SendMessageRequest {
+        client_request_id: body.client_request_id,
         role_id: role.id.clone(),
         user_message,
         scene_id: body.scene_id,
@@ -190,7 +191,12 @@ pub(crate) async fn chat(
     let res: SendMessageResponse = process_message(&state, &req).await.map_err(|e: AppError| {
         let mut k = e.kernel_error_body();
         k.hint = Some("请查看 oclive 日志（target: oclive_chat / oclive_plugin）".into());
-        api_error(axum::http::StatusCode::INTERNAL_SERVER_ERROR, k)
+        let status = if matches!(e, AppError::ChatRequestConflict) {
+            axum::http::StatusCode::CONFLICT
+        } else {
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR
+        };
+        api_error(status, k)
     })?;
 
     Ok(Json(ChatApiResponse {
@@ -198,6 +204,17 @@ pub(crate) async fn chat(
         personality_source,
         session_id: session_echo,
     }))
+}
+
+pub(crate) async fn recover_chat(
+    State(state): State<Arc<AppState>>,
+    Json(mut req): Json<SendMessageRequest>,
+) -> Result<Json<SendMessageResponse>, ApiError> {
+    req.user_message = req.user_message.trim().to_string();
+    crate::domain::chat_engine::recover_message(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|e| api_error(axum::http::StatusCode::CONFLICT, e.kernel_error_body()))
 }
 
 pub(crate) async fn chat_stream(
@@ -274,6 +291,7 @@ pub(crate) async fn chat_stream(
     state.insert_http_api_role(role.id.clone(), Arc::clone(&role));
 
     let req = SendMessageRequest {
+        client_request_id: body.client_request_id,
         role_id: role.id.clone(),
         user_message,
         scene_id: body.scene_id,

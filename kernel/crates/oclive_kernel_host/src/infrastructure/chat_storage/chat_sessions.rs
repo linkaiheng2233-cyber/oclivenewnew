@@ -193,6 +193,8 @@ impl DbManager {
             .begin()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        sqlx::query("UPDATE chat_request_receipts SET status='unconfirmed', response_json=NULL WHERE session_namespace=?")
+            .bind(session_id).execute(&mut *tx).await.map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query("DELETE FROM chat_messages WHERE session_id = ?")
             .bind(session_id)
             .execute(&mut *tx)
@@ -242,6 +244,8 @@ impl DbManager {
         tx: &mut Transaction<'_, Sqlite>,
     ) -> Result<()> {
         let pattern = manifest_sess_glob_pattern(manifest_role_id);
+        sqlx::query("UPDATE chat_request_receipts SET status='unconfirmed', response_json=NULL WHERE role_id=? OR session_namespace=? OR session_namespace GLOB ?")
+            .bind(manifest_role_id).bind(manifest_role_id).bind(&pattern).execute(tx.as_mut()).await.map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(
             "DELETE FROM adult_staged_beats WHERE generation_id IN (
                 SELECT generation_id FROM adult_stage_generations
@@ -334,6 +338,10 @@ impl DbManager {
             .begin()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        // Pending receipts do not yet know the validated scene. Conservatively
+        // invalidate every pending request for this role during scene clearing.
+        sqlx::query("UPDATE chat_request_receipts SET status='unconfirmed', response_json=NULL WHERE role_id=? AND (scene_id=? OR status='running')")
+            .bind(role_id).bind(scene).execute(&mut *tx).await.map_err(|e| AppError::DatabaseError(e.to_string()))?;
         sqlx::query(
             "DELETE FROM adult_staged_beats WHERE generation_id IN (
                 SELECT generation_id FROM adult_stage_generations

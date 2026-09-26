@@ -1,5 +1,7 @@
 /** Kernel `KernelErrorBody.code` → en-US copy. */
 export default {
+  CHAT_REQUEST_CONFLICT: 'This send no longer matches its original message. Retry stopped; check chat history first.',
+  CHAT_REQUEST_UNCONFIRMED: 'This message may have been processed, but the result is unconfirmed. Check chat history before sending again.',
   EMPTY_MESSAGE: 'Message must not be empty or whitespace-only. Type at least one visible character.',
   INVALID_ROLE_PATH:
     'role_path is not a valid directory. Pass an absolute path to a folder containing pipeline.ocblueprint (preferred) or a legacy manifest.json.',

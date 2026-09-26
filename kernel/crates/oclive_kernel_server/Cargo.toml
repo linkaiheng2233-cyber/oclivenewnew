@@ -11,6 +11,12 @@ categories = ["command-line-utilities"]
 [lints]
 workspace = true
 
+[features]
+default = []
+# CP-INT B9-B11 R1: forwards the default-off C3 receipt-window fault point to the linked Host crate.
+# Must stay out of `default` so a normal `oclive-kernel-server` build carries no fault path.
+test-faults = ["oclive_kernel_host/test-faults"]
+
 [[bin]]
 name = "oclive-kernel-server"
 path = "src/main.rs"
