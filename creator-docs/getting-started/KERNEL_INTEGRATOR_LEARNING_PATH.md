@@ -20,6 +20,8 @@ cargo test -p oclive_kernel_host --test base_llm_adapter --locked --offline
 
 第一条只验六槽契约及无 Host 的 Base-only 实现；第二条验五种有限具体实现；第三条只验 LLM 适配器的构造边界，不发送真实模型请求。之后再根据所选 Host 与发行版另测其装配、资源、持久化和产品行为，不能用下游 smoke 代替前三层。
 
+**仓库外接入探针（2026-09-27）**：另用临时独立 Cargo 项目，仅以源码路径依赖 `oclive_kernel_contracts` 和 `oclive_kernel_types`，自行实现 `MemoryBase` 并通过 `&dyn MemoryBase` 调用；`cargo run --offline` exit 0，`cargo tree --depth 1` 只列出这两个直接依赖。探针文件测试后已清理，仓库工作树未因此改变。这证明源码级外部消费者可编译和调用该契约，不证明已有独立发布包、Stable API 或完整 Host 行为。
+
 ---
 
 ## 参考 Host／CLI 入门（约 30 分钟）

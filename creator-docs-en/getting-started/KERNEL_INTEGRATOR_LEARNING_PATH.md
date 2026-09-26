@@ -20,6 +20,8 @@ cargo test -p oclive_kernel_host --test base_llm_adapter --locked --offline
 
 The first command checks the six contracts with Base-only implementations and no Host. The second checks five limited concrete implementations. The third checks LLM adapter construction only; it sends no request to a real model. Test the chosen Host and distro separately for assembly, resources, persistence, and product behavior. A downstream smoke test cannot substitute for the first three layers.
 
+**Out-of-tree consumer probe (2026-09-27):** A temporary independent Cargo package declared only source-path dependencies on `oclive_kernel_contracts` and `oclive_kernel_types`, implemented `MemoryBase` locally, and called it through `&dyn MemoryBase`. `cargo run --offline` exited 0; `cargo tree --depth 1` showed only those two direct dependencies. The temporary files were removed after the check, leaving the repository worktree unchanged. This proves source-level consumption from an external package, not a separately published package, Stable API, or complete Host behavior.
+
 ---
 
 ## Reference Host / CLI beginner path (~30 min)
