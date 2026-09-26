@@ -147,6 +147,23 @@ fn serve_ocliveplugin_asset(
     http_text(200, data, mime_for_plugin_asset(&rel))
 }
 
+/// CP-INT B9-B11 R1 isolation switch: **compile-time gated** test harness, off by default.
+///
+/// The switch is only compiled in with the `test-harness` cargo feature (a normal release/debug
+/// build contains neither the switch nor its two skip points, so it cannot be turned on by an
+/// environment variable). When the feature is compiled in *and* `OCLIVE_DESKTOP_ISOLATED_TEST=1` is
+/// set, exactly two system-level side effects are skipped, each leaving a warning line in the
+/// desktop log: registering the `oclive://` scheme and registering the first global hotkeys.
+/// Everything else — the invoke handlers, the managed state, the kernel bootstrap/spawn and the HTTP
+/// branch — is identical to production, so an isolated run still exercises the production path.
+/// This is deliberately not a "runtime-only" flag: the feature gate is what makes it test-only.
+/// Without the `test-harness` feature this function does not exist at all, and both call sites
+/// compile to their production branches (no test handle, no skip point, no marker string).
+#[cfg(feature = "test-harness")]
+fn isolated_test_mode() -> bool {
+    std::env::var("OCLIVE_DESKTOP_ISOLATED_TEST").as_deref() == Ok("1")
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
@@ -205,7 +222,17 @@ pub fn run() {
                         serde_json::json!({ "reason": "deep-link" }),
                     );
                 });
-                if let Err(e) = app.deep_link().register("oclive") {
+                #[cfg(feature = "test-harness")]
+                let skip_deep_link_registration = crate::isolated_test_mode();
+                #[cfg(not(feature = "test-harness"))]
+                let skip_deep_link_registration = false;
+                if skip_deep_link_registration {
+                    #[cfg(feature = "test-harness")]
+                    tracing::warn!(
+                        target: "oclive_isolated_test",
+                        "OCLIVE_DESKTOP_ISOLATED_TEST=1: skipping the oclive:// scheme registration (system-level side effect); the deep-link handler itself stays registered"
+                    );
+                } else if let Err(e) = app.deep_link().register("oclive") {
                     tracing::warn!(
                         target: "oclive_deep_link",
                         "register oclive:// handler failed: {}",
@@ -230,6 +257,8 @@ pub fn run() {
             })?;
             app.manage(kernel_conn.clone());
             app.manage(app_state.clone());
+            // In-flight renderer stream transports for the authenticated chat stream bridge.
+            app.manage(crate::api::chat_stream::ChatStreamRegistry::default());
             {
                 let shell = app_state.clone();
                 let app_handle = app.handle().clone();
@@ -255,7 +284,17 @@ pub fn run() {
                     .directory_plugins
                     .app_data_dir(),
             );
-            if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(app.handle(), &hk) {
+            #[cfg(feature = "test-harness")]
+            let skip_hotkeys = crate::isolated_test_mode();
+            #[cfg(not(feature = "test-harness"))]
+            let skip_hotkeys = false;
+            if skip_hotkeys {
+                #[cfg(feature = "test-harness")]
+                tracing::warn!(
+                    target: "oclive_isolated_test",
+                    "OCLIVE_DESKTOP_ISOLATED_TEST=1: skipping initial global hotkey registration (system-level side effect); the hotkey commands and event wiring stay registered"
+                );
+            } else if let Err(e) = crate::api::hotkeys::apply_global_hotkeys(app.handle(), &hk) {
                 tracing::warn!(target: "oclive_hotkey", "initial global shortcuts: {}", e);
             }
             start_plugin_fs_watcher(
@@ -302,6 +341,9 @@ pub fn run() {
             api::settings::set_remote_fallback_to_builtin,
             // ?? chat ??
             api::chat::send_message,
+            api::chat::recover_message,
+            api::chat_stream::send_message_stream,
+            api::chat_stream::cancel_message_stream,
             api::chat::begin_adult_stage_generation,
             api::chat::generate_adult_staged_beat,
             api::chat::commit_adult_staged_beat,

@@ -7,6 +7,8 @@ export async function gotoApp(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem('oclive.locale.preference', 'en-US')
     window.localStorage.setItem('oclive_preset_picker_done', '1')
+    // The browser-only E2E mock has no authenticated Tauri stream bridge.
+    window.localStorage.setItem('oclive.chat.streamEnabled', 'false')
   })
   await page.goto('/')
   await expect(page.locator('#app')).toBeVisible({ timeout: 60_000 })

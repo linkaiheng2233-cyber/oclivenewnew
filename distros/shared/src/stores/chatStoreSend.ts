@@ -1,13 +1,12 @@
 import type { AdultInteractionAction, SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
-import { sendMessage, sendMessageStream, toastAsyncError } from '@oclive/shared/api'
+import { recoverMessage, sendMessage, sendMessageStream, toastAsyncError } from '@oclive/shared/api'
 import {
   cancelAdultBeatQueue,
   resumeAdultBeatQueue,
   startAdultBeatQueue,
 } from '@oclive/shared/lib/adultBeatQueue'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { VOICE_STREAM_SENTENCE_EVENT } from '@oclive/shared/lib/voiceAsrEvents'
 import { waitForVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSettlement'
 import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
@@ -17,7 +16,6 @@ import {
   assistantDialogueFromSplit,
   splitRoleplayReply,
 } from '@oclive/shared/utils/roleplayReplySplit'
-import { StreamingVoiceChunker } from '@oclive/shared/utils/streamingVoiceChunker'
 import { useAdultInteractionStore } from './adultInteractionStore'
 import { parseMessageTimestamp } from './chatStoreLoad'
 import { useDebugStore } from './debugStore'
@@ -135,10 +133,9 @@ export async function sendChatStoreMessage(
   const pendingStreamSegmentText = new Map<number, string>()
   const streamSegmentTimers = new Map<number, number>()
   const streamSegmentDueAt = new Map<number, number>()
-  let streamVoiceActive = false
-  let streamSpokenPrefix = ''
-  let lastStreamAccumulated = ''
-  const voiceChunker = new StreamingVoiceChunker()
+  // Ordinary replies keep a token-level visual preview, but they must not emit voice
+  // fragments: audio is spoken once from the authoritative final reply so that the sound
+  // always matches the text that ends up in the bubble and on disk.
 
   const streamSegmentId = (index: number) =>
     index === 0 ? assistantLocalId : `${assistantLocalId}#s${index}`
@@ -222,18 +219,16 @@ export async function sendChatStoreMessage(
     streamSegmentDueAt.clear()
   }
 
-  function emitStreamVoiceChunks(chunks: string[]): void {
-    for (const chunk of chunks) {
-      streamSpokenPrefix += chunk
-      hostEventBus.emitBuiltin(VOICE_STREAM_SENTENCE_EVENT, {
-        sentence: chunk,
-        stream_id: streamId,
-        role_id: roleId,
-        bot_emotion: 'neutral',
-      })
-    }
-  }
   try {
+    // A fallback is another transport attempt for this SAME turn. Intentional
+    // new sends get new IDs even when their text is identical.
+    const request = {
+      role_id: roleId,
+      user_message: content,
+      scene_id: sid || null,
+      adult: adultRequest,
+      ...(!adultRequest ? { client_request_id: crypto.randomUUID() } : {}),
+    }
     let res: SendMessageResponse
     // Structured adult output must be parsed as one complete envelope. Ordinary
     // role packs retain the low-TTFT SSE path.
@@ -247,18 +242,12 @@ export async function sendChatStoreMessage(
           revealStreamSegment(0)
         }
         res = await sendMessageStream(
-          {
-            role_id: roleId,
-            user_message: content,
-            scene_id: sid || null,
-            adult: adultRequest,
-          },
+          request,
           {
             signal: streamAbort.signal,
             onToken: (_token, accumulated) => {
               if (isStale())
                 return
-              lastStreamAccumulated = accumulated
               if (!replyMode || !replySeparator) {
                 context.patchMessageById(roleId, sid, assistantLocalId, {
                   content: accumulated,
@@ -267,43 +256,26 @@ export async function sendChatStoreMessage(
               else if (liveReplyMode) {
                 renderReplyModeStream(accumulated)
               }
-              // Reply-mode voice waits for the kernel's final separator-free
-              // reply. Ordinary single replies retain low-latency stream TTS.
-              if (!replyMode)
-                emitStreamVoiceChunks(voiceChunker.push(accumulated))
+              // No voice here for any mode: reply-mode voice already waits for the
+              // kernel's final separator-free reply, and ordinary replies now wait for the
+              // authoritative `done` / same-ID recovery result as well.
             },
           },
         )
-        if (!replyMode) {
-          emitStreamVoiceChunks(voiceChunker.flush(lastStreamAccumulated))
-          streamVoiceActive = true
-        }
       }
       catch (streamErr) {
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
           cleanupStreamPresentation()
           return
         }
-        console.warn('[chat] stream failed, fallback to /chat', streamErr)
-        // The blocking retry is a new authoritative response. Do not reuse
-        // reveal progress or deadlines from the failed SSE attempt.
+        console.warn('[chat] stream interrupted, recovering the existing turn', streamErr)
+        // Recovery reads/waits for the original result and never starts a new turn.
         resetStreamPresentation()
-        streamVoiceActive = false
-        res = await sendMessage({
-          role_id: roleId,
-          user_message: content,
-          scene_id: sid || null,
-          adult: adultRequest,
-        })
+        res = await recoverMessage(request)
       }
     }
     else {
-      res = await sendMessage({
-        role_id: roleId,
-        user_message: content,
-        scene_id: sid || null,
-        adult: adultRequest,
-      })
+      res = await sendMessage(request)
     }
 
     if (isStale()) {
@@ -402,10 +374,6 @@ export async function sendChatStoreMessage(
       scene_id: sid,
       turn_id: streamId,
       skip_auto_tts: voiceTextOnlyForTurn,
-      stream_id: streamVoiceActive ? streamId : undefined,
-      stream_spoken_prefix: streamVoiceActive ? streamSpokenPrefix : undefined,
-      stream_full_raw: streamVoiceActive ? lastStreamAccumulated : undefined,
-      stream_spoken_end_index: streamVoiceActive ? voiceChunker.rawEndIndex : undefined,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(

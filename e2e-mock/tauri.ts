@@ -1,5 +1,10 @@
 import { mockInvoke } from './fixtures'
 
+/** Build-time stand-in for Tauri's IPC channel; mock-browser tests use plain sends. */
+export class Channel<T> {
+  onmessage: ((message: T) => void) | null = null
+}
+
 export async function invoke<T>(
   command: string,
   args: Record<string, unknown> = {},

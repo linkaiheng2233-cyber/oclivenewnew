@@ -1,7 +1,10 @@
 import type { DisplayMetricsDto, RoleInfo } from './role'
+import { Channel, invoke } from '@tauri-apps/api/core'
 import { invokeWithFriendlyError, toFriendlyErrorMessage } from './helpers'
 
 export interface SendMessageRequest {
+  /** One logical user send; streaming and result recovery reuse this UUID. */
+  client_request_id?: string | null
   role_id: string
   user_message: string
   scene_id?: string | null
@@ -248,6 +251,18 @@ export async function beginAdultStageGeneration(
   )
 }
 
+/** Recover an existing send; never fall back to a command that starts a new turn. */
+export async function recoverMessage(req: SendMessageRequest): Promise<SendMessageResponse> {
+  try {
+    return await invokeWithFriendlyError<SendMessageResponse>('recover_message', { req })
+  }
+  catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'CHAT_REQUEST_CONFLICT')
+      throw error
+    throw new Error(toFriendlyErrorMessage(JSON.stringify({ code: 'CHAT_REQUEST_UNCONFIRMED', message: 'Chat request outcome is unconfirmed' })), { cause: error })
+  }
+}
+
 export async function generateAdultStagedBeat(
   req: StageAdultBeatRequest,
 ): Promise<AdultStagedBeatDto> {
@@ -281,16 +296,24 @@ export async function listAdultStagedBeats(
   )
 }
 
-function parseSseBlock(block: string): { eventName: string, data: string } {
-  let eventName = 'message'
-  const dataLines: string[] = []
-  for (const line of block.split('\n')) {
-    if (line.startsWith('event:'))
-      eventName = line.slice(6).trim()
-    else if (line.startsWith('data:'))
-      dataLines.push(line.slice(5).trim())
+/**
+ * Stream one ordinary chat turn through the desktop host's **authenticated** Rust transport.
+ *
+ * The loopback kernel requires `x-oclive-api-token` on `/chat/stream`, and only the Rust client holds
+ * it. Calling this from a non-Tauri host is therefore unsupported by design rather than silently
+ * falling back to an unauthenticated `fetch` (which the Host rejects with `401 KERNEL_AUTH_REQUIRED`).
+ */
+function assertAuthenticatedHost(): void {
+  const internals = (globalThis as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__
+  if (!internals) {
+    throw new Error(
+      'sendMessageStream requires the desktop host: /chat/stream is token-protected and only the Rust client holds the token',
+    )
   }
-  return { eventName, data: dataLines.join('\n') }
+}
+
+function streamAbortError(): DOMException {
+  return new DOMException('The operation was aborted.', 'AbortError')
 }
 
 export interface SendMessageStreamOptions {
@@ -298,87 +321,62 @@ export interface SendMessageStreamOptions {
   signal?: AbortSignal
 }
 
-/** Stream chat tokens via kernel HTTP `POST /chat/stream` (SSE). */
+interface ChatStreamIpcEvent {
+  kind: 'token' | 'canceled' | 'failed'
+  token?: string
+  accumulated?: string
+  reason?: string
+  code?: string
+  message?: string
+}
+
+/**
+ * Stream chat tokens for one turn over IPC; the command returns the authoritative DTO, which by
+ * construction resolves strictly after the last token. The request keeps one
+ * `client_request_id` across this stream and any later same-identity recovery.
+ */
 export async function sendMessageStream(
   req: SendMessageRequest,
   options: SendMessageStreamOptions = {},
 ): Promise<SendMessageResponse> {
-  const { getKernelConnectionStatus } = await import('./kernel')
-  const status = await getKernelConnectionStatus()
-  if (!status.healthy) {
-    throw new Error('Kernel offline')
+  assertAuthenticatedHost()
+  if (options.signal?.aborted)
+    throw streamAbortError()
+
+  // A per-stream transport handle for cancellation. Deliberately not `req.client_request_id`: that
+  // identity belongs to the business turn, not to this renderer transport instance.
+  const transportId = `chat-stream-${crypto.randomUUID()}`
+  let cancelled = false
+  const onAbort = () => {
+    cancelled = true
+    void invoke('cancel_message_stream', { transportId }).catch(() => {})
   }
-  const rolePath = await invokeWithFriendlyError<string>('get_role_pack_path', {
-    roleId: req.role_id,
-  })
-  const res = await fetch(`${status.baseUrl}/chat/stream`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'accept': 'text/event-stream',
-    },
-    body: JSON.stringify({
-      role_path: rolePath,
-      message: req.user_message,
-      scene_id: req.scene_id ?? null,
-      session_id: req.session_id ?? null,
-      adult: req.adult ?? null,
-    }),
-    signal: options.signal,
-  })
-  if (!res.ok) {
-    const errText = await res.text()
-    throw new Error(`stream HTTP ${res.status}: ${errText.slice(0, 400)}`)
+  options.signal?.addEventListener('abort', onAbort, { once: true })
+
+  const onEvent = new Channel<ChatStreamIpcEvent>()
+  onEvent.onmessage = (event) => {
+    // Late tokens must never reach an already-cancelled or already-recovered UI.
+    if (cancelled || options.signal?.aborted)
+      return
+    if (event.kind === 'token' && typeof event.token === 'string')
+      options.onToken?.(event.token, event.accumulated ?? '')
   }
-  const reader = res.body?.getReader()
-  if (!reader)
-    throw new Error('stream body unavailable')
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let accumulated = ''
-  let finalResponse: SendMessageResponse | null = null
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done)
-      break
-    buffer += decoder.decode(value, { stream: true })
-    let sep: number
-    while ((sep = buffer.indexOf('\n\n')) !== -1) {
-      const block = buffer.slice(0, sep)
-      buffer = buffer.slice(sep + 2)
-      const { eventName, data } = parseSseBlock(block)
-      if (!data)
-        continue
-      if (eventName === 'token') {
-        try {
-          const token = JSON.parse(data).token ?? ''
-          if (typeof token === 'string' && token.length > 0) {
-            accumulated += token
-            options.onToken?.(token, accumulated)
-          }
-        }
-        catch {
-          accumulated += data
-          options.onToken?.(data, accumulated)
-        }
-      }
-      else if (eventName === 'done') {
-        try {
-          const parsed = JSON.parse(data) as { data?: SendMessageResponse }
-          finalResponse = parsed.data ?? (parsed as unknown as SendMessageResponse)
-        }
-        catch {
-          throw new Error('stream done payload parse failed')
-        }
-      }
-      else if (eventName === 'error') {
-        throw new Error(toFriendlyErrorMessage(data.slice(0, 400)))
-      }
-    }
+
+  try {
+    return await invokeWithFriendlyError<SendMessageResponse>('send_message_stream', {
+      req,
+      transportId,
+      onEvent,
+    })
   }
-  if (!finalResponse)
-    throw new Error('stream ended without done event')
-  return finalResponse
+  catch (error) {
+    if (cancelled || options.signal?.aborted)
+      throw streamAbortError()
+    throw error
+  }
+  finally {
+    options.signal?.removeEventListener('abort', onAbort)
+  }
 }
 
 export async function queryMemories(

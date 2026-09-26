@@ -25,6 +25,18 @@ pub enum ChatBackend {
 }
 
 impl ChatBackend {
+    pub async fn recover_message(
+        &self,
+        req: &SendMessageRequest,
+    ) -> Result<SendMessageResponse, AppError> {
+        match self {
+            Self::Http(conn) => KernelHttpClient::recover_message_via_http(conn, req).await,
+            Self::Local(state) => {
+                oclive_kernel_host::domain::chat_engine::recover_message(state, req).await
+            }
+        }
+    }
+
     #[allow(clippy::assertions_on_constants)]
     #[must_use]
     pub fn from_app(app: &AppHandle, state: Arc<AppState>) -> Self {
@@ -50,10 +62,11 @@ impl ChatBackend {
             Self::Http(conn) => {
                 match KernelHttpClient::send_message_via_http(conn, role_path, req).await {
                     Ok(res) => Ok(res),
-                    Err(AppError::RoleRuntimeNotReady) => {
+                    Err(AppError::RoleRuntimeNotReady) if req.client_request_id.is_none() => {
                         KernelHttpClient::load_role_via_http(conn, req.role_id.trim()).await?;
                         KernelHttpClient::send_message_via_http(conn, role_path, req).await
                     }
+                    Err(AppError::RoleRuntimeNotReady) => Err(AppError::ChatRequestUnconfirmed),
                     Err(e) => Err(e),
                 }
             }
@@ -87,13 +100,14 @@ impl ChatBackend {
                 .await
                 {
                     Ok(res) => Ok(res),
-                    Err(AppError::RoleRuntimeNotReady) => {
+                    Err(AppError::RoleRuntimeNotReady) if req.client_request_id.is_none() => {
                         KernelHttpClient::load_role_via_http(conn, req.role_id.trim()).await?;
                         KernelHttpClient::send_message_stream_via_http(conn, role_path, req, |t| {
                             emit(t)
                         })
                         .await
                     }
+                    Err(AppError::RoleRuntimeNotReady) => Err(AppError::ChatRequestUnconfirmed),
                     Err(e) => Err(e),
                 }
             }

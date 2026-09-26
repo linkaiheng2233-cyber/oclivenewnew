@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod chat;
 pub mod chat_backend;
+pub mod chat_stream;
 pub mod conversation;
 pub mod desktop_fs;
 pub mod diagnostics;

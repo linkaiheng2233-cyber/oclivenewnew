@@ -22,6 +22,10 @@ custom-protocol = ["tauri/custom-protocol"]
 desktop = ["dep:tauri-plugin-deep-link"]
 dual_core = ["oclive_kernel_host/dual_core"]
 loom-tests = ["dep:loom"]
+# CP-INT B9-B11 R1: compile-time gated test harness. `default` must NOT include these, so a normal
+# release/debug build exports no test handle and contains no fault-injection code path.
+test-harness = []
+test-faults = ["test-harness"]
 
 [dependencies]
 oclive_kernel_host = { path = "../../kernel/crates/oclive_kernel_host", features = ["tauri-commands"] }

@@ -60,6 +60,19 @@ pub async fn send_message(
 }
 
 #[tauri::command]
+pub async fn recover_message(
+    mut req: SendMessageRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<SendMessageResponse, crate::api::error::CommandError> {
+    req.user_message = req.user_message.trim().to_string();
+    ChatBackend::from_app(&app, state.inner().clone())
+        .recover_message(&req)
+        .await
+        .map_err(Into::into)
+}
+
+#[tauri::command]
 pub async fn begin_adult_stage_generation(
     req: BeginAdultStageGenerationRequest,
     app: AppHandle,

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { invalidateVoiceRuntimeConfig, useVoiceAutoTts } from './useVoiceAutoTts'
 
@@ -80,6 +80,32 @@ const Harness = defineComponent({
   },
 })
 
+/**
+ * In-memory audio double: no real audio device, no decoding. `play()` reports a completed
+ * playback on a microtask so the consumer's normal success path can be asserted end to end.
+ */
+class InMemoryAudio extends EventTarget {
+  src = ''
+  paused = true
+
+  play(): Promise<void> {
+    this.paused = false
+    queueMicrotask(() => this.dispatchEvent(new Event('ended')))
+    return Promise.resolve()
+  }
+
+  pause(): void {
+    this.paused = true
+  }
+
+  load(): void {}
+
+  removeAttribute(name: string): void {
+    if (name === 'src')
+      this.src = ''
+  }
+}
+
 describe('voice auto TTS ownership', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -90,6 +116,91 @@ describe('voice auto TTS ownership', () => {
     mocks.getSettings.mockResolvedValue({ config: {} })
     mocks.invokeFriendly.mockResolvedValue('')
     mocks.resolveSidecarEndpoint.mockResolvedValue(null)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('speaks the final authoritative reply once and stays silent until then', async () => {
+    vi.stubGlobal('Audio', InMemoryAudio)
+    // Raw streamed tokens the bubble may have previewed while the turn was still open.
+    const rawTokenPrefix = '清晨的风轻轻吹过树梢。'
+    // The host-processed authoritative text deliberately differs from that prefix.
+    const authoritativeReply = '风停了。我们回去吧。'
+    expect(authoritativeReply).not.toBe(rawTokenPrefix)
+    expect(authoritativeReply).not.toContain(rawTokenPrefix)
+    expect(rawTokenPrefix).not.toContain(authoritativeReply)
+
+    mocks.pluginDisabled = false
+    mocks.roleStore.currentRoleId = 'mumu'
+    mocks.getSettings.mockResolvedValue({
+      config: {
+        tts_expansion_enabled: true,
+        auto_tts: true,
+        role_tts_enabled: { mumu: true },
+        tts_profile: 'bundled-cosyvoice2-zh',
+        synth_provider: 'bundled',
+      },
+    })
+    mocks.invokeFriendly.mockResolvedValue('D:/roles/mumu')
+    const speakPayloads: { text?: string }[] = []
+    mocks.directoryInvoke.mockImplementation(async (
+      _pluginId: string,
+      method: string,
+      payload?: { text?: string },
+    ) => {
+      if (method === 'voice.list_profiles')
+        return { profiles: [] }
+      if (method === 'voice.read_role_profile') {
+        return {
+          ok: true,
+          profile: {
+            synth_profile: 'bundled-cosyvoice2-zh',
+          },
+        }
+      }
+      if (method === 'voice.build_directive') {
+        return {
+          ok: true,
+          directive: {
+            synth_profile: 'bundled-cosyvoice2-zh',
+          },
+        }
+      }
+      if (method === 'voice.speak') {
+        speakPayloads.push({ text: payload?.text })
+        return { ok: true, audio_base64: 'QUJD', audio_mime: 'audio/wav' }
+      }
+      return { ok: true }
+    })
+
+    const wrapper = mount(Harness)
+    await vi.waitFor(() => expect(mocks.getSettings).toHaveBeenCalled())
+
+    // The turn is submitted but the authoritative result has not arrived yet.
+    mocks.handlers.get('message:submit')?.({ role_id: 'mumu', stream_id: 'stream-ordinary' })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(speakPayloads).toHaveLength(0)
+    expect(mocks.markSettled).not.toHaveBeenCalled()
+
+    const onMessageSent = mocks.handlers.get('message:sent')
+    expect(onMessageSent).toBeTypeOf('function')
+    // No `stream_id`: this is the post-fix ordinary-reply payload, so the consumer must
+    // speak the whole authoritative reply instead of topping up a streamed prefix.
+    await onMessageSent?.({
+      reply: authoritativeReply,
+      role_id: 'mumu',
+      turn_id: 'turn-ordinary',
+    })
+
+    expect(speakPayloads).toHaveLength(1)
+    expect(speakPayloads[0].text).toBe(authoritativeReply)
+    expect(speakPayloads[0].text).not.toBe(rawTokenPrefix)
+    expect(mocks.markSettled).toHaveBeenCalledTimes(1)
+    expect(mocks.markSettled).toHaveBeenCalledWith('turn-ordinary', 'complete')
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('settles but never speaks a late message from the previous role', async () => {

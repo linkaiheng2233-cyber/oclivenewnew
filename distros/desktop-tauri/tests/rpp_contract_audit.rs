@@ -163,6 +163,7 @@ async fn directory_rpp_process_returns_display_reply_contract() {
     let resp = process_message(
         &state,
         &SendMessageRequest {
+            client_request_id: None,
             role_id: role_id.clone(),
             user_message: "ping".into(),
             scene_id: Some("default".into()),

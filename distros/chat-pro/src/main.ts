@@ -1,5 +1,6 @@
 import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import { i18n } from '@oclive/shared/i18n'
+import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
 import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
@@ -60,6 +61,47 @@ void (async () => {
   }
 
   app.mount('#app')
+
+  // CP-INT R2: read-only observation handle for the live verification batch only.
+  //
+  // `VITE_OCLIVE_TEST_HARNESS` is a Vite compile-time define, so with the variable unset this whole
+  // block (and every string in it) is eliminated from the normal bundle. It subscribes to the real
+  // `hostEventBus` singleton and records the real `message:sent` emissions; it never replaces the
+  // emitter, the stores, `fetch`, `invoke`, request UUIDs or generated replies.
+  if (import.meta.env.VITE_OCLIVE_TEST_HARNESS === '1') {
+    const messageSent: Array<Record<string, unknown>> = []
+    let subscriptions = 0
+    hostEventBus.on('message:sent', (payload) => {
+      const event = (payload ?? {}) as Record<string, unknown>
+      messageSent.push({
+        seq: messageSent.length + 1,
+        at: Date.now(),
+        role_id: event.role_id ?? null,
+        scene_id: event.scene_id ?? null,
+        turn_id: event.turn_id ?? null,
+        message: event.message ?? null,
+        reply: event.reply ?? null,
+        reply_aside: event.reply_aside ?? null,
+      })
+    })
+    subscriptions += 1
+    // `_s` is Pinia's internal store registry; it is what the live verification reads, so the cast
+    // is confined to this compile-time-gated block.
+    const storeRegistry = (pinia as unknown as { _s: Map<string, unknown> })._s
+    ;(window as unknown as { __OCLIVE_TEST_HARNESS__?: unknown }).__OCLIVE_TEST_HARNESS__ = {
+      version: 1,
+      kinds: ['message:sent'],
+      subscriber: 'hostEventBus.on',
+      subscriptions,
+      /** Number of real `message:sent` emissions observed so far. */
+      messageSentCount: () => messageSent.length,
+      /** Checkpoint: pass a previous count to read only the events since then. */
+      messageSentSince: (mark = 0) => messageSent.slice(mark),
+      messageSentAll: () => messageSent.slice(),
+      storeIds: () => Array.from(storeRegistry.keys()).sort(),
+      store: (id: string) => storeRegistry.get(id) ?? null,
+    }
+  }
 
   void (async () => {
     try {
