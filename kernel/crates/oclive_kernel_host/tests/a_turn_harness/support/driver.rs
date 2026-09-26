@@ -251,11 +251,21 @@ pub fn require_child_marker() -> (String, String, String) {
     );
     let scenario = std::env::var(super::ENV_SCENARIO).unwrap_or_default();
     assert!(
-        [super::S1, super::S2, super::S3].contains(&scenario.as_str()),
+        [super::S1, super::S2, super::S3, super::B1].contains(&scenario.as_str())
+            || crate::memory_turn::is_memory(&scenario)
+            || crate::emotion_turn::find(&scenario).is_some()
+            || crate::http_entry::is_scenario(&scenario)
+            || crate::http_idempotency::is_scenario(&scenario),
         "[A-HARNESS] 非法或缺失场景标记 {}={scenario}",
         super::ENV_SCENARIO
     );
     let run_id = super::approved_run_id();
+    super::validate_run_mode(
+        &run_id,
+        &scenario,
+        &std::env::var(super::ENV_B_APPROVAL).unwrap_or_default(),
+    )
+    .expect("child mode approval rejected before filesystem operations");
     let root_raw = std::env::var(super::ENV_ROOT).unwrap_or_default();
     let root = PathBuf::from(root_raw.trim());
     let expected = scenario_root(&run_id, &scenario);
@@ -594,7 +604,12 @@ pub struct JointContext<'a> {
 pub fn joint_checks(c: &JointContext<'_>) -> Vec<&'static str> {
     let root_canon = c.root_canon;
     let child_report = c.child_report;
-    let checks: [(&'static str, bool); 8] = [
+    let checks: [(&'static str, bool); 9] = [
+        (
+            "live_case",
+            c.scenario != super::B1
+                || crate::semantic_cases::report_matches(c.run_id, child_report),
+        ),
         (
             "run_token",
             child_report.get("run_token").and_then(|v| v.as_str()) == Some(c.run_token),
@@ -675,12 +690,31 @@ pub fn run_driver_with(
 ) -> serde_json::Value {
     let scenario = scenario_of_driver(driver_test);
     let run_id = super::approved_run_id();
+    super::validate_run_mode(
+        &run_id,
+        scenario,
+        &std::env::var(super::ENV_B_APPROVAL).unwrap_or_default(),
+    )
+    .expect("driver mode approval rejected before filesystem operations");
+    let scenario_timeout_secs = if scenario == super::B1 {
+        super::B_TIMEOUT_SECS
+    } else {
+        SCENARIO_TIMEOUT_SECS
+    };
     let ledger = OpsLedger::default();
     let mut facts = serde_json::Map::new();
     facts.insert("role".into(), serde_json::json!("parent-driver"));
     facts.insert("scenario".into(), serde_json::json!(scenario));
     facts.insert("driver_test".into(), serde_json::json!(driver_test));
     facts.insert("run_id".into(), serde_json::json!(run_id));
+    if scenario == super::B1 {
+        facts.insert(
+            "expected_semantic_case".into(),
+            crate::semantic_cases::for_run(&run_id)
+                .expect("mode already validated")
+                .identity(),
+        );
+    }
     facts.insert(
         "generated_at".into(),
         serde_json::json!(super::now_utc_stamp()),
@@ -779,7 +813,7 @@ pub fn run_driver_with(
     let started = std::time::Instant::now();
     let sup = supervise(
         &mut child,
-        Duration::from_secs(SCENARIO_TIMEOUT_SECS),
+        Duration::from_secs(scenario_timeout_secs),
         CLEANUP_DEADLINE,
         &mut || started.elapsed(),
         &mut std::thread::sleep,
@@ -792,7 +826,7 @@ pub fn run_driver_with(
             "args": ["--ignored","--exact",CHILD_TEST_NAME,"--nocapture","--test-threads=1"],
             "cwd": root.join("cwd").display().to_string(),
             "pid": pid,
-            "timeout_secs": SCENARIO_TIMEOUT_SECS,
+            "timeout_secs": scenario_timeout_secs,
             "cleanup_deadline_ms": CLEANUP_DEADLINE.as_millis() as u64,
             "elapsed_ms": started.elapsed().as_millis() as u64,
             "supervision": sup.to_json(),
@@ -806,7 +840,10 @@ pub fn run_driver_with(
     );
     facts.insert(
         "env_denied_keys".into(),
-        serde_json::json!(env::DENIED_KEYS),
+        serde_json::json!(env::DENIED_KEYS
+            .iter()
+            .filter(|key| scenario != super::B1 || **key != "OLLAMA_MODEL")
+            .collect::<Vec<_>>()),
     );
 
     // F1：监督历史进入准入判定——超时/查询错误/清理错误的原失败**不因清理拿到退出码 0 而撤销**。

@@ -123,6 +123,18 @@ pub fn build_child_env(
             "[A-HARNESS] 子环境不得包含被拒键：{k}"
         );
     }
+    // B uses the same isolated system environment, with only these explicit additions.
+    // The proxy endpoint is chosen inside the owned child before the default builder runs.
+    if scenario == super::B1 {
+        out.push((
+            super::ENV_B_APPROVAL.into(),
+            crate::semantic_cases::approval_for_run(run_id)
+                .expect("parent validated the frozen live mode before preparing child env")
+                .into(),
+        ));
+        out.push(("OLLAMA_MODEL".into(), crate::live_proxy::MODEL.into()));
+        out.push(("OCLIVE_OLLAMA_HTTP_TIMEOUT_SECS".into(), "60".into()));
+    }
     out
 }
 

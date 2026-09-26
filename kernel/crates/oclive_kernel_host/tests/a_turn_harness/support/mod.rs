@@ -26,7 +26,23 @@ pub use oclive_kernel_types::models::{SendMessageRequest, SendMessageResponse};
 
 /// 唯一恢复区根（补充约束固定）。
 pub const RECOVERY_BASE: &str = r"E:\OCLive\_recovery";
+/// Legacy tree prefix. Every already consumed/observed tree lives under this prefix.
 pub const TREE_PREFIX: &str = "CPB3V2-";
+/// B4/V1 preparation family prefix. The controller reserved
+/// `E:/OCLive/_recovery/CPB4V1-<run_id>/` for the future H02/H03 identities, so the tree name
+/// must follow the run-id family instead of one global prefix.
+pub const TREE_PREFIX_B4V1: &str = "CPB4V1-";
+
+/// Tree prefix for a run id. Defaults to the legacy prefix so every existing tree keeps its
+/// exact path; only the reserved `A-CPINTB4-…` family maps to the B4/V1 prefix.
+#[must_use]
+pub fn tree_prefix_for(run_id: &str) -> &'static str {
+    if run_id.starts_with("A-CPINTB4-") {
+        TREE_PREFIX_B4V1
+    } else {
+        TREE_PREFIX
+    }
+}
 
 pub const ROLE_ID: &str = "a-probe-role";
 pub const ROLE_NAME: &str = "A Probe Role";
@@ -39,6 +55,10 @@ pub const SHUTDOWN_TIMEOUT_SECS: u64 = 30;
 pub const S1: &str = "s1";
 pub const S2: &str = "s2";
 pub const S3: &str = "s3";
+pub const B1: &str = "b1";
+pub const ENV_B_APPROVAL: &str = "OCLIVE_B_APPROVAL";
+pub const B_APPROVAL: &str = "CPB3-B-qwen2.5-7b-845dbda0";
+pub const B_TIMEOUT_SECS: u64 = 240;
 
 // —— 合成输入常量（必须独立完整常量）——
 pub const S1_MSG: &str = "随便聊聊吧，你最近有没有什么开心的小事？";
@@ -66,7 +86,12 @@ pub const CHILD_TEST_NAME: &str = "a_child_run_turn";
 
 #[must_use]
 pub fn user_message(scenario: &str) -> &'static str {
+    if let Some(case) = crate::emotion_turn::find(scenario) {
+        return case.message;
+    }
     match scenario {
+        crate::memory_turn::M1 => crate::memory_turn::HIT_QUERY,
+        crate::memory_turn::M2 => crate::memory_turn::MISS_QUERY,
         S1 => S1_MSG,
         S2 => S2_MSG,
         S3 => S3_MSG,
@@ -76,7 +101,11 @@ pub fn user_message(scenario: &str) -> &'static str {
 
 #[must_use]
 pub fn expected_reply(scenario: &str) -> Option<&'static str> {
+    if crate::emotion_turn::find(scenario).is_some() {
+        return Some(crate::emotion_turn::REPLY);
+    }
     match scenario {
+        crate::memory_turn::M1 | crate::memory_turn::M2 => Some(crate::memory_turn::REPLY),
         S1 => Some(S1_REPLY),
         S2 => Some(S2_REPLY),
         _ => None,
@@ -85,7 +114,11 @@ pub fn expected_reply(scenario: &str) -> Option<&'static str> {
 
 #[must_use]
 pub fn scripted_main_calls(scenario: &str) -> usize {
+    if crate::emotion_turn::find(scenario).is_some() {
+        return 1;
+    }
     match scenario {
+        crate::memory_turn::M1 | crate::memory_turn::M2 => 1,
         S1 => 1,
         S2 => 2,
         S3 => 1,
@@ -96,9 +129,24 @@ pub fn scripted_main_calls(scenario: &str) -> usize {
 #[must_use]
 pub fn scenario_of_driver(driver_test: &str) -> &'static str {
     match driver_test {
+        "i1_driver_concurrent_identity" => "i1",
+        "i2_driver_disconnect_recovery" => "i2",
+        "i3_driver_conflict_and_new_send" => "i3",
+        "i4_driver_durable_recovery" => "i4",
+        "h1_driver_http_stream_success" => "h1",
+        "h2_driver_http_stream_error" => "h2",
+        "h3_driver_http_partial_error" => "h3",
+        "h4_driver_http_disconnect_retry" => "h4",
+        "e1_driver_joy_emotion_turn" => "e1",
+        "e2_driver_no_clue_emotion_turn" => "e2",
+        "e3_driver_negated_emotion_turn" => "e3",
+        "e4_driver_neutral_clue_emotion_turn" => "e4",
+        "m1_driver_selected_memory_turn" => crate::memory_turn::M1,
+        "m2_driver_no_hit_memory_turn" => crate::memory_turn::M2,
         "a1_driver_normal_turn" => S1,
         "a2_driver_empty_reply_repair" => S2,
         "a3_driver_main_llm_err_fallback" => S3,
+        "b1_driver_live_turn" => B1,
         other => panic!("[A-HARNESS] unknown driver test: {other}"),
     }
 }
@@ -108,7 +156,7 @@ pub fn scenario_of_driver(driver_test: &str) -> &'static str {
 pub fn approved_run_id() -> String {
     let raw = std::env::var(ENV_RUN_ID).unwrap_or_default();
     let t = raw.trim().to_string();
-    let shape_ok = t.starts_with("A-")
+    let shape_ok = (t.starts_with("A-") || t.starts_with("B-"))
         && (12..=64).contains(&t.len())
         && t.chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_');
@@ -120,9 +168,30 @@ pub fn approved_run_id() -> String {
     t
 }
 
+/// Mode approval is checked before any directory creation, and again in the child.
+pub fn validate_run_mode(run_id: &str, scenario: &str, approval: &str) -> Result<(), String> {
+    if crate::http_idempotency::is_scenario(scenario) {
+        return crate::http_idempotency::validate_mode(run_id, scenario, approval);
+    }
+    if crate::http_entry::is_scenario(scenario) {
+        return crate::http_entry::validate_mode(run_id, scenario, approval);
+    }
+    if crate::emotion_turn::find(scenario).is_some() {
+        return crate::emotion_turn::validate_mode(run_id, scenario, approval);
+    }
+    match scenario {
+        crate::memory_turn::M1 | crate::memory_turn::M2 => {
+            crate::memory_turn::validate_mode(run_id, scenario, approval)
+        }
+        B1 => crate::semantic_cases::select(run_id, approval).map(|_| ()),
+        S1 | S2 | S3 if run_id.starts_with("A-") => Ok(()),
+        _ => Err("scenario/run_id/explicit live approval mismatch".into()),
+    }
+}
+
 #[must_use]
 pub fn tree_root(run_id: &str) -> PathBuf {
-    PathBuf::from(RECOVERY_BASE).join(format!("{TREE_PREFIX}{run_id}"))
+    PathBuf::from(RECOVERY_BASE).join(format!("{}{run_id}", tree_prefix_for(run_id)))
 }
 
 #[must_use]

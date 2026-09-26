@@ -1,6 +1,6 @@
 //! A-P2-R1 隔离回合 harness · 入口（R1–R3 返修版）。
 //!
-//! 四个 I/O 入口全部 `#[ignore]` 显式 opt-in；纯内存回归用例统一 `a_p2_r1_` 前缀。
+//! 所有 I/O 入口全部 `#[ignore]` 显式 opt-in；默认仅作纯内存验证。
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
@@ -9,6 +9,13 @@
     clippy::field_reassign_with_default
 )]
 
+mod emotion_turn;
+mod http_entry;
+mod http_idempotency;
+mod live;
+mod live_proxy;
+mod memory_turn;
+mod semantic_cases;
 mod support;
 
 use serde_json::{json, Map, Value};
@@ -45,6 +52,96 @@ fn a3_driver_main_llm_err_fallback() {
     driver::run_driver("a3_driver_main_llm_err_fallback");
 }
 
+#[test]
+#[ignore = "B opt-in: frozen local model, approval marker and a fresh B run_id required"]
+fn b1_driver_live_turn() {
+    driver::run_driver("b1_driver_live_turn");
+}
+
+#[test]
+#[ignore = "M-V1 opt-in: frozen synthetic-memory run_id; no real model"]
+fn m1_driver_selected_memory_turn() {
+    driver::run_driver("m1_driver_selected_memory_turn");
+}
+
+#[test]
+#[ignore = "M-V1 opt-in: frozen no-hit Host fallback run_id; no real model"]
+fn m2_driver_no_hit_memory_turn() {
+    driver::run_driver("m2_driver_no_hit_memory_turn");
+}
+
+#[test]
+#[ignore = "E-V1 opt-in: frozen builtin-emotion turn; no real model"]
+fn e1_driver_joy_emotion_turn() {
+    driver::run_driver("e1_driver_joy_emotion_turn");
+}
+
+#[test]
+#[ignore = "E-V1 opt-in: frozen no-clue turn; no real model"]
+fn e2_driver_no_clue_emotion_turn() {
+    driver::run_driver("e2_driver_no_clue_emotion_turn");
+}
+
+#[test]
+#[ignore = "E-V1 opt-in: frozen negated-clue turn; no real model"]
+fn e3_driver_negated_emotion_turn() {
+    driver::run_driver("e3_driver_negated_emotion_turn");
+}
+
+#[test]
+#[ignore = "E-V1 opt-in: frozen neutral-clue turn; no real model"]
+fn e4_driver_neutral_clue_emotion_turn() {
+    driver::run_driver("e4_driver_neutral_clue_emotion_turn");
+}
+
+#[test]
+#[ignore = "CP-INT B2: isolated in-process HTTP/SSE; frozen run ID required"]
+fn h1_driver_http_stream_success() {
+    driver::run_driver("h1_driver_http_stream_success");
+}
+
+#[test]
+#[ignore = "CP-INT B2: isolated pre-token provider failure"]
+fn h2_driver_http_stream_error() {
+    driver::run_driver("h2_driver_http_stream_error");
+}
+
+#[test]
+#[ignore = "CP-INT B2: isolated partial-token provider failure"]
+fn h3_driver_http_partial_error() {
+    driver::run_driver("h3_driver_http_partial_error");
+}
+
+#[test]
+#[ignore = "CP-INT B2: characterize dropped SSE body and explicit retry, not product acceptance"]
+fn h4_driver_http_disconnect_retry() {
+    driver::run_driver("h4_driver_http_disconnect_retry");
+}
+
+#[test]
+#[ignore = "CP-INT B3: isolated same-turn identity; frozen run ID required"]
+fn i1_driver_concurrent_identity() {
+    driver::run_driver("i1_driver_concurrent_identity");
+}
+
+#[test]
+#[ignore = "CP-INT B3: isolated same-turn identity; frozen run ID required"]
+fn i2_driver_disconnect_recovery() {
+    driver::run_driver("i2_driver_disconnect_recovery");
+}
+
+#[test]
+#[ignore = "CP-INT B3: isolated same-turn identity; frozen run ID required"]
+fn i3_driver_conflict_and_new_send() {
+    driver::run_driver("i3_driver_conflict_and_new_send");
+}
+
+#[test]
+#[ignore = "CP-INT B3: isolated same-turn identity; frozen run ID required"]
+fn i4_driver_durable_recovery() {
+    driver::run_driver("i4_driver_durable_recovery");
+}
+
 // —— 子（唯一入口；一次只跑一个场景）——
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -67,7 +164,20 @@ async fn a_child_run_turn() {
     let _log_guard = oclive_kernel_host::init_tracing_with_log_dir(Some(&root_canon));
 
     let env_before = env::env_facts();
-    let (mut facts, failures) = run_scenario(&scenario, &root_canon).await;
+    let (mut facts, failures) = if http_idempotency::is_scenario(&scenario) {
+        http_idempotency::run_scenario(&scenario, &root_canon).await
+    } else if http_entry::is_scenario(&scenario) {
+        http_entry::run_scenario(&scenario, &root_canon).await
+    } else if scenario == support::B1 {
+        let case = semantic_cases::select(
+            &run_id,
+            &std::env::var(support::ENV_B_APPROVAL).unwrap_or_default(),
+        )
+        .expect("child marker already validated the frozen sample");
+        live::run_scenario(&root_canon, case).await
+    } else {
+        run_scenario(&scenario, &root_canon).await
+    };
 
     facts.insert("env_before".into(), env_before);
     facts.insert("env_after".into(), env::env_facts());
@@ -115,6 +225,8 @@ async fn a_child_run_turn() {
 
 fn script_for(scenario: &str) -> Vec<Step> {
     match scenario {
+        "e1" | "e2" | "e3" | "e4" => vec![Step::Ok(emotion_turn::REPLY.to_string())],
+        memory_turn::M1 | memory_turn::M2 => vec![Step::Ok(memory_turn::REPLY.to_string())],
         S1 => vec![Step::Ok(support::S1_REPLY.to_string())],
         S2 => vec![
             Step::Ok(support::S2_EMPTY_REPLY.to_string()),
@@ -273,8 +385,24 @@ async fn run_scenario(scenario: &str, root: &Path) -> (Map<String, Value>, Vec<S
     }
 
     let mut response_facts: Option<Value> = None;
+    // Test setup only: real builder/migrations/load_role have already completed.
+    // Setup failure follows the existing single-shutdown path, without entering the turn.
+    let mut memory_before = None;
+    if load_ok && memory_turn::is_memory(scenario) {
+        match memory_turn::seed(&db_path, root).await {
+            Ok(snapshot) => {
+                facts.insert("memory_before".into(), snapshot.clone());
+                memory_before = Some(snapshot);
+            }
+            Err(error) => {
+                load_ok = false;
+                failures.push(format!("synthetic memory setup failed: {error}"));
+            }
+        }
+    }
     if load_ok {
         let request = support::SendMessageRequest {
+            client_request_id: None,
             role_id: ROLE_ID.to_string(),
             user_message: user_msg.to_string(),
             scene_id: Some(SCENE_ID.to_string()),
@@ -344,6 +472,15 @@ async fn run_scenario(scenario: &str, root: &Path) -> (Map<String, Value>, Vec<S
             verify_sqlite(&db_path, scenario, user_msg, response_facts.as_ref()).await;
         facts.insert("sqlite_verify".into(), sqlite_facts);
         failures.extend(sqlite_failures);
+        if let Some(before) = memory_before.as_ref() {
+            match memory_turn::snapshot(&db_path, root).await {
+                Ok(after) => {
+                    failures.extend(memory_turn::verify_rows(scenario, before, &after));
+                    facts.insert("memory_after".into(), after);
+                }
+                Err(error) => failures.push(format!("memory post-read failed: {error}")),
+            }
+        }
     } else {
         failures.push(format!(
             "shutdown 超时（{}）⇒ 不按“池已关闭”查 DB，该项标未执行",
@@ -414,9 +551,20 @@ async fn run_scenario(scenario: &str, root: &Path) -> (Map<String, Value>, Vec<S
             .collect::<Vec<_>>()),
     );
     failures.extend(verify_prompts(scenario, &prompts));
+    if memory_turn::is_memory(scenario) {
+        failures.extend(memory_turn::verify_prompts(scenario, &prompts));
+    }
 
     if let Some(rf) = response_facts.as_ref() {
         failures.extend(verify_response_facts(scenario, rf));
+        if emotion_turn::find(scenario).is_some() {
+            failures.extend(emotion_turn::verify(
+                scenario,
+                &prompts,
+                rf,
+                facts.get("sqlite_verify").unwrap_or(&Value::Null),
+            ));
+        }
     }
     (facts, failures)
 }
@@ -428,6 +576,7 @@ fn response_facts_of(r: &support::SendMessageResponse) -> Value {
         "presence_mode": format!("{:?}", r.presence_mode),
         "reply": r.reply,
         "reply_bytes": r.reply.len(),
+        "emotion": r.emotion,
         "bot_emotion": r.bot_emotion,
         "portrait_emotion": r.portrait_emotion,
         "favorability_delta": r.favorability_delta,
@@ -459,7 +608,7 @@ pub fn verify_response_facts(scenario: &str, rf: &Value) -> Vec<String> {
         .cloned()
         .unwrap_or(Value::Null);
     match scenario {
-        S1 | S2 => {
+        S1 | S2 | memory_turn::M1 | memory_turn::M2 | "e1" | "e2" | "e3" | "e4" => {
             if let Some(want) = support::expected_reply(scenario) {
                 if reply != want {
                     f.push(format!("回复必须完整等于独立常量 {want:?}，实际 {reply:?}"));
@@ -776,7 +925,7 @@ async fn verify_sqlite(
         }
     };
     let msgs = sqlx::query(
-        "SELECT id, session_id, turn_index, sender, content, created_at FROM chat_messages ORDER BY turn_index, sender",
+        "SELECT id, session_id, turn_index, sender, content, created_at, metadata FROM chat_messages ORDER BY turn_index, sender",
     )
     .fetch_all(&pool)
     .await;
@@ -798,6 +947,7 @@ async fn verify_sqlite(
                     "sender": r.get::<String, _>("sender"),
                     "content": r.get::<String, _>("content"),
                     "created_at": r.get::<Option<String>, _>("created_at"),
+                    "metadata": r.get::<Option<String>, _>("metadata"),
                 })
             })
             .collect(),
