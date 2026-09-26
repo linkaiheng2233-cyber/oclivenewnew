@@ -25,7 +25,10 @@ pub use oclive_kernel_contracts::LlmClient as HostLlmClient;
 pub use oclive_kernel_types::models::{SendMessageRequest, SendMessageResponse};
 
 /// 唯一恢复区根（补充约束固定）。
+#[cfg(windows)]
 pub const RECOVERY_BASE: &str = r"E:\OCLive\_recovery";
+#[cfg(not(windows))]
+pub const RECOVERY_BASE: &str = "/tmp/oclive-harness-recovery";
 /// Legacy tree prefix. Every already consumed/observed tree lives under this prefix.
 pub const TREE_PREFIX: &str = "CPB3V2-";
 /// B4/V1 preparation family prefix. The controller reserved
@@ -211,6 +214,7 @@ pub fn now_utc_stamp() -> String {
 // ————————————————————————————————————————————————————————————
 
 /// `FILE_ATTRIBUTE_REPARSE_POINT`（覆盖 symlink 与 junction 等重解析点）。
+#[cfg(windows)]
 pub const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0400;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

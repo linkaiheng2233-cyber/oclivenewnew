@@ -995,8 +995,15 @@ async fn verify_sqlite(
 // R1–R3 纯内存回归（`a_p2_r1_` 前缀；不写盘、不连 DB、不 spawn 真实进程、不改全局环境）
 // ══════════════════════════════════════════════════════════════
 
+fn recovery_parent() -> PathBuf {
+    Path::new(support::RECOVERY_BASE)
+        .parent()
+        .expect("recovery root has a parent")
+        .to_path_buf()
+}
+
 fn fake_base_dirs(fs: &FakeFs) {
-    fs.add_dir(Path::new(r"E:\OCLive"));
+    fs.add_dir(&recovery_parent());
     fs.add_dir(Path::new(support::RECOVERY_BASE));
 }
 
@@ -1019,11 +1026,11 @@ fn a_p2_r1_path_probe_allows_valid_chain() {
 fn a_p2_r1_path_probe_rejects_out_of_scope() {
     let fs = FakeFs::new();
     fake_base_dirs(&fs);
-    fs.add_dir(Path::new(r"E:\OCLive\other"));
+    let other = recovery_parent().join("other");
+    fs.add_dir(&other);
     let base = PathBuf::from(support::RECOVERY_BASE);
     let err =
-        support::verify_existing_dir_under(&fs, &base, Path::new(r"E:\OCLive\other"), "probe")
-            .expect_err("越界必须拒绝");
+        support::verify_existing_dir_under(&fs, &base, &other, "probe").expect_err("越界必须拒绝");
     assert!(err.contains("越出恢复区"), "{err}");
 
     // 规范化解引用越界（词法在范围内，规范化后落到范围外）⇒ 必须拒绝。
@@ -1031,7 +1038,7 @@ fn a_p2_r1_path_probe_rejects_out_of_scope() {
     fake_base_dirs(&fs2);
     let inside = PathBuf::from(support::RECOVERY_BASE).join("CPB3V2-A-20990101T0000-abc1234");
     fs2.add_dir(&inside);
-    fs2.add_canon(&inside, Path::new(r"C:\outside\escaped"));
+    fs2.add_canon(&inside, &recovery_parent().join("outside/escaped"));
     let err2 = support::verify_existing_dir_under(&fs2, &base, &inside, "probe_canon")
         .expect_err("规范化越界必须拒绝");
     assert!(err2.contains("规范化后越出恢复区"), "{err2}");
@@ -1041,7 +1048,7 @@ fn a_p2_r1_path_probe_rejects_out_of_scope() {
 fn a_p2_r1_path_probe_rejects_reparse_ancestor_root_and_run() {
     // 祖先重解析
     let fs = FakeFs::new();
-    fs.add_reparse(Path::new(r"E:\OCLive"));
+    fs.add_reparse(&recovery_parent());
     fs.add_dir(Path::new(support::RECOVERY_BASE));
     assert!(
         support::verify_recovery_base(&fs).is_err(),
@@ -1049,7 +1056,7 @@ fn a_p2_r1_path_probe_rejects_reparse_ancestor_root_and_run() {
     );
     // 恢复区根自身重解析
     let fs2 = FakeFs::new();
-    fs2.add_dir(Path::new(r"E:\OCLive"));
+    fs2.add_dir(&recovery_parent());
     fs2.add_reparse(Path::new(support::RECOVERY_BASE));
     assert!(
         support::verify_recovery_base(&fs2).is_err(),
@@ -1071,7 +1078,7 @@ fn a_p2_r1_path_probe_rejects_reparse_ancestor_root_and_run() {
 #[test]
 fn a_p2_r1_path_probe_metadata_error_is_failure() {
     let fs = FakeFs::new();
-    fs.add_dir(Path::new(r"E:\OCLive"));
+    fs.add_dir(&recovery_parent());
     fs.add_dir(Path::new(support::RECOVERY_BASE));
     fs.add_meta_error(Path::new(support::RECOVERY_BASE));
     let err = support::verify_recovery_base(&fs).expect_err("metadata 失败必须 Err");
@@ -1081,7 +1088,7 @@ fn a_p2_r1_path_probe_metadata_error_is_failure() {
 #[test]
 fn a_p2_r1_reject_branch_creates_and_spawns_nothing() {
     let fs = FakeFs::new();
-    fs.add_reparse(Path::new(r"E:\OCLive"));
+    fs.add_reparse(&recovery_parent());
     fs.add_dir(Path::new(support::RECOVERY_BASE));
     let ledger = OpsLedger::default();
     let out = driver::prepare_run_tree_with(&fs, &ledger, "A-20990101T0000-abc1234", S1);
@@ -1127,7 +1134,7 @@ impl FsReader for FailReader {
 #[test]
 fn a_p2_r1_manifest_enumeration_failure_is_not_empty_success() {
     let reader = FailReader { mode: 0 };
-    let err = artifacts::scan_files_with(&reader, Path::new(r"E:\OCLive\_recovery\x"))
+    let err = artifacts::scan_files_with(&reader, &Path::new(support::RECOVERY_BASE).join("x"))
         .expect_err("枚举失败必须 Err，不得当作空目录");
     assert!(err.contains("目录枚举失败"), "{err}");
 }
@@ -1403,7 +1410,7 @@ fn fake_tree_paths(run_id: &str, scenario: &str) -> (PathBuf, PathBuf, PathBuf) 
 #[test]
 fn a_p2_r2_reject_before_report_dir_writes_nothing() {
     let fs = FakeFs::new();
-    fs.add_reparse(Path::new(r"E:\OCLive"));
+    fs.add_reparse(&recovery_parent());
     fs.add_dir(Path::new(support::RECOVERY_BASE));
     let ledger = OpsLedger::default();
     let sink = driver::CountingSink::new(true);
@@ -1821,12 +1828,12 @@ fn a_p2_r3_reject_connection_zero_writes_and_old_bytes_kept() {
     let mut cases: Vec<(&str, FakeFs, usize)> = Vec::new();
 
     let c1 = FakeFs::new();
-    c1.add_reparse(Path::new(r"E:\OCLive"));
+    c1.add_reparse(&recovery_parent());
     c1.add_dir(Path::new(support::RECOVERY_BASE));
     cases.push(("祖先重解析", c1, 0));
 
     let c2 = FakeFs::new();
-    c2.add_dir(Path::new(r"E:\OCLive"));
+    c2.add_dir(&recovery_parent());
     c2.add_reparse(Path::new(support::RECOVERY_BASE));
     cases.push(("恢复区根重解析", c2, 0));
 

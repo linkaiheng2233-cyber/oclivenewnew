@@ -5,6 +5,7 @@ use super::{ENV_CHILD, ENV_ROOT, ENV_RUN_ID, ENV_RUN_TOKEN, ENV_SCENARIO};
 use std::path::Path;
 
 /// 继承的**必要系统值**（不含任何密钥、不含 OCLIVE 配置）。
+#[cfg(windows)]
 const INHERIT_SYSTEM: &[&str] = &[
     "SystemRoot",
     "windir",
@@ -12,6 +13,8 @@ const INHERIT_SYSTEM: &[&str] = &[
     "PATHEXT",
     "NUMBER_OF_PROCESSORS",
 ];
+#[cfg(not(windows))]
+const INHERIT_SYSTEM: &[&str] = &[];
 
 /// 本 harness 显式设置的 OCLIVE_* 行为键（值全部由测试给出，不继承）。
 pub const BEHAVIOR_KEYS: &[&str] = &[
@@ -62,16 +65,19 @@ pub fn build_child_env(
             }
         }
     }
-    let system_root = out
-        .iter()
-        .find(|(k, _)| k == "SystemRoot")
-        .map(|(_, v)| v.clone())
-        .expect("[A-HARNESS] 父进程缺少 SystemRoot，无法构造安全的子环境");
     // 2) 只给系统目录的装载 PATH（不继承用户 PATH；本片不启动系统命令或 shell）。
-    out.push((
-        "PATH".to_string(),
-        format!("{system_root}\\System32;{system_root}"),
-    ));
+    #[cfg(windows)]
+    let system_path = {
+        let system_root = out
+            .iter()
+            .find(|(k, _)| k == "SystemRoot")
+            .map(|(_, v)| v.clone())
+            .expect("[A-HARNESS] 父进程缺少 SystemRoot，无法构造安全的子环境");
+        format!("{system_root}\\System32;{system_root}")
+    };
+    #[cfg(not(windows))]
+    let system_path = "/usr/bin:/bin".to_string();
+    out.push(("PATH".to_string(), system_path));
 
     // 3) 可写用户/临时路径重定向到本次树（不原值照搬）。
     let tmp = scenario_root.join("tmp");

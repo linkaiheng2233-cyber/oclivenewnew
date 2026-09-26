@@ -49,7 +49,7 @@ M-V1 的主控限定验收、两条已消耗身份及原始树见本机 `.cursor
 
 ## 可转交的限定里程碑
 
-冻结标签 `kernel-host-chatpro-limited-2026-09-27` 指向本页和实现一起提交后的唯一 Git SHA。新开发者可从该标签检出干净工作树，先读本页、[Base 接入学习路径](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)及[六槽阶段收口](README.md#six-slot-stage-closure)，再按改动面选测。以下命令在仓库根执行，使用 `--locked --offline`，不启动服务、真实模型或历史业务 run ID：
+冻结标签 `kernel-host-chatpro-limited-2026-09-27-r1` 指向本页和实现一起提交后的唯一 Git SHA。首个未带 `-r1` 的标签保留为历史候选：其 Linux CI 暴露了隔离回合夹具使用 Windows 固定路径和 `SystemRoot` 的跨平台问题；修订仅调整测试夹具的平台路径与子进程环境，不改变产品实现或历史运行身份。新开发者可从 `-r1` 标签检出干净工作树，先读本页、[Base 接入学习路径](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)及[六槽阶段收口](README.md#six-slot-stage-closure)，再按改动面选测。以下命令在仓库根执行，使用 `--locked --offline`，不启动服务、真实模型或历史业务 run ID：
 
 | 可携带复验层 | 命令 |
 |---|---|
