@@ -48,6 +48,12 @@
 
 CI **`cross-host-e2e`**（Ubuntu 22.04）含：`e2e-cross-host-memory` · `e2e-distro-kernel --scenario all` · `e2e-kernel-profile` · **`e2e-tauri-bundled-kernel`** · **`diff-vscode-distro-profile`**（姊妹仓缺失时 skip warn）。
 
+### 2026-09-27 本地复核与适用范围
+
+在当前源码上离线重建 `oclive-kernel-server` 与 `oclive-cli` 后，`node scripts/e2e-distro-kernel.mjs --scenario all` 通过六个场景；`npm run test:distro-profile-mirror` 通过。`role-portability` 现使用桌面与剧场安装资源中的 profile、以及 VS Code 示例 profile，逐一核对 `/health` 的发行版 ID、profile 文件 SHA-256、有效 Prompt 档位、Agent／复杂情绪开关和模式切换策略，再执行同一 `mumu` 角色的 `role/load → /chat`。这证明参考 Host 可按这些 profile 装配并完成受控 mock LLM 回合，也降低了只凭非空回复误判 profile 的风险。
+
+证据边界：这里没有运行真实模型、Tauri 桌面、VSIX 或剧场 UI；`bundled-first` 只检查调度计划，不证明当前安装包二进制已启动。六槽 Base 的独立夹具与最小角色逻辑／资产准备测试另行通过，但参考 Host 仍使用完整 `Role` 生命周期，不能由本 smoke 推断“仅人设＋单图”的最小角色已可激活，也不能推断六个 Base trait 均由产品路径直接调用。该接入缺口见 [角色包职责边界](ROLE_PACK_BOUNDARY.md) 与 [K-CORE-BOUNDARY-01](TECHNICAL_DEBT_INVENTORY.md)。
+
 ---
 
 ## 4. CI 覆盖
