@@ -12,14 +12,14 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-09-05**（新增可选 `media-png` 依赖边后，本地 `cargo audit`；advisory-db 1239 条，扫描 698 个依赖条目） |
+| **最近扫描日期** | **2026-09-27**（本地 `cargo audit --no-fetch --stale`；advisory-db 1269 条，扫描 698 个依赖条目） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **8**（`gdkx11`/GTK3 · `glib` · 5 个 `unic-*` · `chacha20` 0.10.1 yanked；本轮不改变既有 ignore 策略） |
+| **警告级命中数** | **7**（`glib` · 5 个 `unic-*` · `chacha20` 0.10.1 yanked；本轮不改变既有 ignore 策略） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
-本次锁文件仅新增 `oclive_validation → png 0.18.1` 的可选依赖边，没有增删 package 或升级版本。`media-png` 默认关闭，不进入最小逻辑契约的默认依赖图；本地 `cargo deny --locked --offline --features oclive_validation/media-png check bans licenses` 通过。扫描结果是时点证据，不构成解码器安全或硬隔离保证。
+本次锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
 
 ---
 
@@ -34,6 +34,7 @@
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **已清零** — 已升级至 **0.8.6** | |
 | [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.17** | 2026-08-21 兼容范围锁文件更新 |
 | [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **已修复** — **0.9.20** | 2026-07-09 PR #101 CI 供应链 |
+| [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **已修复** — 锁文件 **0.23.45** | 2026-09-27 兼容补丁更新；TLS 1.3 握手消息加密级别边界检查 |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **已修复** — **0.41.0**（经 plist 1.10） | 同上 |
 | [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **已修复** — **0.41.0** | 同上 |
 

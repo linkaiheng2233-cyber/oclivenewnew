@@ -12,14 +12,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-09-05** (local `cargo audit` after adding the optional `media-png` dependency edge; 1,239 advisories loaded, 698 dependency entries scanned) |
+| **Last scan date** | **2026-09-27** (local `cargo audit --no-fetch --stale`; 1,269 advisories loaded, 698 dependency entries scanned) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **8** (`gdkx11`/GTK3 · `glib` · five `unic-*` entries · yanked `chacha20` 0.10.1; existing ignore policy unchanged) |
+| **Warning-level count** | **7** (`glib` · five `unic-*` entries · yanked `chacha20` 0.10.1; existing ignore policy unchanged) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
-This lockfile change only adds the optional `oclive_validation → png 0.18.1` dependency edge, with no package additions/removals or version upgrades. `media-png` is disabled by default and absent from the minimum logical contract's default dependency graph. Local `cargo deny --locked --offline --features oclive_validation/media-png check bans licenses` passed. This is point-in-time evidence, not proof of decoder safety or hard isolation.
+This lockfile change only updates `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
 
 ---
 
@@ -34,6 +34,7 @@ This lockfile change only adds the optional `oclive_validation → png 0.18.1` d
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **Cleared** — upgraded to **0.8.6** | |
 | [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **Fixed** — lockfile **0.11.17** (2026-08-21) | Compatible-range lockfile refresh |
 | [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **Fixed** — **0.9.20** | 2026-07-09 PR #101 CI supply chain |
+| [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **Fixed** — lockfile **0.23.45** | Compatible patch update on 2026-09-27; TLS 1.3 handshake encryption-level boundary |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **Fixed** — **0.41.0** (via plist 1.10) | same |
 | [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **Fixed** — **0.41.0** | same |
 
