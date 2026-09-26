@@ -1,6 +1,6 @@
 # ChatPro Host 接入内核：分层验收检查单
 
-**状态（2026-09-27）**：首轮源码核对与定向离线复跑完成；**尚未取得全 Host 合规结论**。本文是验收工作单，不新增六槽公共语义或 ChatPro 产品要求。职责与边界以 [模块注册表 §0.1–0.2](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Base 绑定及有限实现的阶段结论见 [六槽收口](README.md#six-slot-stage-closure)。
+**状态（2026-09-27）**：普通非流式聊天的 **Memory → Prompt → LLM 所选接入切片已有本地限定证据**；桌面同身份恢复另有其自身的限定验收。本文整理已有工作并规定下一片的止点，**不以全 Host 合规为目标**，也不新增六槽公共语义或 ChatPro 产品要求。职责与边界以 [模块注册表 §0.1–0.2](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Base 绑定及有限实现的阶段结论见 [六槽收口](README.md#six-slot-stage-closure)。
 
 ## 验收对象先分开
 
@@ -8,22 +8,25 @@
 2. **共用参考 Host**：`oclive_kernel_host` 准备调用材料、选择能力、编排回合，并负责授权、领域状态与持久化。现行产品路径仍有旧端口；Base 视图或共同核心的测试通过，不等于所有生产消费者已改用 Base trait。
 3. **ChatPro 桌面适配**：`distros/desktop-tauri` 把 IPC 与流式传输映射到 Host；正常桌面启动把 `SharedKernelConnection` 和 `SharedAppState` 一起注册，聊天生产路径经 loopback HTTP。它不是另一个领域权威。`distros/chat-pro` 是前端和产品资源，不把 UI 结果当作内核执行事实。
 
-验收顺序是 **Base → Host 对所选能力的适配 → 桌面桥 → 产品回归**。不要求一个回合调用满六槽；参考 Host 的 `process_message` 也不是所有 Host 的通用流水线。
+验收顺序是 **Base → Host 对所选能力的适配 → 桌面桥 → 产品回归**。每片只核其实际消费的能力及必需依赖；不要求一个回合调用满六槽，也不把 `process_message` 变成所有 Host 的通用流水线。
 
-## 当前证据与下一道门槛
+## 已有证据按接入切片归档
 
-| 边界 | 当前已有证据 | 仍需证明 |
+| 切片 | 已有证据及精确范围 | 本片处理 |
 |---|---|---|
-| Base 可独立使用 | `base_only_fixture` 16/16；五种有限实现外测 26/26；仓库外独立 Cargo 消费者仅依赖 contracts/types 并成功调用 `MemoryBase`（见[接入学习路径](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） | 物理独立发布包和 Stable API 均未成立；不作为 Host 合规结论 |
-| Host 选择和传递材料 | `cargo test -p oclive_kernel_host --lib cp_b3_all_ --locked --offline` 32/32；`--lib cp_b3_v1_` 6/6。测试覆盖部分 Memory 原件到 Prompt、LLM 输入、Agent/Event 的共同核心与投影 | 对每个**实际使用**的能力列明来源、用途、转换损失及调用次数；不得用补造默认领域事实来满足 Base 形状。生产链采用旧端口的地方，要验证语义适配，不能因 trait 测试转绿就宣称已迁移 |
-| Host 结果和副作用 | `AppState`、`process_message`、`post_llm` 的源码显示编排/持久化归 Host；`process_message_golden_path` 1/1 使用内存 DB 和 Mock LLM，验证回复与部分 DTO 字段，**未走 Tauri 命令**；历史 H04 同回合恢复有**限定**证据 | 分开核能力正常/错误、Host 领域提交、传输送达；失败、取消或断线不自动授予重试，也不自动证明无副作用。首轮普通聊天以实际使用的 Prompt/LLM 和可选 Memory 为范围 |
-| 桌面身份与转发 | `cross_transport_recovery_contract` 4/4：流/恢复共享回合身份、错误映射不变成新发送；`ChatBackend::Http` 为正常桌面分支 | 核发布构建的连接缺失异常路径及本地后端边界；真实 IPC/桌面证据沿用其各自已登记的限定范围，不由这 4 项定向桥测试代替 |
-| ChatPro 发布回归 | 既有发行版 profile、捆绑和聊天回归可作为下游验证 | S01 历史语义质量 FAIL、真实模型/真实语音及未覆盖的崩溃窗口，不因前几层通过而自动转绿 |
+| Base 独立调用 | `base_only_fixture` 16/16、五种有限实现外测 26/26；仓库外 Cargo 消费者只声明 contracts/types 并成功调用 `MemoryBase`（[接入学习路径](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)） | **已有本地证据；不重复要求 ChatPro 证明内核本身**。独立发布包和 Stable API 仍未成立 |
+| 普通非流式 Host：Memory → Prompt → LLM | `cp_b3_v1_` 6/6 验相邻消费点；`cp_b3_all_` 32/32 验选定共同核心与投影；`process_message_golden_path` 1/1 验内存 DB＋Mock LLM 回复/部分 DTO。历史 **M-V1-R2 `MEMORY_HOST_PASS` 已由主控限定接受**：两条隔离 Host 回合分别验证命中/无命中、Prompt 原文、一次记录型生成、受控记忆写回及两消息绑定。其冻结清单中的 `memory_turn.rs`、`long_term_memory.rs`、`slot_runner.rs` 与当前磁盘 SHA256 三项全同 | **所选路径限定成立，不重跑已消耗身份**。M-V1 不证明 `MemoryBase` 在产品链被直接调用，也不证明真实模型、流式或全部角色配置；Host 旧端口的语义适配与 Base trait 直接接线分开表述 |
+| 桌面同身份传输/恢复 | 本轮 `cross_transport_recovery_contract` 4/4；历史 R2-G／R2-CANCEL-C 已获限定产品验收（本机记录 `.cursor/plans/cp-int-b9-b11-r2.controller-review.md`），只覆盖默认令牌配置下已测桌面普通聊天及取消路径 | **独立的下游限定证据**，不作为 Memory/Prompt/LLM 的新内核要求；不重跑旧业务身份 |
+| 其他可选能力和发行版 | Agent/Event/Emotion 的 Base 视图及消费点有各自定向证据；发行版 profile、捆绑和聊天 smoke 可作下游回归 | **不进入普通聊天所选切片的封闭条件**。只有下一片实际消费相关能力时才取相应证据；S01 历史语义质量 FAIL、真实模型/真实语音、未覆盖崩溃窗口各自留在原范围 |
 
-## 第一片实施范围
+## 本片止点与下一片选择
 
-先审**普通聊天**的一条实际调用链：ChatPro 输入 → 桌面 IPC/HTTP → 参考 Host 准备材料 → 已选能力 → Host 应用结果 → 权威回复。逐段记录请求身份与材料来源、是否调用能力、失败分类、生成次数、写入次数、最终 DTO 和送达观察。Memory 可选，Emotion/Event/Agent 只在真实分支使用时纳入，不为凑齐六槽强行调用。
+普通非流式聊天的所选 Host 延伸切片止于：**已知材料的来源与选择 → 实际 Prompt → 一次受控生成 → Host 应用结果**。以上证据来自不同层级，M-V1 是合成角色、隔离 SQLite、记录型 LLM 的真实 Host 回合；V1 单元测试是手动组合；黄金路径没有走 Tauri 命令。它们可共同支持**限定接入判断**，不能拼成“同一次运行覆盖所有层”或“全 Host 合规”。当前只继续做源码漂移关联和证据索引，不为补一个总计数再发已消耗场景。
 
-首轮源码观察到：[`ChatBackend::from_app`](../distros/desktop-tauri/src/api/chat_backend.rs) 在缺少 `SharedKernelConnection` 时靠 `debug_assert!` 约束 `Local` 分支；正常 `.setup` 同时注册连接与状态，因此**尚未证明生产可触发该异常路径**。发布构建若需要严格单写者，须进一步验证或设计“缺连接时拒绝”的行为；该项目前标为**待评估**，不是已复现的产品故障。改动可能影响测试/其他 Host 的显式本地路径，实施前先核 12 个 `from_app` 调用点和替代路径。
+M-V1 的主控限定验收、两条已消耗身份及原始树见本机 `.cursor/plans/chatpro-verification-memory-turn-v1-run-only.execution.md` 的 R2-E3/R2-E4；R2-G 的裁定见上表所列本机记录。这些目录不在 Git 跟踪范围内，**本页只保存结论边界与当前源码对照，不代替跨机器可携带的原始证据**。
 
-本检查单的通过条件是：每个实际调用的能力满足合同；Host 不以 Base 结果自行扩权，能如实区分执行、领域应用和投递；桌面适配不改写身份、错误或写入权威；失败路径有针对性证据。局部测试全绿只把对应行改为“局部通过”，不得将整张表一次转绿。
+**M-V1 与当前源码的关联复核**：其 R2 冻结清单中 `memory_turn.rs`、`long_term_memory.rs`、`slot_runner.rs` 三项对当前磁盘逐项 SHA256 相同；`pre.rs` 相对当时 HEAD 无改动。此后 `process_message.rs` 增加了带 `client_request_id` 的收据分支，M-V1 请求仍为 `None`；`post.rs` 的新增行为集中在流式 fallback，M-V1 是非流式。这里是变更关联审查，**不是在当前 HEAD 重新发起两条回合**。
+
+下一片只在**真实选用能力或产品接入边界出现明确缺口**时开启，并写出一个可观察的通过条件及最小测试面。优先使用已有隔离夹具；实际模型质量、真实音频、独立浏览器发行形态及所有崩溃窗口不因本片成为 Host 门槛。ChatPro 发布回归继续下游独立管理。
+
+**另记而不抢主线**：[`ChatBackend::from_app`](../distros/desktop-tauri/src/api/chat_backend.rs) 在缺 `SharedKernelConnection` 时只靠 `debug_assert!` 约束 `Local` 分支；正常 `.setup` 同时注册连接与状态，尚无生产可触发该异常路径的证据。已数到 12 个调用点。它是发布异常路径的待评估项，**不是本片失败或必须先修的架构门槛**；若以后要改为发布构建拒绝本地后端，先核测试/其他 Host 的显式本地用途，再裁定改法。
