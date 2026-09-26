@@ -10,6 +10,16 @@
 
 **验收方向**：先证明 Base 请求、正常空值与错误可独立调用，再核具体实现是否兑现自己的承诺，最后才验证 Host／发行版的适配与产品回合。六槽是可选能力而非固定六阶段；本示例既不是通用 Host 编排器，也不证明物理上已有独立的小 Kernel 发布包或 Stable API。
 
+在仓库根目录按层复验（已有本地依赖缓存时可使用 `--offline`）：
+
+```sh
+cargo test -p oclive_kernel_contracts --test base_only_fixture --locked --offline
+cargo test -p oclive_kernel_runtime --test base_memory --test base_prompt --test base_emotion --test base_event --test base_agent --locked --offline
+cargo test -p oclive_kernel_host --test base_llm_adapter --locked --offline
+```
+
+第一条只验六槽契约及无 Host 的 Base-only 实现；第二条验五种有限具体实现；第三条只验 LLM 适配器的构造边界，不发送真实模型请求。之后再根据所选 Host 与发行版另测其装配、资源、持久化和产品行为，不能用下游 smoke 代替前三层。
+
 ---
 
 ## 参考 Host／CLI 入门（约 30 分钟）

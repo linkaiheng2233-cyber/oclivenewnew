@@ -10,6 +10,16 @@ Run `cargo run -p oclive_kernel_runtime --example base_first_host`, then inspect
 
 **Validation direction:** prove that Base requests, normal empty results, and errors can be called independently; then verify the commitments of concrete implementations; finally test Host/distro adapters and product turns. The six slots are optional capabilities, not a fixed six-stage pipeline. This example is neither a general Host orchestrator nor proof of a separately packaged small Kernel or Stable API.
 
+Run the layers separately from the repository root (`--offline` requires the dependencies to be cached locally):
+
+```sh
+cargo test -p oclive_kernel_contracts --test base_only_fixture --locked --offline
+cargo test -p oclive_kernel_runtime --test base_memory --test base_prompt --test base_emotion --test base_event --test base_agent --locked --offline
+cargo test -p oclive_kernel_host --test base_llm_adapter --locked --offline
+```
+
+The first command checks the six contracts with Base-only implementations and no Host. The second checks five limited concrete implementations. The third checks LLM adapter construction only; it sends no request to a real model. Test the chosen Host and distro separately for assembly, resources, persistence, and product behavior. A downstream smoke test cannot substitute for the first three layers.
+
 ---
 
 ## Reference Host / CLI beginner path (~30 min)
