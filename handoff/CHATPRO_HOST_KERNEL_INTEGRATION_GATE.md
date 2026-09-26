@@ -1,6 +1,6 @@
 # ChatPro Host 接入内核：分层验收检查单
 
-**状态（2026-09-27）**：普通非流式聊天的 **Memory → Prompt → LLM 所选接入切片已有本地限定证据**；桌面同身份恢复另有其自身的限定验收。本文整理已有工作并规定下一片的止点，**不以全 Host 合规为目标**，也不新增六槽公共语义或 ChatPro 产品要求。职责与边界以 [模块注册表 §0.1–0.2](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Base 绑定及有限实现的阶段结论见 [六槽收口](README.md#six-slot-stage-closure)。
+**SSOT 范围 / 最后更新（2026-09-27）**：本文只管 ChatPro 对内核所选能力的 Host 接入验收、证据边界及可交接复验入口。普通非流式聊天的 **Memory → Prompt → LLM 所选接入切片已有本地限定证据**；桌面同身份恢复另有其自身的限定验收。本文**不以全 Host 合规为目标**，也不新增六槽公共语义或 ChatPro 产品要求。职责与边界以 [模块注册表 §0.1–0.2](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Base 绑定及有限实现的阶段结论见 [六槽收口](README.md#six-slot-stage-closure)。
 
 ## 验收对象先分开
 
@@ -46,5 +46,18 @@ M-V1 的主控限定验收、两条已消耗身份及原始树见本机 `.cursor
 | 仅文档和证据索引 | 链接、镜像、登记与 `git diff --check`；不重跑业务身份或模型样本 |
 
 表内命令是相关性入口，不是所有提交的统一 CI 套餐；现有测试的具体范围和结果以上表已注明的边界为准。
+
+## 可转交的限定里程碑
+
+冻结标签 `kernel-host-chatpro-limited-2026-09-27` 指向本页和实现一起提交后的唯一 Git SHA。新开发者可从该标签检出干净工作树，先读本页、[Base 接入学习路径](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md)及[六槽阶段收口](README.md#six-slot-stage-closure)，再按改动面选测。以下命令在仓库根执行，使用 `--locked --offline`，不启动服务、真实模型或历史业务 run ID：
+
+| 可携带复验层 | 命令 |
+|---|---|
+| Base 契约与有限实现 | `cargo test --locked --offline -p oclive_kernel_contracts --test base_only_fixture`；`cargo test --locked --offline -p oclive_kernel_runtime --test base_memory --test base_prompt --test base_emotion --test base_event --test base_agent` |
+| 独立 Host 最小组合 | `cargo run --locked --offline -p oclive_kernel_runtime --example base_first_host` |
+| 参考 Host 所选能力 | `cargo test --locked --offline -p oclive_kernel_host --lib cp_b3_v1_`；`cargo test --locked --offline -p oclive_kernel_host --lib cp_b3_all_`；`cargo test --locked --offline -p oclive_kernel_runtime --lib cp_b3_c2_` |
+| 下游桌面契约与受控黄金路径 | `cargo test --locked --offline -p oclivenewnew-tauri --test cross_transport_recovery_contract`；`cargo test --locked --offline -p oclivenewnew-tauri --test process_message_golden_path` |
+
+原始 M-V1、Emotion、R2-G 回合证据在本机忽略目录和隔离运行树，**不随 Git 标签转移**；上述可携带测试也不重新证明那些原始 live 回合。交接方如需独立复核当时的 DB/日志，必须另行取得原始证据并核对其冻结身份。标签冻结的是源码、测试、现行 SSOT 与明确的限定结论；不表示独立发布包、远端 CI、真实模型质量或 ChatPro 发布验收已通过。后续实质修改需在新 SHA 上按上表触发回归，不能沿用标签的测试结果宣称新 HEAD 已验。
 
 **另记而不抢主线**：[`ChatBackend::from_app`](../distros/desktop-tauri/src/api/chat_backend.rs) 在缺 `SharedKernelConnection` 时只靠 `debug_assert!` 约束 `Local` 分支；正常 `.setup` 同时注册连接与状态，尚无生产可触发该异常路径的证据。已数到 12 个调用点。它是发布异常路径的待评估项，**不是本片失败或必须先修的架构门槛**；若以后要改为发布构建拒绝本地后端，先核测试/其他 Host 的显式本地用途，再裁定改法。
