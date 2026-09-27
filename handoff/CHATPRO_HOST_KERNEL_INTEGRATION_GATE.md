@@ -58,6 +58,8 @@ M-V1 的主控限定验收、两条已消耗身份及原始树见本机 `.cursor
 | 参考 Host 所选能力 | `cargo test --locked --offline -p oclive_kernel_host --lib cp_b3_v1_`；`cargo test --locked --offline -p oclive_kernel_host --lib cp_b3_all_`；`cargo test --locked --offline -p oclive_kernel_runtime --lib cp_b3_c2_` |
 | 下游桌面契约与受控黄金路径 | `cargo test --locked --offline -p oclivenewnew-tauri --test cross_transport_recovery_contract`；`cargo test --locked --offline -p oclivenewnew-tauri --test process_message_golden_path` |
 
-原始 M-V1、Emotion、R2-G 回合证据在本机忽略目录和隔离运行树，**不随 Git 标签转移**；上述可携带测试也不重新证明那些原始 live 回合。交接方如需独立复核当时的 DB/日志，必须另行取得原始证据并核对其冻结身份。标签冻结的是源码、测试、现行 SSOT 与明确的限定结论；不表示独立发布包、远端 CI、真实模型质量或 ChatPro 发布验收已通过。后续实质修改需在新 SHA 上按上表触发回归，不能沿用标签的测试结果宣称新 HEAD 已验。
+原始 M-V1、Emotion、R2-G 回合证据在本机忽略目录和隔离运行树，**不随 Git 标签转移**；上述可携带测试也不重新证明那些原始 live 回合。交接方如需独立复核当时的 DB/日志，必须另行取得原始证据并核对其冻结身份。标签本身冻结的是源码、测试、现行 SSOT 与明确的限定结论；它本身不证明独立发布包、远端 CI、真实模型质量或 ChatPro 发布验收。后续实质修改需在新 SHA 上按上表触发回归，不能沿用标签的测试结果宣称新 HEAD 已验。
+
+**标签后的远端核验（2026-09-27）**：该 `-r1` 标签与 `main` 同指 `c41aa9212f104370697044d60d07db6319355f18`；[同一 SHA 的主 CI 第 3 次完整运行](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36279253220) 为 **Success**，`ci-gate`、`stale-paths` 及其余主工作流 job 均成功。前两次尝试暴露的跨平台夹具路径与部分重跑门禁取件问题，不应写成最终运行失败；完整运行通过也不补齐本机忽略目录中的原始 live 证据。此后如有新提交，须重新核对应 SHA 的验证结果。
 
 **另记而不抢主线**：[`ChatBackend::from_app`](../distros/desktop-tauri/src/api/chat_backend.rs) 在缺 `SharedKernelConnection` 时只靠 `debug_assert!` 约束 `Local` 分支；正常 `.setup` 同时注册连接与状态，尚无生产可触发该异常路径的证据。已数到 12 个调用点。它是发布异常路径的待评估项，**不是本片失败或必须先修的架构门槛**；若以后要改为发布构建拒绝本地后端，先核测试/其他 Host 的显式本地用途，再裁定改法。

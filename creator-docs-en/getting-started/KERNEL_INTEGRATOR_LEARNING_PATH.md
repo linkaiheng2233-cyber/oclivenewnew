@@ -22,6 +22,8 @@ The first command checks the six contracts with Base-only implementations and no
 
 **Out-of-tree consumer probe (2026-09-27):** A temporary independent Cargo package declared only source-path dependencies on `oclive_kernel_contracts` and `oclive_kernel_types`, implemented `MemoryBase` locally, and called it through `&dyn MemoryBase`. `cargo run --offline` exited 0; `cargo tree --depth 1` showed only those two direct dependencies. The temporary files were removed after the check, leaving the repository worktree unchanged. This proves source-level consumption from an external package, not a separately published package, Stable API, or complete Host behavior.
 
+**Reference integration case:** The [ChatPro Host layered acceptance checklist](../../handoff/CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) shows how to collect evidence from Base through the selected Host capabilities to the desktop bridge, then choose checks based on the changed surface. The case establishes a limited integration, not full reference Host compliance or ChatPro release readiness.
+
 ---
 
 ## Reference Host / CLI beginner path (~30 min)

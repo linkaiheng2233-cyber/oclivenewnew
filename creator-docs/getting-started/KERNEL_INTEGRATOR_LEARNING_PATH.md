@@ -22,6 +22,8 @@ cargo test -p oclive_kernel_host --test base_llm_adapter --locked --offline
 
 **仓库外接入探针（2026-09-27）**：另用临时独立 Cargo 项目，仅以源码路径依赖 `oclive_kernel_contracts` 和 `oclive_kernel_types`，自行实现 `MemoryBase` 并通过 `&dyn MemoryBase` 调用；`cargo run --offline` exit 0，`cargo tree --depth 1` 只列出这两个直接依赖。探针文件测试后已清理，仓库工作树未因此改变。这证明源码级外部消费者可编译和调用该契约，不证明已有独立发布包、Stable API 或完整 Host 行为。
 
+**参考接入案例**：[ChatPro Host 分层验收检查单](../../handoff/CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 展示如何沿 Base → 所选 Host 能力 → 桌面桥逐层取证，并按改动面选择复验。案例只完成限定接入，不代表参考 Host 全面合规或 ChatPro 发布验收。
+
 ---
 
 ## 参考 Host／CLI 入门（约 30 分钟）
