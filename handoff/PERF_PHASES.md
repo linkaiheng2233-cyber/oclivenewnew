@@ -2,6 +2,8 @@
 
 > 历史阶段报告见 [`archive/13_PERF_BASELINE_2026-04-01.md`](archive/13_PERF_BASELINE_2026-04-01.md)、[`archive/12_BACKEND_PERF_RUNBOOK.md`](archive/12_BACKEND_PERF_RUNBOOK.md)。详细轻量剖面见 [`creator-docs/development/LIGHTWEIGHT_PROFILE.md`](../creator-docs/development/LIGHTWEIGHT_PROFILE.md)。
 
+**现行传输校正（2026-09-27）**：下方 2026-06-26 的 `/chat/stream` 前端直连与断流后 `/chat` 回退是当时快照。现在普通聊天经桌面 `send_message_stream` 命令使用已鉴权的 Rust HTTP 客户端；断流后以同一 `client_request_id` 调用 `recover_message`，不以新 `/chat` 回合代替恢复。主动取消只中断客户端传输，Host 仍可能完成并落库。分层接入证据及边界见 [ChatPro Host 检查单](CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md)；此处没有重测当前 HEAD 的 TTFT/TTFC。
+
 ## Round 14 收尾验证（2026-05-25）
 
 环境：Windows，`cargo build --release -p oclivenewnew-tauri`（`target-dir` → `../oclive-dev-artifacts/oclivenewnew-cargo-target/`）。
