@@ -134,6 +134,28 @@
 
 **接续**：新证据根独立且只写 create-new 物件；旧日志、失败、配置和已测 CLI 字节保持。目标 SHA 的远端 CI 与本地元数据结果分列；如果父 CI 尚在运行，先分类提交再批量同步，避免取消父目标验收。
 
+### 缓存用途与保留准则（2026-09-28；元数据接续）
+
+**尺寸 / 范围**：M，base `2da472cae97638af9cd4141bf4001f9b3352dfb4`，开场干净。依据上一轮逐项元数据账本，分组核缓存用途、所选已完成 Cargo 构建的显式引用和历史保护清单；不从“未被本次构建引用”推出无用。保留分为冻结证据、当前明确消费者、重建辅助及未判明四类；硬链接跨组按对象登记，不将各组去重量再次相加为总量。
+
+**实际关联**：旧保护头 34 的 `frozen_host_binary` 引用日常 target 的 server；当前字节已更新，但 `cp-int-b10-tools/frozen-oclive-kernel-server-46044200.exe` 有匹配的独立原件。本轮只登记旧路径身份与独立原件的区别，不回改旧保护头或声称旧 checker 对当前 HEAD 已绿。`scripts/lib/e2e-binary.mjs` 仍消费 target 的 debug/release 程序，命名路径和 fallback 不是无用证明。两份 Windows 人类文档的 LNK1104/旧 target 清理建议同步为先核文件、当前占用、引用与证据，再处理具体范围；不要求全目录 clean、按名杀进程或设置安全软件全目录豁免。
+
+**有界验收**：只读既有账本（核 hash）、两个明确 Cargo stdout artifact 集合和从头 34 `additional_protection_sources` 递归可达的 JSON；单文件 ≤4 MiB、累计 ≤64 MiB、60 s，遇缺件/越界/reparse/预算止点记 Partial。未知对象保留，解析历史引用不等于重验整条保护链。原件副本定点 bytes/hash 核实；台账/事件/Wave 与中英文人类建议同轮更新，跑默认/改文链接、旧路径、文档登记、镜像、债结构、编码及 diff。本轮不删除、压缩或移动现有产物，不创建清理自动化/新 CI gate；K-BUILD-07 保持 OPEN。
+
+### 单 Host 末端 linker 候选对照（2026-09-28；独立实验）
+
+**尺寸 / 范围**：M 级 A/B 试验，同 base，保持源码、默认 Cargo 配置、profile、依赖、`-j 1` 和父环境。本机 Rust 1.97.1 随带 `rust-lld` 22.1.6 可执行；前置 `msvc-lld --version` 探针 exit 0 只证明版本出口，下方补订记录真实编译的拒绝与修正。旧 response-file 的临时输入 258 项已消失，不能直接重放旧参数。新对照用 `cargo rustc --locked --offline -p oclive_kernel_host --features tauri-commands --profile test --test a_turn_harness -j 1 --message-format=json`：A 无额外 codegen 参数，初版 B 只向**末端测试目标**附加 `-- -C linker=<本机 rust-lld 绝对路径> -C linker-flavor=msvc-lld`。不以新的 package 选择假称同于先前 workspace 命令；只比较本组 A/B。
+
+| 阶段 | 验收 / 原件 | 预算与止点 |
+|------|-------------|------------|
+| 输入与观察器 | 冻结 12 份构建/已验 CLI 字节、当前 server 及历史独立副本身份；采样所持 Cargo 子树，绑定实际 linker `/OUT` 与 Cargo executable。声明 Git 清单提交溯源会导致 A 的正常重编，不能把 A 总墙钟当纯热对照 | 编译器已存活/限定环境残留/源配置漂移则不开始；旧件不覆盖，无新安装或全局环境修改 |
+| A → B 各一次 | 每次独立 stdio/native/采样；A 成功且输入仍一致才跑 B，验证 B 的非末端 Cargo artifact features/profile/文件集合与 A 相同且没有依赖重编，否则仅报混合结果。PDB 与 executable 各存独立副本，当前 server 与旧冻结副本必须不变 | 每次最多 480 s，空闲 RAM <4 GiB 或所持树 private >12 GiB 停该子树；输出副本累计 ≤1.5 GiB，不扩预算或自动重跑 |
+| 末端行为 / 出口 | 对两份本批 binary 先 list 后仅默认非 ignored 测试，计数须与冻结源码对应；不启 parent 场景、真实模型/网络/语音，不消费 CP-INT 身份。非零、artifact 比较不等或输出归属缺失先按实际首因登记 | 每份默认执行最多 90 s、独立 child OCLIVE_HOME；默认点采样仍非真峰值。单目标通过不授权全局采用 linker、取消串行或关闭 K-BUILD-06；是否采用另看等价范围与取舍 |
+
+**适用门禁 / CI 节奏**：无生产源码/公开契约/配置或门禁组合改变，适用本轮文档/镜像/债结构/编码/diff 与输入身份；不重复无关全仓业务链。两切片可分开本地提交，等正在运行的目标 CI 终态再同步；保留各尝试失败，不做证据专用推送，父债状态保持。
+
+**参数兼容补订（首次 B 已停止）**：A native 0 后，B 在 0.51 s 以 101 退出，编译器明确拒绝不稳定 `msvc-lld`，未进入 linker。前置 `--version` 不能证明真实编译接受该值。按 [rustc 稳定接口](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor) 改用 `lld-link`，先在新根用最小 `--emit metadata` 编译验证“稳定值成功/旧值与非法值非零”，再仅允许一个 **candidate-02 / 120 s** 末端候选；不重跑 A、复用日志或开启 unstable/nightly/BOOTSTRAP，不继续扩预算。原 A、失败 B、S0 与观察器保持，补订输入独立冻结；其余源码/依赖比较、内存止点、副本总预算和两份默认测试合同原样适用。此为已定位的一次性参数兼容修正，不把旧 B 改写为通过。
+
 ## 历史阶段安排
 
 下列 Wave 保留旧计划意图；不覆盖上方现行切片安排、[QUEUE](MARATHON_QUEUE.md) 或计划机器契约，也不将已合 PR/已结案债重新列为待实现。

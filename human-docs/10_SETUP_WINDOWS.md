@@ -18,7 +18,7 @@
 
 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`
 
-与源码分离；清理旧仓内 `target/` 可整夹删除。
+与源码分离。清理前先核实际 `target-dir`、正在运行的构建/调试消费者和冻结证据引用；旧仓内 `target/` 也不能只因目录名或被 Git 忽略就整夹删除。缓存用途、硬链接与维护准入见 [构建债的保留准则](../handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28)。
 
 ## 首次编译预期
 
@@ -49,9 +49,10 @@ winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passi
 
 ### LNK1104 / 无法打开文件
 
-- 关闭占用 `oclivenewnew-tauri.exe` 的进程（含上次 `tauri dev`）
-- 杀毒软件排除 `oclive-dev-artifacts/` 目录
-- `cargo clean` 后重编（仅清外部 target-dir）
+1. 先看错误中无法打开的具体文件，核路径、文件是否存在、权限和磁盘空间；区分输入库缺失与输出 exe/PDB 被占用。
+2. 输出被占用时，确认占用者属于自己的构建/调试会话，再从该会话正常退出；不要按进程名结束所有同名程序。
+3. 若安全软件确实拦截该文件，查其事件记录，并按本机策略处理具体事件；不把整个产物目录加入排除项作为默认修复。
+4. 不先运行全量 `cargo clean`。只有确认是缓存问题，且已核冻结引用、保全/回退、重建预算和绝对路径范围后，才选择有界维护；保留原错误与重建结果，避免清掉诊断证据。
 
 ### Playwright 超时（Windows `frontend` CI 不跑 E2E）
 
