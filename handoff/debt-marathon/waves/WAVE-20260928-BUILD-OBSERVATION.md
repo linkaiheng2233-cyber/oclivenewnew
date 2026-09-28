@@ -92,4 +92,41 @@ completion 首次 171 次采样、3 个 linker 身份，最大 linker 工作集�
 
 **文档出口 Locally verified**：默认链接 52 文件与本轮显式 4 文件、docs 旧路径、26 根文档/5 哨兵登记、12 auto plans 结构均 exit 0；四文 UTF-8 无 BOM、正常汉字且无替换符，diff 检查通过（Git 换行提示不等于失败）。不为纯测量/文档重复完整 `check:ci-local`。
 
-下一精确动作先核目标 SHA CI 与干净基线，再读此页及 `host-target-completion/summary.json`，诊断实际 Cargo 单位图/特性和所选产物新鲜度；此为不清产物的接续。只读可安全重跑且使用新输出名；编译测量须新 attempt，不复用本轮日志，压力/冷构建另定计划。本轮无技术债 Done 迁移，没有业务 run ID 或真实模型/网络/语音调用。
+首批交接动作是核目标 SHA CI，再诊断实际 Cargo 单位图/特性和所选产物新鲜度；已由下节接续。只读可安全重跑且使用新输出名；编译测量须新 attempt，不复用本轮日志，压力/冷构建另定计划。首批无技术债 Done 迁移，没有业务 run ID 或真实模型/网络/语音调用。
+
+## CLI 集成测试启动器收敛（2026-09-28）
+
+接续 base `6c28b1e2e5cb42214120e7a5903c85c4420e5365`，开场干净。首批工具链代码 `d30f47c75bc9ef7454fb308204f1997c884b3422` 的 [CI 36403228999](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36403228999) 已 **success，17/17 job 与 ci-gate 通过**；构建观测文档 base 的 [CI 36410519684](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36410519684) 接续时仍运行，两个 SHA 不混用。合同见 [ROUND-02-PLAN](../ROUND-02-PLAN.md#cli-集成启动切片2026-09-28构建债接续)。这是测试基础设施的 M 级切片，不关闭两个父债。
+
+### 诊断与关联范围
+
+| 触点 | 事实 / 改动 | 未扩大范围 |
+|------|-------------|------------|
+| 原测试启动器 | `tests/common` 与 explain/completions/dry-run/from-existing/monolith 中共 8 个命令构造点用 `cargo run -p oclive-cli` 启动自身；其余 scaffold/registry 等已有 `CARGO_BIN_EXE_oclive-cli` 写法 | 新 helper 复用该既有机制，直接运行本次 Cargo 测试提供的 CLI 二进制；不证明安装包或 `cargo run` 包装器本身 |
+| 参数与消费者 | 新 `common::cli_command()` 保持 repo cwd；原 experimental 参数、输出捕获、OCLIVE_ROOT、正向与拒绝断言保持，6 个测试文件改动 | 使用父测试所选特性，而非再次隐式构建默认 CLI；当前完整行为验证是默认特性，all-features 由 clippy 编译审查，不冒充该特性的全行为测试 |
+| 真实生成项目 | `cargo_build` / release / monolith helpers 与 CLI build/bench 仍做真实 Cargo 工作，测试单线程保留 | 不把所有嵌套 Cargo 都删掉，不减原测试或生成项目断言；原 package/CI 并发配置保持 |
+| 内核溯源 | runtime build script 监测 `.git/HEAD`、HEAD reflog 与当前 ref，更新 manifest 的 git_commit / built_at；workspace tree 显示 Host 的 tauri-commands 由桌面包启用，而 Host 默认为空 | 提交会使该链重编是现行溯源语义；不删 Git 监测、不改变清单语义。单目标与 workspace 不预设相同依赖特性集合 |
+| 生产关联端 | CLI 生产源码、Kernel/Host/Tauri/shared、角色包、公开 DTO/trait、鉴权、Cargo.lock、profile 和 target 路径均未改 | 无架构/安全取舍或真实业务回合；不向 Chat Pro 限定接入结论增加覆盖 |
+
+### 已完成的实测
+
+本机新证据根 `E:\OCLive\oclivenewnew\.cursor\plans\debt-cli-launch-20260928-r0\` 仍被 Git 忽略；11 份原始源码/配置快照、6 份实施字节冻结与各尝试原日志独立保留。一次性 runner 只对其 child 设置离线环境和独立 `OCLIVE_HOME`，隔离测试注册表写入；未改父环境或用户注册表。采样与内存止点沿用合同，不宣称持续完整进程追踪；原生退出与日志互证，测量器不进入 CI/doctor。
+
+| 命令 / attempt | 原生结果 | 口径 |
+|----------------|----------|------|
+| 四定向目标 `before-smoke-01` | exit 0，**7 passed / 0 failed**；受管 25.61 s，Cargo 初始构建 7.72 s | 修改前的首次观测，含缓存状态和重编；不是纯热基准 |
+| 同四目标 `after-smoke-01` | exit 0，**8 passed / 0 failed**；受管 51.17 s，Cargo 初始构建 49.55 s | 新增真实“PATH 只有空工具目录、CLI 仍能 explain”进程用例通过；旧用例保持。ring/rustls 等重编使总墙钟更长，不称整体编译提速 |
+| 测试执行段 | 同一 completions 组 15.37→0.97 s、dry-run 0.64→0.02 s、from-existing 0.33→0.02 s；explain 2 条 0.65 s→含新负控 3 条 0.04 s | 测试框架分组时间，不是 compiler/linker 时间或统计性能保证；不同源码与缓存状态不据此计算全项目加速比 |
+| 进程点采样 | 四目标旧/新分别观测 14 / 2 个 Cargo PID＋创建时间身份 | 含 rustup proxy 与原生 Cargo，短进程可能漏采，不能当精确启动次数；没有 Cargo 进程数＝性能保证的推论 |
+| CLI 全测 `full-01` | `cargo test --locked --offline -p oclive-cli -j 1 -- --test-threads=1` **exit 0，82 unit + 47 integration = 129 passed / 0 failed / 0 ignored**，69.90 s | 15 个集成 target；真实生成项目标准/release/monolith 构建、bench 夹具与拒绝路径保留。stderr 的无效 monolith 报错属于通过的拒绝用例，不称零 stderr |
+| CLI clippy `clippy-01` | `cargo clippy --locked --offline -p oclive-cli --all-targets --all-features -j 1 -- -D warnings` **exit 0**，75.38 s | 覆盖 CLI 所有目标及可选 diagnostics-host 的编译审查；不称可选特性的完整行为验证 |
+
+完整 CLI stdout **27856 B / SHA256 `DC7584B96DF3865DE01F7BECCB0A362F7F67EA1F9600639F267A4E185334757E`**，stderr **9131 B / `F903917B156404CA09E4421946C63FA5BFB10370C893EE8CD3632DA646080855`**；`s3-full-summary.json` 为可重算派生摘要，不能替代原生 exit JSON。前测、后测和全测均收尾未见存活编译器；这个点检查不构成所有 detached task 已 join 的证明。
+
+### 收口与下一动作（本地验证完成）
+
+6 份测试代码在全测后逐项核对 bytes/hash 不变；CLI 全测与 all-targets/all-features clippy（诊断 0）、workspace fmt 与分层 ratchet通过（3/3、FQ 1/1）。最终静态出口为默认链接 52 文件、本轮显式 4 文、docs 旧路径、26 根文/5 哨兵登记、12 auto plans 结构、diff 均 exit 0；编码单独核 UTF-8 无 BOM、正常汉字和零替换符。外部 Bugbot 未运行，人工审查覆盖真实 executable、所有旧启动点、参数/cwd/环境、特性选择、生成项目保留及拒绝断言。公开生产 API 未改变，无新增 doctest 要求；门禁组合/前端无改动，不重复无关全仓工程链。
+
+**自查失败保留**：一次性静态出口采集 `gates-01` 未将 `Get-Command` 的多条路径选成单一可执行文件，启动错误后还复用了上一条零退出码；其 Node 与 Git 检查为 **NOT_RUN**，整个汇总作废，不能引用为通过。原结果/空日志不覆盖，`s5-gates-observer-failure.json` 登记缺陷；原异常仅在本次工具会话中，未补造原始日志。修为选择实际首个应用、每步初始化 native、观察器异常停后续后，`gates-02` 八项真实检查全部 exit 0。该缺陷只在一次性采集层，仓库工具链 gate 和生产代码未受影响。
+
+本切片执行结论为 **Locally verified**；停止写入后冻结本轮十文件并提交，待父基线 CI 终态再按既有授权一次推送，避免取消仍在运行的目标验收。目标 CI 与父 SHA 分列，不移技术债 Done。后续若继续研究链接峰值，先绑定具体输出目标和编译参数；缓存物理分配/硬链接去重/冻结用途仍未知，不删产物或更换 linker/profile，也不以本切片证明 workspace 完成成本。纯静态可安全新日志复跑；全测/采集仍按新 attempt 独立输出，不改旧件。

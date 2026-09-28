@@ -17,24 +17,28 @@ pub fn repo_root() -> PathBuf {
         .to_path_buf()
 }
 
+pub fn cli_command() -> Command {
+    // Use the binary Cargo selected for this test invocation, including its active features.
+    // Real builds of generated projects stay in the cargo_build helpers below.
+    let mut command = Command::new(env!("CARGO_BIN_EXE_oclive-cli"));
+    command.current_dir(repo_root());
+    command
+}
+
 pub fn run_cli_output(args: &[&str]) -> std::process::Output {
-    Command::new("cargo")
-        .current_dir(repo_root())
-        .args(["run", "-p", "oclive-cli", "--"])
+    cli_command()
         .args(["--experimental"])
         .args(args)
         .output()
-        .expect("cargo run -p oclive-cli")
+        .expect("run test-built oclive-cli")
 }
 
 pub fn run_cli(args: &[&str]) -> std::process::ExitStatus {
-    Command::new("cargo")
-        .current_dir(repo_root())
-        .args(["run", "-p", "oclive-cli", "--quiet", "--"])
+    cli_command()
         .args(["--experimental"])
         .args(args)
         .status()
-        .expect("cargo run -p oclive-cli")
+        .expect("run test-built oclive-cli")
 }
 
 pub fn assert_bench_report_matches_schema(v: &Value) {

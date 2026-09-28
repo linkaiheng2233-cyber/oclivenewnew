@@ -1,31 +1,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use std::path::PathBuf;
-use std::process::Command;
-
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
 
 fn completion_output(shell: &str) -> String {
-    let o = Command::new("cargo")
-        .current_dir(repo_root())
-        .args([
-            "run",
-            "-p",
-            "oclive-cli",
-            "--quiet",
-            "--",
-            "completions",
-            shell,
-        ])
+    let o = common::cli_command()
+        .args(["completions", shell])
         .output()
         .expect("completions");
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));

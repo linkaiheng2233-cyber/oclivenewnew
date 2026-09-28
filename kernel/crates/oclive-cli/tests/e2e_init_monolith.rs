@@ -7,7 +7,6 @@ use common::*;
 
 use serde_json::Value;
 use std::fs;
-use std::process::Command;
 
 #[test]
 fn e2e_non_interactive_monolith_full_release_builds() {
@@ -196,14 +195,8 @@ fn e2e_bench_smoke_json() {
     ])
     .success());
     let report_path = tmp.path().join("report.json");
-    let st = Command::new("cargo")
-        .current_dir(repo_root())
+    let st = cli_command()
         .args([
-            "run",
-            "-p",
-            "oclive-cli",
-            "--quiet",
-            "--",
             "--experimental",
             "bench",
             "--release",

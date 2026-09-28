@@ -1,20 +1,9 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
-use tempfile::TempDir;
+mod common;
 
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+use tempfile::TempDir;
 
 #[test]
 fn from_existing_with_share_writes_oclive_share_toml() {
@@ -42,17 +31,8 @@ path = "src/main.rs"
     .unwrap();
     fs::write(mini.join("roles/default/settings.json"), r#"{}"#).unwrap();
 
-    let o = Command::new("cargo")
-        .current_dir(repo_root())
-        .args([
-            "run",
-            "-p",
-            "oclive-cli",
-            "--quiet",
-            "--",
-            "init",
-            "--from-existing",
-        ])
+    let o = common::cli_command()
+        .args(["init", "--from-existing"])
         .arg(&mini)
         .arg("--share")
         .arg("--json")

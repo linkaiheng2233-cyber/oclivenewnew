@@ -1,27 +1,31 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use std::path::PathBuf;
-use std::process::Command;
-
-fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .to_path_buf()
-}
+mod common;
 
 fn run_cli(args: &[&str]) -> std::process::Output {
-    Command::new("cargo")
-        .current_dir(repo_root())
-        .args(["run", "-p", "oclive-cli", "--quiet", "--"])
+    common::cli_command()
         .args(args)
-        .env("OCLIVE_ROOT", repo_root())
+        .env("OCLIVE_ROOT", common::repo_root())
         .output()
         .expect("oclive-cli")
+}
+
+#[test]
+fn explain_works_without_cargo_on_path() {
+    let tools = tempfile::tempdir().expect("empty tools directory");
+    let output = common::cli_command()
+        .env("PATH", tools.path())
+        .env("OCLIVE_ROOT", common::repo_root())
+        .args(["explain", "LLM_ERROR"])
+        .output()
+        .expect("CLI must not require a Cargo launcher");
+    assert!(
+        output.status.success(),
+        "stderr={}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("LLM") || stdout.contains("Meaning"));
 }
 
 #[test]

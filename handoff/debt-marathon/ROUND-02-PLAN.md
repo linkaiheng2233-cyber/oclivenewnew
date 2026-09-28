@@ -1,7 +1,7 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-28（基线复核、工具链实施及构建成本观测）。
+**最后更新**：2026-09-28（基线复核、工具链实施、构建成本观测及 CLI 测试启动器收敛）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
@@ -97,6 +97,18 @@
 | 2 · 评审下次实验 | 区分完全复用、增量未命中、空目标目录（依赖源码可复用）与删除后重建；同一命令/源码/特性/工具链才作对照。先列候选路径、硬链接物理空间与冻结证据关系、磁盘/时间预算，再定冷构建或维护实验 | 本轮不跑空 target 或删除后重建，不删 `deps`/rlib/pdb/build/fingerprint，不启链接器或并发替换 |
 
 **适用门禁与交接**：工程配置和门禁实现未改，本轮仅跑文档链接（默认＋改文）、文档旧路径、登记、债计划结构、编码和 diff 检查；不重复完整 Rust/业务验证。缓存测量成功只推进证据，不关闭链接峰值/维护策略两债。完整阶段结果按 Wave 入账；只读盘点可安全重跑并使用新输出名，编译测量每次独立日志，未知存活进程、输入漂移或旧证据冲突只暂停该实验。
+
+### CLI 集成启动切片（2026-09-28；构建债接续）
+
+**尺寸 / 范围**：M，base `6c28b1e2e5cb42214120e7a5903c85c4420e5365`，开场干净。诊断发现 `oclive-cli/tests` 部分用例借 `cargo run` 重入本仓库构建，而现有 scaffold/registry 用例已使用 `CARGO_BIN_EXE_oclive-cli`。本切片统一为 Cargo 为本轮测试提供的 CLI 二进制，不改变 CLI 生产代码、默认特性、清单提交身份、生成项目的真实构建检查、编译 profile 或缓存保留策略；两父债保持 OPEN，自动队列不领取。
+
+| 阶段 | 范围 / 验收 | 预算与止点 |
+|------|-------------|------------|
+| 定向前测 | 四个现行 explain/completions/dry-run/from-existing 目标，同一源码和 `-j 1` / 单测试线程；记录命令、原生退出、测试结果与子进程采样。该测量含首次构建，不能当纯热性能基准 | 最多 480 s；限定本命令继承离线环境，不改父环境；仅所持进程树清理，低于 4 GiB 空闲物理内存或合计私有内存超过 12 GiB 即停止 |
+| 实施 / 窄测 | 复用 `tests/common` 的路径 owner，增加统一命令构造点；保持原业务参数、cwd、OCLIVE_ROOT 和 experimental 选择。覆盖全部旧 `cargo run` 启动点，留下生成项目的 `cargo build`；加一条真实缺 Cargo PATH 负控，定向四目标重跑 | 前测非零先归因；每尝试新日志，原失败不覆盖。不扩为生产 CLI 重构，不解除串行测试规则 |
+| 里程碑 | CLI crate 全测（含已有生成项目/release 构建与 bench 夹具）、CLI all-targets/all-features clippy、workspace fmt、分层及本轮文档/债计划/编码/diff 检查；冻结后一次提交/推送，目标 CI 单独绑定 | 全测最多 900 s、clippy 最多 480 s；无真实模型/音频/业务回合/旧证据改写。无公开 Rust API或门禁组合改变，不重复无关全仓业务链；台账不升 Done |
+
+**关联与交接**：测试生产者为本轮 Cargo 编译的 CLI executable，消费者是原集成用例；保留真实 CLI 命令、stdout/stderr 和拒绝行为，消除测试启动器额外 `cargo run`。Kernel/Host/Tauri/shared 的生产路径及发布安装方式已核对无需改。Git HEAD 被 runtime build script 监测属于清单溯源合同，不以减少重编为由删去。执行记录和剩余链接/缓存条件仍写入 [构建 Wave](waves/WAVE-20260928-BUILD-OBSERVATION.md)，不新增状态表。
 
 ## 历史阶段安排
 
