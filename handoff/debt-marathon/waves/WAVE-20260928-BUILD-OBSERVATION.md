@@ -150,3 +150,27 @@ CLI 切片已本地提交 `787aa5cbbfa7b1aa2a600e8bf63cf2ac8e3df1cb`，开场干
 原生/采样及响应快照件 `host-link-01.exit.json` **80269 B / `615D32B6D8FB0B53FA9AA8506603D71E00F648DF223BC058B124141C6436C469`**，更正后的参数件 `s3-response-arguments.json` **1991 B / `69D40514B8450CE04BFE00F5FDDAA1C9467441EF1EBAE8C367525B16DB686555`**；文件身份汇总 `s4-evidence-inventory.json` 不替代原 native/Cargo 日志。
 
 **结论与续跑**：该目标的资源样本已完成归属，诊断缺口在这一边界内关闭；K-BUILD-06/07 仍 OPEN。没有取得新 linker/profile/并发方案的等价证据，保持现有措施与清单溯源；缓存保留策略的物理分配、硬链接去重和冻结用途仍未证。后续优先依据已绑定参数提出单一候选的有界对照计划，或做逐路径保留核验，不重复已完成的观察以堆轮数。默认/改文链接、docs 旧路径、登记、债结构、diff 与四文编码已通过，12 输入与父环境不变且编译器收尾空；作为独立诊断提交，与 CLI 切片一起在父 CI 终态后同步。当前生产源码/门禁组合未变，不重跑无关全链。
+
+## 缓存分配与文件身份去重（2026-09-28）
+
+接续 base `83af77bb74daf9eed6092770b80824c5272ce1f8`，开场干净；[只读合同](../ROUND-02-PLAN.md#缓存分配与文件身份去重2026-09-28只读接续) 限定原 target、60 s / 200 万项。本机独立新证据根 `E:\OCLive\oclivenewnew\.cursor\plans\debt-cache-allocation-20260928-r0\` 被 Git 忽略，缺件仍记 `needs-evidence-access`。没有运行 Cargo/产品/业务、读取缓存文件内容或删改产物；12 份源码/配置含已验证 CLI 字节与限定父环境在前后完全一致。
+
+**接口与口径**：使用 metadata-only 的 `CreateFileW`（desired access 0、OPEN_EXISTING、共享读/写/删除、拒绝 reparse），每个句柄在读取后释放并核最终路径边界；按 `GetFileInformationByHandle` 的卷序号＋文件索引识别同一文件对象。`GetFileInformationByHandleEx(FileStandardInfo)` 的 `AllocationSize` 用于报告文件分配量，`EndOfFile` 和 `NumberOfLinks` 分列；不能用逻辑长度回退掩盖读取失败。接口定义见微软的 [文件身份](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getfileinformationbyhandle)、[FileStandardInfo](https://learn.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-file_standard_info) 和 [元数据访问](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilew)。本次为本地 NTFS、默认数据流；没有命名流枚举、卷元数据/共享块盘点或删除实验，**不是卷实际占用或可回收空间证明**。
+
+正式扫描前在忽略证据根创建全新普通/空文件及两个硬链接，11 项真实夹具全部通过：同一对象身份相等、普通与空对象不同、路径与对象逻辑大小分开、分配量不重复累加、根外链接仍保留对象、越界路径拒绝等。夹具保留，不链接已有缓存或用户文件；采集器只是一次性本机工具，不进入仓库正式门禁。
+
+| 当前扫描量（2026-09-28 19:26 本地） | 实测 | 意义 / 边界 |
+|-------------------------------------|------|-------------|
+| 原生与扫描 | child **exit 0**，受管墙钟 8.15 s；实际元数据扫描 **5.68 s**，stop reason null、错误 0 | 完整枚举，未触发 60 s / 200 万项预算；不证明目录是原子快照 |
+| 文件集合 | **105144 文件路径 / 7205 子目录**；文件对象 **83570**，重复路径 **21574** | 依 NTFS 文件身份去重，不以文件名、内容相似或 rlib 后缀判重复 |
+| 按路径逻辑大小 | **243830499516 B（227.085 GiB）** | 与同次独立枚举相符；旧 225.447 GiB 为此前时间点，不能混作当前分配基准 |
+| 唯一对象逻辑大小 | **219659452382 B（204.574 GiB）** | 所有内部路径只计同一对象一次；不是文件系统分配量 |
+| API 报告的默认数据流分配量 | 按路径 **244007383752 B**；按对象 **219792700104 B（204.698 GiB）** | 两者差 **24214683648 B（22.552 GiB）** 是同一对象被路径重复累加的量，**不等于删除可回收量** |
+| 硬链接与特殊文件 | `NumberOfLinks > 1` 路径 **43145**；按观察路径少于 link count 的对象 **0**；压缩/稀疏对象均 **0** | 仅这次读取的计数与属性；不推出所有时点根外无链接、无命名流或各变体可删 |
+| 独立对照 | Node 逐项账本重算全部相符；libuv 第二次枚举 **1.42 s**，路径集合/数量、逻辑大小、link count 与修改时间全部相符 | 无遗漏、额外项或观察到的元数据变化；仍不是锁定整个目录或卷的快照 |
+
+逐项原账本 `target.metadata.tsv` **28698237 B / SHA256 `1481DCC373910317C32BAD9D373C674F77933D4310DE1097453084F3AB8564F9`**；原扫描 `s2-allocation.json` **1407 B / `9E5A8402A0D2B834895F48CE2826C25D63FB619CD94518FC2065E4E7659AF3BD`**；独立核算 `s3-independent-verification.json` **1059 B / `E600903F948C8636FC8520D68500F17121988E549CC9730BD29ACB836FB61E95`**。夹具结果、源码、原 stdio/native exit 和身份汇总分别保留，不以派生 JSON 代替原始事实。
+
+**采集层登记**：launcher 的两条 `CopyToAsync` awaiter 产生 `VoidTaskResult` 文本，仅多打印到 launcher stdout；结构化原生 exit 与扫描账本没有混入该对象，独立核算相符。保留原工具字节/结果，不据此补跑扫描或改写旧证据。编译器前后点检查为空，不能据此承诺期间绝无其他短进程。
+
+**本地出口与接续**：有界元数据基线完成，K-BUILD-06/07 仍 OPEN；按对象分配量的认识更新不构成维护策略验收。下一步形成逐路径候选之前，必须核缓存的实际复用/重建成本、配置变体及冻结证据用途；不按日期、最新文件或统一后缀自动删除，也不改 jobs/linker/profile 或运行压力构建。本轮默认/改文链接、旧路径、文档登记、债结构与 diff 六项 exit 0，四文编码通过；已测 CLI/生产源码未变，目标 CI 独立绑定，在父运行终态后同步分类提交。
