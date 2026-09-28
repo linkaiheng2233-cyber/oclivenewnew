@@ -1,5 +1,8 @@
 # AI 审查 / 汇报核实协议（Verification Protocol）
 
+**SSOT 范围**：本文定义审查结论的证据等级、数字核实与汇报口径；巡检档位和维度范围以[多轮巡检手册](./RECURRING_OPTIMIZATION_PLAYBOOK.md#1-触发条件与档位)为准。
+**最后更新**：2026-09-28（移除与巡检手册冲突的档位清单）。
+
 **用途**：约束自动化助手、外部审查模型、人类维护者在输出**质量审查 / 优化汇报 / 带数字的结论**前的核实纪律。与 [AI_CHANGE_BOUNDARIES.md](./AI_CHANGE_BOUNDARIES.md)（**改什么**）互补：本文管 **怎么说才算数**。
 
 **何时必读**：
@@ -199,9 +202,8 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 ## 4. 与 Playbook / 技术债的衔接
 
-- **快档**：§2 基线 + 路径 ratchet + 本协议 §2.4 CI 一眼
-- **半档**：+ 维度一/四/七 + 测试分层表对照
-- **全档**：+ §7 综合评分；新债入 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)，编号 `D-AI-*`（流程）、`D-MAINT-*`（维护）、`D-DOC-EN-*`（英文滞后）等
+- **快 / 半 / 全档范围**只以 [巡检手册 §1](./RECURRING_OPTIMIZATION_PLAYBOOK.md#1-触发条件与档位) 为准；本文不另列维度，避免两套档位口径分叉。每档报告均按本协议 §2.4 核对远端 CI 的目标 SHA 与结论，并列明未测范围。
+- **全档评分**按巡检手册 §7；快档与半档不沿用历史评分。新债先满足本协议 L3 再对照 [TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md) 去重、确定归属和编号；不能将观察直接升为 OPEN 或把本地绿灯写成 Done。
 
 ---
 

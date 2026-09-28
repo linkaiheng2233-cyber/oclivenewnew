@@ -5,7 +5,7 @@
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-09-28（第 31 轮快档；巡检流程与 AI/流水线约束对齐） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-09-28（第 32 轮技术债前限定审查） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -192,19 +192,19 @@ git status                                      # 确认工作树状态 / 与 or
 ### 维度三 · 设计优雅度与重复抽象
 
 **正确性 checklist**
-- [ ] D-PORT-02：`PluginBackendRegistryPort` god-port 现状（22 方法 / 纯转发）
+- [ ] D-PORT-02 已 Done 的拆窄防回退：`PluginBackendRegistryPort` 仍是由 `SlotBackendFactoryPort`、`LocalPluginRegistryPort`、`AgentMcpRegistryPort` 组成的组合端口，内存槽经 `MemoryBackendPort` 独立；只有出现新调用面证据时再评估 `D-PORT-03` 的转发层。
 - [ ] D-SLOT-01 防回退：`builtin_v2` 仍仅为读兼容 alias，不得重新长出独立 V2 / Placeholder 实现
 - [ ] 错误模型一致性（`AppError / TurnError / ProcessMessageError`）
-- [ ] 单实现 trait 普查（~24 contracts trait）：保留为 DI 端口 / 降级具体类型
+- [ ] 按受检 HEAD 统计单实现 contracts trait：逐项判断保留为 DI 端口或降级具体类型，不沿用历史估数。
 - [ ] `resolve_*` 命名混淆度 + rustdoc 覆盖率
 - [ ] **认知负担 / 冗余抽查**（人类开发者友好度）：多分支手写同一大 struct（如 builder 函数群、测试字面量）是否可 `#[derive(Default)]` + `..Default::default()` + 共享 base 收敛；复制粘贴块、未用 import、自己引入的死代码——**行为等价前提下顺手清**（见 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G9），**勿为清而清**触发无关大重构（§9）
 
 **愿景拷问**
-- [ ] 【V2】god-port / 槽并行是"可替换性"愿景的实现质量问题——本轮是否升级优先级？
+- [ ] 【V2】组合端口与槽实现是否仍保持可替换性？若怀疑转发层回潮，先对照 D-PORT-02 的 Done 边界及 D-PORT-03 的触发条件。
 - [ ] 【V4】第三方模块作者面对的接口面是否清爽（决定"别人写得好我直接抄"能否转起来）？
 
-**方法**：全仓统计 trait 实现数,列单实现 trait 表逐个标注处置；审 god-port 真实调用面 vs 暴露面。
-**产物**：发现清单 + 单实现 trait 处置表 + D-PORT-02/D-SLOT-01 优先级重裁。
+**方法**：按受检范围统计 contracts trait 实现数，列单实现 trait 表逐个标注处置；对照组合端口的实际调用面与暴露面。
+**产物**：发现清单 + 单实现 trait 处置表；D-PORT-02 / D-SLOT-01 只做防回退核验，不因巡检自动重开 Done 或重裁优先级。
 
 ---
 
@@ -258,7 +258,7 @@ git status                                      # 确认工作树状态 / 与 or
 
 **3. 边界明确性（防 AI 自作主张 · 半档/全档）**
 - [ ] 每个「已交付 / 草案 / 冻结 / Deferred」状态在**三处一致**：源码现实、handoff 台账、AGENTS 入口（重点查 theater_director、reply_post_process chain、portrait/visual、expert_routing）
-- [ ] 「草案 / 冻结」不等于「仓库无代码」——文档须标明 Stable 主路径 vs Experimental/未接线现状（如 `extra_sections` 恒 `&[]`）
+- [ ] 「草案 / 冻结」不等于「仓库无代码」——逐调用点区分 Stable 与 Experimental：Stable `co_present` 已装配 `extra_sections`，`dual_pipeline_steps` 的空切片不能概括全局接线状态。
 - [ ] 角色包 vs 蓝图改动层次清晰（`meta` 今日字段 vs `runtime_config` v3 目标）——见 `ROLE_PACK_BOUNDARY.md`
 - [ ] AI 硬约束清单存在且最新（建议 `AI_CHANGE_BOUNDARIES.md` 或 AGENTS「禁止区」：不在角色任务改 `slot_registry`、不把 RFC Draft 当未实现而删 wiring、不引归档当 truth、改锁文件必跑 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`）
 
@@ -350,11 +350,11 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 轮次 | 日期 | 档位 | 基线 | 综合评分 | 关键发现 / 新增债 | 备注 |
 |------|------|------|------|----------|-------------------|------|
-| 27 | 2026-08-01 | 远端验收 + 文档对账 | PASS（remote） | A− | 远端首轮暴露 Node 20 与新前端工具链不兼容，统一 `.nvmrc` / engines / workflows 至 Node 22；第二轮暴露测试依赖 runner 默认语言，改为显式中英 locale 并恢复现场。终轮 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 在 HEAD `b0253cbe` **21/21** success；首个 Shadow Compare 样本的两次真实失败均在已选 `frontend`，未发现漏选。关联复核进一步修复 `oclive lint --audit-ci` 仍只认旧独立 job、错误扫描全 workflow soft 标记，以及 `ci init` 模板 Node 20 / audit soft / Loom 名称无效 YAML。同步修正 CONTRIBUTING、Bus Factor、安全与轻量化文档旧口径 | 总 job-seconds **10491→8586（−18.2%）**；Linux Rust **−25.3%**、Windows Rust **−32.1%**、CLI **−11.8%**。影子计划选 10 / 跳 10 个验证 job，建议跳过部分实跑合计 **2238s**，但 Rust 仍是关键路径。生产 npm **0 vulnerabilities**；完整 dev graph **3 moderate / 3 high** + ESLint peer 冲突入 **K-SUPPLY-12**，未粉饰为全依赖清零。后续 CLI 关联提交 `cb3ba201` 本地全量 bin 单测 **74/74**、Clippy 与当前 workflow 诊断通过；未重复触发全量远端 CI |
 | 28 | 2026-08-01 | 里程碑破坏性验证 | PASS（工程）/ FAIL（语音尾延迟门禁） | B+ | 完成 K-SUPPLY-12、本地 Nightly 分流和 11 场景影子模拟；修复 Nightly Loom 占位测试并以 feature 运行真实有界模型；并发覆盖资源桥 10、协调器 19、成人节拍 12、LLM 环境 2、远端 LLM 1、Loom 2 条。真实内核 5 分钟 60/60 请求且进程回收；GPU 24 层在 1MiB 临界余量被拒，改用 22 层后资源闭环恢复；新增 **K-VOICE-09** | 22 层五分钟完成 **46** 对 LLM/TTS，峰值余量 **1370MiB**、稳态增长 **74MiB**、318 次 GPU 采样零失败；TTFC p50/p95/max **6271/7475/9514ms**，因 max > 8s 仍红且未放宽阈值。影子模拟 **8 targeted / 3 fail-safe**，只证明规则回归；完整远端 CI 尚未声明 |
 | 29 | 2026-08-02 | 远端收口 + 文档对账 | PASS（remote） | A− | 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** success，完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) 的视觉、fuzz、Loom、CLI benchmark、原生窗口与汇总 **6/6** success；据此关闭 **K-SUPPLY-12** 与 **D-CI-EXECUTION-02** 的远端待验状态。修正供应链、CI 路线图、轻量化与内核集成中英文档的旧配置/旧路径；明确完整 `process_message` 在 `oclive_kernel_host`，纯 library 仍是 V-EMBED-01 Partial，未改模块边界或生产代码 | K-VOICE-09 的 20-token 有界长段策略把 TTFC p50/p95(max) 从 **4135/4473ms** 降至 **3643/3826ms**，改善 **11.9%/14.5%**；短句 10/10 保持旧策略。仍缺 30 分钟真实矩阵与人工听感，故保持 **In progress**；历史 **9514ms** 尾样本也未被删除。K-CI-IMPACT-01 仍为 Shadow + 2 个真实 Compare 样本，未借本轮放开选择性门禁 |
 | 30 | 2026-09-27 | 半（限定） | PASS（显式设置 `OCLIVE_VOICE_PYTHON`；默认环境缺 `py`，首次 TTS ratchet FAIL） | 未评分（半档） | 受检 HEAD `62fe6575`：Dimension 5 28 项 PASS、Host lib 634/634、分层 use-import 3/FQ 1 均未上涨；包级依赖方向符合既有边界。TTFT/TTFC 专项 SSOT 最近实测仍为 2026-08-02，当前 HEAD 未重新测这两项；修正 `PERF_PHASES.md` 的现行桌面流式传输口径 | `c41aa921` 限定接入标签保持不变；本轮仅做离线门禁、静态依赖抽查和文档校正，未启动真实模型/语音、服务或长时 soak；默认 Python launcher 缺失作为本机环境前提记录，不写成产品回退 |
 | 31 | 2026-09-28 | 快（AI 边界 / 流水线交叉审查） | PASS（local；`OCLIVE_VOICE_PYTHON` 指向已安装 Python 3.12） | 未评分（快档） | 受检 HEAD `876b95d1a601499db86bc942dd4978c86d8b53fe`：Dimension 5 **PASS (28 checks)**；`cargo test -p oclive_kernel_host --lib --locked --offline -j 1` **634/634**；分层 use-import **3/3**、FQ **1/1**，host re-export **75/75**；`check-stale-paths` docs+code PASS。对照 AI 边界、核实协议与工程流水线发现本手册两组 ratchet 数字过期、发现即入债和历史评分口径过宽，已只改手册流程。 | `AGENTS.md`、`.cursor/rules` 与 `handoff/README.md` 的入口链接可达；[`ci.yml` run 36326312754](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36326312754) 对**受检旧 HEAD** 为 success，不证明本次未推送的手册修改；未跑真实模型/语音性能、完整架构/债务复核或长时 soak；未新增技术债或更改旧结论。 |
+| 32 | 2026-09-28 | 快档基线＋架构/队列/文档专项 | PASS（本地工程）/ HOLD（债务自动派工） | 未评分（限定审查） | 受检代码起点 `6da23955`：`check:ci-local` exit 0，shared/Chat Pro 单测 **243/92** 通过，模块兼容与债务结构检查通过；静态依赖方向和分层 ratchet 未回退。修正本手册 D-PORT-02、`extra_sections` 的过期表述及核实协议的档位冲突；队列 5 条 `pr-open` 与当前远端 PR 状态待对账。 | 详见 [`ROUND-02-PLAN.md`](./debt-marathon/ROUND-02-PLAN.md#启动前基线审查2026-09-28限定范围)；本轮未给全档评分、未启真实模型/语音、未重跑 Chat Pro live，也未变更债务状态。通用 `dev-pipeline/SKILL.md` 本机缺失；父提交的远端 CI success 不代表本轮文档 HEAD。 |
 
 ---
 
