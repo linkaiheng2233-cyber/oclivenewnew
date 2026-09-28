@@ -1,10 +1,11 @@
 # OClive 多轮优化巡检手册（Recurring Optimization Playbook）
 
 > **定位**：一份**可反复运行**的地基巡检流程。不是一次性审查报告，而是每隔一段时间 / 关键节点照着跑一遍的"体检套餐"。
+> **SSOT 范围**：本文只定义巡检的触发、分档、取证和记录方式；AI 可改范围、开发阶段、数字核实、模型委派和技术债状态分别以各自 SSOT 为准。
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-09-27（第 30 轮限定半档；未重跑真实模型/语音性能） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-09-28（第 31 轮快档；巡检流程与 AI/流水线约束对齐） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -89,12 +90,13 @@ Rust workspace 成员、源码、迁移、测试和文档规模均以 `cargo met
 
 ## 0. 如何使用本手册
 
-1. 不要每次都全跑。按 **§1 触发条件** 决定本轮跑「快档」还是「全档」。
-2. 永远从 **基线门禁（§2）** 开始；基线 FAIL 则**中止**，先修地基再谈优化。
-3. 按固定顺序走维度：**基线 → 一架构 → 二性能 → 三设计 → 四技术债 → 六文档 → 七条理与边界**。
-4. 每个维度用**两把尺子**：① 传统正确性（能跑/对不对）；② **愿景对齐**（V1–V4，见 §3）。
-5. 收尾在 **§7 综合输出** 出评分，在 **§8 巡检日志** 追加一行,新债按编号入 `TECHNICAL_DEBT_INVENTORY.md`。
-6. **凡输出带数字的审查/汇报**（含 AI 生成的质量报告），遵守 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)；第三方结论默认「待核实」直至 §2 命令复现。
+1. 先记受检完整 HEAD、工作树状态、巡检档位与取证副作用；读 [`AGENTS.md`](../AGENTS.md)、[AI 改动边界](AI_CHANGE_BOUNDARIES.md)和[数字核实协议](AI_VERIFICATION_PROTOCOL.md)。若巡检转成实施任务，再按 [OCLive 开发流水线](../.cursor/skills/oclive-dev-pipeline/SKILL.md)独立定 S/M/L 和 applicable 门禁；本机通用流水线文件缺失时按该 Skill 的缺失口径处理，不臆造阶段。模型分工只在实际选择委派时按[自适应流水线](workflows/oclive-adaptive-pipeline/SKILL.md)执行，**只读巡检不自动启动 Agent**。
+2. 不要每次都全跑。按 **§1 触发条件** 决定本轮跑快、半或全档；三个巡检档位**不是**开发任务的 S/M/L 尺寸。
+3. 每轮巡检从 **§2 基线门禁** 开始。首次 FAIL 先停止后续维度，记录原始失败并判明环境前提、检查器或产品根因；若是已支持的环境配置缺失，可修正配置后重跑基线，**同时保留首次 FAIL**。确定性代码/契约失败不得靠改低阈值或重试洗绿。
+4. 按所选档位走对应维度，完整顺序是：**基线 → 一架构 → 二性能 → 三设计 → 四技术债 → 六文档 → 七条理与边界**。
+5. 每个维度用**两把尺子**：① 传统正确性（能跑/对不对）；② **愿景对齐**（V1–V4，见 §3）。
+6. 全档收尾才按 **§7** 给综合评分；快档、半档报告实测项、未测项和范围，**不沿用旧 A−**。按 §8 记录本轮；新债须先满足[核实协议](AI_VERIFICATION_PROTOCOL.md) L3，再进入 `TECHNICAL_DEBT_INVENTORY.md`，不能把观察直接写成 P0/P1 或 OPEN。
+7. **凡输出带数字的审查/汇报**（含 AI 生成的质量报告），遵守 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)；第三方结论默认「待核实」直至本轮命令和原始证据复核。
 
 ---
 
@@ -108,11 +110,13 @@ Rust workspace 成员、源码、迁移、测试和文档规模均以 `cargo met
 
 > 经验法则：**默认走快档**。全档稀缺、刻意,别让巡检变成日常逃避区（见 §9）。
 
+本表只决定**质量调查范围**。修 bug、改文档或偿还技术债时，按[第一条工程流水线](../.cursor/skills/oclive-dev-pipeline/SKILL.md)选任务尺寸和变更面门禁；跨层能力改动还须按[AI 改动边界](./AI_CHANGE_BOUNDARIES.md) G17 核对生产者、契约、适配/权限、消费者、状态/回退与测试。“本轮没有跑全档”不能替代 applicable 测试，巡检全档也不能自动把技术债升为 Done。真实模型、语音、硬件或生产数据检查须先明确隔离环境、预算、身份和副作用，不因选择“全档”而默认启动。
+
 ---
 
-## 2. 基线门禁（每轮必跑，FAIL 即中止）
+## 2. 基线门禁（巡检每轮必跑；首次 FAIL 先停查根因）
 
-PowerShell 下逐条跑（**不要用 `&&`**）：
+先核对工具与环境：受检 SHA、dirty/untracked、`rg` 及实际被门禁调用的 Python 解释器。Windows 的 TTS ratchet 默认调用 `py -3`；若本机只有 Python 3.10+ 而没有 `py`，用脚本支持的 `OCLIVE_VOICE_PYTHON` 指向**实际解释器可执行文件**，记录该配置，不把缺启动器误报为 TTS 产品失败。PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
 node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS；项数以脚本结尾输出为准
@@ -121,15 +125,15 @@ node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
 ```
 
+本表是**巡检基线**，不是每个代码/文档提交都必须照跑的开发门禁；开发验收按 diff 选 applicable 项。离线、锁文件或本机内存约束需要附加 `--locked`、`--offline`、`-j 1` 时，报告须列实际命令和覆盖限制，不把调整后的本地结果冒充 CI 原命令。任一项失败先保全退出码与原文，按 §0 区分环境、检查器和产品；修正环境后须重新通过本轮基线才继续巡检。
+
 > **⚠️ doctest 盲区**：上面的 `--lib` 与日常 `npm run check:rust`（`cargo test --workspace --lib`）**都不跑 doctest**，但 CI `rust` job 跑 `cargo test --workspace`（**含 doctest**）。**本轮若改了公开 DTO 字段 / trait 签名 / crate 名 / re-export，必须补 `cargo test --workspace --doc`**，否则会出现「本地全绿 / 远程 CI 硬门禁红」（见 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) §2.1）。
 
 **判定**：门禁（择要）含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / Markdown 本地链接 / stale 路径 ratchet（doc + code）/ host re-export ratchet / theater prompt drift / **verify:ui** / **vite build** / **tauri beforeBuildCommand 路径 ratchet**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
 > **dimension5 检数 SSOT**：以 `dimension5-acceptance.mjs --ci` 脚本结尾输出的 **`PASS (N checks)`** 为准；文档中的「N 检」须与此对齐，勿另造数字。
 
-**ratchet 锚点**（只降不升）：
-- `domain→infrastructure`：use-import ≤ 4（全 test cfg）+ FQ ≤ 5 → 见 `handoff/LAYERING_BASELINE.json`
-- host/runtime re-export import baseline ≤ 76 → `scripts/check-host-reexport-imports.mjs`
+**ratchet 锚点**（只降不升）：`domain→infrastructure` 的 use-import / FQ 阈值以 [`LAYERING_BASELINE.json`](./LAYERING_BASELINE.json) 和 `node scripts/check-domain-layering.mjs` 输出为准；host/runtime re-export import 阈值以 [`HOST_REEXPORT_BASELINE.json`](./HOST_REEXPORT_BASELINE.json) 和 `node scripts/check-host-reexport-imports.mjs` 输出为准。不要把某一轮的数字抄成手册里的长期阈值。
 
 ---
 
@@ -207,12 +211,12 @@ git status                                      # 确认工作树状态 / 与 or
 ### 维度四 · 技术债务清单更新
 
 **checklist**
-- [ ] 逐条核对 `TECHNICAL_DEBT_INVENTORY.md`（K-PERF / K-PROFILE / K-DOC / D-LAYER / D-PORT / D-SLOT / D-POLICY）现状
-- [ ] 已 Deferred 项：仍合理延后,还是因愿景推进需激活？
-- [ ] 遗留 TODO/FIXME 扫描（已知仅 `plugin_scaffold.rs` 模板占位,确认无新增）
-- [ ] 新发现按编号入库；架构边界债沿用 `K-*`，**愿景对齐类新增用 `V-*` 前缀**（如 `K-CORE-BOUNDARY-01` 最小内核物理抽离、`V-EMBED-01` 真实硬件 / 完整运行时嵌入验证、`V-PORTABLE-01` 跨宿主携带验证、`V-LICENSE-01` Apache-2.0 落地）
+- [ ] 按本轮受检范围，对照 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 核对已有债务的状态、证据和实际代码；未覆盖的条目明记“未复核”，不声称全账重审。
+- [ ] 已 Deferred 项：有新的触发条件或愿景影响证据吗？没有则保持原状态。
+- [ ] 用 `rg` 扫描受检范围的 TODO/FIXME，逐项区分可执行欠账、模板文字和历史备注；不预设只有某个已知文件。
+- [ ] 新发现先按[数字核实协议](./AI_VERIFICATION_PROTOCOL.md)标 L0–L3，保留复现命令、受检 SHA、与现有条目的去重结果和 V1–V4 影响；只有达到 L3、确定归属与优先级后才建议入库，不自动新建 `K-*` / `V-*` 或改 OPEN。
 
-**产物**：更新后的 `TECHNICAL_DEBT_INVENTORY.md`（更新 header 时间戳与 Verification 行）+ 新 `V-*` 段。
+**产物**：带证据等级的发现与去重清单。只有确认新债或状态实质变化时才改技术债 SSOT；技术债转 Done / main CI / 发版证据按工程流水线强制 L，并以目标 SHA 的远端 CI 结论核定，不由一次巡检或文档更新直接宣布。
 
 ---
 
@@ -267,7 +271,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] 【V4】新接入的第三方创作者 / AI 是否能在不踩旧路径的前提下跑通?事实来源是否单一?
 - [ ] 【元纪律】本维度发现是否在「防回退」边界内?纯洁癖式重排默认 Deferred(见 §9)
 
-**方法**：先跑 `check-stale-paths` / `check-domain-layering` 等 ratchet（自动化优先于人工通读）；人工只复核「自动化扫不到的语义矛盾」（文档状态 vs 代码、边界归属）。**新发现按 `D-ORDER-*`（路径/脚本条理）或 `D-DOC-*`（文档矛盾）入 `TECHNICAL_DEBT_INVENTORY.md`。**
+**方法**：先跑 `check-stale-paths` / `check-domain-layering` 等 ratchet（自动化优先于人工通读）；人工只复核「自动化扫不到的语义矛盾」（文档状态 vs 代码、边界归属）。新发现按核实协议分级、对照已有 `D-ORDER-*` / `D-DOC-*` 去重；达到 L3 且确需跟踪时，才在技术债 SSOT 登记。
 **产物**：① 路径漂移清单（自动化输出）；② 文档矛盾清单（声称 A 文件 vs 事实 B 文件）；③ AI 自由度缺口（无 SSOT 的边界）+ 处置建议。
 
 ---
@@ -308,20 +312,21 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 ---
 
-## 7. 综合输出模板（全档收尾必填）
+## 7. 综合输出模板（全档必填；快/半档只填实测与边界）
 
 ```
-## 巡检轮次 N（YYYY-MM-DD,档位：快/半/全）
+## 巡检轮次 N（YYYY-MM-DD；档位：快/半/全；受检 HEAD：完整 SHA）
 
-### 基线：PASS / FAIL（FAIL 则只记此行）
+### 基线：PASS / FAIL（记录首次失败、环境修正与复验；未恢复则止于基线）
 
 ### 发现清单（按优先级）
-| # | 现状 | 问题 | 建议 | 工作量 | 愿景影响(V1-4) | 处置 |
+| # | 证据等级与原始来源 | 现状/问题 | 建议 | 工作量 | 愿景影响(V1-4) | 处置 |
 
 ### 本轮修复（Done）
-### 本轮延后（Deferred,已入技术债编号）
+### 本轮延后（Deferred；已入库写编号，未入库写原因）
+### 未测项、环境限制与副作用
 
-### 六维健康度评分（双栏：正确性 / 愿景最优性）
+### 六维健康度评分（仅全档；双栏：正确性 / 愿景最优性）
 | 维度 | 正确性 | 愿景最优性 | 理由 |
 | 基线 | | — | |
 | 一架构 | | | |
@@ -335,19 +340,21 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 **评分基准**：A=优且无新债 / B=良有小债 / C=可用但有结构隐患 / D=有阻塞风险 / F=基线破。
 
+快/半档保留本模板的基线、发现、处置与未测项，评分栏写“未评分”，不引用旧轮次分数当现状。表内 Done 仅指**本轮已完成的具体修复**，不是技术债台账的 Done 状态；每项数字与结论都应能追溯到受检 SHA、命令、退出码或原始文件。
+
 ---
 
 ## 8. 巡检日志（滚动窗口）
 
-本节只保留最近五轮，避免活跃手册随历史无限增长。更早轮次见本文件 Git 历史；未完成事项只以 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 为准。
+本节只保留最近五轮，避免活跃手册随历史无限增长。更早轮次见本文件 Git 历史；未完成事项只以 [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) 为准。巡检当轮先在交付报告或 PR 评论记录受检 SHA、实测和边界；§8 的滚动行可随下一次**有实质内容**的文档提交入账，不为补分数、run ID 或 CI 结论单独推送触发新一轮 CI。快/半档可以“未评分”；未实际执行的巡检不新增轮次。
 
 | 轮次 | 日期 | 档位 | 基线 | 综合评分 | 关键发现 / 新增债 | 备注 |
 |------|------|------|------|----------|-------------------|------|
-| 26 | 2026-08-01 | 全（整改） | PASS（local） | A− | 修复 **K-LLM-ENV-02** 完整事务竞态与 **K-FRONTEND-TYPECHECK-01**；清除前端真实类型错误并补 3 条行为回归；修复 **K-SUPPLY-11**，将 npm audit 升为硬门禁；按唯一所有权处理 **D-CI-EXECUTION-02** 的 workspace/CLI/audit 重复执行 | 前端 shared+Chat Pro **272**、Theater **53**；非 CLI workspace 集成 **592.6s**、CLI 集成 **157.3s**；Dimension 5 **PASS (26 checks)**；`check:release` exit 0 / **1230.8s**；`cargo audit` 漏洞级 **0**、warning **8**；本轮状态均为 Locally verified，远端 CI 证据未声明 |
 | 27 | 2026-08-01 | 远端验收 + 文档对账 | PASS（remote） | A− | 远端首轮暴露 Node 20 与新前端工具链不兼容，统一 `.nvmrc` / engines / workflows 至 Node 22；第二轮暴露测试依赖 runner 默认语言，改为显式中英 locale 并恢复现场。终轮 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 在 HEAD `b0253cbe` **21/21** success；首个 Shadow Compare 样本的两次真实失败均在已选 `frontend`，未发现漏选。关联复核进一步修复 `oclive lint --audit-ci` 仍只认旧独立 job、错误扫描全 workflow soft 标记，以及 `ci init` 模板 Node 20 / audit soft / Loom 名称无效 YAML。同步修正 CONTRIBUTING、Bus Factor、安全与轻量化文档旧口径 | 总 job-seconds **10491→8586（−18.2%）**；Linux Rust **−25.3%**、Windows Rust **−32.1%**、CLI **−11.8%**。影子计划选 10 / 跳 10 个验证 job，建议跳过部分实跑合计 **2238s**，但 Rust 仍是关键路径。生产 npm **0 vulnerabilities**；完整 dev graph **3 moderate / 3 high** + ESLint peer 冲突入 **K-SUPPLY-12**，未粉饰为全依赖清零。后续 CLI 关联提交 `cb3ba201` 本地全量 bin 单测 **74/74**、Clippy 与当前 workflow 诊断通过；未重复触发全量远端 CI |
 | 28 | 2026-08-01 | 里程碑破坏性验证 | PASS（工程）/ FAIL（语音尾延迟门禁） | B+ | 完成 K-SUPPLY-12、本地 Nightly 分流和 11 场景影子模拟；修复 Nightly Loom 占位测试并以 feature 运行真实有界模型；并发覆盖资源桥 10、协调器 19、成人节拍 12、LLM 环境 2、远端 LLM 1、Loom 2 条。真实内核 5 分钟 60/60 请求且进程回收；GPU 24 层在 1MiB 临界余量被拒，改用 22 层后资源闭环恢复；新增 **K-VOICE-09** | 22 层五分钟完成 **46** 对 LLM/TTS，峰值余量 **1370MiB**、稳态增长 **74MiB**、318 次 GPU 采样零失败；TTFC p50/p95/max **6271/7475/9514ms**，因 max > 8s 仍红且未放宽阈值。影子模拟 **8 targeted / 3 fail-safe**，只证明规则回归；完整远端 CI 尚未声明 |
 | 29 | 2026-08-02 | 远端收口 + 文档对账 | PASS（remote） | A− | 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** success，完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) 的视觉、fuzz、Loom、CLI benchmark、原生窗口与汇总 **6/6** success；据此关闭 **K-SUPPLY-12** 与 **D-CI-EXECUTION-02** 的远端待验状态。修正供应链、CI 路线图、轻量化与内核集成中英文档的旧配置/旧路径；明确完整 `process_message` 在 `oclive_kernel_host`，纯 library 仍是 V-EMBED-01 Partial，未改模块边界或生产代码 | K-VOICE-09 的 20-token 有界长段策略把 TTFC p50/p95(max) 从 **4135/4473ms** 降至 **3643/3826ms**，改善 **11.9%/14.5%**；短句 10/10 保持旧策略。仍缺 30 分钟真实矩阵与人工听感，故保持 **In progress**；历史 **9514ms** 尾样本也未被删除。K-CI-IMPACT-01 仍为 Shadow + 2 个真实 Compare 样本，未借本轮放开选择性门禁 |
 | 30 | 2026-09-27 | 半（限定） | PASS（显式设置 `OCLIVE_VOICE_PYTHON`；默认环境缺 `py`，首次 TTS ratchet FAIL） | 未评分（半档） | 受检 HEAD `62fe6575`：Dimension 5 28 项 PASS、Host lib 634/634、分层 use-import 3/FQ 1 均未上涨；包级依赖方向符合既有边界。TTFT/TTFC 专项 SSOT 最近实测仍为 2026-08-02，当前 HEAD 未重新测这两项；修正 `PERF_PHASES.md` 的现行桌面流式传输口径 | `c41aa921` 限定接入标签保持不变；本轮仅做离线门禁、静态依赖抽查和文档校正，未启动真实模型/语音、服务或长时 soak；默认 Python launcher 缺失作为本机环境前提记录，不写成产品回退 |
+| 31 | 2026-09-28 | 快（AI 边界 / 流水线交叉审查） | PASS（local；`OCLIVE_VOICE_PYTHON` 指向已安装 Python 3.12） | 未评分（快档） | 受检 HEAD `876b95d1a601499db86bc942dd4978c86d8b53fe`：Dimension 5 **PASS (28 checks)**；`cargo test -p oclive_kernel_host --lib --locked --offline -j 1` **634/634**；分层 use-import **3/3**、FQ **1/1**，host re-export **75/75**；`check-stale-paths` docs+code PASS。对照 AI 边界、核实协议与工程流水线发现本手册两组 ratchet 数字过期、发现即入债和历史评分口径过宽，已只改手册流程。 | `AGENTS.md`、`.cursor/rules` 与 `handoff/README.md` 的入口链接可达；[`ci.yml` run 36326312754](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36326312754) 对**受检旧 HEAD** 为 success，不证明本次未推送的手册修改；未跑真实模型/语音性能、完整架构/债务复核或长时 soak；未新增技术债或更改旧结论。 |
 
 ---
 
@@ -357,8 +364,8 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 **约束**：
 
-1. **地基已是 A 级。** 巡检的目的是**防回退**,不是**追完美**。边际价值在 A 级之后快速趋零。
-2. **凡不直接服务于当前"惊喜"（官方剧场 demo / 发行版上线 / Apache-2.0 落地 / push 上线）的发现,默认 Deferred,本轮只记录不动手。**
+1. **历史全档曾获 A 级，不代表当前 HEAD 的全档评分。** 巡检的目的是**防回退**，不是**追完美**；未实测维度保持未评分，旧轮次不能补当前证据。
+2. **硬门禁、安全、兼容或确定性回退先处理。** 其余不直接服务当前“惊喜”（官方剧场 demo / 发行版上线 / Apache-2.0 落地）的优化，默认 Deferred，并按 §4 的证据等级记录；不能用“愿景优先”略过阻断项。
 3. **三类发现优先保留并处理**（因其直接服务愿景）：
    - 维度一【V2】槽态真实性缺口（可替换性是核心卖点的实现质量）
    - 维度二【剧场实时 / V1 低算力】性能预算（直接决定 demo 体感）
@@ -366,4 +373,4 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 4. **默认走快档。** 全档稀缺、刻意。别让巡检频率变成逃避"把它推到陌生人面前"的借口。
 5. **文档不增殖。** 模块定义只改 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md)；无 RFC/关键决策不新建 handoff 顶层文；动文档前读 [`handoff/README.md`](./README.md) §文档分责（**可以慢，读对 SSOT**）；遵循 [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16 · §文档编写纪律。**效率源于限制。**
 
-> 一句话:**地基稳是为了让"惊喜"走得远;当地基稳与做惊喜冲突时,先做惊喜,把地基发现记进 §8 等下一轮。**
+> 一句话：**先守住硬门禁和安全边界；其余非阻断打磨让位于“惊喜”，用证据保留到合适的巡检或开发轮次。**
