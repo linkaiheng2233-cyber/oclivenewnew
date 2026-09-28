@@ -5,23 +5,25 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | K-RESILIENCE-01 |
-| **台账** | OPEN P2 · Remote 弹性分散 |
+| **台账** | Partial P2 · Minimal 已有证据，Full 仍 OPEN；当前状态以主台账为准 |
 | **标题** | Minimal：Remote 超时/重试调用点清单 + 单一入口约定（非整库重写） |
 | **尺寸** | L |
 | **Minimal / Full** | **本册=Minimal**。Full ResilienceLayer 另开书 |
 | **Owner** | main-repo |
-| **状态** | Ready |
-| **更新** | 2026-07-16 |
+| **状态** | Blocked · needs-reconcile（历史 Minimal 已合入；不重跑旧 Stage） |
+| **更新** | 2026-09-28 |
+
+**接手前提**：先对账已合入切片、现行台账与 Wave，确认本册是否仅需关闭历史 Minimal 计划，还是有获准的剩余工作；Full ResilienceLayer 不由本册自动启动。依据见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。下列 Stage 保留历史续跑坐标，不代表可直接重复领取。
 
 <!-- oclive-marathon-contract
 {
   "version": 1,
   "id": "K-RESILIENCE-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "keep-open",
   "currentStage": 3,
-  "prerequisites": [],
+  "prerequisites": ["Reconcile merged Minimal evidence with the current inventory and Wave before closing or revising this plan; Full ResilienceLayer requires its own approved scope"],
   "stages": [
     {"id": 0, "title": "Inventory remote resilience", "files": ["read-only"], "actions": ["Map timeout, retry and fallback call sites against REMOTE_PLUGIN_PROTOCOL"], "checks": [{"command": "rg -n \"timeout|retry|fallback\" kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin", "why": "The inventory must be derived from current source"}], "outputs": ["Verified call-site inventory and candidate canonical helper"], "rollback": "No writes; block if the scope requires an unapproved architecture decision"},
     {"id": 1, "title": "Document the inventory", "files": ["creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md"], "actions": ["Add a compact code-anchor inventory and a new-code canonical entry rule"], "checks": [{"command": "node scripts/check-stale-paths.mjs --docs-only", "why": "The inventory contains source paths"}], "outputs": ["Remote resilience inventory"], "rollback": "Remove the new section without changing the debt state"},

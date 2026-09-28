@@ -3,6 +3,7 @@
 **用途：** 隔夜 / 长跑子 Agent **只认本索引**。  
 **强制门禁：** 任何 Stage 前必读 [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)（AI 限制 + OCLive 七阶段）。  
 **覆盖审计：** [`COVERAGE.md`](./COVERAGE.md)  
+**变动与接手：** [`DEBT_CHANGELOG.md`](./DEBT_CHANGELOG.md)（事件与续跑坐标，不另建状态表）
 **状态台账 SSOT：** [`../TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md)  
 **规程 Skill：** `.cursor/skills/oclive-debt-marathon/SKILL.md` + `oclive-dev-pipeline`
 
@@ -20,6 +21,7 @@
 8. 父 Agent 是 QUEUE / Wave / session 单写者；子 Agent 禁止自行选下一债或改队列。
 9. Cursor IDE 必须使用 clean worktree；禁止用 `git stash`、切分支、reset/clean 隔离 dirty。
 10. `npm run check:debt-marathon` FAIL 或 queue/plan/inventory/PR-CI 冲突 → `blocked:needs-reconcile`，不得施工。
+11. 当前控制者在事实变化的同一检查点同步受影响的计划、队列、台账与 DEBT_CHANGELOG；Wave 有细节时只链接，不重复抄录。结构检查通过不等于环境或权限已齐。
 
 ---
 
@@ -32,16 +34,16 @@
 | 15 | K-PLUGIN-SEC-01 | auto | [long-plans/K-PLUGIN-SEC-01.md](./long-plans/K-PLUGIN-SEC-01.md) | implemented |
 | 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | done |
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | done |
-| 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | pr-open |
-| 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | pr-open |
-| 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | pr-open |
+| 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | blocked:needs-reconcile |
+| 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | blocked:needs-reconcile |
+| 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | blocked:needs-reconcile |
 | 70 | K-PERF-10 | skip | [long-plans/K-PERF-10.md](./long-plans/K-PERF-10.md) | skip |
 | 80 | K-SUPPLY-04 | skip | [long-plans/K-SUPPLY-04.md](./long-plans/K-SUPPLY-04.md) | skip |
 | 90 | V-VSCODE-PERF-05 | human | [long-plans/V-VSCODE-PERF-05.md](./long-plans/V-VSCODE-PERF-05.md) | human |
 | 100 | PE-TURN-01 | human | [long-plans/PE-TURN-01.md](./long-plans/PE-TURN-01.md) | human |
 | 110 | PE-UID-01 | human | [long-plans/PE-UID-01.md](./long-plans/PE-UID-01.md) | human |
-| 120 | K-DIST-01 | auto | [long-plans/K-DIST-01.md](./long-plans/K-DIST-01.md) | pr-open |
-| 130 | V-MARKET-01 | auto | [long-plans/V-MARKET-01.md](./long-plans/V-MARKET-01.md) | pr-open |
+| 120 | K-DIST-01 | auto | [long-plans/K-DIST-01.md](./long-plans/K-DIST-01.md) | blocked:needs-reconcile |
+| 130 | V-MARKET-01 | auto | [long-plans/V-MARKET-01.md](./long-plans/V-MARKET-01.md) | blocked:needs-reconcile |
 | 140 | K-VOICE-02 | skip | [long-plans/K-VOICE-02.md](./long-plans/K-VOICE-02.md) | skip |
 | 150 | K-VOICE-03 | skip | [long-plans/K-VOICE-03.md](./long-plans/K-VOICE-03.md) | skip |
 | 160 | K-VOICE-05 | skip | [long-plans/K-VOICE-05.md](./long-plans/K-VOICE-05.md) | skip |
@@ -50,6 +52,8 @@
 | 190–330 | （其余 skip/human 同前版） | | 见下表续 |
 
 ### 续 · skip / 冻结 / §4
+
+2026-09-28：上述五条旧 `pr-open` 已暂停并与计划机器契约同步；历史切片已合入，但剩余范围与完成条件未对齐。依据和解除前提见 [DCL-20260928-01](DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。这不是父债 Done 或自动解冻许可。
 
 | seq | 债 ID | runner | 计划书 |
 |-----|-------|--------|--------|
@@ -92,12 +96,12 @@
 5. AGENTS.md · handoff/AI_CHANGE_BOUNDARIES.md
 
 每个 Stage：
-A. 父 Agent 先跑 check:debt-marathon，并 reconcile queue / plan / inventory / Git / PR-CI
+A. 父 Agent 先读 DEBT_CHANGELOG 最近相关事件，跑 check:debt-marathon，并 reconcile queue / plan / inventory / Git / PR-CI
 B. 取 seq 最小 runnable auto（`pr-open` 不可重跑）；调用自定义子 Agent oclive-debt-stage
 C. 普通实现 Stage 由子 Agent 做；Wave/QUEUE/TECHNICAL_DEBT 证据 Stage 由父 Agent 做，子 Agent 不得改 QUEUE
 D. 父 Agent 校验返回 JSON 与实际 base SHA / diff / checks
 E. 父 Agent 写 waves/WAVE-YYYYMMDD-<ID>-sN.md（勾选 GATES 清单）
-F. 父 Agent 更新本表进度并写 cursor-marathon checkpoint；最终轮用 outcome=done 后再 finish done；外部写入仅按 capability snapshot
+F. 父 Agent 同步受影响的本表/计划/台账，写变动事件与 cursor-marathon checkpoint；最终轮用 outcome=done 后再 finish done；外部写入仅按 capability snapshot
 G. 需人类决策/权限/RFC → blocked:<稳定错误码>；达到预算/无进展 → 写坐标并 finish
 
 禁止：跳 Stage、扩 Full、动 skip/human「做完」、无 CI 写 Done、改无关 process_message、新建顶层 md、混入无关 dirty。

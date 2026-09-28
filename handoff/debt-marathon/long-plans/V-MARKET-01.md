@@ -5,23 +5,25 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | V-MARKET-01 |
-| **台账** | OPEN P2 |
+| **台账** | Partial P2 · Minimal SCOPE 已有证据，生态实现仍缺 |
 | **标题** | 插件市场生态 SCOPE：现状 UI/站 vs 缺口 |
 | **尺寸** | L |
 | **Minimal / Full** | Minimal = SCOPE 单页；Full = 实现市场 UI |
 | **Owner** | main-repo + 可能 `oclive-plugin-market` |
-| **状态** | Ready · pr-open（Partial · 姊妹仓 human/cross-repo） |
-| **更新** | 2026-07-16 |
+| **状态** | Blocked · needs-reconcile（历史 SCOPE 已合入；姊妹仓 human/cross-repo） |
+| **更新** | 2026-09-28 |
+
+**接手前提**：先核本仓已合入 SCOPE，再与 owner 确认剩余生态/姊妹仓任务；不从旧 PR 等待态推断跨仓许可。依据见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。本轮不打开或修改姊妹仓。
 
 <!-- oclive-marathon-contract
 {
   "version": 1,
   "id": "V-MARKET-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "keep-open",
   "currentStage": 2,
-  "prerequisites": [],
+  "prerequisites": ["Reconcile the merged main-repo SCOPE with remaining ecosystem work; obtain owner decisions and explicit sibling-repository authorization before implementation"],
   "stages": [
     {"id": 0, "title": "Inventory current market surfaces", "files": ["read-only"], "actions": ["Inspect main-repo CLI market code and existing product documentation; do not open sibling repositories"], "checks": [{"command": "rg -n \"market\" kernel/crates/oclive-cli/src handoff creator-docs", "why": "The SCOPE must be grounded in current main-repo surfaces"}], "outputs": ["Current capability and gap inventory"], "rollback": "No writes; sibling-repo facts remain human/cross-repo prerequisites"},
     {"id": 1, "title": "Write main-repo SCOPE", "files": ["handoff/PRODUCT_LINE_TASK_BUCKETS.md"], "actions": ["Add a compact market scope and link existing implementation anchors"], "checks": [{"command": "node scripts/check-stale-paths.mjs --docs-only", "why": "The scope links current CLI and documentation paths"}], "outputs": ["Main-repo market scope; parent ecosystem debt remains OPEN"], "rollback": "Remove duplicated facts and retain only links"},

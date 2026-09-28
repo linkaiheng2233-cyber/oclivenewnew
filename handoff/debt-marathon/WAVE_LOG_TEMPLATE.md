@@ -15,6 +15,7 @@
 | **日期** | YYYY-MM-DD |
 | **执行面** | 本地 Agent · Cloud · Human |
 | **状态三态** | Implemented / Locally verified / Done-eligible |
+| **变动事件** | DEBT_CHANGELOG 事件 ID；没有事实变化写不适用 |
 
 ---
 
@@ -55,6 +56,7 @@
 - [ ] 未升错误 Done
 - [ ] 未合 main（除非授权）
 - [ ] 父 Agent 已更新 MARATHON_QUEUE 与 checkpoint
+- [ ] 受影响的计划/台账已同步；[DEBT_CHANGELOG](DEBT_CHANGELOG.md) 只链接本 Wave 细节，不另抄状态长表（复制到 waves 后链接用 `../DEBT_CHANGELOG.md`）
 
 ## 台账
 

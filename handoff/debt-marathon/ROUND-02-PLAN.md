@@ -1,11 +1,11 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-28（历史 PR 状态与启动前基线复核）。
+**最后更新**：2026-09-28（启动前基线快照及后续文档治理）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
-> **2026-09-28 基线复核**：Wave 1 提及的 [#124](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/124)、[#125](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/125)、[#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 均已合并；下方 Wave 1 是历史计划，不是当前待审 PR 清单。`MARATHON_QUEUE.md` 仍有 `pr-open` 项，下一轮开工前须逐项对照真实远端 PR、计划书和技术债台账，不因本注记自动改队列状态或派发 Stage。
+> **2026-09-28 基线复核快照**：Wave 1 提及的 [#124](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/124)、[#125](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/125)、[#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 均已合并；下方 Wave 1 是历史计划，不是当前待审 PR 清单。复核时队列仍有 `pr-open` 项；后续状态与来源处理见本页“后续文档治理与接手准备”，不将历史快照当开工指令。
 
 ## 目标
 
@@ -27,6 +27,21 @@
 **分列结论**：工程本地基线 **PASS（限定于以上命令和受检源码）**；自动马拉松开工条件 **HOLD: needs-reconcile**。下一步先核实五条 `pr-open` 的真实 PR 映射与计划/台账，再确认通用流水线规则来源；之后才选择一债、一 Stage，按适用门禁与目标 SHA 的远端 CI 规则推进。本轮不将任何 Partial/OPEN 改为 Done。
 
 未执行真实模型、真实语音/硬件、长时性能矩阵、完整技术债逐条复核，也未重跑 Chat Pro 限定接入场景。历史 S01 语义质量 FAIL、H03 真实音频与未覆盖崩溃窗口，仍按各自证据边界管理；[`CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md`](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 的限定案例不扩大为全 Host 或独立小 Kernel 合规。本轮无产品架构变更、无台账状态迁移、无新 run ID。
+
+## 后续文档治理与接手准备（2026-09-28）
+
+本节更新上方快照的接续动作，不改写历史检查结果。维护者要求审查债务、建立实时变动与接手规则，并以仓库通用流水线为准安装到本机。**尺寸 M**：仅文档、调度前提和 Skill 副本，不实施业务债或改变架构；起点 `6ed1dda1f0ab5317450ce4609a6c29c47d423e50`，工作树干净。
+
+| 切片 | 范围 / 产出 | 验证与止点 |
+|------|-------------|-------------|
+| 债务审查 | 台账现行状态、历史引用、覆盖声明与旧 PR 等待态；详细发现链 [COVERAGE](COVERAGE.md) | 现行源码/owner/PR 对账；未知原始证据不补造，未测产品状态不升 Done |
+| 接手规则 | [DEBT_CHANGELOG](DEBT_CHANGELOG.md) 为变动事件来源；入口与模板统一链接，当前状态仍在主台账 | 文档链接/登记/路径；不得生成第二份状态表或回改冻结证据 |
+| 调度暂停 | 五条旧 pr-open 与计划契约同步 blocked；保留 Stage 与 Minimal/Full 条件 | `check:debt-marathon` 结构通过，`--require-ready` 必须拒绝这些 blocked 项；本轮不启动马拉松 |
+| 通用规则与镜像 | [仓库 Skill](../workflows/dev-pipeline/SKILL.md) 成为正式来源；三文件副本安装到本机 | Skill 格式、中文编码与 bytes/SHA256 相等；遇到本机不同私有字节先对账，不静默覆盖 |
+
+**当前接续**：来源缺失由仓库规则解决；五个计划的调度仍暂停，后续先确认剩余能力与证据再决定关闭历史计划或修订新 Stage。详情和最后动作见 [DCL-20260928-01/02](DEBT_CHANGELOG.md)。这不授权此前暂停的 Full、实机、签名或跨仓工作。
+
+**本轮 CI 节奏**：纯文档/计划状态检查＋只读最终 diff；不重复工程全量测试或业务身份。适用本地检查后建立文档里程碑提交；没有业务债 Done 迁移，不用父 SHA 的绿 CI 声称新提交已远端验收。若后续债结案，仍须其目标 SHA 的适用本地与远端证据。
 
 ## 阶段
 

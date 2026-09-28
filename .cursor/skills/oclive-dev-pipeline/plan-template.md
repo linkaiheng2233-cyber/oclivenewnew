@@ -1,6 +1,6 @@
 # Plan 输出模板（阶段 ① · OCLive overlay）
 
-在通用 `~/.cursor/skills/dev-pipeline/plan-template.md` 上**追加**以下段落（勿省略）。
+在[仓库通用 plan-template](../../../handoff/workflows/dev-pipeline/plan-template.md) 上**追加**以下段落（勿省略）；本机 `~/.cursor/skills/dev-pipeline/` 只是安装副本。
 
 ```markdown
 ## OCLive 对齐（overlay）
@@ -18,7 +18,7 @@
 - [ ] `npm run check:release`（发版 / 债收口）
 - [ ] `node scripts/dimension5-acceptance.mjs --ci`（N = 脚本输出）
 - [ ] `node scripts/check-error-codes-drift.mjs`
-- [ ] `node scripts/check-markdown-links.mjs`（默认仅 human-docs/modules）
+- [ ] `node scripts/check-markdown-links.mjs`（默认入口＋本轮改文显式目标）
 - [ ] `cargo test --workspace --doc`
 - [ ] **远程 `ci.yml` success**（L：push 后；Partial→Done 硬门禁）
 - [ ] TECHNICAL_DEBT 回写 HEAD SHA + 日期 + 证据（若动台账）
@@ -30,6 +30,7 @@
 - **目标**：Implemented / Locally verified / Done-eligible
 - **远程 CI**：不适用 / 已授权可 push / 无权限待维护者执行
 - **台账动作**：不动 / 保持 Partial/OPEN / 证据齐全后升 Done
+- **变动事件**：DEBT_CHANGELOG 事件 ID / 无债务事实变化（适用时同检查点记录）
 
 > Plan todos `completed` ≠ Done。本地 PASS 不能代替远程 main CI（若任务声称恢复/收口）。
 ```

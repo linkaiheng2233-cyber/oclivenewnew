@@ -1,6 +1,6 @@
 # OCLive 工程纪律审查清单（阶段 ⑤ · 项目定制）
 
-与通用 `~/.cursor/skills/dev-pipeline/discipline-review.md` 合并。每项 **PASS / FAIL / N/A**；G FAIL 阻塞进 ⑥。只审 diff applicable 项，但 N/A 必须能说明原因。
+结合[仓库通用流水线](../../../handoff/workflows/dev-pipeline/SKILL.md)的⑤纪律与验证使用；不依赖缺失的旧本机 `discipline-review.md`。每项 **PASS / FAIL / N/A**；G FAIL 阻塞进⑥。只审 diff applicable 项，但 N/A 必须能说明原因。
 
 **证据状态**：Implemented（未验完）· Locally verified（本地 applicable 全绿）· Done-eligible（所需远程证据齐全）。
 
@@ -60,7 +60,8 @@
 | `node scripts/check-doc-mirror.mjs` | creator-docs 中英 |
 | `node scripts/dimension5-acceptance.mjs --ci` | 改 dimension5/CI/门禁组合，或 L 全量验收；**N 以脚本输出为准** |
 | `node scripts/check-doc-registry.mjs` | 新建/变更 handoff 或 creator-docs 顶层 |
-| `node scripts/check-markdown-links.mjs` | 触及 `human-docs/modules`（**默认不扩全仓历史文档**） |
+| `node scripts/check-markdown-links.mjs [已改路径…]` | 默认入口以脚本为准；本轮已改文补显式目标，不扩全仓历史 |
+| `npm run check:debt-marathon` | 债计划/队列变更；结构绿不代替语义对账与开工前提 |
 | `npm run check:rust` | Rust workspace / 分层变更；纯前端 TS 走对应 build/unit |
 | `npm run check:ci-local` | 债收口 / 集成行为 / 跨宿主；纯静态门禁改动不自动强制 |
 | `npm run check:release` | 发版级 |

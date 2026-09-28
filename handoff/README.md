@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-19。
+**最后更新**：2026-09-28。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
@@ -51,7 +51,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | 改模块或槽位 | [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md) | [SLOT_BACKEND_REALITY_MATRIX](SLOT_BACKEND_REALITY_MATRIX.md) |
 | 接续六槽基础契约讨论 | [已确认方向](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) · [公共承诺决策](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions) | [统一模板候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) · [逐槽审阅](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review) · [公共面组合](MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) · [接口表达建议](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal) · [AI 阅读顺序](AI_READING_INDEX.md#kernel-slot-reading) |
 | 做全仓审查 | [AI_VERIFICATION_PROTOCOL](AI_VERIFICATION_PROTOCOL.md) | [RECURRING_OPTIMIZATION_PLAYBOOK](RECURRING_OPTIMIZATION_PLAYBOOK.md) |
-| 看当前债务 / 冻结 | [TECHNICAL_DEBT_INVENTORY](TECHNICAL_DEBT_INVENTORY.md) | — |
+| 看当前债务 / 冻结 / 接手 | [TECHNICAL_DEBT_INVENTORY](TECHNICAL_DEBT_INVENTORY.md) | [变动与续跑协议](debt-marathon/DEBT_CHANGELOG.md) · [覆盖审查](debt-marathon/COVERAGE.md) |
 | 改角色包边界 | [ROLE_PACK_BOUNDARY](ROLE_PACK_BOUNDARY.md) | [角色包规范](../creator-docs/role-pack/ROLE_PACK_SPEC.md) |
 
 ## 活跃 SSOT
@@ -81,6 +81,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | [AI_CHANGE_BOUNDARIES.md](AI_CHANGE_BOUNDARIES.md) | AI 改动边界 G1–G17、规划/执行委派边界（含关联能力闭环） |
 | [AI_READING_INDEX.md](AI_READING_INDEX.md) | AI 按任务深读导航，不承载事实 |
 | [AI_VERIFICATION_PROTOCOL.md](AI_VERIFICATION_PROTOCOL.md) | 审查与带数字汇报的核实规则 |
+| [dev-pipeline/SKILL.md](workflows/dev-pipeline/SKILL.md) | 通用七阶段职责、尺寸与证据状态；仓库正式来源，本机用户级 Skill 仅安装副本；OCLive 增量见 [项目 Skill](../.cursor/skills/oclive-dev-pipeline/SKILL.md) |
 | [oclive-adaptive-pipeline/SKILL.md](workflows/oclive-adaptive-pipeline/SKILL.md) | 第二条模型分工层：路由、dispatch、Luna 实施与 GPT6 验收（2026-09-05） |
 | [RECURRING_OPTIMIZATION_PLAYBOOK.md](RECURRING_OPTIMIZATION_PLAYBOOK.md) | 多轮巡检流程 |
 
@@ -89,6 +90,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | 文件 | 唯一职责 |
 |------|----------|
 | [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) | 活跃债、冻结项与下一动作 |
+| [debt-marathon/DEBT_CHANGELOG.md](debt-marathon/DEBT_CHANGELOG.md) | 债务变动事件、证据关联与 AI 接手协议；不维护第二份当前状态表；执行准入仍由 [队列与计划](debt-marathon/README.md) 决定 |
 | [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线执行分桶 |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能阶段与复现入口 |
 | [TTFT_BENCHMARK.md](TTFT_BENCHMARK.md) | TTFT 基准 |

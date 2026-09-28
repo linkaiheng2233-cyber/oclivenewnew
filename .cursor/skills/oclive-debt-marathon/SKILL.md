@@ -9,7 +9,7 @@ description: >-
 
 # OCLive 技术债偿还马拉松
 
-**不替代**用户级 `dev-pipeline`（`~/.cursor/skills/dev-pipeline/SKILL.md`）与 [`oclive-dev-pipeline`](../oclive-dev-pipeline/SKILL.md)。
+**不替代**[仓库通用 dev-pipeline](../../../handoff/workflows/dev-pipeline/SKILL.md) 与 [`oclive-dev-pipeline`](../oclive-dev-pipeline/SKILL.md)。`~/.cursor/skills/dev-pipeline/` 仅安装副本。
 本 Skill = 长计划书 + 分阶段子 Agent；**必须同时加载二者 + [`AI_AND_PIPELINE_GATES`](../../../handoff/debt-marathon/AI_AND_PIPELINE_GATES.md)**。
 
 ## 存放点
@@ -19,6 +19,7 @@ description: >-
 | 门禁（AI+流水线） | `handoff/debt-marathon/AI_AND_PIPELINE_GATES.md` |
 | 总索引 | `handoff/debt-marathon/MARATHON_QUEUE.md` |
 | 覆盖审计 | `handoff/debt-marathon/COVERAGE.md` |
+| 变动与接手 | [DEBT_CHANGELOG](../../../handoff/debt-marathon/DEBT_CHANGELOG.md)（事件，不重复当前状态表） |
 | 一书一债 | `handoff/debt-marathon/long-plans/<ID>.md` |
 | 波次 | `handoff/debt-marathon/waves/` |
 
@@ -30,7 +31,7 @@ description: >-
 
 1. `AI_AND_PIPELINE_GATES.md`  
 2. `oclive-dev-pipeline` + `discipline-checklist` + 通用 `dev-pipeline`  
-3. `MARATHON_QUEUE.md` + `COVERAGE.md`  
+3. `MARATHON_QUEUE.md` + `COVERAGE.md` + `DEBT_CHANGELOG.md` 最近相关事件
 4. `AGENTS.md` · `AI_CHANGE_BOUNDARIES.md` · `AI_VERIFICATION_PROTOCOL.md`  
 5. 打开目标 `long-plans/<ID>.md` **仅当前 Stage**
 
@@ -60,7 +61,7 @@ description: >-
 
 ### Cursor 父 Agent 每轮
 
-1. 读本机 session + 最近 Wave，reconcile QUEUE / long-plan / TECHNICAL_DEBT / Git / PR-CI。
+1. 读本机 session + 最近 Wave + DEBT_CHANGELOG，reconcile QUEUE / long-plan / TECHNICAL_DEBT / Git / PR-CI；机器结构检查绿不代表实机、环境、权限或 Full 证据已齐。
 2. 若有冲突，只修状态或 `blocked:needs-reconcile`，禁止施工。
 3. 选择最小 `auto + Ready` Stage 并先 claim。普通实现 Stage 调用 `oclive-debt-stage`；若 Stage 文件范围包含 Wave / QUEUE / TECHNICAL_DEBT，则由父 controller 自己执行，禁止派给子 Agent。dispatch 带 claim、Stage、文件范围、base SHA 与 capability snapshot。
 
@@ -69,7 +70,7 @@ node scripts/cursor-marathon.mjs claim --debt <ID> --stage <N> --agent oclive-de
 ```
 
 默认 capability 只有 `local-write,test`；`commit,push,open-pr,merge,sibling-repo,network,secrets` 必须按用户授权显式加入，并用 `--authorization <用户消息/决策引用>` 留痕。
-4. 校验子 Agent JSON 的 claim/debt/stage/base SHA 与实际 diff；父 Agent独自更新 Wave/QUEUE，并把计划契约 `currentStage` 推进到下一 Stage。
+4. 校验子 Agent JSON 的 claim/debt/stage/base SHA 与实际 diff；父 Agent 独自同步受影响的 Wave/QUEUE/台账与计划契约，同检查点写变动事件。无事实变化不记事件；细节已有 Wave 时只链接。
 5. 记录 checkpoint：
 
 ```powershell

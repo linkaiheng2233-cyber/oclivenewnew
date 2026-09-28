@@ -21,7 +21,7 @@
 | 5 | [handoff/AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md) | 带数字的审查 / 汇报 **须核实** |
 | 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
 | 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
-| — | [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线（OCLive 定制层）**；通用框架 `~/.cursor/skills/dev-pipeline/` |
+| — | [通用 dev-pipeline](handoff/workflows/dev-pipeline/SKILL.md) · [OCLive 定制层](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线**；仓库为准，`~/.cursor/skills/dev-pipeline/` 仅安装副本 |
 | — | [`.cursor/skills/oclive-debt-marathon/SKILL.md`](.cursor/skills/oclive-debt-marathon/SKILL.md) · [`handoff/debt-marathon/`](handoff/debt-marathon/README.md) | **债偿还马拉松**：长流程计划书 · 分阶段子 Agent · 波次日志 |
 
 **文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
@@ -56,7 +56,7 @@
 | 角色包 vs 蓝图 | [handoff/ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) |
 | 聊天 vs 记忆 | [handoff/CHAT_STORAGE_ARCHITECTURE.md](handoff/CHAT_STORAGE_ARCHITECTURE.md) |
 | 发行版 HostProfile | [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
-| 活跃债 / 冻结 | [handoff/TECHNICAL_DEBT_INVENTORY.md](handoff/TECHNICAL_DEBT_INVENTORY.md) |
+| 活跃债 / 冻结 | [主台账](handoff/TECHNICAL_DEBT_INVENTORY.md)；变动与续跑先读 [DEBT_CHANGELOG](handoff/debt-marathon/DEBT_CHANGELOG.md)，不另建状态表 |
 | 文档总索引 | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
 | 人类接手阶梯 L0–L8 | [human-docs/README.md](human-docs/README.md) |
 

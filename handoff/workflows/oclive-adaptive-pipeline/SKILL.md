@@ -9,12 +9,12 @@ description: >-
 # OCLive 第二条自适应模型流水线
 
 **SSOT 范围**：模型分工、交接、实施回传和最终验收；不定义业务行为，不替换工程门禁，不授予额外权限。
-**最后更新**：2026-09-05。**读者**：OCLive controller、planner、worker、reviewer。
+**最后更新**：2026-09-28（仅更新通用规则来源）。**读者**：OCLive controller、planner、worker、reviewer。
 
 ## 先决条件与边界
 
 - 适用于本仓 `oclivenewnew`。先读取 [`AGENTS.md`](../../../AGENTS.md)、[`AI_CHANGE_BOUNDARIES.md`](../../AI_CHANGE_BOUNDARIES.md)、[`AI_VERIFICATION_PROTOCOL.md`](../../AI_VERIFICATION_PROTOCOL.md)、[`AI_READING_INDEX §9`](../../AI_READING_INDEX.md#9-按任务选阅读路径)、[第一条工程流水线](../../../.cursor/skills/oclive-dev-pipeline/SKILL.md)及其 [discipline checklist](../../../.cursor/skills/oclive-dev-pipeline/discipline-checklist.md)。
-- 通用 `~/.cursor/skills/dev-pipeline/` 若不存在，不安装、不臆造；以本仓现有 SSOT 为准并明确缺失。关联文档按需读取，不把历史全文塞进 dispatch。
+- 通用规则以[仓库 dev-pipeline](../dev-pipeline/SKILL.md) 为准，`~/.cursor/skills/dev-pipeline/` 仅安装副本；镜像安装按 [debt-marathon README](../../debt-marathon/README.md#通用流水线安装副本)，不臆造缺失旧版本。关联文档按需读取，不把历史全文塞进 dispatch。本次来源更新不改变模型分工或授权边界。
 - 这是“模型分工层”，复用第一条流水线的 G1–G17、S/M/L、applicable 门禁和 Done 口径；不能覆盖用户限制，也不自动启动完整 Agent 组。只读询问保持只读。
 - 规划、实施和验收都必须尊重当前用户的冻结项、写集与外部副作用边界。交接模板逐任务填写“当前授权限制”，跨会话继承，不把一次限制升级成永久产品规则。
 

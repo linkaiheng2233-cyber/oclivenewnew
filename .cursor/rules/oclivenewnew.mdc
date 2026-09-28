@@ -24,4 +24,4 @@ alwaysApply: true
 
 9. **AI 改动边界（禁止区摘要）**：见 [`handoff/AI_CHANGE_BOUNDARIES.md`](handoff/AI_CHANGE_BOUNDARIES.md)（G1–G17）。角色任务不改 `slot_registry`；不把 RFC Draft 当未实现而删 wiring；路径改动须 grep 全仓 `roles/` / `src-tauri`；改 `Cargo.lock` 须 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`。**关联改动按能力闭环**核对生产者 → 契约 → 适配/权限 → 消费者 → 状态/回退 → 测试（G17），禁止只改单端后声称完成；Chat Pro / 目录插件 / 插槽改动跑 `npm run check:module-compat`。**动文档前先读** [`handoff/README.md`](handoff/README.md) §文档分责；无 RFC **不新建**顶层 `.md`；**链接代替复制**（G14）。
 
-10. **开发流水线（可选）**：用户要求完整流程时，先读通用 `~/.cursor/skills/dev-pipeline/SKILL.md`，再读本仓 [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](.cursor/skills/oclive-dev-pipeline/SKILL.md)（OCLive 定制层）。
+10. **开发流水线（可选）**：用户要求完整流程时，先读仓库通用 `handoff/workflows/dev-pipeline/SKILL.md`，再读本仓 `.cursor/skills/oclive-dev-pipeline/SKILL.md`（OCLive 定制层）；`~/.cursor/skills/dev-pipeline/` 仅安装副本。债务接手另读 `handoff/debt-marathon/DEBT_CHANGELOG.md`，当前状态仍以主台账为准。

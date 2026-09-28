@@ -9,11 +9,11 @@ description: >-
 
 # OCLive Dev Pipeline（项目定制层）
 
-**通用框架**：`~/.cursor/skills/dev-pipeline/`（含 `task-sizing.md` 尺寸分流）  
+**通用框架**：[仓库 dev-pipeline](../../../handoff/workflows/dev-pipeline/SKILL.md)（含 [task-sizing.md](../../../handoff/workflows/dev-pipeline/task-sizing.md) 尺寸分流）；`~/.cursor/skills/dev-pipeline/` 仅安装副本
 **本文件**：OCLive 门禁 · SSOT · 验收 · 开场白  
 **不重复**通用七阶段正文。
 
-> `.cursor/skills/` 常被仓库 gitignore：**本 Skill 可能只在本机**。共享请 un-ignore 或把关键门禁写进已跟踪 `AGENTS.md` / handoff。不要擅自改 `.gitignore`。
+> 本项目 Skill 已跟踪；通用正文在 `handoff/workflows/dev-pipeline/`。本机安装方法见 [debt-marathon README](../../../handoff/debt-marathon/README.md#通用流水线安装副本)。不要擅自改 `.gitignore` 或以机器私有副本覆盖仓库规则。
 
 ## 用户开场白（复制即用）
 
@@ -40,7 +40,7 @@ description: >-
 
 ## 启动
 
-1. 加载通用 **dev-pipeline** + 本文件 + [discipline-checklist.md](discipline-checklist.md)。
+1. 加载上链的仓库通用 **dev-pipeline** + 本文件 + [discipline-checklist.md](discipline-checklist.md)；机器未安装副本不阻断仓库规则的读取。
 2. 定 **S/M/L**（通用 task-sizing）；触及 TECHNICAL_DEBT Done / main CI / 发版 → **强制 L**。
 3. 所有尺寸先读精简 [`AGENTS.md`](../../../AGENTS.md)；M/L 再按 [`AI_READING_INDEX`](../../../handoff/AI_READING_INDEX.md) §9 选择场景路径，禁止无差别全读。
 4. 姊妹仓：读该仓 `AGENTS.md`，流程仍回本仓本 Skill。
@@ -59,7 +59,7 @@ description: >-
 
 ## 场景路由（① 必做）
 
-见 [`AI_READING_INDEX` §9](../../../handoff/AI_READING_INDEX.md#9-按任务选阅读路径)。技术债收口 → 本 Skill + TECHNICAL_DEBT + AI_VERIFICATION_PROTOCOL。
+见 [`AI_READING_INDEX` §9](../../../handoff/AI_READING_INDEX.md#9-按任务选阅读路径)。技术债收口 → 本 Skill + TECHNICAL_DEBT + [变动与接手协议](../../../handoff/debt-marathon/DEBT_CHANGELOG.md) + AI_VERIFICATION_PROTOCOL。
 
 第二条互补模型分工入口：[`oclive-adaptive-pipeline`](../../../handoff/workflows/oclive-adaptive-pipeline/SKILL.md)；本工程门禁与 S/M/L 仍由本 Skill 负责。
 
@@ -90,7 +90,7 @@ description: >-
 - 公开 DTO/trait → ⑤ 含 doctest。
 
 ### ⑤
-1. 通用 discipline-review + **全部** [discipline-checklist.md](discipline-checklist.md) applicable 项  
+1. 通用流水线⑤纪律与验证 + **全部** [discipline-checklist.md](discipline-checklist.md) applicable 项
 2. 按 diff 跑脚本（见下表），**不得跳过 applicable**  
 3. G FAIL 阻塞进⑥；Partial→Done 见 checklist「Done 证据」
 
@@ -98,7 +98,7 @@ description: >-
 
 | 变更面 | 最小验收 |
 |--------|----------|
-| 纯文档（非中英契约镜像） | `check-markdown-links`（若在默认范围）· `check-stale-paths --docs-only` · `check-doc-registry`（顶层/SSOT）· `git diff --check` |
+| 纯文档（非中英契约镜像） | `check-markdown-links` 默认入口＋本轮已改文件显式目标 · `check-stale-paths --docs-only` · `check-doc-registry`（顶层/SSOT）· `git diff --check`；债计划/队列另跑 `check:debt-marathon` |
 | creator-docs 中英契约 | 上述 + `check-doc-mirror` |
 | Rust 内核/分层 | 定向测试或 `check:rust` + `check-domain-layering` |
 | 公开 DTO/trait/re-export | Rust 验收 + `cargo test --workspace --doc`；错误码另跑 drift |
@@ -119,7 +119,8 @@ description: >-
 
 ### ⑥
 - handoff/README §文档分责；G11；MODULE_MAP / PLUGIN_V1 不互拷  
-- `check-doc-registry` · `check-markdown-links`（**默认仅** `human-docs/modules`，不扩到全历史文档）· `check-stale-paths` · `check-doc-mirror`
+- `check-doc-registry` · `check-markdown-links`（默认为人类模块入口＋关键 AI/SSOT；本轮改文显式检查，不扩到全历史）· `check-stale-paths` · applicable `check-doc-mirror`
+- 债务事实变化同一检查点同步 owner、计划/队列与 DEBT_CHANGELOG；文案修正不冒充业务债结案。
 
 ### ⑦ Ask
 对照：六槽/编排泄漏/记忆三套/错误码 SSOT/第二套解析/冻结项/姊妹仓/台账+远程 CI。Ask 不可用时在当前会话停止写入并只读总审。
@@ -138,14 +139,14 @@ description: >-
 | `node scripts/check-error-codes-drift.mjs` | error / apiErrors / ERROR_CODES |
 | `node scripts/check-domain-layering.mjs` | kernel 分层 |
 | `node scripts/check-stale-paths.mjs` | 路径引用 |
-| `node scripts/check-markdown-links.mjs` | **仅** `human-docs/modules` 默认范围 |
+| `node scripts/check-markdown-links.mjs [本轮已改路径…]` | 默认范围以脚本为准（人类模块入口＋关键 AI/SSOT）；改文补显式目标 |
 | `node scripts/check-doc-mirror.mjs` | 中英文 |
 | `npm run test:unit` | shared / chat-pro |
 | `npm run check:module-compat` | Chat Pro / 目录插件 / 插槽注册表 / Vue 与 iframe 入口 |
 | Tauri `--test …` | 定向集成 |
 | **远程 `ci.yml` success** | L：有 push 授权后 · 台账 Done · main 恢复；无授权则报告 Locally verified |
 
-**链接门禁边界**：默认不扫全仓历史 md，避免无边界清理；扩范围须用户显式授权。
+**链接门禁边界**：默认不扫全仓历史 md；本轮已改文是适用检查范围，不能因不在默认表内而跳过。无关历史清理另定范围。
 
 **命令纪律**：Plan 中每条命令都写“因何 applicable”；禁止复制整张命令表后全部勾选，也禁止用一个大命令掩盖缺少的专项检查。
 

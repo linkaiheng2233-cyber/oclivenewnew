@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-19
+> **最后更新**：2026-09-28
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；五层文档分工见 [`handoff/README.md`](./README.md) §文档分层。  
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -240,9 +240,9 @@ Vue invoke / HTTP --api
 
 ### 技术债收口 / 按开发流水线走
 
-1. 通用 `~/.cursor/skills/dev-pipeline/SKILL.md` + 本仓 [`.cursor/skills/oclive-dev-pipeline/SKILL.md`](../.cursor/skills/oclive-dev-pipeline/SKILL.md)  
+1. [仓库通用 dev-pipeline](workflows/dev-pipeline/SKILL.md) + 本仓 [OCLive 定制层](../.cursor/skills/oclive-dev-pipeline/SKILL.md)；`~/.cursor/skills/dev-pipeline/` 仅安装副本
 2. [`.cursor/skills/oclive-dev-pipeline/discipline-checklist.md`](../.cursor/skills/oclive-dev-pipeline/discipline-checklist.md)  
-3. [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md)（远程 CI 硬门禁）
+3. [主台账](TECHNICAL_DEBT_INVENTORY.md) → [DEBT_CHANGELOG 接手顺序与最近事件](debt-marathon/DEBT_CHANGELOG.md) → [核实协议](AI_VERIFICATION_PROTOCOL.md)（含远程 CI 硬门禁）；当前状态、执行准入与变动证据分开判读
 4. **马拉松 / 分阶段长计划书**：[`debt-marathon/`](./debt-marathon/README.md) + [`.cursor/skills/oclive-debt-marathon/SKILL.md`](../.cursor/skills/oclive-debt-marathon/SKILL.md)（一书一债 · 子 Agent 每轮一 Stage）
 
 ---

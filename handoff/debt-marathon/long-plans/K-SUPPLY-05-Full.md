@@ -5,23 +5,25 @@
 | 字段 | 值 |
 |------|-----|
 | **债 ID** | K-SUPPLY-05-Full（Minimal 已 Done） |
-| **台账** | Minimal Done；Full = 零 `[bans.skip]` |
+| **台账** | Minimal Done；Full Partial，完成条件仍为零 `[bans.skip]` |
 | **标题** | 消除 skip / 收敛 duplicate 至可无例外 deny |
 | **尺寸** | L |
 | **Minimal / Full** | **Full** |
 | **Owner** | main-repo |
-| **状态** | Ready |
-| **更新** | 2026-07-16 |
+| **状态** | Blocked · needs-reconcile（历史依赖切片已合入；Full 未完成） |
+| **更新** | 2026-09-28 |
+
+**接手前提**：从当前 `deny.toml`、lock 与生态约束重新确认剩余 skip/依赖族，再决定获准的下一 Stage；不得把历史 PR 合入或 Stage 3 坐标当成 Full 可结案。依据见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。本轮不改依赖或运行收敛。
 
 <!-- oclive-marathon-contract
 {
   "version": 1,
   "id": "K-SUPPLY-05-Full",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "done-eligible",
   "currentStage": 3,
-  "prerequisites": [],
+  "prerequisites": ["Reconcile the merged dependency slice against current deny skips and ecosystem constraints; approve a remaining family scope or supply complete zero-skip Full evidence before resuming"],
   "stages": [
     {"id": 0, "title": "Baseline duplicate families", "files": ["read-only"], "actions": ["Capture deny skips, duplicate tree and current ratchet"], "checks": [{"command": "cargo tree -d", "why": "Full scope is defined by current duplicate families"}, {"command": "cargo deny check bans", "why": "The initial deny state is the comparison baseline"}], "outputs": ["Prioritized duplicate-family baseline"], "rollback": "No writes"},
     {"id": 1, "title": "Converge one dependency family", "files": ["Cargo.toml", "Cargo.lock", "deny.toml"], "actions": ["Converge exactly one compatible family per dispatch"], "checks": [{"command": "cargo deny check bans", "why": "The family change must not require an undocumented skip"}, {"command": "cargo audit", "why": "Cargo.lock changes require supply-chain verification"}], "outputs": ["One reviewed dependency-family reduction"], "rollback": "Revert the family change when compatibility or audit regresses"},
@@ -32,7 +34,7 @@
 -->
 
 ## 目标
-- `deny.toml` multiple-versions=deny 且 **skip 列表为空**（或仅保留有期限的紧急项并台账注明）
+- `deny.toml` multiple-versions=deny 且 **skip 列表为空**；有期限的紧急例外也只可记 Partial，不符合 Full Done
 - `cargo deny check bans` PASS · dedup ratchet 不升
 - TECHNICAL_DEBT 注明 Full Done 或仍 Partial+剩余理由
 

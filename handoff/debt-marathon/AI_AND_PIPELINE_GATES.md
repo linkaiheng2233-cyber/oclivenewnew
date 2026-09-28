@@ -7,13 +7,14 @@ SSOT 链（禁止在本文双写长表）：
 
 | 主题 | 路径 |
 |------|------|
-| 七阶段流水线 | `~/.cursor/skills/dev-pipeline/SKILL.md` |
+| 七阶段流水线 | [仓库 dev-pipeline](../workflows/dev-pipeline/SKILL.md)；本机 `~/.cursor/skills/dev-pipeline/` 仅副本 |
 | OCLive 定制 | `.cursor/skills/oclive-dev-pipeline/SKILL.md` · `discipline-checklist.md` |
 | G1–G17 | `handoff/AI_CHANGE_BOUNDARIES.md` |
 | 改代码索引 | `AGENTS.md` · `handoff/AI_READING_INDEX.md` §9 |
 | 数字核实 | `handoff/AI_VERIFICATION_PROTOCOL.md` |
 | 命名 | `creator-docs/NAMING_CONVENTIONS.md` §4.2 |
 | 状态台账 | `handoff/TECHNICAL_DEBT_INVENTORY.md` |
+| 变动与接手 | [DEBT_CHANGELOG](DEBT_CHANGELOG.md)；同检查点记事件，当前状态不双写 |
 
 ---
 
@@ -23,7 +24,7 @@ SSOT 链（禁止在本文双写长表）：
 |------|------|
 | 债 Done / main CI / 发版证据 | **强制尺寸 L** |
 | M/L | 须有 Plan 或 **Ready 长计划书**；禁止无书乱改 |
-| 七阶段 | ①对齐→③实现→④审查→⑤纪律→⑥文档→⑦总审；S 可合并，L 不跳⑤⑥⑦ |
+| 七阶段 | ①对齐→②方案复核→③实现→④审查→⑤纪律→⑥文档→⑦总审；S 可合并，L 不跳⑤⑥⑦ |
 | Stage 粒度 | **一次子会话 = 一债 × 一 Stage** |
 | `todo completed` | **≠** TECHNICAL_DEBT Done |
 
@@ -70,7 +71,7 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 
 | 变更面 | 最小门禁 |
 |--------|----------|
-| 纯文档 | stale-paths docs · markdown links（若触 human-docs）· diff --check |
+| 纯文档 | stale-paths docs · markdown links（默认入口＋已改文显式目标）· doc registry（若动 SSOT/入口）· diff --check；债计划/队列另跑 check:debt-marathon |
 | 中英契约 | + check-doc-mirror |
 | Rust | 定向测或 check:rust · layering（若分层） |
 | 门禁脚本 | dimension5 --ci |
@@ -109,6 +110,7 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 - [ ] 父 controller 未升错误 Done
 - [ ] 父 controller 未合 main（除非授权）
 - [ ] 父 controller 已更新 MARATHON_QUEUE、Wave 与 checkpoint
+- [ ] 债务事实变化已同检查点同步受影响的台账/计划/队列与 DEBT_CHANGELOG；无变化写不适用
 - [ ] Wave 已记录 claim、base/head SHA、changed files、最后命令、下一条精确命令与 retry_safe
 
 ---

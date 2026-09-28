@@ -1,9 +1,10 @@
 # 技术债偿还马拉松（debt-marathon）
 
 **状态台账 SSOT**：[`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md)（OPEN / Done / Verification）  
-**流程 SSOT**：通用 [`dev-pipeline`](../../.cursor/skills/oclive-dev-pipeline/SKILL.md) 链 · 项目定制 + 马拉松 Skill：[`oclive-debt-marathon`](../../.cursor/skills/oclive-debt-marathon/SKILL.md)
+**流程 SSOT**：[仓库通用 dev-pipeline](../workflows/dev-pipeline/SKILL.md) → [OCLive 定制](../../.cursor/skills/oclive-dev-pipeline/SKILL.md) → [马拉松 Skill](../../.cursor/skills/oclive-debt-marathon/SKILL.md)
+**变动与接手**：[DEBT_CHANGELOG](DEBT_CHANGELOG.md)；当前状态不在这里双写。
 
-> `.cursor/` 常被 gitignore；**长流程计划书正文以本目录为准（进 git）**，方便 Cloud / 其他机器 / 人类查阅。Skill 只放规程与本地镜像说明。
+> **长流程计划书正文以本目录为准（进 git）**；通用 Skill 正文位于 `handoff/workflows/dev-pipeline/`，项目 Skill 也已跟踪，Cloud/其他机器无需依赖本机副本。
 
 ---
 
@@ -14,6 +15,7 @@
 | [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md) | **AI 限制 + OCLive 七阶段硬门禁（强制先读）** |
 | [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) | **子 Agent 总索引**（seq · runner · 进度） |
 | [`COVERAGE.md`](./COVERAGE.md) | 对照 TECHNICAL_DEBT 的覆盖审计 |
+| [`DEBT_CHANGELOG.md`](./DEBT_CHANGELOG.md) | 变动事件、证据和 AI 接手续跑规则（当前状态仍在主台账） |
 | [`LONG_PLAN_TEMPLATE.md`](./LONG_PLAN_TEMPLATE.md) | 长流程计划书模板 |
 | [`WAVE_LOG_TEMPLATE.md`](./WAVE_LOG_TEMPLATE.md) | 波次工作记录模板 |
 | [`long-plans/`](./long-plans/) | 一书一债 |
@@ -26,11 +28,42 @@
 ## 怎么用（短）
 
 1. Cursor IDE 选择 **worktree** 启动 Agent；共享 dirty 工作树不得运行马拉松。
-2. 运行 `npm run check:debt-marathon`，再运行 `node scripts/cursor-marathon.mjs start --max-turns 30`。
+2. 先按 DEBT_CHANGELOG 接手顺序对账，运行 `npm run check:debt-marathon`；环境、授权和目标 Stage 确认后才运行 `node scripts/cursor-marathon.mjs start --max-turns 30`。结构 PASS 不代替开工前提。
 3. 父 Agent 只跑 `runner=auto`；普通实现 Stage 调用 `oclive-debt-stage`，Wave / QUEUE / TECHNICAL_DEBT 证据 Stage 由父 Agent执行；每轮仍是 **一本债 × 一个 Stage**。
-4. 父 Agent 校验子 Agent 结构化结果，推进计划契约 `currentStage`，写 `waves/` 和 checkpoint；stop hook 自动进入下一轮。
+4. 父 Agent 校验子 Agent 结构化结果，推进计划契约 `currentStage`，同步受影响的状态并写 `waves/`、变动事件和 checkpoint；stop hook 自动进入下一轮。
 5. **默认不 push / 不开合 PR / 不合 main**；能力必须在 dispatch 中显式授予。
 6. 人工 / skip / blocked 项禁止假装做完；证据齐再改 TECHNICAL_DEBT Done。
+
+## 通用流水线安装副本
+
+仓库是正式来源，本机 `~/.cursor/skills/dev-pipeline/` 只供技能加载。维护仓库三文件后再同步副本；不要仅改本机。以下在仓库根运行，遇到已有不同字节先对账，不能静默覆盖机器私有规则；无需安装副本即可读取仓库规则。
+
+```powershell
+$pipelineSource = Join-Path (Get-Location).Path 'handoff/workflows/dev-pipeline'
+$pipelineMirror = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.cursor/skills/dev-pipeline'
+$pipelineFiles = @('SKILL.md', 'task-sizing.md', 'plan-template.md')
+foreach ($name in $pipelineFiles) {
+    $sourceFile = Join-Path $pipelineSource $name
+    $mirrorFile = Join-Path $pipelineMirror $name
+    if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) { throw "Missing source: $sourceFile" }
+    if ((Test-Path -LiteralPath $mirrorFile) -and
+        ((Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash -ne
+         (Get-FileHash -LiteralPath $mirrorFile -Algorithm SHA256).Hash)) {
+        throw "Reconcile local differences before syncing: $mirrorFile"
+    }
+}
+[void][System.IO.Directory]::CreateDirectory($pipelineMirror)
+foreach ($name in $pipelineFiles) {
+    $sourceFile = Join-Path $pipelineSource $name
+    $mirrorFile = Join-Path $pipelineMirror $name
+    Copy-Item -LiteralPath $sourceFile -Destination $mirrorFile
+    if ((Get-Item -LiteralPath $sourceFile).Length -ne (Get-Item -LiteralPath $mirrorFile).Length -or
+        (Get-FileHash -LiteralPath $sourceFile -Algorithm SHA256).Hash -ne
+        (Get-FileHash -LiteralPath $mirrorFile -Algorithm SHA256).Hash) {
+        throw "Mirror mismatch: $mirrorFile"
+    }
+}
+```
 
 ## Cursor IDE 长跑协议
 

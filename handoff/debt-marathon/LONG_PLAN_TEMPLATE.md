@@ -17,6 +17,7 @@
 | **Owner 轨道** | main-repo / cross-repo / Human-only |
 | **runner** | auto / human / skip（与 MARATHON_QUEUE 一致） |
 | **状态** | Draft · Ready · In progress · Blocked · Closed |
+| **最近变动事件** | [DEBT_CHANGELOG](./DEBT_CHANGELOG.md) 的事件 ID；复制到 long-plans 后链接用 `../DEBT_CHANGELOG.md` |
 | **最后更新** | YYYY-MM-DD |
 
 ---
@@ -99,7 +100,7 @@
 ### Stage N · 证据
 | 项 | 内容 |
 |----|------|
-| 动作 | PR ·（授权才 merge）· Verification · Wave · 更新 QUEUE |
+| 动作 | PR ·（授权才 merge）· Verification · Wave · 同步受影响的 QUEUE/台账/计划与变动事件 |
 | Done-eligible | 仅远程硬门禁 + 台账诚实 |
 
 ---
@@ -123,4 +124,5 @@
 - [ ] Stage 完成或 Deferred  
 - [ ] 台账与证据一致  
 - [ ] Wave + QUEUE 进度  
+- [ ] 有事实变化时已更新 DEBT_CHANGELOG；执行进度、债务状态、PR/CI 分开记录
 - [ ] 本书 Closed  
