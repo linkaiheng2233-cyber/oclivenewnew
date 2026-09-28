@@ -156,6 +156,8 @@
 
 **参数兼容补订（首次 B 已停止）**：A native 0 后，B 在 0.51 s 以 101 退出，编译器明确拒绝不稳定 `msvc-lld`，未进入 linker。前置 `--version` 不能证明真实编译接受该值。按 [rustc 稳定接口](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor) 改用 `lld-link`，先在新根用最小 `--emit metadata` 编译验证“稳定值成功/旧值与非法值非零”，再仅允许一个 **candidate-02 / 120 s** 末端候选；不重跑 A、复用日志或开启 unstable/nightly/BOOTSTRAP，不继续扩预算。原 A、失败 B、S0 与观察器保持，补订输入独立冻结；其余源码/依赖比较、内存止点、副本总预算和两份默认测试合同原样适用。此为已定位的一次性参数兼容修正，不把旧 B 改写为通过。
 
+**当前计数核对**：实际两份 binary 的 list 逐行相等为 **94 tests**，各默认 **75 passed / 19 ignored**，Host跟踪源码匹配固定 base。历史 B3的89/70不是本轮预期；辅助读数与编排失误在 Wave追加登记，未运行 ignored场景或重用业务身份。最终默认配置保持，后续采用仍需明确目标/调试检查，不由本合同自动升为全仓默认。
+
 ## 历史阶段安排
 
 下列 Wave 保留旧计划意图；不覆盖上方现行切片安排、[QUEUE](MARATHON_QUEUE.md) 或计划机器契约，也不将已合 PR/已结案债重新列为待实现。

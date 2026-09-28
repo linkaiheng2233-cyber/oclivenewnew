@@ -211,3 +211,41 @@ head34 的 `/frozen_host_binary` 登记日常 `target/debug/oclive-kernel-server
 **收口**：K-BUILD-07 仍 OPEN；用途分类和维护前提已落文，实际维护频率、删除集合、可回收量和冷重建仍未验。K-BUILD-06 保持独立开放，单目标 linker 候选按另一个合同对照，不因本页静态规则自动更改默认构建配置。静态可用新日志安全复核，旧记录/DB/运行树/二进制不改；本机派生摘要不能替代原日志或远端目标 SHA CI。
 
 派生用途件 `s1-retention-observation.json` **9754 B / `1A09983808A2BA5570C3549F0E68C25BF4CB9889AA955F861E93185FB47209D9`**；`s2-source-recheck.json` 独立复核两份 Cargo 日志与 10 个源 JSON 的 bytes/hash 全同。原 28 MiB 元数据账本不改，历史二进制内容只为精确身份匹配读取；没有触碰原 DB 或业务树。
+
+## 单 Host 末端 LLD 候选（2026-09-28）
+
+测量固定在 base `2da472cae97638af9cd4141bf4001f9b3352dfb4`，当时仅本轮文档 dirty；上页保留规则已另提交 `96b67fd4`。本节不把后来文档提交身份写回旧二进制。本机新根 `.cursor/plans/debt-host-linker-ab-20260928-r0/` 与 `candidate-02/` 独立保留；合同及参数修正见 [ROUND-02-PLAN](../ROUND-02-PLAN.md#单-host-末端-linker-候选对照2026-09-28独立实验)。没有旧 response-file 重放：其 461 个绝对输入中 258 个临时输入已不存在，读取历史参数不等于可运行复验。
+
+**实际命令**：A 为 `cargo rustc --locked --offline -p oclive_kernel_host --features tauri-commands --profile test --test a_turn_harness -j 1 --message-format=json`。修正后的 B 仅附加 `-- -C linker=<随 Rust 安装的 rust-lld.exe 绝对路径> -C linker-flavor=lld-link`。依据 [Cargo rustc](https://doc.rust-lang.org/cargo/commands/cargo-rustc.html)，额外参数只给所选末端目标；不是 workspace 命令，也没有全图 `RUSTFLAGS`、依赖/锁文件、默认 profile 或并发修改。新包选择的实际非末端 artifact 集合由本组 A/B 比较，不预设与旧 workspace 完全相同。
+
+### 原生结果与等价范围
+
+| attempt | 实际完成 / 新鲜度 | 口径 |
+|---------|--------------------|------|
+| A · 默认 MSVC | native **0**、Cargo 完成 true、diagnostic 0；受管 **288.54 s**；441 artifacts：406 fresh / 35 non-fresh | 此次单包选择与提交溯源触发正常重编；包含依赖成本，不是纯热链接耗时。保存独立 exe/PDB 后才进入 B |
+| B · 初版 `msvc-lld` | native **101**、Cargo 完成 false，**0.51 s**；一个编译器 error、linker 观测 0 | 稳定 rustc 拒绝该值，要求 `-Z unstable-options`；不是链接器/产品失败。保留原 S0/stdout/stderr/exit，不把本行改成通过 |
+| B · `candidate-02` / `lld-link` | native **0**、完成 true、diagnostic 0，受管 **9.24 s**；441 artifacts：440 fresh / 1 non-fresh | **440 个非末端**的 package/target/features/profile/文件集合与 A 精确相等、non-fresh 0；仅所选 test 重编。实际 driver 包含 `-flavor link`，没有开启 unstable/nightly/BOOTSTRAP |
+| 两份独立 binary | 两次 list **94 tests / 0 benchmarks** 且逐行相等；各自默认 **75 passed / 0 failed / 19 ignored / 0 measured / 0 filtered**，native 均 0 | 当前源码匹配固定 base；全部 ignored/live parent 未运行，未消费 CP-INT 身份、未触发真实模型/网络/音频。默认测试不证明全部业务/平台/崩溃窗口 |
+
+前置观察器两真实函数 8 项离线探针通过。初版版本探针只走 `--version`，没有检查真实编译的参数接受性；失败后先核 [rustc 稳定接口](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor)，在新根进行最小 metadata 编译三项正负控：`lld-link` exit 0 并生成 rmeta；旧 `msvc-lld` 和非法值各 exit 1、不生成 rmeta。补订仅一次 candidate-02 / 120 s，未重跑 A或继续扩预算；原 B 失败继续入账。
+
+**计数与编排自纠**：第一次辅助检查错误沿用历史 89，exit 1；控制调用未先处理该非零，仍启动了 A 的默认测试。真实 list 两边都是 94，A 已完成的默认结果为 75/19；纠正比较为“实际两清单逐行相等＋当前 Host 跟踪源码匹配 base”后才启动 B 默认测试。该缺口属于本次读数/编排，不称旧检查通过，也不把实际测试改写为 89/70；原异常只在工具会话，未补造原始日志。两次执行始终未传 `--ignored`，原结果与 count 更正都保留。
+
+### linker 样本、调试信息与证据
+
+每边一个 PID＋创建时间身份，其 `/OUT` 正规化后精确绑定对应 Cargo executable。两份 response-file 均 134994 B、493 非空参数，保留各自 SHA；均有 `/DEBUG` 和 `/OPT:REF,NOICF`，不声称整份输入路径/临时对象字节相同。实际 test features 为 `default, tauri-commands`、opt-level 0、debuginfo 2；不能将依赖或 Host 包选择差异忽略。
+
+| 绑定目标的点采样 | MSVC `link.exe` | Rust 随带 LLD 22.1.6 |
+|------------------|----------------|---------------------|
+| 最高工作集样本 | **3010666496 B（2.804 GiB）** | **2250588160 B（2.096 GiB）** |
+| 最高私有内存样本 | **1615962112 B（1.505 GiB）** | **771567616 B（0.719 GiB）** |
+| 首末可见点间隔 | 2.20 s | 1.70 s |
+| exe / PDB | 34249216 / 269701120 B | 34245120 / 301629440 B |
+
+250 ms 只是目标采样间隔，实际含 CIM 开销；表中间隔不是完整 linker 耗时，最高点不是真峰值，不推断 OOM 根因/全矩阵峰值或计算稳定加速率。A 总墙钟包含 35 个单位重编，B 非末端全部复用，不能用 288.54/9.24 算 linker 加速倍数。LLD PDB 增加 **31928320 B（30.449 MiB）**；保存和加载默认测试不证明调试器/PDB符号解析等价，此项在采用前单独验证。
+
+四份 exe/PDB 独立副本累计 **639824896 B**，低于 1.5 GiB。A exe **`5D59BCFA21F47FF9FB667EFCCCC91789952CC39CA4CB71D23A0BBFEA35D4E7ED`**；B exe **`8348E805A0E3ACF0B7E19FB8B1A804C7F738250ECB5EE3E2CF0F4474D80DB687`**。原 native/点采样 A `baseline.exit.json` **266560 / `5563385C66B29A30B00A339D7CA6F887CFCE24496F08545625D26A7FE2B7C6CA`**；B `candidate-02/candidate.exit.json` **79372 / `C916618BAB6FB342AF3608A1EFE97C17E2BECC560E3F70A5BBD213252971B3E0`**。派生 `s4-comparison-summary.json` **10146 / `85505AA9E01D71CAC1F0753C69D61A013F6E9AA77FD7CBC7BBA6B83D0B20973A`** 含 22 份输入/原日志/退出身份，不替代这些原件。
+
+**收尾与采用边界**：12 份源码/构建/CLI 输入、当前缓存 server 与旧独立冻结副本 bytes/hash 均不变，限定两项父环境不变；收尾编译器点检查空，未触发内存/时间止点。默认 Host/CLI/桌面构建、profile、`-j 1`、lock、生产 API与门禁组合没有修改。K-BUILD-06/07 仍 OPEN；本目标候选可编译且默认非 ignored 行为对照通过，不能据此全局采用、取消串行或宣布历史 OOM关闭。后续只选一个明确目标/特性/调试检查与新预算，避免重跑本组以堆样本；副本获取失败仍 `needs-evidence-access`。
+
+**本地文档出口**：默认/四篇改文链接、docs 旧路径、文档登记、债结构与 diff 六项 native exit 0，四文 UTF-8 无 BOM/无替换符。Windows 镜像已在前一提交通过，此次未改；没有增加工程门禁、生产配置或公开 API，不为纯测量再跑无关全仓 Rust/业务链。新目标 SHA CI 仍独立登记，父 CI 绿不替代本提交结果。
