@@ -64,6 +64,8 @@
     "event:onebot-recovery-policy-probe:self-test": "node --test scripts/runtime-event-onebot-recovery-policy-probe.test.mjs",
     "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
+    "test:toolchain": "node --test scripts/lib/gate-toolchain.test.mjs scripts/check-toolchain.test.mjs",
+    "check:toolchain": "node scripts/check-toolchain.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:module-quality": "node scripts/module-quality-harness.mjs --self-test && node scripts/module-quality-runner.mjs --self-test && node scripts/module-quality-compare.mjs --self-test",
     "quality:modules": "node scripts/module-quality-runner.mjs --compare-with examples/module-quality-harness/fixtures/observations.reference.v1.json --output target/oclive-module-quality/observations.current.json",

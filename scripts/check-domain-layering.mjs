@@ -3,10 +3,10 @@
  * Ratchet: domain → infrastructure imports in oclive_kernel_host must not increase.
  * Baseline: handoff/LAYERING_BASELINE.json
  */
-import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { countMatchingLines, runGate } from './lib/gate-toolchain.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -51,22 +51,7 @@ function walkRsFiles(dir) {
 
 function countDomainInfraImports() {
   const pattern = 'use crate::infrastructure';
-  const out = execFileSync(
-    'rg',
-    ['--glob', '*.rs', '-c', pattern, domainDir],
-    { encoding: 'utf8', cwd: repoRoot },
-  ).trim();
-  if (!out) {
-    return 0;
-  }
-  let total = 0;
-  for (const line of out.split('\n')) {
-    const m = line.match(/:(\d+)$/);
-    if (m) {
-      total += Number(m[1]);
-    }
-  }
-  return total;
+  return countMatchingLines(pattern, [domainDir], { cwd: repoRoot });
 }
 
 function countDomainInfraFqRefs() {
@@ -148,4 +133,4 @@ function main() {
   console.log('layering ratchet ok');
 }
 
-main();
+runGate(main);

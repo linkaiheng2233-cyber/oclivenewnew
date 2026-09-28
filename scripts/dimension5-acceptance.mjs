@@ -7,7 +7,7 @@
  *   node scripts/dimension5-acceptance.mjs        # full (includes sample cargo tests)
  *   node scripts/dimension5-acceptance.mjs --ci     # CI: skip slow workspace sample tests
  */
-import { execFileSync, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -45,23 +45,9 @@ function sh(cmd, args, opts = {}) {
   return r.stdout ?? '';
 }
 
-function rgCount(pattern, file) {
-  try {
-    const out = execFileSync('rg', ['-c', pattern, file], {
-      encoding: 'utf8',
-      cwd: repoRoot,
-    }).trim();
-    if (!out) return 0;
-    let total = 0;
-    for (const line of out.split('\n')) {
-      const m = line.match(/:(\d+)$/);
-      if (m) total += Number(m[1]);
-    }
-    return total;
-  } catch {
-    return 0;
-  }
-}
+runStep('toolchain command contracts', () => {
+  sh(process.execPath, ['--test', 'scripts/lib/gate-toolchain.test.mjs', 'scripts/check-toolchain.test.mjs']);
+});
 
 runStep('layering ratchet', () => {
   sh('node', ['scripts/check-domain-layering.mjs']);

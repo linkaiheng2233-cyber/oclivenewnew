@@ -4,10 +4,10 @@
  * must not increase. New code should use `oclive_kernel_runtime::domain::*` directly.
  * Baseline: handoff/HOST_REEXPORT_BASELINE.json
  */
-import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { countMatchingLines, runGate } from './lib/gate-toolchain.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
@@ -27,20 +27,7 @@ const pattern = `use crate::domain::(?:${RUNTIME_MODULES})(?:::|\\s*;)`;
 
 function countHostReexportImports() {
   const domainMod = path.join(hostCrate, 'src', 'domain', 'mod.rs');
-  const out = execFileSync(
-    'rg',
-    ['--glob', '*.rs', '-c', pattern, hostCrate],
-    { encoding: 'utf8', cwd: repoRoot },
-  ).trim();
-  if (!out) return 0;
-  let total = 0;
-  for (const line of out.split('\n')) {
-    const file = line.split(':')[0]?.replace(/\\/g, '/');
-    if (file === domainMod.replace(/\\/g, '/')) continue;
-    const m = line.match(/:(\d+)$/);
-    if (m) total += Number(m[1]);
-  }
-  return total;
+  return countMatchingLines(pattern, [hostCrate], { cwd: repoRoot, excludeFiles: [domainMod] });
 }
 
 function loadBaseline() {
@@ -70,4 +57,4 @@ function main() {
   console.log('host re-export ratchet ok');
 }
 
-main();
+runGate(main);

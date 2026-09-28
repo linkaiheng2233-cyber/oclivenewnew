@@ -1,7 +1,7 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-28（启动前基线快照、依赖登记及首批开工准备）。
+**最后更新**：2026-09-28（基线复核、依赖登记及首批仓库工具链实施）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
@@ -73,6 +73,16 @@
 **止点 / 回退**：若需要改变计数语义、公共契约、机器全局环境或外部体检写集，先呈报实际差异再决定；确定性缺依赖不反复跑完整 Rust 构建。正负控与计数不一致先定点修复，不放宽基线。局部实现可按已核 diff 回退，不使用 stash/reset/clean 清理他人改动。
 
 **CI 节奏与续跑**：本轮只跑适用文档/计划检查；下一工程切片先窄测，集成里程碑通过后再冻结提交/推送，不为每次注入失败触发远端。精确下一步为 `node scripts/check-domain-layering.mjs` 和 `node scripts/check-host-reexport-imports.mjs`（静态计数基线，可安全重跑），随后完成子进程错误分类负控；当前没有业务身份或生成预算被消费。所有接续结果同检查点写 [变动事件](DEBT_CHANGELOG.md#变动事件)。
+
+### 工程切片启动（2026-09-28）
+
+维护者已明确“开始工作”。工程 base `32cd11a81a6fe7641b228fa8da2d39676d2791d8`，工作树干净；先做 M 级仓库修补，不迁移父债 Done。切片 0 实跑分层 **3/3、FQ 1/1** 与 re-export **75/75**；子进程空 PATH 下两者均 exit 1 且裸 `ENOENT` 栈，原始证据 `.cursor/plans/debt-toolchain-20260928-r0/s0-baseline.json`。父环境未改，原始证据本机持有。
+
+实际写集冻结为两个 ratchet、`dimension5-acceptance.mjs`、`package.json`；新增 `scripts/lib/gate-toolchain.mjs` 及其 `.test.mjs`、`scripts/check-toolchain.mjs` 及其 `.test.mjs`；关联本计划、变动记录、主台账及本轮 Wave。共享处理只服务真实命令调用与计数，不扩为另一个流水线框架。源码盘点确认 `dimension5` 的 `rgCount` 没有调用点，删除该死函数，不将其历史局部吞错描述当作当前行为。ripgrep 仍按匹配行计数，路径/计数用 NUL 分隔避免 Windows 盘符歧义，既有 baseline 和排除规则保持。
+
+项目体检仅声明 **Node/Git/Cargo/rg 及静态项目链** 的结论：执行版本探测、两个实际 ratchet、Git 工作树和离线 Cargo workspace metadata，分别输出存在、可用、实际链通过（未运行为 null）。不推断链接器、前端/全部 Rust、语音/实机已可用；不改 `E:\Env`。窄测接 `npm run test:toolchain`，体检接 `npm run check:toolchain`；命令合同测试进入 Dimension 5，综合门禁按上表里程碑运行。
+
+**现行执行出口**：仓库切片 Locally verified，详细命令和字节依据只在 [工具链 Wave](waves/WAVE-20260928-TOOLCHAIN.md) 维护；缺 `py` 的首次综合失败保留，按既有配置显式选实际 Python 后全链通过。两个父债为 Partial；新环境完整链、外部个人体检联动及目标提交远端 CI 分列，未关闭父债或解冻其他计划。后续先核冻结提交/CI，再选 K-BUILD-06/07 的只读测量。
 
 ## 历史阶段安排
 
