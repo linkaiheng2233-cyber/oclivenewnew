@@ -130,3 +130,23 @@ completion 首次 171 次采样、3 个 linker 身份，最大 linker 工作集�
 **自查失败保留**：一次性静态出口采集 `gates-01` 未将 `Get-Command` 的多条路径选成单一可执行文件，启动错误后还复用了上一条零退出码；其 Node 与 Git 检查为 **NOT_RUN**，整个汇总作废，不能引用为通过。原结果/空日志不覆盖，`s5-gates-observer-failure.json` 登记缺陷；原异常仅在本次工具会话中，未补造原始日志。修为选择实际首个应用、每步初始化 native、观察器异常停后续后，`gates-02` 八项真实检查全部 exit 0。该缺陷只在一次性采集层，仓库工具链 gate 和生产代码未受影响。
 
 本切片执行结论为 **Locally verified**；停止写入后冻结本轮十文件并提交，待父基线 CI 终态再按既有授权一次推送，避免取消仍在运行的目标验收。目标 CI 与父 SHA 分列，不移技术债 Done。后续若继续研究链接峰值，先绑定具体输出目标和编译参数；缓存物理分配/硬链接去重/冻结用途仍未知，不删产物或更换 linker/profile，也不以本切片证明 workspace 完成成本。纯静态可安全新日志复跑；全测/采集仍按新 attempt 独立输出，不改旧件。
+
+## 单 Host 链接目标绑定（2026-09-28）
+
+CLI 切片已本地提交 `787aa5cbbfa7b1aa2a600e8bf63cf2ac8e3df1cb`，开场干净，尚未推送；父基线 CI 仍运行。按 [诊断合同](../ROUND-02-PLAN.md#单-host-链接目标绑定2026-09-28诊断接续) 仅做一次 `host-link-01`：既有单 Host compile-only 命令保持、12 份源码/配置输入不变、不 touch 源码、不清产物。新 Git 清单身份的正常重编不属于人为冷缓存，也不与旧短预算作加速对照。
+
+本机证据根 `E:\OCLive\oclivenewnew\.cursor\plans\debt-host-link-20260928-r0\`，原始 JSON/一次性 observer 和 response-file 内容只在本机忽略目录保留；缺件仍记 `needs-evidence-access`。采集只存所持 compiler/linker 进程的命令和资源，不打印全环境或其他用户进程命令。正式测量前，两真实 observer 函数的 8 项离线探针覆盖两种带空格引号、UTF-16 response、缺目标/已消失文件和越界拒绝；不启动产品或 Cargo。
+
+| 观测 | 实测 / 归属 | 边界 |
+|------|-------------|------|
+| 完成 | native **exit 0**、唯一 `build-finished.success=true`、diagnostic 0、observer error / stop reason 均 null；含观测墙钟 **9.93 s**、23 个采样 | 只编译，未启动 harness 或真实回合；收尾编译器进程空，未触发内存/时间止点，无第二次尝试 |
+| 新鲜度 | 464 artifact：**461 fresh / 3 non-fresh**；非 fresh 为 runtime lib、Host lib、a_turn_harness | 源配置未变，只在新提交清单身份下重编；不可用来推断所有依赖不会重编或整个 workspace 耗时 |
+| 目标绑定 | 唯一观测 `link.exe` PID＋创建时间身份，`/OUT` 正规化路径与 Cargo 唯一 executable **精确相等**：`debug/deps/a_turn_harness-a2119fd0d50f92be.exe` | target features 为 `default, tauri-commands`，opt 0、debuginfo 2；包含 Host/Tauri command 依赖，不是纯最小 Kernel 峰值 |
+| response-file | 捕获 `debug/deps/rustcTnWkup/linker-arguments` **134994 B / SHA256 `B19516C43D92FCE3FDF5D022FA0529A65C0FB334F0997E4F794D0A3BE10FF630`**；494 行、493 非空参数，明确含 `/DEBUG`、`/OPT:REF,NOICF` 和该 `/OUT`，没有 `/INCREMENTAL` 参数 | 捕获时的只读文本快照，逐路径边界和 reparse 检查通过；不把没有显式参数等同于 linker 默认语义，亦不假设其他 targets 参数相同 |
+| 绑定的内存样本 | 工作集最高 **3,233,972,224 B（3.012 GiB）**、私有内存最高 **1,793,667,072 B（1.670 GiB）**；所持树合计工作集样本最高 3.231 GiB、私有 2.038 GiB，空闲物理样本最低 15.991 GiB | 250 ms 为目标间隔，实际含 CIM 开销；这是 sampled peak，短进程仍可能漏采。工作集合计可重复计共享页；没有 OOM，不证明整体矩阵的真峰值或允许取消 `-j 1` |
+
+**读取层自纠**：第一次离线夹具把两组字符串数组各压成一项，6 项通过并不覆盖预期 8 种输入；`s1-parser-check.json` 原件保留，改为显式双元素数组和总数断言后 `s1-parser-check-02.json` 为 8/8。派生 `s2-bound-summary.json` 的 `contains_debug=false` 用未去外引号的行首 regex，属读取错误；原快照与目标绑定不变，`s3-response-arguments.json` 按非空参数去外引号、精确对照后更正 `/DEBUG` 存在。均未重跑正式测量或改变源配置；不归因产品/原始数据损坏。
+
+原生/采样及响应快照件 `host-link-01.exit.json` **80269 B / `615D32B6D8FB0B53FA9AA8506603D71E00F648DF223BC058B124141C6436C469`**，更正后的参数件 `s3-response-arguments.json` **1991 B / `69D40514B8450CE04BFE00F5FDDAA1C9467441EF1EBAE8C367525B16DB686555`**；文件身份汇总 `s4-evidence-inventory.json` 不替代原 native/Cargo 日志。
+
+**结论与续跑**：该目标的资源样本已完成归属，诊断缺口在这一边界内关闭；K-BUILD-06/07 仍 OPEN。没有取得新 linker/profile/并发方案的等价证据，保持现有措施与清单溯源；缓存保留策略的物理分配、硬链接去重和冻结用途仍未证。后续优先依据已绑定参数提出单一候选的有界对照计划，或做逐路径保留核验，不重复已完成的观察以堆轮数。默认/改文链接、docs 旧路径、登记、债结构、diff 与四文编码已通过，12 输入与父环境不变且编译器收尾空；作为独立诊断提交，与 CLI 切片一起在父 CI 终态后同步。当前生产源码/门禁组合未变，不重跑无关全链。

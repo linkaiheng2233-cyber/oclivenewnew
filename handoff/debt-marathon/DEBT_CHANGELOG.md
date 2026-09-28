@@ -176,3 +176,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **关联 / 安全边界**：复用现有 scaffold/registry 测试机制和 `tests/common` 路径 owner；运行用独立 child `OCLIVE_HOME` 隔离注册表，离线设置不改父环境。已核对 Kernel/Host/Tauri/shared/角色包无需改；保留 Git 提交清单溯源，未引入新公开 API、安全选择、运行时旁路或实际缓存删除。
 - **本地出口 / 剩余**：四目标前后测与新增缺 Cargo PATH 的真实进程负控通过；CLI crate 全测、all-targets/all-features clippy 和最终适用检查在 Wave 分列。测量出现不同依赖重编，不能把测试执行段下降夸大为整体编译加速；链接输出/峰值、物理分配、保留策略仍待受控证据，不移父债 Done。
 - **CI / 接续**：上批工具链 exact SHA CI 已 success，新基线文档 CI 与本切片未来目标 SHA 分列，不能借父绿证明本轮。冻结后一次提交/推送；业务回合身份不存在，纯静态可新日志重跑；源码未再变时不重跑无关全仓验证，下一项链接/缓存实验另定输入与预算。
+
+### DCL-20260928-07 · 单 Host 链接资源样本取得目标归属
+
+- **记录者 / 类型**：主控 Codex；有界测量＋进展。base `787aa5cbbfa7b1aa2a600e8bf63cf2ac8e3df1cb`，开场干净；新合同见 [ROUND-02-PLAN](ROUND-02-PLAN.md#单-host-链接目标绑定2026-09-28诊断接续)，原生/参数/样本/身份与读取层更正只在 [构建 Wave](waves/WAVE-20260928-BUILD-OBSERVATION.md#单-host-链接目标绑定2026-09-28) 维护。
+- **范围 / before → after**：K-BUILD-06 单目标“linker 样本无输出归属”缺口已补；唯一 compile-only 原生完成，实际 `/OUT` 与 Cargo artifact 精确绑定，并保留 response-file 只读快照。K-BUILD-06/07 状态、优先级与队列不变；不推出完整矩阵真峰值、原 OOM 根因或替代配置已通过。
+- **依赖 / 关联 / 自纠**：保持 12 份源码/构建输入及原 target、串行编译、Git 清单溯源；不强制源码失效、不删缓存、不运行 harness/业务回合。离线夹具数组少两项、派生 debug flag 行首读取错误均保留旧件并定向更正，不改原始数据或重跑 live。
+- **验证 / 接续**：采集器仅为本机一次性工具，8 项真实函数离线探针通过；最终本轮文档出口另验，CLI 已测字节不变，不重复无关 Rust/业务链。后续为明确单项候选作有界对照或逐路径保留核验；旧失败不覆盖、实际峰值未知不默选 linker/profile/并发策略，目标 CI 继续独立绑定。

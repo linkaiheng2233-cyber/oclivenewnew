@@ -1,7 +1,7 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-28（基线复核、工具链实施、构建成本观测及 CLI 测试启动器收敛）。
+**最后更新**：2026-09-28（基线复核、工具链实施、构建观测、CLI 测试启动器收敛及单目标链接归属）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
@@ -109,6 +109,18 @@
 | 里程碑 | CLI crate 全测（含已有生成项目/release 构建与 bench 夹具）、CLI all-targets/all-features clippy、workspace fmt、分层及本轮文档/债计划/编码/diff 检查；冻结后一次提交/推送，目标 CI 单独绑定 | 全测最多 900 s、clippy 最多 480 s；无真实模型/音频/业务回合/旧证据改写。无公开 Rust API或门禁组合改变，不重复无关全仓业务链；台账不升 Done |
 
 **关联与交接**：测试生产者为本轮 Cargo 编译的 CLI executable，消费者是原集成用例；保留真实 CLI 命令、stdout/stderr 和拒绝行为，消除测试启动器额外 `cargo run`。Kernel/Host/Tauri/shared 的生产路径及发布安装方式已核对无需改。Git HEAD 被 runtime build script 监测属于清单溯源合同，不以减少重编为由删去。执行记录和剩余链接/缓存条件仍写入 [构建 Wave](waves/WAVE-20260928-BUILD-OBSERVATION.md)，不新增状态表。
+
+### 单 Host 链接目标绑定（2026-09-28；诊断接续）
+
+**尺寸 / 范围**：M 级观测，base 为已本地验证的 CLI 测试切片 `787aa5cb`（完整 SHA 写入本机输入件），开场干净。现有点采样尚未把 linker 内存与输出目标一一绑定，不能据此选择调试信息/链接器调整。只在原 target 再用既有单 Host `--no-run` 命令，捕获所持编译子树内 linker 的 command line / response-file 与 `/OUT`；匹配 Cargo artifact 中的实际 executable/共享库后才宣称该样本归属，不把缺失采样补造。
+
+| 切片 | 合同 / 验收 | 止点 |
+|------|-------------|------|
+| 输入 / 参数 | 冻结 Cargo/package、runtime build script 与 CLI 切片；保持 `--locked --offline --workspace --exclude oclive-cli --test a_turn_harness --no-run -j 1 --message-format=json`，不人为 touch 源码或清产物，仅允许本次提交清单的正常重编 | 编译器已存活或输入漂移则不启动；不改 jobs/linker/profile 或提交身份合同 |
+| 一次有限测量 | 一个新 `host-link-01`，最多 480 s；250 ms 目标点采样所持树并记录实际间隔/资源，不承诺捕获短进程。只读所观测 compiler 命令引用的 response-file，单文件最多 4 MiB，限制在系统 Temp 的 rustc 临时夹具或当前 target 范围内，保留捕获/未捕获原因 | 空闲物理内存 <4 GiB、所持树私有合计 >12 GiB、deadline、读取边界不明或未知存活即停止该实验；只终止所持 Cargo 子树，不按名杀进程 |
+| 交接 | 原生 exit / Cargo build-finished / 源配置未漂移分列；绑定后只报告 sampled peak，不冒充真峰值或 OOM 复现。仓库仅更新本计划、Wave 与债事件，命令采集器保持本机一次性工具 | 不自动发第二次、空 target/冷重建、删缓存或调试信息试验；若绑定未取得则保留 unknown，后续方案另定，不反复扩预算 |
+
+**适用验证**：纯测量/文档无生产或门禁改动；默认及改文链接、docs 旧路径、登记、债结构、编码/diff 与输入身份即可。它不替代已通过的 CLI 全测，也不把主台账 K-BUILD-06/07 转 Done。真实 provider、DB、音频和业务 ID 均不产生。
 
 ## 历史阶段安排
 
