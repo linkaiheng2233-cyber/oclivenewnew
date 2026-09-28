@@ -5,6 +5,8 @@
 **当前结论：** 不能再声称所有活跃债都有 `long-plans/`。后续新增事项未全部进入旧马拉松队列；专题 RFC/本机计划也不等于 Ready 机器契约。本轮变动见 [DCL-20260928-01](DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。`V-MODULE-QUALITY-01` 已有的 Done 证据不变。
 **详略：** `auto` 书 = Minimal 可执行分阶 + `oclive-marathon-contract`；`skip`/`human` = stub + 触发条件。`npm run check:debt-marathon` 强制校验所有 auto 书的文件范围、验收理由、产出、回退与父债处置。**深度细则以 [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md) + 七阶段 Skill 为准**（不在每本 stub 重复）。
 
+**开工依赖**：见 [DEBT_CHANGELOG · 依赖登记](DEBT_CHANGELOG.md#依赖登记与判读)；区分硬前置、决策/外部/证据门、共因与建议顺序。下表“缺计划”不表示缺少全部已有契约，也不意味着上游 Full 必须先 Done；实施具体切片时核对实际使用的能力、owner 与解除条件。
+
 ## 2026-09-28 审查与接手缺口
 
 受检起点 `6ed1dda1`；审查台账各现行区段、历史引用、QUEUE 和计划文件。以下是**接手/覆盖问题**，不是重新实测全部债务：

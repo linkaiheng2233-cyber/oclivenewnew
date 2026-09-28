@@ -1,7 +1,7 @@
 # Technical debt inventory
 
 **SSOT 范围**：技术债当前状态、完成/解冻条件与残留范围；历史 Verification 只绑定当时的 SHA 和验收面，不是当前 HEAD 全量复验。
-**Last updated:** 2026-09-28（状态治理、计划覆盖与恢复行为关联审查；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。
+**Last updated:** 2026-09-28（状态治理、计划覆盖、依赖与恢复行为关联审查；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
 
 **Documentation audit snapshot (2026-09-05):** 统一“最小工具内核 + 六个稳定槽位”口径；复核 Stable v4 蓝图、脚手架目录、CLI、槽位多实例执行与 Agent 短路后新增 `D-CLI-BLUEPRINT-05`、`K-AGENT-MERGE-01`。下方 2026-08-15 长条目保留为上一轮工程收口快照。
 
