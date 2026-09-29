@@ -89,6 +89,7 @@ runStep('doc registry ratchet', () => {
 });
 
 runStep('debt marathon contracts', () => {
+  sh(process.execPath, ['--test', 'scripts/lib/debt-ledger.test.mjs']);
   sh('node', ['scripts/check-debt-marathon.mjs']);
 });
 

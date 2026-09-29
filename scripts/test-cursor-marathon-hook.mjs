@@ -81,6 +81,8 @@ function git(cwd, args) {
 
 function writeFixture(progress = "pending") {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "oclive-marathon-test-"));
+  assert(path.dirname(path.resolve(root)) === path.resolve(os.tmpdir())
+    && path.basename(root).startsWith("oclive-marathon-test-"), "fixture must stay in its owned Temp prefix");
   fs.mkdirSync(path.join(root, "scripts"), { recursive: true });
   fs.mkdirSync(path.join(root, "handoff", "debt-marathon", "long-plans"), {
     recursive: true,
@@ -91,6 +93,16 @@ function writeFixture(progress = "pending") {
   fs.copyFileSync(
     path.join(repoRoot, "scripts", "check-debt-marathon.mjs"),
     path.join(root, "scripts", "check-debt-marathon.mjs"),
+  );
+  fs.mkdirSync(path.join(root, "scripts", "lib"), { recursive: true });
+  fs.copyFileSync(
+    path.join(repoRoot, "scripts", "lib", "debt-ledger.mjs"),
+    path.join(root, "scripts", "lib", "debt-ledger.mjs"),
+  );
+  fs.writeFileSync(
+    path.join(root, "handoff", "TECHNICAL_DEBT_INVENTORY.md"),
+    "# Fixture inventory\n| ID | Item | State |\n|---|---|---|\n| TEST-DEBT | fixture | OPEN |\n\n## §5 历史归档\n\n## 速查坐标\n",
+    "utf8",
   );
   fs.copyFileSync(
     path.join(repoRoot, "scripts", "cursor-marathon.mjs"),
@@ -373,6 +385,23 @@ try {
     assert(result.status === 0, `terminal checkpoint failed: ${result.stderr}`);
     result = runCoordinator(fixture, ["finish", "--outcome", "done"]);
     assert(result.status === 0, `validated finish failed: ${result.stderr}`);
+  } finally {
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+
+  fixture = writeFixture();
+  try {
+    const inventoryPath = path.join(fixture, "handoff", "TECHNICAL_DEBT_INVENTORY.md");
+    const inventory = fs.readFileSync(inventoryPath, "utf8");
+    fs.writeFileSync(inventoryPath, inventory.replace(
+      "| TEST-DEBT | fixture | OPEN |",
+      "| TEST-DEBT | fixture | OPEN |\n| TEST-DEBT | contradictory | Done |",
+    ), "utf8");
+    const result = runCoordinator(fixture, ["start", "--max-turns", "4"]);
+    assert(result.status !== 0, "duplicate current debt rows must prevent start");
+    assert(result.stderr.includes("duplicate current row"), result.stderr);
+    assert(!fs.existsSync(path.join(fixture, ".cursor", "oclive-marathon-session.json")),
+      "invalid inventory must not create a marathon session");
   } finally {
     fs.rmSync(fixture, { recursive: true, force: true });
   }

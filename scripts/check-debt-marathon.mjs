@@ -10,6 +10,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { validateDebtLedger } from "./lib/debt-ledger.mjs";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -177,6 +178,10 @@ function validateContract(contract, row, planPath) {
 }
 
 function main() {
+  const ledger = validateDebtLedger(fs.readFileSync(
+    path.join(repoRoot, "handoff", "TECHNICAL_DEBT_INVENTORY.md"), "utf8",
+  ));
+  console.log(`debt-ledger structure: PASS ${JSON.stringify(ledger)} (not a debt-status assessment)`);
   if (!fs.existsSync(queuePath))
     fail(`missing ${path.relative(repoRoot, queuePath)}`);
   const rows = parseQueue(fs.readFileSync(queuePath, "utf8"));
