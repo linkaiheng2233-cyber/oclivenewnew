@@ -51,3 +51,5 @@ Dependabot 扫描 workflow，不扫描 Rust 模板字面量；模板内原 v4/v2
 ## 验收出口
 
 本切片完成条件为固定来源、范围内本地 gates 与目标 SHA 正式 CI；父债还保留模板升级维护与实际 bot 更新证据。远端 pending 不写 Done，不新增证据专用提交来填 run ID。下一次实质工作同步远端结果；K-BUILD-06/07 的独立实验与默认配置边界保持。
+
+**目标 SHA 远端终态（下一实质提交时入账）**：`245d6ca98edfa8ebb354e2609d556a455336cc73` 的正式 [ci.yml run 36528350305](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36528350305) 为 `completed/success`，17 个 job 全部 success，含 Windows/Linux Rust 与稳定 `ci-gate`。只读原始 `gh run view --json status,conclusion,headSha,jobs` 保存在本机 `.cursor/plans/debt-actions-ci-20260929-r0/run-36528350305.json`（40644 B，SHA256 `2D2028467789B1DE51C9588A210CA99143986C133E335B4C4858FFE76E684879`）；查询时逐项断言 HEAD、终态、17 项及 `ci-gate`。后续三个文档整理提交和本轮登记检查代码没有改固定引用的 workflow、Dependabot 或 CLI 生成器；该旧 SHA 的绿灯不替代它们的新目标 CI。固定引用与范围内测试已获远端实证，但 Rust 模板人工同步及实际 bot 更新 PR 未验证，K-SUPPLY-10 仍 Partial，不宣称维护机制全覆盖或父债 Done。

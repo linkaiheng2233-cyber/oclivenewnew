@@ -251,3 +251,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **自主处理 / 影响链**：首轮正例失败暴露旧表列数不一，失败日志保留后只补位置，不删规则；调用点审查发现马拉松测试临时复制缺少新库/台账，补真实依赖和启动拒绝负例。实际旧队列与机器计划不动，无新增领取/调度授权；未改产品、生产数据库、旧 CP-INT 证据或架构。
 - **出口 / 接续**：本机忽略根 `.cursor/plans/debt-ledger-check-20260929-r0/` 保留原文、原生 stdio/退出与状态/历史不变核对；适用定向反例、Dimension 5、文档/编码和差量检查。冻结后分类提交，父 Actions CI 终态前不取消其运行；新提交的远端结论单独绑定，不借父绿也不以本地结构绿关闭父债。
 - **独立调度诊断**：`--assert-no-runnable` native 1，列出已有 `K-PLUGIN-SEC-01:s3`，不是新门禁或产品失败。QUEUE `implemented` 与计划 `ready/currentStage=3` 使其形式上 runnable，但台账仍 Partial 且 Windows 原生与可信身份绑定未完成。本切片不擅自改机器计划或激活 Stage；后续先按原计划与台账复核其可执行范围，再决定调度。此前概括“没有 runnable”以这次实际命令为准更正。
+
+### DCL-20260929-07 · Actions 固定引用目标 CI 终态入账
+
+- **记录者 / 类型**：主控 Codex；前一实质供应链切片的远端证据接续，详情只见 [Actions Wave](waves/WAVE-20260929-ACTIONS-PINS.md#验收出口)，当前状态仍由 [主台账](../TECHNICAL_DEBT_INVENTORY.md) 的 K-SUPPLY-10 行唯一维护。
+- **目标绑定**：固定实现 `245d6ca98edfa8ebb354e2609d556a455336cc73` 的 [ci.yml run 36528350305](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36528350305) 正式 `completed/success`，17/17 job 含 `ci-gate` 全部成功；原始只读 JSON 和哈希在 Actions Wave。后续整理与结构检查没有改该固定引用实现，但仍需各自新 SHA 的远端结果，不借旧绿。
+- **范围 / 保留**：K-SUPPLY-10 从本地已验的 Partial 更新为“固定引用远端已验、维护待证”的 Partial。Dependabot 实际 PR 与 CLI Rust 模板的同步闭环未证，父债不标 Done；不扩大为 runner、Action 传递依赖、发布或未来更新时间点全部可信。
