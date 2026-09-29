@@ -17,11 +17,11 @@
 
 > **2026-08-15 R18 配置收口：** 维护者选择的 1C / 2A / 3B / 4B / 5A / 6A / 7A 已全部落地：本机成年确认继续持久化但提供显式重置入口；本地自我声明边界保留；损坏成人扩展只禁用扩展、普通角色继续加载并显示错误；节拍 500–60000ms 与队列 1–8 在前端和内核双层限界；基础模型与 LoRA 确认独立；非露骨关系桥接保留；两条后端确认守卫测试已补。PR [#158](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/158) head CI [`31808375556`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31808375556) **16/16 success**，普通合并 `0d88d152` 的 exact-head 主 CI [`31812470973`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31812470973) **16/16 success**。自动化收口完成；下一阶段是维护者按桌面对接文档 v1.26 §9-24 执行人工 R18 短测，真实模型资源矩阵随新电脑进行。
 
-**Product freeze (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
+**Historical product freeze snapshot (Theater v0):** **Lifted** — 朋友 cohort 产品门通过（7/10 卧槽）；模式 2 playtest 扩展中；**模式 3 仍冻结**。见 [theater/MODE2_UNFREEZE.md](./theater/MODE2_UNFREEZE.md)。
 
-**综合评分：** A− · 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16 success** · 完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6 success** · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
+**历史综合评分（绑定下列旧提交，并非当前质量调查）：** A− · 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16 success** · 完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6 success** · 审查数字 SSOT：[AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md)
 
-**下一动作：** R18 配置决策、实现与自动化已收口，等待维护者按桌面对接文档 v1.26 §9-24 执行应用内短测；真实模型 caps 1/2/4/8 资源矩阵、**K-VOICE-09** 的 30 分钟真实矩阵、K-RESOURCE-COORD-01 长时硬件 soak 和人工听感按维护者决定延后到新电脑。短测完成后按愿景验证顺序推进 V-PORTABLE-01 Full → V-EMBED-01。发行版仍需 **V-VSCODE-PERF-05** 的姊妹仓 F5 / `.vsix` 实机证据；**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。**
+**历史下一动作（旧排期，不决定当前开工顺序）：** R18 配置决策、实现与自动化已收口，等待维护者按桌面对接文档 v1.26 §9-24 执行应用内短测；真实模型 caps 1/2/4/8 资源矩阵、**K-VOICE-09** 的 30 分钟真实矩阵、K-RESOURCE-COORD-01 长时硬件 soak 和人工听感按维护者决定延后到新电脑。短测完成后按愿景验证顺序推进 V-PORTABLE-01 Full → V-EMBED-01。发行版仍需 **V-VSCODE-PERF-05** 的姊妹仓 F5 / `.vsix` 实机证据；**K-PLUGIN-SEC-01、K-SUPPLY-09、K-SUPPLY-10 仍须保持显式 OPEN / Partial，不因排期后移而降格或消失。**
 
 **马拉松计划书：** [`debt-marathon/`](./debt-marathon/README.md) · 总索引 [`MARATHON_QUEUE.md`](./debt-marathon/MARATHON_QUEUE.md) · **AI+流水线硬门禁** [`AI_AND_PIPELINE_GATES.md`](./debt-marathon/AI_AND_PIPELINE_GATES.md) · 覆盖 [`COVERAGE.md`](./debt-marathon/COVERAGE.md)；Skill：`oclive-debt-marathon`。
 
