@@ -1,7 +1,7 @@
 # 构建成本与缓存观测
 
 **SSOT 范围**：K-BUILD-06 / K-BUILD-07 本轮测量、纠偏和下一实验的证据；状态只在 [主台账](../../TECHNICAL_DEBT_INVENTORY.md)，执行合同在 [ROUND-02-PLAN](../ROUND-02-PLAN.md#构建成本与缓存切片2026-09-28)。
-**最后更新**：2026-09-28。
+**最后更新**：2026-09-29。
 
 本轮 base `d30f47c75bc9ef7454fb308204f1997c884b3422`，开场工作树干净；仓库工具链首批已提交，目标 [CI 36403228999](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36403228999) 本轮取证时仍运行，不称远端全绿。用户授权持续推进；本轮不改变生产 Kernel/Host/DTO、鉴权、依赖、jobs/linker/profile、个人 `E:\Env` 脚本或旧冻结证据。
 
@@ -249,3 +249,28 @@ head34 的 `/frozen_host_binary` 登记日常 `target/debug/oclive-kernel-server
 **收尾与采用边界**：12 份源码/构建/CLI 输入、当前缓存 server 与旧独立冻结副本 bytes/hash 均不变，限定两项父环境不变；收尾编译器点检查空，未触发内存/时间止点。默认 Host/CLI/桌面构建、profile、`-j 1`、lock、生产 API与门禁组合没有修改。K-BUILD-06/07 仍 OPEN；本目标候选可编译且默认非 ignored 行为对照通过，不能据此全局采用、取消串行或宣布历史 OOM关闭。后续只选一个明确目标/特性/调试检查与新预算，避免重跑本组以堆样本；副本获取失败仍 `needs-evidence-access`。
 
 **本地文档出口**：默认/四篇改文链接、docs 旧路径、文档登记、债结构与 diff 六项 native exit 0，四文 UTF-8 无 BOM/无替换符。Windows 镜像已在前一提交通过，此次未改；没有增加工程门禁、生产配置或公开 API，不为纯测量再跑无关全仓 Rust/业务链。新目标 SHA CI 仍独立登记，父 CI 绿不替代本提交结果。
+
+## 已冻结 Host PDB 的离线符号消费（2026-09-29）
+
+**起点与对象**：开场 `c60a04c99459025f7279a923676b1397fa9c8ba6`、工作树干净；该 exact SHA [CI 36424090472](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36424090472) completed/success，17/17 jobs 含 ci-gate 成功。本节消费上节固定 base `2da472ca` 的四份独立 exe/PDB，没有把文档 HEAD 冒写为构建身份；Host 跟踪源码相对构建 base 的 `git diff --quiet` 为 0。合同见 [ROUND-02-PLAN](../ROUND-02-PLAN.md#已冻结-host-pdb-的离线消费2026-09-29)。
+
+**工具范围**：PATH 和有限安装范围（Build Tools、Windows SDK、VS Code 扩展、Rust bin）未找到 CDB/LLDB，不外推整机不存在；实际找到 MSVC `dumpbin.exe`、DIA DLL 与系统 DbgHelp。本次使用绝对 `C:\Windows\System32\dbghelp.dll`，**2307568 B / `CBB0C77B812E09F6AE66F482E8EAE94FD2E232BBBC3825D12668F3D2ED97E78E`**，版本 `10.0.26100.9444`；SDK `10.0.26100.0` 头文件核 x64 ABI，模块/行/符号结构为 1680/40/88 B、符号名偏移 84。DIA 的存在不是另一消费者的执行证据。
+
+**真实调用**：本批一次性 helper 以独立非零会话标识调用 `SymInitializeW(..., false)`，仅静态读取指定 PE，不执行受测 exe、枚举进程模块或附加用户进程。`SymLoadModuleExW` 后读取模块，再用 `SymEnumSymbols("*dto_json*")`、`SymGetLineFromAddr64` 定位。每个 helper 串行、60 s 上限、独立 native/stdout/stderr/report；四次 `SymCleanup` 都成功、所持 child 都退出。依据 [SymSetOptions](https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/nf-dbghelp-symsetoptions)，采用精确匹配和行信息，忽略 CodeView 原路径及环境符号路径，搜索根仅本批本地目录；不启 deferred/load-anything/导出回退，不配置 `srv*` 或在线符号路径。模块注册成功也不等于加载了符号，实际类型和路径必须另核。
+
+### 正例与真实负控
+
+| case / helper native | 实际符号状态 | 独立核算 |
+|----------------------|--------------|----------|
+| MSVC 正例 / **0** | `SymPdb=3`；实际 PDB 路径精确为原独立副本，`PdbUnmatched/DbgUnmatched=false`，GUID `0996c52a-7cbe-4c3c-b936-af224cc5decc` / age 1 | 唯一完整函数名 `a_turn_harness::http_idempotency::dto_json`，`SymTagFunction=5`、477 B、RVA `0x93870`；源码 `http_idempotency.rs:327`、位移 0 |
+| LLD 正例 / **0** | `SymPdb=3`；实际 PDB 路径精确为 candidate-02 独立副本，匹配标志同上，GUID `e521997b-f0a4-df97-4c4c-44205044422e` / age 1 | 同一完整函数名、函数大小/RVA/源码行与 MSVC 相同；这是一处函数定位对照，不是全部符号表等价 |
+| LLD 缺失 PDB / **0**（预期拒绝通过） | 保留同字节 PE 的新普通副本，搜索目录无 PDB；模块登记非零但 `SymNone=0`、实际 PDB 路径空、无行/符号 | 没有从原 CodeView 缓存或其他原件找到正确 PDB；不把模块 `load_error=0` 称为 PDB 成功 |
+| LLD 错配 PDB / **0**（预期拒绝通过） | 新普通 PE 副本旁放 MSVC 原 PDB 的同字节副本，改名为 LLD 预期文件名；仍 `SymNone=0`、路径空、无行/符号 | 两份 PDB 的 GUID 不同，错配副本 hash 精确等于 MSVC 原件；没有以文件名、导出符号或匹配标志 false 冒充成功 |
+
+两次 `dumpbin /headers` 各 native 0，PE 的唯一 RSDS GUID/age 与正例实际 PDB 信息一致。独立 Node 核算从原 report/exit/headers 读取，**4 cases 通过**；它精确选择完整函数名及第 327 行，不以 `dto_json` 的两个闭包或泛型 `map_err` 作为替代。宽掩码实获 5 符号，其中 3 项落在该源文件 327–331 行；摘要中的“函数”计数是唯一完整函数 1，不混用两种计数。
+
+**身份与预算**：新根 `.cursor/plans/debt-pdb-symbol-20260929-r0/` 输出 create-new；负控三份新普通文件累计 **338191360 B（322.524 MiB）**，低于 700 MiB，不使用硬链接、不删除或改名原件。整个 prepare/probe 流程 native 0 / **12.41 s**；独立核算 native 0，**49 次输入身份核对**（含重复引用，不称 49 唯一路径）全同，涵盖原 22 项原始证据、四份 binary/PDB、源码/构建/CLI、两个受保护 server、系统 DLL/SDK及 helper。源码 **49955 B / `8FDF1FAEA02EA6A7DD49186B71552E15FD335315BFC9EA24A14AACE2801B49DA`**；无 Cargo/Rust 重编译或业务回合/身份、真实模型/语音/业务网络。
+
+`s0-inputs.json` **12092 B / `F59EC9CF023841D026D766D7FE4D6DEE80EFE306ADE58213AFAE71203B8B5E25`**；独立派生 `s3-independent-summary.json` **20629 B / `E3F6724046F482B593E5733202A6FE4088CD74ABEB2342864E898690531304F3`** 含原件身份，不替代原生 stdio/exit。四份 case report 分别为 **4374 / 4434 / 1451 / 1454 B**；原始及 helper 仍在忽略目录，无法携带时保持 `needs-evidence-access`。
+
+**收口与下一决策**：本目标两份固定产物通过本机 DbgHelp 的精确 PDB、所选函数及源码行消费；[符号枚举](https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/nf-dbghelp-symenumsymbols)和[行定位](https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/nf-dbghelp-symgetlinefromaddr64)是本次调用范围。`TypeInfo/GlobalSymbols` 元数据标志没有被外推成类型/局部变量实际读取；未设置断点、观察调用栈/运行中局部变量或运行 CDB/LLDB，不声称完整调试器兼容。K-BUILD-06/07、默认 MSVC/profile/`-j 1` 与队列不变；全矩阵 OOM及实际缓存维护仍未关闭。若评估采用，先限定一个实际构建入口并确定保留/调试取舍；安装工具或默认切换另行准入，不为了已有正例重复编译/业务场景。

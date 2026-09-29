@@ -1,7 +1,7 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-28（基线复核、工具链实施、构建观测、CLI 测试启动器收敛及单目标链接归属）。
+**最后更新**：2026-09-29（接续已冻结 Host PDB 的离线符号消费；早期基线与实验按各节日期保留）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
@@ -157,6 +157,14 @@
 **参数兼容补订（首次 B 已停止）**：A native 0 后，B 在 0.51 s 以 101 退出，编译器明确拒绝不稳定 `msvc-lld`，未进入 linker。前置 `--version` 不能证明真实编译接受该值。按 [rustc 稳定接口](https://doc.rust-lang.org/rustc/codegen-options/index.html#linker-flavor) 改用 `lld-link`，先在新根用最小 `--emit metadata` 编译验证“稳定值成功/旧值与非法值非零”，再仅允许一个 **candidate-02 / 120 s** 末端候选；不重跑 A、复用日志或开启 unstable/nightly/BOOTSTRAP，不继续扩预算。原 A、失败 B、S0 与观察器保持，补订输入独立冻结；其余源码/依赖比较、内存止点、副本总预算和两份默认测试合同原样适用。此为已定位的一次性参数兼容修正，不把旧 B 改写为通过。
 
 **当前计数核对**：实际两份 binary 的 list 逐行相等为 **94 tests**，各默认 **75 passed / 19 ignored**，Host跟踪源码匹配固定 base。历史 B3的89/70不是本轮预期；辅助读数与编排失误在 Wave追加登记，未运行 ignored场景或重用业务身份。最终默认配置保持，后续采用仍需明确目标/调试检查，不由本合同自动升为全仓默认。
+
+### 已冻结 Host PDB 的离线消费（2026-09-29）
+
+**尺寸 / 范围**：M，开场 HEAD `c60a04c99459025f7279a923676b1397fa9c8ba6`、工作树干净，前批同 SHA CI 17/17 成功。直接消费上一节固定 base `2da472ca` 的 MSVC / LLD 独立 exe/PDB；先核 hash 与 Host 源码未变，不运行 Cargo、不执行这些 exe、不附加产品/用户进程。有限的 PATH、Build Tools、SDK、VS Code 扩展和 Rust bin 盘点未找到 CDB/LLDB；使用已有系统 `DbgHelp.dll`，此盘点不等于整机无调试工具。
+
+**合同与预算**：独立忽略证据根 `.cursor/plans/debt-pdb-symbol-20260929-r0/`，原件只读、输出 create-new。64 位受管 helper 串行调用同一系统 DbgHelp，`SymInitialize` 不枚举进程模块；仅指定本批本地搜索根，禁环境符号路径、提示、符号服务与错配接受。正例核实际加载 PDB 的路径/身份/匹配状态、真实 `http_idempotency::dto_json` 函数地址及源码行；缺失和错配 PDB 必须不能通过同一验收，不能回落原缓存或公网符号。若系统 API/ABI 不足，保留失败、不用“有 PDB”替代通过。每个 helper ≤60 s，最多一次有明确首因的修补另开 attempt；新隔离副本累计 ≤700 MiB，负控不改原件，不安装工具或扩预算。
+
+**出口与边界**：保留每次原生退出、stdio、解析事实和输入收尾 hash；只接受所测系统消费者/两份固定产物的符号与行定位。静态符号 API 不证明断点、局部变量、调用栈或完整调试器等价，也不授权全局 LLD、profile/并发修改或关闭 K-BUILD-06/07。Wave、台账、变动事件同轮更新；适用默认/四篇改文链接、旧路径、登记、债结构、编码与 diff，不扩跑已验默认测试/ignored 场景。若下一层需安装调试器或改变默认构建，先提出具体范围再询问。
 
 ## 历史阶段安排
 
