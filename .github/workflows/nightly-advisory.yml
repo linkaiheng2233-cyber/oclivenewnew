@@ -34,12 +34,14 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Ensure Tauri dist stub (loom test compile)
         run: node scripts/ensure-tauri-dist.mjs
       - name: Bundle kernel server for Tauri resources (loom compile)
@@ -58,8 +60,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
       - name: proptest fuzz harness
         run: cargo test --locked -p oclive_validation --test proptest_fuzz_parsing
       - name: cargo-fuzz smoke (blueprint + validation + parsers)
@@ -71,7 +75,7 @@ jobs:
           done
       - name: Upload minimized fuzz failures
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nightly-fuzz-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
           path: kernel/fuzz/artifacts/**
@@ -83,8 +87,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
       - name: oclive bench smoke (no hard thresholds)
         run: |
           set -euo pipefail
@@ -96,7 +102,7 @@ jobs:
           test -s "$report"
       - name: Upload CLI benchmark evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nightly-cli-bench-${{ github.run_id }}-${{ github.run_attempt }}
           path: target/oclive-ci/nightly/cli-bench.json
@@ -108,8 +114,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -123,13 +129,15 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Install Linux dependencies (Tauri 2 + WebDriver)
         run: |
           sudo apt-get update
@@ -152,7 +160,7 @@ jobs:
           xvfb-run -a bash scripts/e2e-tauri-native-ci.sh
       - name: Upload e2e-tauri driver logs
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: e2e-tauri-driver-logs-${{ github.run_id }}-${{ github.run_attempt }}
           path: |

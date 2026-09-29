@@ -13,8 +13,10 @@ jobs:
   audit-strict:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
       - name: Install cargo-audit
         run: cargo install cargo-audit --version 0.22.1 --locked
       - name: cargo audit (fail on vulnerability)

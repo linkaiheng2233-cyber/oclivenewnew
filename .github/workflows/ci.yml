@@ -33,14 +33,16 @@ jobs:
       reason: ${{ steps.execution.outputs.reason }}
       trusted_sha: ${{ steps.comparison.outputs.base }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Resolve comparison base
         id: comparison
         shell: bash
@@ -83,7 +85,7 @@ jobs:
           git diff --name-only --diff-filter=ACMRD -z "$BASE_SHA" "$HEAD_SHA" -- \
             > target/oclive-ci/changed-files.zlist
       - name: Checkout trusted CI control plane
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ steps.comparison.outputs.base }}
           path: target/oclive-ci/trusted
@@ -136,7 +138,7 @@ jobs:
             "${POLICY_ARGS[@]}"
       - name: Upload impact evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -156,15 +158,17 @@ jobs:
         os: [ubuntu-22.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
       - name: Build frontend (Tauri generate_context)
         run: npm ci && npm run build
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
         if: runner.os == 'Linux'
         run: |
@@ -187,7 +191,7 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"layering-ratchet"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: domain→infrastructure import ratchet
@@ -198,19 +202,21 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"dimension5-acceptance"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
       - run: npm ci
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Install cargo-audit
         run: cargo install cargo-audit --version 0.22.1 --locked
       - name: Install cargo-deny
@@ -227,8 +233,8 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"npm-audit"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -241,8 +247,8 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"plugins-index"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
       - name: Validate data/plugins.json
@@ -253,8 +259,8 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"stale-paths"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
       - name: Legacy doc paths / banned aliases (hard gate)
@@ -265,9 +271,11 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"kernel-host-dual-core"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: test oclive_kernel_host with dual_core feature
         run: cargo test --locked -p oclive_kernel_host --features dual_core
 
@@ -276,9 +284,11 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"cli"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: clippy oclive-cli
         run: cargo clippy --locked -p oclive-cli --all-targets -- -D warnings
       - name: test oclive-cli
@@ -292,9 +302,11 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"rust-arm64-cross"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Add aarch64-unknown-linux-gnu
         run: rustup target add aarch64-unknown-linux-gnu
       - name: Install cross linker
@@ -315,8 +327,8 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
           cache: npm
@@ -363,10 +375,12 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
       - name: Build oclive-kernel-server and oclive-cli
@@ -400,10 +414,12 @@ jobs:
     runs-on: ubuntu-22.04
     continue-on-error: false
     steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
       - name: Install Linux dependencies (Tauri 2 / webkit2gtk-4.1)
@@ -465,8 +481,8 @@ jobs:
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"remote-plugin-demo"')) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.11"
       - name: Start minimal remote plugin demo
@@ -546,19 +562,19 @@ jobs:
       - remote-plugin-demo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Checkout trusted CI control plane
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ needs.ci-impact-plan.outputs.trusted_sha }}
           path: target/oclive-ci/trusted
           fetch-depth: 1
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version-file: ".nvmrc"
       - name: Download impact evidence
         if: ${{ always() && needs.ci-impact-plan.result == 'success' }}
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
           path: target/oclive-ci/impact
@@ -621,7 +637,7 @@ jobs:
             "${PR_ARGS[@]}"
       - name: Upload Compare evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: oclive-ci-compare-${{ github.run_id }}-${{ github.run_attempt }}
           path: target/oclive-ci/compare/

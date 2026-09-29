@@ -167,7 +167,8 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     assert!(gate_block.contains("ref: ${{ needs.ci-impact-plan.outputs.trusted_sha }}"));
     assert!(gate_block.contains("target/oclive-ci/trusted/scripts/ci-execution-policy.mjs"));
     assert!(gate_block.contains("node \"$POLICY_SCRIPT\" verify --needs-env NEEDS_JSON"));
-    assert!(gate_block.contains("actions/download-artifact@v7"));
+    assert!(gate_block
+        .contains("actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7"));
     assert!(gate_block.contains("collect-ci-compare-evidence.mjs"));
     assert!(gate_block.contains("oclive-ci-compare-${{ github.run_id }}-${{ github.run_attempt }}"));
     assert!(gate_block.contains("retention-days: 90"));

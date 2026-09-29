@@ -213,3 +213,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **范围 / before → after**：此前仅证 PDB 文件与默认行为；现在已有系统 DbgHelp 对 MSVC/LLD 精确 PDB、所选真实函数和源码行的消费，以及缺失/错配 PDB 两真实负控。四 helper native 0、独立核算通过；K-BUILD-06/07 仍 OPEN，不改优先级/QUEUE、构建入口/profile/linker/并发或生产 API。
 - **限制 / 自主行动**：有限范围未找到 CDB/LLDB，改用已有 DbgHelp 做静态窄测；没有安装工具、执行受测 exe、附加进程或重编译。真实负控只新增普通副本，原件和源码 hash 不变；模块登记成功与符号实际加载分开，宽掩码闭包与唯一完整函数计数分开。没有真实断点/局部变量/栈证据，不能据此认定完整调试器等价。
 - **接续 / 出口**：按现有授权同步四篇 owner 文档、适用文档/债结构/编码/diff 后分类提交推送；新目标 SHA CI 与本机静态消费分列。采用前只选一个具体入口/特性及调试取舍；未知原件可携带性仍 `needs-evidence-access`，不启动全局 LLD、无界矩阵或缓存删除。
+
+### DCL-20260929-02 · Actions 固定来源与升级维护切片
+
+- **记录者 / 类型**：主控 Codex；实施与验证进展。维护者授权持续收敛；base `e71e1c5fcd48fdb931a8e7c110bcafda4113af83`，开场干净，L 级范围见 [ROUND-02-PLAN](ROUND-02-PLAN.md#k-supply-10--仓库-actions-固定引用2026-09-29)，来源/差量/门禁只在 [Actions Wave](waves/WAVE-20260929-ACTIONS-PINS.md) 维护。
+- **范围 / before → after**：K-SUPPLY-10 `OPEN → Partial · implementation awaiting verification`；72 处仓库引用和 14 处实际 CLI 生成模板固定原上游完整 SHA，新增 workflow 的兼容周更；主版本、CI 权限/触发/执行策略、stable 编译器选择、锁文件、公开 API 和构建并发均保持。QUEUE、优先级与其他父债不变。
+- **证据与自主修正**：Rust Action 选可达 master 历史提交并显式 stable，以 metadata 深比较保留原运行步骤；一次网络 EOF 独立重试、一个新增测试换行定点格式化，失败均留原件。结构正例与 9 项变异负控、真实生成器 3 项通过。全链 attempt1 在 `oclive_ci_plan` 的旧 tag 断言 native 101；追加该测试到写集、定向修补复测 5/5，混合换行另以 YAML/文本等价并保留未改行处理。attempt2 在该新断言的 rustfmt 样式 native 1，只格式化该文件后定向 fmt native 0。第三轮全链与目标 SHA CI 待独立取证，不以结构绿代替外部执行。
+- **维护边界 / 续跑**：Dependabot 不扫描 Rust 模板字面量，相关升级需同步生成器；实际 bot PR 与新目标 CI 尚未证明，父债不转 Done。第三轮全本地链 `check:ci-local` 原生 0 / 744.91 s，28 项收尾字节匹配；最后验证文字另补文档 ratchet。文档中英/台账/入口/本计划同轮同步，待父 CI 终态再推送，不取消已有验证或为结果造证据专用提交。没有发布、真实模型/语音或 CP-INT 身份消费。

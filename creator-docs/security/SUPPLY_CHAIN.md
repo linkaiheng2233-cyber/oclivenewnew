@@ -69,7 +69,7 @@ sha256sum oclive-kernel-server
 | **K-SUPPLY-04** | `npm-audit` 升格 | P2 | **Done · remote verified** — 两周期生产扫描均为 0，`continue-on-error` 已移除；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 硬门禁通过 |
 | **K-SUPPLY-05** | `deny.toml` multiple-versions → deny | P2 | **Done**（Minimal · 2026-07-15）— `deny` + 有理由 skip；剩余族见 [LIGHTWEIGHT_PROFILE §6.6](../development/LIGHTWEIGHT_PROFILE.md)；Full 零 skip 另战役 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | P1 | **OPEN** — 当前只有显式 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 才校验 sidecar SHA-256；源码审查提示不是签名证明，官方/市场默认签名与撤销流程仍待落地 |
-| **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **OPEN** — 当前 workflow 使用可变 `@v*` / `@stable` tag |
+| **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **Partial** — 仓库工作流和 CLI 生成模板已固定原上游 SHA；仓库 Dependabot 维护已配置，模板同步、实际更新 PR 与目标 CI 验收分列见 [Actions Wave](../../handoff/debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md) |
 | **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — 锁文件已升级 5.4.2，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 警告 9→8，远端 Dimension 5 通过 |
 | **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | **Done · remote verified** — 完整与生产 `npm audit` 均为 0，ESLint/Unicorn peer 树合法；WebDriver XML 解析器已修复，旧 Vue 2/PostCSS SFC loader 已移除。冻结实现 `728219e7` 的远端 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 中 npm audit 与 Linux/Windows 前端门禁全部成功 |
 | **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | **Partial** — 发行版已禁 inline Vue；HTML fallback 仍共享 `ocliveplugin.localhost`，不能宣称完整沙箱 |
@@ -86,6 +86,7 @@ sha256sum oclive-kernel-server
 3. **功能周期**：复查 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) 局限是否需收窄。
 4. **`npm-audit`**：主 CI 同时执行生产依赖与完整开发图高危硬门禁；两者必须分别保持成功，不能用生产 0 代替完整依赖图证据。
 5. **插件安装**：在签名默认开启前，不把第三方插件视为可信代码；`process:spawn`、MCP、网络等高风险能力仍必须经过授权表和用户授予。发行版禁 inline Vue 只是止血，不能替代签名与独立 origin。
+6. **Actions 固定引用**：只接受原上游完整 40 位 commit SHA，同一行保留原版本注释；`dtolnay/rust-toolchain` 使用 master 历史提交并显式传 `toolchain: stable`。固定 Action 不等于锁定编译器、runner、镜像或全部传递下载。工作流由 `.github/dependabot.yml` 的周更组提出兼容升级，主版本另定、PR 仍须审查与 CI；`oclive-cli/src/ci_cmd.rs` 的 Rust 模板不在该 bot 的扫描范围，每次相关升级须同步核对模板及其生成器测试，不能宣称已自动维护全部引用。[GitHub 安全说明](https://docs.github.com/en/actions/reference/security/secure-use) · [自动更新 Actions](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/auto-update-actions) · [Rust Action 上游约束](https://github.com/dtolnay/rust-toolchain)
 
 ---
 
@@ -101,6 +102,7 @@ sha256sum oclive-kernel-server
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-29 | K-SUPPLY-10 固定仓库/CLI 直接 Action 来源并配置周更；模板人工同步、实际更新 PR 与正式 CI 仍独立验收，范围见 Actions Wave。 |
 | 2026-08-02 | K-SUPPLY-12 在冻结实现 `728219e7` 完成远端 npm audit 与 Linux/Windows 前端门禁，台账升为 Done。 |
 | 2026-08-01 | K-SUPPLY-12 本地收口：完整 npm audit 为 0、peer 树合法，移除旧 Vue 2/PostCSS SFC loader；等待冻结提交远端 CI。 |
 | 2026-08-01 | 记录远端生产 npm 硬门禁证据，并把开发图 6 项命中与 ESLint peer 漂移纳入 K-SUPPLY-12。 |

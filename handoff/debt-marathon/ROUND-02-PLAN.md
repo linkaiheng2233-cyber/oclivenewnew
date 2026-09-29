@@ -166,6 +166,24 @@
 
 **出口与边界**：保留每次原生退出、stdio、解析事实和输入收尾 hash；只接受所测系统消费者/两份固定产物的符号与行定位。静态符号 API 不证明断点、局部变量、调用栈或完整调试器等价，也不授权全局 LLD、profile/并发修改或关闭 K-BUILD-06/07。Wave、台账、变动事件同轮更新；适用默认/四篇改文链接、旧路径、登记、债结构、编码与 diff，不扩跑已验默认测试/ignored 场景。若下一层需安装调试器或改变默认构建，先提出具体范围再询问。
 
+### K-SUPPLY-10 · 仓库 Actions 固定引用（2026-09-29）
+
+**尺寸 / 目标**：L 级供应链收敛，base `e71e1c5fcd48fdb931a8e7c110bcafda4113af83`，开场干净；该提交 CI 尚在运行，先独立取证，不取消父验证。只把仓库 workflow 中已有外部 action 固定为其原上游对应提交，并补已有 Dependabot 的 `github-actions` 维护；不是 action 主版本升级、编译器版本锁定或发布执行。唯一状态 owner 为主台账，源码事实与来源写本轮 Wave；Done 需冻结目标 SHA 的正式 CI 和全部适用证据。
+
+**写集 / 影响链**：`.github/workflows/{ci,cargo-audit-lockfile,nightly-advisory,release-kernel-checksums}.yml`、`.github/dependabot.yml`；盘点确认 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的实际生成器也含 tag，纳入同一修补及其同函数合同测试，保留模板现有 v4/v2，不顺手升至主仓 v7。关联主台账、本计划、DEBT_CHANGELOG、供应链中英文和 collection 内新 Wave（入口登记）。只读核全部工作流、外部 action 元数据及官方说明。tag 必须逐层解引用到 commit，来源须为原上游、40 hex；不能凭记忆或搜索结果抄 SHA。`dtolnay/rust-toolchain` 按上游要求选 master 历史提交并显式 `toolchain: stable`，不固定会被回收的独立 stable 分支提交；其原 targets/components 保持。
+
+**安全与验收**：逐个来源冻结 metadata/commit 链，静态解析前后 YAML 并核只有允许的 uses 与等价输入变化；既有 `on`/permissions/needs/env/run/if/runner/输出/密钥引用、CI 选择及 fail-safe 不改。来源失败/歧义、陌生 action、需要权限/安全边界改变即止。每次网络只读查询 ≤30 s、累计查询启动 ≤180 s（不在止点后启动下一条），原始结果 create-new，不安装工具或运行外部 action 本身；使用已安装解析器取证，不把它变成未声明工程依赖。固定的是仓库直接 action 代码，不扩大为镜像、runner、编译器或 action 下载的全部传递内容已可信。
+
+**验证 / CI 节奏**：来源与结构正负控、已有 CI 执行策略/Compare/shadow 合同、`dimension5 --ci`；因全链 CI 依赖改变，里程碑跑 `check:ci-local` 并保留原生结果，未改 lock/API 不重复无关迁移或真实模型/语音/CP-INT 场景。文档/镜像/债结构/编码/diff 同轮验证；失败先定点归因，不放宽 gates 或更换 major。全部本地验证后分类冻结一次，等父 CI 终态再推送并等待新目标正式 CI。远端成功前仅 Locally verified；不为 run ID/Done 文字再造证据专用提交，结案候选先入交付报告，随后续实质变更同步状态。
+
+**实施发现 / 限定接续**：已解析全部 5 个实际 workflow 和 CLI 生产模板；72+14 处引用对应 10 对上游/ref。当前 master 的 Rust Action 多了两个安装参数，改选仍可达的等价祖先 `f3510ffd`（除 required/default 的显式 stable 输入适配外，metadata 与原 stable 完全相同），不引入该行为变化。一次 metadata 查询 EOF 原样保留，仅新输出重试一次成功。结构核验的 9 个真实变异均被同一核验函数拒绝。CLI 模板是 Rust 字符串，Dependabot 不自动扫描它；维护规则明确人工同步，未建立新更新器或复制工作流，父债保留 Partial。各 native 窄门禁 ≤480 s、全 `check:ci-local` 单次 ≤1200 s，child offline/-j 1；deadline 非零保留，不删除缓存或重跑真实业务。细节只在 [Actions Wave](waves/WAVE-20260929-ACTIONS-PINS.md) 维护。
+
+**全链首因修正（attempt1 非零）**：第一轮本地全链到 `oclive_ci_plan` 的 `repository_contract` 才暴露旧 `actions/download-artifact@v7` 精确文字断言。将该真实消费测试文件追加到写集，仅把断言改为所选原上游 SHA 与保留版本注释，不删除测试或放宽执行策略；定向 5/5 通过后用新原始日志跑第二轮全链。另 `git diff --check` 检出 `ci.yml` 既有混合行尾的改行。曾整文件 LF 化导致无关差量，随后按与 HEAD 的逐行匹配保留 581 条未改行的原换行，仅令 64 条实质变更行使用 LF；解析树与标准化全文相等、最终 diff 仍只有 64+/48−，不改其它 workflow。两失败件原样保留。
+
+**格式止点（attempt2 非零）**：第二轮 `check:ci-local` 在 `cargo fmt --check` 截止，所增 `repository_contract` 断言需 rustfmt 换行，尚未进入本轮 Rust 测试。仅格式化这一测试文件、`cargo fmt --all -- --check` 新 attempt native 0；不修改实际断言或生产 Action 引用，另开第三轮全链，旧失败不覆盖。
+
+**本地验收（attempt3）**：第三轮 `check:ci-local` 原生 0 / 744.91 s；Dimension 5 --ci、lint/typecheck/build、Rust fmt/clippy/lib、workspace 与 CLI 集成均按原链通过。源及文档输入收尾哈希 28/28 匹配、7 文 UTF-8 无 BOM/替换字符、9 结构负控与 default/改文链接均独立通过。之后只补充验证结果文字，需再复核文档 ratchet 与最后字节；父 `e71e1c5f` CI 当前仍在进行，不先推送新目标。
+
 ## 历史阶段安排
 
 下列 Wave 保留旧计划意图；不覆盖上方现行切片安排、[QUEUE](MARATHON_QUEUE.md) 或计划机器契约，也不将已合 PR/已结案债重新列为待实现。

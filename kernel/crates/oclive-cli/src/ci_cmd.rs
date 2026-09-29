@@ -115,9 +115,11 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     runs-on: ubuntu-latest
     needs: [build-test]
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: bench regression gate
         run: |
           cargo build -p oclive-cli --release 2>/dev/null || cargo build -p oclive-cli
@@ -130,11 +132,13 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     needs: [build-test]
     if: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
       - name: OOCP test suite (enable when kernel linked to oclivenewnew)
         run: echo "skipped — link --kernel-source in scaffold to enable"
 "#
@@ -146,8 +150,10 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
   cargo-audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
       - name: rustup update
         run: rustup update stable
       - name: Install cargo-audit
@@ -158,9 +164,11 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
         with:
           command: check
           arguments: licenses bans
@@ -202,9 +210,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{{{ matrix.os }}}}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: cargo fmt
         run: cargo fmt --all -- --check
       - name: cargo clippy
@@ -224,6 +234,36 @@ jobs:
 mod tests {
     use super::{render_ci_yaml, ProjectCiKind};
     use crate::lint_audit_ci::inspect_audit_ci;
+
+    #[test]
+    fn generated_ci_pins_actions_and_preserves_stable_toolchain() {
+        for kind in [ProjectCiKind::Library, ProjectCiKind::KernelServer] {
+            let workflow = render_ci_yaml(kind);
+            let document: serde_yaml_ng::Value =
+                serde_yaml_ng::from_str(&workflow).expect("generated workflow should parse");
+            let mut action_count = 0;
+            for job in document["jobs"].as_mapping().expect("jobs").values() {
+                for step in job["steps"].as_sequence().expect("steps") {
+                    let Some(reference) = step["uses"].as_str() else {
+                        continue;
+                    };
+                    action_count += 1;
+                    let (_, revision) =
+                        reference.split_once('@').expect("external action revision");
+                    assert_eq!(
+                        revision.len(),
+                        40,
+                        "mutable action in {kind:?}: {reference}"
+                    );
+                    assert!(revision.bytes().all(|byte| byte.is_ascii_hexdigit()));
+                    if reference.starts_with("dtolnay/rust-toolchain@") {
+                        assert_eq!(step["with"]["toolchain"].as_str(), Some("stable"));
+                    }
+                }
+            }
+            assert!(action_count > 0, "generated workflow must contain actions");
+        }
+    }
 
     #[test]
     fn generated_kernel_ci_uses_the_global_experimental_gate() {

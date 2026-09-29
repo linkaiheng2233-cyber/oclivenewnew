@@ -1,7 +1,7 @@
 # Technical debt inventory
 
 **SSOT 范围**：技术债当前状态、完成/解冻条件与残留范围；历史 Verification 只绑定当时的 SHA 和验收面，不是当前 HEAD 全量复验。
-**Last updated:** 2026-09-28（状态治理、工具链修补、构建/缓存观测、CLI 启动器收敛及单目标链接归属；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
+**Last updated:** 2026-09-29（状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
 
 **Documentation audit snapshot (2026-09-05):** 统一“最小工具内核 + 六个稳定槽位”口径；复核 Stable v4 蓝图、脚手架目录、CLI、槽位多实例执行与 Agent 短路后新增 `D-CLI-BLUEPRINT-05`、`K-AGENT-MERGE-01`。下方 2026-08-15 长条目保留为上一轮工程收口快照。
 
@@ -234,7 +234,7 @@
 | **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22）；轮次 29（2026-08-13）已外移脚本辅助与 DTO 映射至 `useTheaterShellUtil.ts`（零行为变更），poke/cast/outline 主体拆分仍按 §2 冻结 |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
-| **K-SUPPLY-10** | GitHub Actions 仅固定可变 tag（`@v*` / `@stable`） | P2 | 所有外部 action 固定完整 commit SHA，并由 Dependabot/Renovate 维护升级 | **OPEN**（`actions/*`、`dtolnay/rust-toolchain`、`Swatinem/rust-cache` 均未 pin SHA） |
+| **K-SUPPLY-10** | 外部 Actions 的不可变来源与升级维护；仓库 workflow 和 CLI 生成模板须分别核对 | P2 | 所有直接外部 action 固定原上游完整 commit SHA，保留版本/执行语义并验证目标 SHA CI；升级维护必须覆盖实际引用，不能把 bot 配置存在当 PR 已验证 | **Partial · locally verified**（2026-09-29：72 处仓库引用与 14 处 CLI 模板已固定，来源/结构与 9 项负控、生成器/仓库合同、本地 `check:ci-local` 全链通过；新增 workflow Dependabot。CLI Rust 模板仍需人工同步，实际 bot PR 与新目标 CI 尚未验证，父债不转 Done。身份、门禁及边界见 [Actions Wave](debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md)） |
 | **K-SUPPLY-11** | `event-listener 5.4.1` 命中 RUSTSEC-2026-0221（`StackSlot` 可跨线程携带 `!Send` tag） | **P1** | 追踪 SQLx 与 zbus/Tauri 两条传递路径，优先升级到修复版本；若上游暂时阻塞，记录实际可达性与版本约束，不得仅加入 ignore；更新中英 KNOWN_VULNERABILITIES | **Done · remote verified**（2026-08-01：锁文件升级至 **5.4.2**，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 漏洞级 **0**、allowed warnings **9→8**；远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) Dimension 5 与 Linux Rust 均通过） |
 | **K-SUPPLY-12** | npm 开发工具链 audit 命中与 ESLint peer 契约漂移 | **P1** | 对 ESLint/`brace-expansion`、WebDriver/`fast-xml-parser`、旧 Vue/PostCSS SFC loader 逐条做可达性与升级/移除；`npm ls eslint eslint-plugin-unicorn` 退出 0，完整/生产 `npm audit` 无 high，lint/typecheck/unit/build 与 Linux/Windows CI 全绿；禁止 `--force` 或无证据 override | **Done · remote verified**（2026-08-02：ESLint **10.8.0** + Antfu **9.2.0** + Unicorn **72.0.0** peer 合法；WebDriverIO **9.30.0** 解析 fixed `fast-xml-parser` **5.10.1**；旧 `vue3-sfc-loader` / Vue 2 / PostCSS 链已由官方 compiler 的受限 DEV-only 路径替代。完整与生产 audit 均为 **0 vulnerabilities**，目录插件 SFC 回归、lint、typecheck、前端单测与生产 build 本地通过；冻结实现 `728219e7` 的远端 [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 中 `npm-audit`、Ubuntu/Windows frontend 及相关主门禁全部成功。该 0 是冻结时点实测，不是永久无风险保证） |
 
