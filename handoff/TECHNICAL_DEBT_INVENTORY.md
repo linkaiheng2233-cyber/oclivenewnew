@@ -3,7 +3,7 @@
 **SSOT 范围**：技术债当前状态、完成/解冻条件与残留范围；历史 Verification 只绑定当时的 SHA 和验收面，不是当前 HEAD 全量复验。
 **Last updated:** 2026-09-29（状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用、重复状态引用化及七月 Verification 迁移；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
 
-**权威行与引用**：标为“引用”的 ID 链到本文件唯一权威行，不另写当前状态或解冻条件；§5 和归档中的历史 Verification 只保留当时记录。接手同一 ID 时先跳转权威行，再核证据和范围，不能从历史标题的 Done、旧触发条件或章节名称推断当前可开工。重复项整理与历史迁移的逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)；持续自动冲突检查仍未建立。
+**权威行与引用**：标为“引用”的 ID 链到本文件唯一权威行，不另写当前状态或解冻条件；§5 和归档中的历史 Verification 只保留当时记录。接手同一 ID 时先跳转权威行，再核证据和范围，不能从历史标题的 Done、旧触发条件或章节名称推断当前可开工。重复项整理与历史迁移的逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。`node scripts/check-debt-ledger.mjs` 及既有债计划/Dimension 5 入口持续检查独立 ID 行、引用和锚点结构；不裁决长段落含义或每项债务的验收事实。
 
 **Documentation audit snapshot (2026-09-05):** 统一“最小工具内核 + 六个稳定槽位”口径；复核 Stable v4 蓝图、脚手架目录、CLI、槽位多实例执行与 Agent 短路后新增 `D-CLI-BLUEPRINT-05`、`K-AGENT-MERGE-01`。下方 2026-08-15 长条目保留为上一轮工程收口快照。
 
@@ -134,7 +134,7 @@
 | **K-LLM-ENV-02** | `apply_user_llm_env` 在 DB snapshot 读取后才取得进程环境锁，并把调用结束时的最新版本直接标记为已应用；并发旧调用可能覆盖新环境却清除 dirty 标记 | **P1** | 串行化完整的“读设置 → token/cache → env/provider → 版本提交”事务，或改为不可变配置快照；版本变化时必须重试而非误报已应用；用可控交错测试证明 last-writer-wins，覆盖保存设置、chat、theater 与 canonical sync 调用链 | **Remote verified · stress pending**（2026-08-01：全事务改由单一异步 mutex 串行化；只提交实际读取的起始版本，期间若出现新版本则恢复 dirty，等待调用会继续应用；稳定快照/新版本保留 dirty 单测及 Host 定向测试通过，远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) Linux/Windows Rust 全绿。尚缺更长时间、可控高并发交错/进程级压力证据，不提前升 Done） |
 | **K-FRONTEND-TYPECHECK-01** | Vite/ESLint/Vitest 均不执行 Vue/TypeScript 类型检查，CI 可在真实分支错误存在时保持全绿 | **P1** | 引入 `vue-tsc` 与正确的 shared/chat-pro/theater project/alias 边界；先修零或建立只降不升 ratchet，再接 `check`/PR 硬门禁；为插件分享、协议安装与 Theater 大纲生成补行为测试 | **Done · remote verified**（2026-08-01：引入 `vue-tsc` 并接入本地 `check`、`check:release` 与 PR frontend job；修清 shared/Chat Pro/Theater 的真实诊断与跨发行版类型边界，补齐插件分享、协议安装复核提示和 Theater cast 行为回归。远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的 Ubuntu/Windows frontend job 均完成 lint、typecheck、**272** 条前端单测、**53** 条 Theater 测试与构建） |
 | **D-CI-EXECUTION-02** | Stage 1 影子规划器尚未减少现有全量 job，通用 Rust job 又重复 CLI 嵌套 Cargo E2E；可见性 job 与硬门禁混居主 workflow | **P1** | 先按所有权去重 workspace/CLI/audit，串行或离线化嵌套 Cargo build 并稳定缓存；再把 soft visibility job 明确迁至 nightly/dispatch 或升为硬门禁；选择性执行仍须等待 Shadow 漏选/过选证据 | **Done · remote verified**（2026-08-02：workspace/CLI/audit 唯一所有权与主 CI 硬门禁已由冻结实现 `728219e7` 的 [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** job 验证；迁出的 `visual-presentation-smoke`、`fuzz`、`loom`、`cli-bench`、`e2e-tauri` 及汇总由完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6** job 验证，失败不再被吞掉。去重前后既有远端总 job-seconds 为 **10491→8586（−18.2%）**；Loom 运行包级 `loom-tests` 的两个有界真模型，`ci init` 不再生成主仓专属 Loom 路径，tier→workflow 归属有契约测试。此项关闭只代表执行所有权与 Nightly 分流完成；Stage 1 继续 Shadow，选择性执行仍归 **K-CI-IMPACT-01**） |
-| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **Partial · references normalized / July history separated**（2026-09-29：[接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，18 个重复 ID 的 20 处重复行改为显式引用；首部 20 段七月 Verification 迁入历史归档，旧裁定/顺序保留，仅重定位相对链接。逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。其它长快照、全表状态词规范化和持续自动冲突检查仍未完成；不把引用行数当未偿还债数量，不重报全仓产品验收） |
+| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **Partial · references normalized / July history separated / structural gate added**（2026-09-29：[接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，18 个重复 ID 的 20 处重复行改为显式引用；首部 20 段七月 Verification 迁入历史归档，旧裁定/顺序保留，仅重定位相对链接。持续结构检查已接入既有债计划和 Dimension 5；重复当前行、错误锚点/引用及直接状态声明反例调用同一函数。逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。其它长快照、全表状态词和自由文本语义冲突仍需另定范围；不把登记行数当未偿还债数量，不重报全仓产品验收） |
 | **D-ASSET-FOOTPRINT-01** | 官方角色图片直接进入 Git 与发行资源，资产体积已成为仓库主要组成 | P2 | 先建立视觉质量/解码兼容基线，再按角色包格式、loader、CSP、编写器与模块兼容链评估 WebP/AVIF 或 PNG 量化；不得只改单端后缀；发版体积和冷加载有实测收益才迁移 | **OPEN · measured**（2026-08-01：tracked working tree **98.9 MiB**；角色图片 **71** 张 / **85.7 MiB**，占 **86.6%**。这是优化候选，不等于立即引入 Git LFS） |
 
 **K-PLATFORM-01 子项**
@@ -185,18 +185,18 @@
 
 ### 台账（OPEN / Observe / Deferred）
 
-| ID | 项 | 优先级 | 状态 |
-|----|-----|--------|------|
-| <a id="debt-k-supply-01"></a> **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
-| [K-SUPPLY-02](#debt-k-supply-02)（引用） | Release SHA256SUMS | — | 当前完成范围与依据只见权威行 |
-| [K-SUPPLY-03](#debt-k-supply-03)（引用） | 插件安装审源码提示 | — | 当前状态只见权威行 |
-| [K-SUPPLY-04](#debt-k-supply-04)（引用） | npm-audit 升格策略 | — | 当前验收与完整 dev graph 的剩余范围只见权威行 |
-| [K-SUPPLY-05](#debt-k-supply-05)（引用） | deny 重复依赖 warn→deny | — | Minimal/Full 状态只见权威行；历史 ratchet 80 不代表当前 Full 已完成 |
-| <a id="debt-k-supply-06"></a> **K-SUPPLY-06** | 位级可重复构建（reproducible）；触发为内核 `kernel-v0.x` tag 稳定且具备专用 CI 镜像 | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
-| <a id="debt-k-supply-07"></a> **K-SUPPLY-07** | SBOM（CycloneDX/SPDX）；校企/商业客户采购或合规要求触发 | — | **Deferred** · 政企/校企采购需求触发 |
-| [MEGA-SD-01](#debt-mega-sd-01)（引用） | `scene_director.rs` 巨无霸拆分 | — | 解冻条件只见 §2 权威行；零语义变更 PR |
-| [MEGA-TS-01](#debt-mega-ts-01)（引用） | `useTheaterShell.ts` 巨无霸拆分 | — | 解冻与已外移辅助函数的范围只见 §2 权威行；轮次 22 的 `mapTheaterInvokeError` 减负是历史进展 |
-| **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
+| ID | 项 | 优先级 | 解决/完成条件 | 状态 |
+|----|-----|--------|----------------|------|
+| <a id="debt-k-supply-01"></a> **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | — | **Done**（轮次 19） |
+| [K-SUPPLY-02](#debt-k-supply-02)（引用） | Release SHA256SUMS | — | — | 当前完成范围与依据只见权威行 |
+| [K-SUPPLY-03](#debt-k-supply-03)（引用） | 插件安装审源码提示 | — | — | 当前状态只见权威行 |
+| [K-SUPPLY-04](#debt-k-supply-04)（引用） | npm-audit 升格策略 | — | — | 当前验收与完整 dev graph 的剩余范围只见权威行 |
+| [K-SUPPLY-05](#debt-k-supply-05)（引用） | deny 重复依赖 warn→deny | — | — | Minimal/Full 状态只见权威行；历史 ratchet 80 不代表当前 Full 已完成 |
+| <a id="debt-k-supply-06"></a> **K-SUPPLY-06** | 位级可重复构建（reproducible）；触发为内核 `kernel-v0.x` tag 稳定且具备专用 CI 镜像 | — | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
+| <a id="debt-k-supply-07"></a> **K-SUPPLY-07** | SBOM（CycloneDX/SPDX）；校企/商业客户采购或合规要求触发 | — | — | **Deferred** · 政企/校企采购需求触发 |
+| [MEGA-SD-01](#debt-mega-sd-01)（引用） | `scene_director.rs` 巨无霸拆分 | — | — | 解冻条件只见 §2 权威行；零语义变更 PR |
+| [MEGA-TS-01](#debt-mega-ts-01)（引用） | `useTheaterShell.ts` 巨无霸拆分 | — | — | 解冻与已外移辅助函数的范围只见 §2 权威行；轮次 22 的 `mapTheaterInvokeError` 减负是历史进展 |
+| **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
 | **K-SUPPLY-10** | 外部 Actions 的不可变来源与升级维护；仓库 workflow 和 CLI 生成模板须分别核对 | P2 | 所有直接外部 action 固定原上游完整 commit SHA，保留版本/执行语义并验证目标 SHA CI；升级维护必须覆盖实际引用，不能把 bot 配置存在当 PR 已验证 | **Partial · locally verified**（2026-09-29：72 处仓库引用与 14 处 CLI 模板已固定，来源/结构与 9 项负控、生成器/仓库合同、本地 `check:ci-local` 全链通过；新增 workflow Dependabot。CLI Rust 模板仍需人工同步，实际 bot PR 与新目标 CI 尚未验证，父债不转 Done。身份、门禁及边界见 [Actions Wave](debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md)） |
 | **K-SUPPLY-11** | `event-listener 5.4.1` 命中 RUSTSEC-2026-0221（`StackSlot` 可跨线程携带 `!Send` tag） | **P1** | 追踪 SQLx 与 zbus/Tauri 两条传递路径，优先升级到修复版本；若上游暂时阻塞，记录实际可达性与版本约束，不得仅加入 ignore；更新中英 KNOWN_VULNERABILITIES | **Done · remote verified**（2026-08-01：锁文件升级至 **5.4.2**，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 漏洞级 **0**、allowed warnings **9→8**；远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) Dimension 5 与 Linux Rust 均通过） |
@@ -236,16 +236,16 @@
 | **D-POLICY-01** | Policy 三 trait 第二实现 | 等 remote policy RFC | remote policy RFC 合并 | 实现第二 `Policy*` 后端 |
 | **D-ORPHAN-02** | `oclive_schema` 微型 crate | wasm 边界评估后再定 | wasm 宿主立项 | 评估合并进 `oclive_kernel_types` |
 | **F4 / V2-remote** | remote 缺 env 静默回退 builtin | 已有 `startup_warnings`；矩阵诚实标 ⚠️ | 用户报告 silent fallback | 补 startup warning + 文档矩阵 |
-| **K-PERF-D1** | Wave D · small-model Deep capsule | **Done** — `deep_capsule` 资产 + `PromptBuilder` · [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) |
-| **K-PERF-C1** | Wave C · Chat Pro 流式 UI | **Done** — `/chat/stream` + `chatStoreSend` · [`PERF_PHASES.md`](./PERF_PHASES.md) |
-| **K-PERF-E1** | Wave E · Fast 持久化分流 `strong_only` | **Done** — `fast_persistence` · [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) · `desktop` + `desktop-latency` profile |
+| **K-PERF-D1** | Wave D · small-model Deep capsule | **Done** — `deep_capsule` 资产 + `PromptBuilder` · [`DEEP_PROMPT_DISTILLATION.md`](./DEEP_PROMPT_DISTILLATION.md) | — | — |
+| **K-PERF-C1** | Wave C · Chat Pro 流式 UI | **Done** — `/chat/stream` + `chatStoreSend` · [`PERF_PHASES.md`](./PERF_PHASES.md) | — | — |
+| **K-PERF-E1** | Wave E · Fast 持久化分流 `strong_only` | **Done** — `fast_persistence` · [`RFC_TURN_THINKING_PERSISTENCE.md`](../creator-docs/rfc/RFC_TURN_THINKING_PERSISTENCE.md) · `desktop` + `desktop-latency` profile | — | — |
 | **K-TURN-F1** | Wave F · 角色包 `turn_thinking` 策略（Deep 路由 + Deep latch 直到和解） | P1 | RFC 定稿 + `config.json` schema + 内核 merge HostProfile；**无 UI 开关** | **Done** |
 | **PE-TURN-01** | 编写器 · Turn Thinking / 对话节奏编辑（阈值、关键词、latch、可选 AND 规则） | P2 | 依赖 K-TURN-F1 schema · 简单/高级分档 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
 | **PE-UID-01** | 编写器 · `user_identities/` 可视化编辑（模板正文、`maps_to_relation_id`、与 `meta.relations.prompt_hint` 对齐预览） | P2 | ROLE_PACK_SPEC §1.1 · mumu `father.md` 手写 SSOT 已落地 | **OPEN**（姊妹仓 `oclive-pack-editor`） |
 | **K-CONTINUITY-01** | 运行时叙事连续性微状态机 | 与核心 / 可变 / 短期情绪档案彻底分离；数据库按 `srid` 保存 `scene_id + state_id + revision`，位置、锚点、姿态、活动从角色包解析。运行时默认保持，仅在最终可见回复命中显式动作标记时转移，并通过动态 Prompt 段服务 Fast / Deep，不在热路径临时调用 LLM 生成状态 | **Partial · automated baseline complete**（2026-07-23 主体实现与 CI 22/22；2026-08-14 `7defe7c6` 新增真实四轮 `process_message` 自动化：同场景无动作保持、明确“走进卧室”后 CAS 转移、下一轮 Prompt 消费卧室状态、切 school 重选且不泄漏卧室锚点。仍保留维护者应用内人工观感验收，不用自动化冒充 playtest） | 新电脑到位后完成应用内人工观感与角色自然度验收并记录证据，再决定关闭 |
 | **PE-CONTINUITY-01** | 编写器 · 场景初始状态候选生成 | 在**创作期**让模型根据场景描述生成 **3～8** 个候选初始状态，由创作者审核、修改、排序并写入角色包；运行期不临场生成，避免首字延迟和世界事实漂移 | **K-CONTINUITY-01** 可选 schema 冻结并进入编写器更新批次 | 增加生成 / 审核 / 默认项 / 条件与权重编辑；补 import-export roundtrip、非法锚点校验及旧角色包无字段兼容；姊妹仓 `oclive-pack-editor` 实施 |
-| **K-ADULT-01** | R18 角色扩展 · 运行时成人链契约 | 角色成人表现、普通场景的 R18 走向、成人对话、动作流程、边界与会话状态需要一条独立于基础场景 Prompt 和模型/LoRA `ContentRating` 的正式契约；须按 G17 覆盖生产者、schema/validation、权限与确认、Prompt 适配、运行时状态/回退、角色/身份/场景切换及测试 | **v1 主链与 D25～D29 已实现并实机验证（2026-07-27；远端 CI 2026-08-01）**：除既有三重门、结构化双气泡、成人记忆分区与自动节拍外，现已增加 durable staged beat、显式 begin/stage/commit/cancel/list、提交幂等键、进程内取消令牌、全局有界公平队列、后台只缓存文本、前台逐拍提交/语音、重启恢复及用户输入抢占。预生成阶段不写聊天、短期记忆、关系、事件或人格；只有前台 commit 才写入。真实 7B GGUF 深度 1/2/4/8 与共享显存语音矩阵均通过；远端通用门禁已过，跨硬件档位与更长 soak 继续保留为发布验证，不回退本地主链状态 |
-| **PE-ADULT-01** | 编写器 · R18 角色包额外拓展编写 | 在编写器空余更新中为成人角色表现、场景成人走向、成人对话与动作流程等提供独立创作面；不得退化为把长成人 Prompt 塞进现有 `scenePrompt`，也不得先于运行时契约自行发明第二套格式 | **Done（2026-07-27）**：姊妹仓已提供独立成人扩展页；完整基础包校验通过后方可进入，简单/高级/成人页共享同一草稿与导入导出链，扩展按 v1 校验并随完整角色包合并导出；旧包无扩展时保持兼容 |
+| **K-ADULT-01** | R18 角色扩展 · 运行时成人链契约 | 角色成人表现、普通场景的 R18 走向、成人对话、动作流程、边界与会话状态需要一条独立于基础场景 Prompt 和模型/LoRA `ContentRating` 的正式契约；须按 G17 覆盖生产者、schema/validation、权限与确认、Prompt 适配、运行时状态/回退、角色/身份/场景切换及测试 | **v1 主链与 D25～D29 已实现并实机验证（2026-07-27；远端 CI 2026-08-01）**：除既有三重门、结构化双气泡、成人记忆分区与自动节拍外，现已增加 durable staged beat、显式 begin/stage/commit/cancel/list、提交幂等键、进程内取消令牌、全局有界公平队列、后台只缓存文本、前台逐拍提交/语音、重启恢复及用户输入抢占。预生成阶段不写聊天、短期记忆、关系、事件或人格；只有前台 commit 才写入。真实 7B GGUF 深度 1/2/4/8 与共享显存语音矩阵均通过；远端通用门禁已过，跨硬件档位与更长 soak 继续保留为发布验证，不回退本地主链状态 | — |
+| **PE-ADULT-01** | 编写器 · R18 角色包额外拓展编写 | 在编写器空余更新中为成人角色表现、场景成人走向、成人对话与动作流程等提供独立创作面；不得退化为把长成人 Prompt 塞进现有 `scenePrompt`，也不得先于运行时契约自行发明第二套格式 | **Done（2026-07-27）**：姊妹仓已提供独立成人扩展页；完整基础包校验通过后方可进入，简单/高级/成人页共享同一草稿与导入导出链，扩展按 v1 校验并随完整角色包合并导出；旧包无扩展时保持兼容 | — |
 | **K-UID-POST-01** | mumu 可选 `reply_post_processor` profile（care-package 句级裁剪 · remote/builtin） | P3 | 主链已用 `trim_template_repeat_reply` + Prompt 上一轮约束兜底；见历史 [Phase 2 记录](./archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md) | **Deferred**（不默认开启 post-processor） |
 | **K-PERF-10** | Chat chrome 懒加载 | **Partial** — overlay 已 lazy；chat chrome 仍 eager | 真人 playtest 归因首屏慢 **或** perf mark 超阈值 | 激活 chat chrome lazy PR |
 
