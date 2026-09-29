@@ -11,8 +11,8 @@
 | **Minimal / Full** | Minimal 已阻断发行版 inline Vue；本书推进 P1 Full |
 | **Owner** | main-repo |
 | **runner** | auto（本地实现）；原生 WebView 与远程 CI 证据不可省略 |
-| **状态** | Ready · Stage 0–2 已完成；Stage 3 已实现，等待原生 WebView 证据 |
-| **更新** | 2026-07-17 |
+| **状态** | Ready · Stage 0–2 已完成；Stage 3 已实现，Windows WebView2 CDP 限定通过，更新后的原生回归仍待目标 SHA CI |
+| **更新** | 2026-09-30 |
 
 ## AI + OCLive
 
@@ -185,4 +185,4 @@
 
 ## 下一跳
 
-Stage 1：先实现可独立单测的 source-bound parent broker，再启用 iframe sandbox；两者必须在同一 Stage 内形成不可绕过的闭环。
+Stage 3 的 Windows 原生补充证据与当前测试判据见 [2026-09-30 Wave](../waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)；下一步执行更新后的 Ubuntu 原生 WebDriver 回归，并保持 `currentStage: 3`。Stage 4 的可信安装身份由 K-SUPPLY-09 前置能力决定。

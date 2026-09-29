@@ -1,0 +1,147 @@
+{
+  "port": 55658,
+  "pageCount": 1,
+  "frameCount": 2,
+  "error": null,
+  "consoleErrors": [
+    "Connecting to 'https://ipc.localhost/get_directory_plugin_bootstrap' violates the following Content Security Policy directive: \"connect-src 'self' tauri: http://127.0.0.1:50000 ws://127.0.0.1:50000\". The action has been blocked.",
+    "Fetch API cannot load https://ipc.localhost/get_directory_plugin_bootstrap. Refused to connect because it violates the document's Content Security Policy.",
+    "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+    "Access to fetch at 'https://ocliveplugin.localhost/com.oclive.example.minimal/manifest.json' from origin 'null' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED",
+    "Access to fetch at 'https://ocliveplugin.localhost/com.oclive.voice.asr/manifest.json' from origin 'null' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.",
+    "Failed to load resource: net::ERR_FAILED"
+  ],
+  "failedRequests": [
+    {
+      "url": "https://ocliveplugin.localhost/com.oclive.example.minimal/manifest.json",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "url": "https://ocliveplugin.localhost/com.oclive.voice.asr/manifest.json",
+      "failure": "net::ERR_FAILED"
+    }
+  ],
+  "requests": [
+    "https://tauri.localhost/",
+    "https://tauri.localhost/assets/index-ByDnKv6s.js",
+    "https://tauri.localhost/assets/vendor-misc-CLs-kp_K.js",
+    "https://tauri.localhost/assets/vendor-vue-CoRj0yTG.js",
+    "https://tauri.localhost/assets/vendor-i18n-2Kme2LJO.js",
+    "https://tauri.localhost/assets/vendor-tauri-C9kq5gB1.js",
+    "https://tauri.localhost/assets/vendor-pinia-BrLwzOPW.js",
+    "https://tauri.localhost/assets/vendor-idb-rroKWS33.js",
+    "https://tauri.localhost/assets/vendor-pinia-persist-DxRoqgas.js",
+    "https://tauri.localhost/assets/index-DeZp7v1p.css",
+    "https://tauri.localhost/assets/32x32-bEHL3NeH.png",
+    "https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html",
+    "https://ipc.localhost/get_directory_plugin_bootstrap",
+    "https://ocliveplugin.localhost/com.oclive.voice.asr/slots/toolbar.html",
+    "https://ocliveplugin.localhost/com.oclive.voice.asr/slots/voice-toolbar.js",
+    "https://ocliveplugin.localhost/com.oclive.example.minimal/manifest.json",
+    "https://ocliveplugin.localhost/com.oclive.voice.asr/manifest.json"
+  ],
+  "responses": [
+    {
+      "url": "https://tauri.localhost/",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-pinia-BrLwzOPW.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-idb-rroKWS33.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-pinia-persist-DxRoqgas.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-tauri-C9kq5gB1.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-i18n-2Kme2LJO.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-misc-CLs-kp_K.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/index-DeZp7v1p.css",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/vendor-vue-CoRj0yTG.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/index-ByDnKv6s.js",
+      "status": 200
+    },
+    {
+      "url": "https://tauri.localhost/assets/32x32-bEHL3NeH.png",
+      "status": 200
+    },
+    {
+      "url": "https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html",
+      "status": 200
+    },
+    {
+      "url": "https://ipc.localhost/get_directory_plugin_bootstrap",
+      "status": 500
+    },
+    {
+      "url": "https://ocliveplugin.localhost/com.oclive.voice.asr/slots/toolbar.html",
+      "status": 200
+    },
+    {
+      "url": "https://ocliveplugin.localhost/com.oclive.voice.asr/slots/voice-toolbar.js",
+      "status": 200
+    }
+  ],
+  "pageUrl": "https://tauri.localhost/",
+  "sandbox": "allow-scripts",
+  "frameSrc": "https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html",
+  "hostLeftPaneCount": 0,
+  "frameUrls": [
+    "https://tauri.localhost/",
+    "https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html"
+  ],
+  "heading": "目录插件整壳（最小示例）",
+  "boundary": {
+    "parentDomAccessible": false,
+    "tauriInternals": "object",
+    "bridge": "object",
+    "internalKeys": [
+      "plugins"
+    ]
+  },
+  "bootstrapContainsOwnIdentity": true,
+  "bootstrapText": "{\n  \"developerMode\": false,\n  \"forceIframeMode\": false,\n  \"pluginIds\": [\n    \"com.oclive.example.minimal\",\n    \"com.oclive.voice.asr\"\n  ],\n  \"shellPluginId\": \"com.oclive.example.minimal\",\n  \"shellUrl\": \"https://ocliveplugin.localhost/com.oclive.example.minimal/ui/index.html\",\n  \"shellVueEntry\": \"Shell.vue\",\n  \"subscribedHostEvents\": [],\n  \"uiSlots\": [\n    {\n      \"appearanceId\": \"\",\n      \"bridgeEvents\": [],\n      \"entry\": \"slots/toolbar.html\",\n      \"label\": \"语音输入\",\n      \"pluginId\": \"com.oclive.voice.asr\",\n      \"slot\": \"chat_toolbar\",\n      \"url\": \"https://ocliveplugin.localhost/com.oclive.voice.asr/slots/toolbar.html\",\n      \"vueComponent\": \"slots/VoiceToolbar.vue\"\n    },\n    {\n      \"appearanceId\": \"\",\n      \"bridgeEvents\": [],\n      \"entry\": \"slots/settings.html\",\n      \"label\": \"语音识别\",\n      \"pluginId\": \"com.oclive.voice.asr\",\n      \"slot\": \"settings.panel\",\n      \"url\": \"https://ocliveplugin.localhost/com.oclive.voice.asr/slots/settings.html\",\n      \"vueComponent\": \"slots/VoiceSettings.vue\"\n    }\n  ]\n}",
+  "directIpc": {
+    "available": true,
+    "succeeded": false,
+    "error": "Origin header is not a valid URL"
+  },
+  "otherPlugin": {
+    "loaded": true,
+    "childDomAccessible": false,
+    "src": "https://ocliveplugin.localhost/com.oclive.voice.asr/slots/toolbar.html",
+    "visibleContent": true
+  },
+  "assetFetch": {
+    "own": {
+      "allowed": false,
+      "error": "TypeError: Failed to fetch"
+    },
+    "other": {
+      "allowed": false,
+      "error": "TypeError: Failed to fetch"
+    }
+  },
+  "ok": true
+}

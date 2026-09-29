@@ -4,6 +4,7 @@
 
 | WAVE 文件 | 债 ID | Stage | PR / CI | 结果 |
 |-----------|-------|-------|---------|------|
+| [WAVE-20260930-K-PLUGIN-SEC-01-s3.md](./WAVE-20260930-K-PLUGIN-SEC-01-s3.md) | K-PLUGIN-SEC-01 | 3 | 待本轮 SHA 原生 CI | Windows WebView2 CDP 限定通过；跨插件 DOM / 直接 IPC 拒绝；Full 仍 Partial |
 | [WAVE-20260717-K-PLUGIN-SEC-01-s0.md](./WAVE-20260717-K-PLUGIN-SEC-01-s0.md) | K-PLUGIN-SEC-01 | 0 | n/a | trust-boundary inventory PASS · 进 Stage 1 |
 | [WAVE-20260716-T-DOC-02-s0.md](./WAVE-20260716-T-DOC-02-s0.md) | T-DOC-02 | 0 | n/a | align PASS · 进 Stage 1 |
 | [WAVE-20260716-T-DOC-02-s1.md](./WAVE-20260716-T-DOC-02-s1.md) | T-DOC-02 | 1 | n/a · 未 commit | STATUS+README · Locally verified |

@@ -1,7 +1,7 @@
 # 技术债变动记录与 AI 接手协议
 
 **SSOT 范围**：技术债的依赖登记、变动事件、证据关联与安全续跑坐标；不维护第二份当前债务状态表。
-**最后更新**：2026-09-29。
+**最后更新**：2026-09-30。
 
 当前状态唯一以 [TECHNICAL_DEBT_INVENTORY](../TECHNICAL_DEBT_INVENTORY.md) 为准；执行准入以 [QUEUE](MARATHON_QUEUE.md)、对应 long-plan 和 [GATES](AI_AND_PIPELINE_GATES.md) 为准。通用过程以[仓库流水线](../workflows/dev-pipeline/SKILL.md)为准。本记录中的旧事件是当时快照，后续事件不能改写原始证据。依赖读下节，实际开工顺序及首批切片读 [第二轮计划](ROUND-02-PLAN.md#当前开工准备2026-09-28)。
 
@@ -263,3 +263,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；D-DEBT-LEDGER-01 的限定历史迁移。base `2852b285f6a0b33dbd73aba63037ac6c5f85680a`，开场干净；M 级范围见 [第二轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--八月工程快照归档2026-09-29)，迁移映射和审计见 [台账 Wave](waves/WAVE-20260929-DEBT-REFERENCES.md#八月工程快照归档2026-09-29)。
 - **范围 / before → after**：首部连续八月工程、产品、评分与旧下一动作块移入 [历史归档](../archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md)，原位仅留非当前 truth 的入口。旧 SHA/CI、产品冻结、结论与排期原文保留，三个相对链接只按目录深度重定位到原目标。§1–§5 的其它内容、唯一权威状态、QUEUE、机器计划和产品代码不因此改判；D-DEBT-LEDGER-01 保持 Partial。
 - **出口 / 保留**：独立 S0 保存七份原文；限定逆向重定位逐字节比较、相对目标和外部 URL、主台账其余行、适用链接/路径/登记/债结构/编码/staged diff 逐项核。旧七月归档不动，不重跑业务。父 `2852b285` 的 Actions CI 终态和本轮新目标分别取证，不借旧绿；归档不证明当前 HEAD 产品验收。
+
+### DCL-20260930-01 · K-PLUGIN-SEC-01 Windows 原生隔离取证与测试判据修正
+
+- **记录者 / 类型**：主控 Codex；Stage 3 限定原生取证与回归修正。base `44d952b3711c646b903333d65a116ed2a7db6366`，开场工作树干净。原始 attempt、二进制身份、通过与失败边界只见 [Stage 3 Wave](waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。
+- **before → after**：Windows 原生 WebDriver session 未建立，不得计作产品失败；同源码测试变体的 WebView2 CDP 已验证宿主/另一插件 DOM 不可读、直接 IPC 被拒与 broker 正向引导。旧“插件 iframe 中 `__TAURI_INTERNALS__` 必须不存在”判据与 Windows 实况不符，现改为实际授权拒绝。生产权限/协议未变，K-PLUGIN-SEC-01 仍 Partial，Stage 3 未越级，Stage 4 身份绑定仍待 K-SUPPLY-09。
+- **出口 / 下一步**：本地适用门禁与目标 SHA 远端原生回归分别核；后者未终态前不写 Done/Stage 4。前一 `44d952b` 主 CI 也须等独立终态，不能拿其结果验本轮未来提交。

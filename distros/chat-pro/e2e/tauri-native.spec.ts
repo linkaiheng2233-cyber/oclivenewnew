@@ -84,7 +84,7 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
     }
   })
 
-  test('plugin isolation: full shell cannot access host DOM or Tauri IPC', async () => {
+  test('plugin isolation: full shell cannot access host DOM, direct IPC or another plugin DOM', async () => {
     test.skip(
       shellPluginId !== isolationShellPluginId,
       `Set OCLIVE_SHELL_PLUGIN_ID=${isolationShellPluginId} before starting tauri-driver`,
@@ -118,9 +118,6 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
         }
         return {
           parentDomAccessible,
-          tauriInternals: typeof (
-            globalThis as typeof globalThis & { __TAURI_INTERNALS__?: unknown }
-          ).__TAURI_INTERNALS__,
           bridge: typeof (
             window as typeof window & { OclivePluginBridge?: unknown }
           ).OclivePluginBridge,
@@ -128,9 +125,37 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
       })
       expect(isolation).toEqual({
         parentDomAccessible: false,
-        tauriInternals: 'undefined',
         bridge: 'object',
       })
+
+      // WebView2 may expose an internals object to a sandboxed frame. What matters
+      // is that a registered host command cannot be invoked outside the broker.
+      const directIpc = await browser.execute(async () => {
+        const internals = (
+          globalThis as typeof globalThis & {
+            __TAURI_INTERNALS__?: { invoke?: (command: string, args: unknown) => Promise<unknown> }
+          }
+        ).__TAURI_INTERNALS__
+        const invoke = internals?.invoke
+        if (typeof invoke !== 'function')
+          return 'unavailable'
+        let timer: number | undefined
+        const deadline = new Promise<'timeout'>((resolve) => {
+          timer = window.setTimeout(resolve, 5000, 'timeout')
+        })
+        try {
+          return await Promise.race([
+            Promise.resolve()
+              .then(() => invoke('get_directory_plugin_bootstrap', { roleId: null }))
+              .then(() => 'accepted' as const, () => 'rejected' as const),
+            deadline,
+          ])
+        }
+        finally {
+          window.clearTimeout(timer)
+        }
+      })
+      expect(['unavailable', 'rejected']).toContain(directIpc)
 
       const bootstrap = await browser.$('#boot')
       await browser.waitUntil(
@@ -141,6 +166,33 @@ test.describe('Tauri native window (A1.1c smoke)', () => {
           timeoutMsg: 'isolated shell broker never returned bootstrap',
         },
       )
+
+      // A plugin can embed another plugin's public HTML asset, but opaque frames
+      // must not expose that other plugin's live DOM to the embedding plugin.
+      const otherPluginUrl = process.platform === 'win32'
+        ? 'https://ocliveplugin.localhost/com.oclive.voice.asr/slots/toolbar.html'
+        : 'ocliveplugin://localhost/com.oclive.voice.asr/slots/toolbar.html'
+      await browser.execute((url) => {
+        const child = document.createElement('iframe')
+        child.id = 'other-plugin-isolation-probe'
+        child.setAttribute('sandbox', 'allow-scripts')
+        child.addEventListener('load', () => {
+          child.dataset.loaded = 'true'
+        }, { once: true })
+        child.src = url
+        document.body.append(child)
+      }, otherPluginUrl)
+      const otherFrame = await browser.$('#other-plugin-isolation-probe')
+      await browser.waitUntil(
+        async () => (await otherFrame.getAttribute('data-loaded')) === 'true',
+        { timeout: 30_000, timeoutMsg: 'other plugin frame never loaded' },
+      )
+      expect(await browser.execute(() => {
+        const child = document.querySelector<HTMLIFrameElement>('#other-plugin-isolation-probe')
+        return child?.contentDocument === null
+      })).toBe(true)
+      await browser.switchToFrame(otherFrame)
+      await browser.$('button#record').waitForExist({ timeout: 30_000 })
     }
     finally {
       await browser.deleteSession()
