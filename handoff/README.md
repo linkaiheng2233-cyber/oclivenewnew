@@ -93,6 +93,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | [debt-marathon/DEBT_CHANGELOG.md](debt-marathon/DEBT_CHANGELOG.md) | 债务变动事件、证据关联与 AI 接手协议；不维护第二份当前状态表；执行准入仍由 [队列与计划](debt-marathon/README.md) 决定 |
 | [debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md](debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md) | K-SUPPLY-10 固定引用的来源、配置差量与验证证据；当前债务状态仍由主台账维护 |
 | [debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md) | D-DEBT-LEDGER-01 重复 ID 的权威行、引用转换与静态保全核对；不维护另一份当前债务状态表 |
+| [archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md](archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md) | 七月历史 Verification 的旧 SHA/CI 与限定范围；非当前 truth，不定义现行状态或开工权限 |
 | [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线执行分桶 |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能阶段与复现入口 |
 | [TTFT_BENCHMARK.md](TTFT_BENCHMARK.md) | TTFT 基准 |
