@@ -208,6 +208,14 @@
 
 **CI 节奏 / 续跑**：先窄测再最终字节 Dimension 5，适用检查通过后分类提交。父 Actions CI 终态前不推 main 以免取消它；必要时新保全分支保留里程碑。同步后独立绑定新 SHA 的正式 CI，不能借父绿。持续结构检查通过仍只使 D-DEBT-LEDGER-01 保留 Partial，状态词与其余长历史另定切片。
 
+### D-DEBT-LEDGER-01 · 八月工程快照归档（2026-09-29）
+
+**尺寸 / 边界**：M，base `2852b285f6a0b33dbd73aba63037ac6c5f85680a`、开场干净。只将主台账首部第 12–24 行的连续历史块迁至 `handoff/archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md`，原位留下带日期与非当前 truth 边界的链接。历史里的旧 Done、CI、产品冻结与旧排期不能转成当前状态或开工许可；§1–§5、其它首部说明和七月归档不在本轮搬移范围。
+
+**写集 / 保全**：主台账、本计划、DEBT_CHANGELOG、COVERAGE、同一台账 Wave、handoff 入口登记及一个新归档。本机独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/` 在编辑前保全七份原文与 HEAD。归档块原文顺序、日期、旧 SHA/CI、外部 URL 和文字除三个相对链接目录重定位外保持；重定位前后必须解析到同一现存文件，逆向重定位后正文逐字节匹配 S0。其余主台账行及既有 ID/引用/状态字段不变，QUEUE、机器计划、产品和旧证据不改。
+
+**验收 / CI 节奏**：独立迁移审计、默认/改文 Markdown 链接、docs-only 旧路径、文档登记、债结构、UTF-8 与包含新归档的 staged diff 全部适用；纯文档不重跑 Rust/业务场景。先完成本地分类提交；父 `2852b285` 的正式 CI 终态前不推 main，随后按新目标 SHA 独立取证。结构与历史归档只使 D-DEBT-LEDGER-01 继续 Partial；其它长快照、全表状态词和自由文本语义尚未治理。
+
 ## 历史阶段安排
 
 下列 Wave 保留旧计划意图；不覆盖上方现行切片安排、[QUEUE](MARATHON_QUEUE.md) 或计划机器契约，也不将已合 PR/已结案债重新列为待实现。

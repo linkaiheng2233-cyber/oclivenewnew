@@ -55,6 +55,14 @@ base `245d6ca98edfa8ebb354e2609d556a455336cc73`，开场工作树干净。本机
 
 其余工程长快照、§5 轮次说明及全表状态词仍未规范，持续自动冲突检查也未建立；本次只减少当前状态入口中的长历史，不升 D-DEBT-LEDGER-01 Done。CI 沿用前批终态后再同步的节奏，目标 SHA 独立绑定。
 
+## 八月工程快照归档（2026-09-29）
+
+本切片从干净的 `2852b285f6a0b33dbd73aba63037ac6c5f85680a` 开始，编辑前将主台账、第二轮计划、变动记录、覆盖、台账 Wave、handoff 入口及七月旧归档七份原文保全于独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/`。迁移对象严格为主台账原第 12–24 行的连续八月历史块，原始正文 6620 B / SHA256 `D145162908F5E2726CF0C07601AEF2065740FCC06BE01C8B371366BBF9853D49`；新 [八月归档](../../archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md) 明确不是现行状态或当前 HEAD 验收。
+
+正文只把三个相对链接从 `handoff/` 基准改到 `handoff/archive/` 基准：`AI_AND_PIPELINE_GATES.md`、`theater/MODE2_UNFREEZE.md`、`AI_VERIFICATION_PROTOCOL.md`。三个链接前后解析为同一现存仓库文件；逆向重定位后归档正文逐字节等于 S0，外部 URL 次序及文字不变。主台账原位只留下带历史边界的链接；此外只更新导语和治理父债进展，D-DEBT-LEDGER-01 保持 Partial，旧评分、旧排期和旧 CI 不升级为当前裁定。§5 轮次、其它长快照、全表状态词和自由文本语义仍是明确剩余范围。
+
+本地迁移审计还须独立核未触及主表行、现有 ID/引用/状态字段、七月归档原字节，以及默认/改文 Markdown 链接、docs-only 旧路径、登记、债结构、UTF-8 与 staged diff。上述验证的原生退出与失败修正另记本轮证据根；不把仅一次脚本返回当整债验收。父 `2852b285` 的远端 CI 在终态前不被新 main push 取消，本轮目标 SHA 随后独立验证。
+
 ## 持续登记结构门禁（2026-09-29）
 
 第三个 M 级切片 base `b3b2fef5774ff84985b8ccea705c9b302b55e41e`，开场干净。`.cursor/plans/debt-ledger-check-20260929-r0/` 先保存九份输入，调用点审查发现马拉松测试会复制核验脚本到临时仓库，另存该测试原文后同步夹具的实际依赖。生产者为 AI/人类登记，契约为本节，消费者为主台账独立 CLI、既有债计划检查与 Dimension 5；Kernel/Tauri/shared 行为、QUEUE 和机器计划均不变。缺少本机日志仍按 `needs-evidence-access` 处理。

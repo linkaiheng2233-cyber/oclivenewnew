@@ -257,3 +257,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；前一实质供应链切片的远端证据接续，详情只见 [Actions Wave](waves/WAVE-20260929-ACTIONS-PINS.md#验收出口)，当前状态仍由 [主台账](../TECHNICAL_DEBT_INVENTORY.md) 的 K-SUPPLY-10 行唯一维护。
 - **目标绑定**：固定实现 `245d6ca98edfa8ebb354e2609d556a455336cc73` 的 [ci.yml run 36528350305](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36528350305) 正式 `completed/success`，17/17 job 含 `ci-gate` 全部成功；原始只读 JSON 和哈希在 Actions Wave。后续整理与结构检查没有改该固定引用实现，但仍需各自新 SHA 的远端结果，不借旧绿。
 - **范围 / 保留**：K-SUPPLY-10 从本地已验的 Partial 更新为“固定引用远端已验、维护待证”的 Partial。Dependabot 实际 PR 与 CLI Rust 模板的同步闭环未证，父债不标 Done；不扩大为 runner、Action 传递依赖、发布或未来更新时间点全部可信。
+
+### DCL-20260929-08 · 八月工程收口快照移出当前台账首部
+
+- **记录者 / 类型**：主控 Codex；D-DEBT-LEDGER-01 的限定历史迁移。base `2852b285f6a0b33dbd73aba63037ac6c5f85680a`，开场干净；M 级范围见 [第二轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--八月工程快照归档2026-09-29)，迁移映射和审计见 [台账 Wave](waves/WAVE-20260929-DEBT-REFERENCES.md#八月工程快照归档2026-09-29)。
+- **范围 / before → after**：首部连续八月工程、产品、评分与旧下一动作块移入 [历史归档](../archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md)，原位仅留非当前 truth 的入口。旧 SHA/CI、产品冻结、结论与排期原文保留，三个相对链接只按目录深度重定位到原目标。§1–§5 的其它内容、唯一权威状态、QUEUE、机器计划和产品代码不因此改判；D-DEBT-LEDGER-01 保持 Partial。
+- **出口 / 保留**：独立 S0 保存七份原文；限定逆向重定位逐字节比较、相对目标和外部 URL、主台账其余行、适用链接/路径/登记/债结构/编码/staged diff 逐项核。旧七月归档不动，不重跑业务。父 `2852b285` 的 Actions CI 终态和本轮新目标分别取证，不借旧绿；归档不证明当前 HEAD 产品验收。
