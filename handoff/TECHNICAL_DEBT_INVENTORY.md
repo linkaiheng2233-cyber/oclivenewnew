@@ -1,7 +1,9 @@
 # Technical debt inventory
 
 **SSOT 范围**：技术债当前状态、完成/解冻条件与残留范围；历史 Verification 只绑定当时的 SHA 和验收面，不是当前 HEAD 全量复验。
-**Last updated:** 2026-09-29（状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
+**Last updated:** 2026-09-29（状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用、重复状态引用化；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
+
+**权威行与引用**：标为“引用”的 ID 链到本文件唯一权威行，不另写当前状态或解冻条件；§5 和首部历史 Verification 只保留当时记录。接手同一 ID 时先跳转权威行，再核证据和范围，不能从历史标题的 Done、旧触发条件或章节名称推断当前可开工。重复项整理的逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)；持续自动冲突检查仍未建立。
 
 **Documentation audit snapshot (2026-09-05):** 统一“最小工具内核 + 六个稳定槽位”口径；复核 Stable v4 蓝图、脚手架目录、CLI、槽位多实例执行与 Agent 短路后新增 `D-CLI-BLUEPRINT-05`、`K-AGENT-MERGE-01`。下方 2026-08-15 长条目保留为上一轮工程收口快照。
 
@@ -73,16 +75,16 @@
 | **K-DOC-17** | 注释英文化 batch 3 | P1 | `slot_runner.rs` · `kernel_strategy.rs` 等 | **Done**（轮次 16 复核：上述文件已为英文 `//!`/`///`） |
 | **V-VSCODE-PERF-05** | VS Code F5 / `.vsix` 实机 | P1 | 姊妹仓 `oclive-vscode` 人工排期 | **OPEN**（cross-repo） |
 | **K-CONTRACT-WIRING-01** | `extra_sections` 生产接线 | P2 | 首个外部插件作者 or Phase 5 通过后 | **Done**（`config.json` → `prompt_extra_sections` · `co_present` 2026-07-10） |
-| **D-DOCDRIFT-01** | 重组后 normative 文档路径漂移（旧布局引用） | P0 | `check-stale-paths` 硬门禁绿 + `migrate-doc-paths` 路径存在性全过 | **Done**（轮次 17） |
-| **D-SCRIPT-02** | `check-stale-paths.mjs` 误报/漏报（反例说明与行内路径） | P1 | 扩范围 + 修 pattern + 挂 dimension5 | **Done**（轮次 17） |
-| **D-ORPHAN-04** | 残留空目录 `kernel/crates/models/` | P2 | 目录删除 + workspace 无引用 | **Done**（轮次 17） |
-| **O-1** | `oclive_kernel_host` 编译期 `include_str!` 耦合 `distros/desktop-tauri/assets/plugin-bridge.iife.js` | P1 | 资产迁入 `kernel/crates/oclive_kernel_host/assets/` + copy 脚本改指向 | **Done**（轮次 18） |
-| **O-2** | expert 孤儿前端（Vue/lib/test/i18n/API re-export，零 import） | P2 | 删除 + `role.ts`/locales 同步 + stale 文档措辞 | **Done**（轮次 18） |
-| **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
-| **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
-| **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
-| **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Done · remote verified**（2026-08-01：两轮生产扫描均为 **0 vulnerabilities**，CI `continue-on-error` 已移除并升为高危硬门禁；远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) `npm-audit` 通过。完整 dev graph 风险不并入本结论，见 K-SUPPLY-12） |
-| **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
+| <a id="debt-d-docdrift-01"></a> **D-DOCDRIFT-01** | 重组后 normative 文档路径漂移（旧布局引用） | P0 | `check-stale-paths` 硬门禁绿 + `migrate-doc-paths` 路径存在性全过 | **Done**（轮次 17） |
+| <a id="debt-d-script-02"></a> **D-SCRIPT-02** | `check-stale-paths.mjs` 误报/漏报（反例说明与行内路径） | P1 | 扩范围 + 修 pattern + 挂 dimension5 | **Done**（轮次 17） |
+| <a id="debt-d-orphan-04"></a> **D-ORPHAN-04** | 残留空目录 `kernel/crates/models/` | P2 | 目录删除 + workspace 无引用 | **Done**（轮次 17） |
+| <a id="debt-o-1"></a> **O-1** | `oclive_kernel_host` 编译期 `include_str!` 耦合 `distros/desktop-tauri/assets/plugin-bridge.iife.js` | P1 | 资产迁入 `kernel/crates/oclive_kernel_host/assets/` + copy 脚本改指向 | **Done**（轮次 18） |
+| <a id="debt-o-2"></a> **O-2** | expert 孤儿前端（Vue/lib/test/i18n/API re-export，零 import） | P2 | 删除 + `role.ts`/locales 同步 + stale 文档措辞 | **Done**（轮次 18） |
+| <a id="debt-d-doc-reloc-01"></a> **D-DOC-RELOC-01** | 三份名实不符文档仍在 `creator-docs/`（VS Code 契约 / Studio 指南 / mumu 验收） | P2 | 物理迁至 `handoff/{vscode,studio,distros}/` + 原位 stub + 入链更新 | **Done**（轮次 18） |
+| <a id="debt-k-supply-02"></a> **K-SUPPLY-02** | Release 预编译内核 **SHA256SUMS**（防换包） | P1 | workflow + `bundle-kernel-for-tauri.mjs` 钩子已入库；tag `oclivenewnew-v*` 触发 CI artifact | **Done**（轮次 22） |
+| <a id="debt-k-supply-03"></a> **K-SUPPLY-03** | 插件安装后「请审本地源码」固定提示 | P2 | 市场/git/zip + CLI | **Done**（轮次 19） |
+| <a id="debt-k-supply-04"></a> **K-SUPPLY-04** | 前端 `npm-audit` 仅可见性（`continue-on-error`） | P2 | 连续 2 个复核周期生产依赖零漏洞，或出现高危时升格硬门禁 / 文档豁免 | **Done · remote verified**（2026-08-01：两轮生产扫描均为 **0 vulnerabilities**，CI `continue-on-error` 已移除并升为高危硬门禁；远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) `npm-audit` 通过。完整 dev graph 风险不并入本结论，见 K-SUPPLY-12） |
+| <a id="debt-k-supply-05"></a> **K-SUPPLY-05** | `deny.toml` `multiple-versions` warn→deny | P2 | Minimal：`deny` + 有理由 `[bans.skip]`；Full 零 skip 另战役 | **Done**（Minimal · 2026-07-15）· **Full Partial**（2026-07-16 · workspace `toml` 0.8→1 · ratchet **75**；`[bans.skip]` 仍须保留 · 不准假 Full Done · PR [#126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126)） |
 | **K-SECRET-01** | 已跟踪 N1N API 密钥进入 Git 历史 | **P0** | 服务端撤销旧密钥；新密钥只进 Continue secrets；维护者已明确接受保留历史的残余可见性 | **Done · owner confirmed**（2026-07-17：维护者确认已在 N1N 提供商侧彻底销毁旧密钥；Git 历史按决定保留） |
 | **K-PLUGIN-SEC-01** | 目录插件 UI 信任边界：同进程 Vue / 共享 custom-protocol origin | **P1** | Minimal：发行构建禁 inline Vue；Full：每插件独立 origin 或等价强隔离 + 原生 E2E + 可信签名绑定 + 官方 HTML fallback 功能对等，并将旧 SFC loader 移出发行依赖图 | **Partial**（Stage 0–3 已实现：发行禁 inline Vue；embedded / full-shell 使用 opaque iframe sandbox + parent broker；能力令牌绑定插件并在导航时撤销；Voice HTML fallback 已补功能对等；K-SUPPLY-12 已移除 `vue3-sfc-loader`，替换路径只在显式不安全 DEV 模式动态加载且仅允许 `vue` import。冻结实现的通用主 CI 与 Ubuntu Nightly 原生窗口 smoke 已远端通过，但这不等于完整隔离证明；仍缺 Windows `tauri-driver` 原生实跑证据与可信签名/身份绑定，见 [`K-PLUGIN-SEC-01` 计划](./debt-marathon/long-plans/K-PLUGIN-SEC-01.md)） |
 | **D-QUALITY-LINT-01** | 根 lint 曾漏扫 Theater / Playwright / 配置文件，且未进入 `check` / `check:release`，长期积压可自动修复与少量死代码 | P1 | 全维护面 lint 绿；生成器与漂移门禁兼容；日常 / 发版检查强制执行 | **Done**（2026-07-18：扩展 lint 范围并接入两级门禁；移除未使用聊天重建函数与无效局部变量；修复错误码生成器单引号输出和漂移解析兼容） |
@@ -108,10 +110,10 @@
 | **D-AI-VERIFY-02** | AGENTS 测试段链 `AI_VERIFICATION_PROTOCOL` + `check:rust` vs `check:release` doctest | P2 | AGENTS §测试体系 | **Done**（Wave 1） |
 | **D-DOC-LINK-01** | 活跃文档链到已迁 `handoff/archive/` 的 closure / 发版清单（根路径断链） | P1 | `check-stale-paths` archive ratchet + dimension5 十八检口径 + BOUNDARIES 文档纪律节 | **Done**（2026-06-29） |
 | **K-CI-01** | GitHub CI main 红：doctest 漂移 | **P0** | 修 doctest；`cargo test --workspace` 绿 | **Done**（Wave 0 · doctest 三处） |
-| **D-READ-05** | `backend_registry.rs` 拆 `directory_slots` | P2 | 零语义变更 | **Done**（Wave 4 · `directory_slots_impl.rs`） |
+| <a id="debt-d-read-05"></a> **D-READ-05** | `backend_registry.rs` 拆 `directory_slots` | P2 | 零语义变更 | **Done**（Wave 4 · `directory_slots_impl.rs`） |
 | **D-PORT-02** | `PluginBackendRegistryPort` 拆窄 trait | P1 | `MemoryBackendPort` phase 1 | **Done**（`memory_backend_port.rs` + `SlotBackendFactoryPort` 组合 · 2026-07-10） |
 | **D-SLOT-01** | BuiltinV1/V2 选择收敛到 resolver | P2 | 四槽不再保留双实现；`builtin_v2` 仅作读兼容 alias 并统一归一为 `builtin` | **Done**（现行源码 + `plugin_backends_v2_resolve` / `slot_resolver_v3`；已由 CI [`29465172205`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/29465172205) 覆盖） |
-| **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音 | **Observe** |
+| <a id="debt-d-trait-01"></a> **D-TRAIT-01** | 单实现 trait 合并 | P3 | 仅明显 DI 噪音；外部贡献者要求合并时才评估，单 PR 合并一对 trait 并同步文档 | **Observe** |
 | **K-VOICE-01** | CosyVoice2 `stream=True` 在部分 Windows/模型组合曾因上游 worker 异常无限等待 | P2 | 继续实机 soak；worker 必须在异常时结束等待，安全完整短句 prime 后才走真实流式；`OCLIVE_COSYVOICE_STREAM=0` 保留诊断回退 | **Implemented，继续 Observe**（2026-07-24：默认真实 PCM 流式 + worker 结束态保护 + 安全 prime；CPU 分阶段混合 FP16 冷加载 + driver-wide VRAM admission，失败回退 FP32 也须再次准入。2026-08-01 五分钟共享 GPU 复测完成 46 对生成、318 次 GPU 采样，采样线程和 LLM/Voice 子进程均回收，未再出现无限等待；但时长仍不足以替代长时间硬件 soak，尾延迟另见 K-VOICE-09。排查见 [`TRACK_VOICE_RECOGNITION.md`](../human-docs/team/TRACK_VOICE_RECOGNITION.md) §10） |
 | **K-VOICE-02** | Tier-2 TTS（ChatTTS · XTTS · Bark · VITS · 国内云 API · Piper 产品化） | P3 | VX-9 generic pack 模板或社区 adapter | **OPEN** |
 | **K-VOICE-03** | Linux/macOS CosyVoice2 产品 profile | P2 | 随上游 CosyVoice 跨平台稳定后解冻 `asr_profiles.json` platforms | **OPEN** |
@@ -170,7 +172,7 @@
 | **K-LLM-ENV-02** | `apply_user_llm_env` 在 DB snapshot 读取后才取得进程环境锁，并把调用结束时的最新版本直接标记为已应用；并发旧调用可能覆盖新环境却清除 dirty 标记 | **P1** | 串行化完整的“读设置 → token/cache → env/provider → 版本提交”事务，或改为不可变配置快照；版本变化时必须重试而非误报已应用；用可控交错测试证明 last-writer-wins，覆盖保存设置、chat、theater 与 canonical sync 调用链 | **Remote verified · stress pending**（2026-08-01：全事务改由单一异步 mutex 串行化；只提交实际读取的起始版本，期间若出现新版本则恢复 dirty，等待调用会继续应用；稳定快照/新版本保留 dirty 单测及 Host 定向测试通过，远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) Linux/Windows Rust 全绿。尚缺更长时间、可控高并发交错/进程级压力证据，不提前升 Done） |
 | **K-FRONTEND-TYPECHECK-01** | Vite/ESLint/Vitest 均不执行 Vue/TypeScript 类型检查，CI 可在真实分支错误存在时保持全绿 | **P1** | 引入 `vue-tsc` 与正确的 shared/chat-pro/theater project/alias 边界；先修零或建立只降不升 ratchet，再接 `check`/PR 硬门禁；为插件分享、协议安装与 Theater 大纲生成补行为测试 | **Done · remote verified**（2026-08-01：引入 `vue-tsc` 并接入本地 `check`、`check:release` 与 PR frontend job；修清 shared/Chat Pro/Theater 的真实诊断与跨发行版类型边界，补齐插件分享、协议安装复核提示和 Theater cast 行为回归。远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的 Ubuntu/Windows frontend job 均完成 lint、typecheck、**272** 条前端单测、**53** 条 Theater 测试与构建） |
 | **D-CI-EXECUTION-02** | Stage 1 影子规划器尚未减少现有全量 job，通用 Rust job 又重复 CLI 嵌套 Cargo E2E；可见性 job 与硬门禁混居主 workflow | **P1** | 先按所有权去重 workspace/CLI/audit，串行或离线化嵌套 Cargo build 并稳定缓存；再把 soft visibility job 明确迁至 nightly/dispatch 或升为硬门禁；选择性执行仍须等待 Shadow 漏选/过选证据 | **Done · remote verified**（2026-08-02：workspace/CLI/audit 唯一所有权与主 CI 硬门禁已由冻结实现 `728219e7` 的 [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** job 验证；迁出的 `visual-presentation-smoke`、`fuzz`、`loom`、`cli-bench`、`e2e-tauri` 及汇总由完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6** job 验证，失败不再被吞掉。去重前后既有远端总 job-seconds 为 **10491→8586（−18.2%）**；Loom 运行包级 `loom-tests` 的两个有界真模型，`ci init` 不再生成主仓专属 Loom 路径，tier→workflow 归属有契约测试。此项关闭只代表执行所有权与 Nightly 分流完成；Stage 1 继续 Shadow，选择性执行仍归 **K-CI-IMPACT-01**） |
-| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **OPEN · governance slice added**（2026-09-28：[变动记录与 AI 接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，覆盖声明、旧 PR 等待态及恢复行为描述已对账；不代表全表规范化、历史迁移或自动冲突检查已完成。历史 2026-08-01 测量为 148 表格行/128 唯一 ID/18 重复 ID/20 Verification 段，**不是当前总数**；本轮不重报全仓债务计数） |
+| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **Partial · duplicate references normalized**（2026-09-29：[接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，本轮 18 个重复 ID 的 20 处重复行改为显式引用，已有裁定及历史 Verification 保留，逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。长历史迁移、全表状态词规范化和持续自动冲突检查仍未完成；不把引用行数当未偿还债数量，不重报全仓产品验收） |
 | **D-ASSET-FOOTPRINT-01** | 官方角色图片直接进入 Git 与发行资源，资产体积已成为仓库主要组成 | P2 | 先建立视觉质量/解码兼容基线，再按角色包格式、loader、CSP、编写器与模块兼容链评估 WebP/AVIF 或 PNG 量化；不得只改单端后缀；发版体积和冷加载有实测收益才迁移 | **OPEN · measured**（2026-08-01：tracked working tree **98.9 MiB**；角色图片 **71** 张 / **85.7 MiB**，占 **86.6%**。这是优化候选，不等于立即引入 Git LFS） |
 
 **K-PLATFORM-01 子项**
@@ -223,15 +225,15 @@
 
 | ID | 项 | 优先级 | 状态 |
 |----|-----|--------|------|
-| **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
-| **K-SUPPLY-02** | Release SHA256SUMS | P1 | **Done** — `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · `bundle-kernel-for-tauri.mjs` |
-| **K-SUPPLY-03** | 插件安装审源码提示 | P2 | **Done**（轮次 19） |
-| **K-SUPPLY-04** | npm-audit 升格策略 | P2 | **Done · remote verified** — 2026-07-18 与 2026-08-01 两轮生产依赖扫描均为 **0 vulnerabilities**；远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 硬门禁通过 |
-| **K-SUPPLY-05** | deny 重复依赖 warn→deny | P2 | **Done**（Minimal · 2026-07-15）— `multiple-versions = deny` + documented `[bans.skip]` · ratchet **80** · **Full Partial**（2026-07-16 · toml workspace→1 · ratchet **75** · 零 skip 仍 blocked:needs-ecosystem） |
-| **K-SUPPLY-06** | 位级可重复构建（reproducible） | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
-| **K-SUPPLY-07** | SBOM（CycloneDX/SPDX） | — | **Deferred** · 政企/校企采购需求触发 |
-| **MEGA-SD-01** | `scene_director.rs` 巨无霸拆分 | 见 §2 解冻条件；零语义变更 PR |
-| **MEGA-TS-01** | `useTheaterShell.ts` 巨无霸拆分 | 见 §2；`mapTheaterInvokeError` 已先行减负（轮次 22）；轮次 29（2026-08-13）已外移脚本辅助与 DTO 映射至 `useTheaterShellUtil.ts`（零行为变更），poke/cast/outline 主体拆分仍按 §2 冻结 |
+| <a id="debt-k-supply-01"></a> **K-SUPPLY-01** | `cargo deny` 进 dimension5 / CI 硬门禁 | P1 | **Done**（轮次 19） |
+| [K-SUPPLY-02](#debt-k-supply-02)（引用） | Release SHA256SUMS | — | 当前完成范围与依据只见权威行 |
+| [K-SUPPLY-03](#debt-k-supply-03)（引用） | 插件安装审源码提示 | — | 当前状态只见权威行 |
+| [K-SUPPLY-04](#debt-k-supply-04)（引用） | npm-audit 升格策略 | — | 当前验收与完整 dev graph 的剩余范围只见权威行 |
+| [K-SUPPLY-05](#debt-k-supply-05)（引用） | deny 重复依赖 warn→deny | — | Minimal/Full 状态只见权威行；历史 ratchet 80 不代表当前 Full 已完成 |
+| <a id="debt-k-supply-06"></a> **K-SUPPLY-06** | 位级可重复构建（reproducible）；触发为内核 `kernel-v0.x` tag 稳定且具备专用 CI 镜像 | — | **Deferred** · 见 SECURITY_AUDIT_SCOPE 局限 |
+| <a id="debt-k-supply-07"></a> **K-SUPPLY-07** | SBOM（CycloneDX/SPDX）；校企/商业客户采购或合规要求触发 | — | **Deferred** · 政企/校企采购需求触发 |
+| [MEGA-SD-01](#debt-mega-sd-01)（引用） | `scene_director.rs` 巨无霸拆分 | — | 解冻条件只见 §2 权威行；零语义变更 PR |
+| [MEGA-TS-01](#debt-mega-ts-01)（引用） | `useTheaterShell.ts` 巨无霸拆分 | — | 解冻与已外移辅助函数的范围只见 §2 权威行；轮次 22 的 `mapTheaterInvokeError` 减负是历史进展 |
 | **K-SUPPLY-08** | crate 作者信誉 / 发布历史系统审计 | — | **Observe** · 无成熟自动化方案 |
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | **P1** | 官方/市场安装默认要求可验证签名；本地开发保留显式 opt-out，并补签名轮换/撤销流程 | **OPEN**（当前仅 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 时校验 sidecar SHA-256；不能把源码提示当供应链证明） |
 | **K-SUPPLY-10** | 外部 Actions 的不可变来源与升级维护；仓库 workflow 和 CLI 生成模板须分别核对 | P2 | 所有直接外部 action 固定原上游完整 commit SHA，保留版本/执行语义并验证目标 SHA CI；升级维护必须覆盖实际引用，不能把 bot 配置存在当 PR 已验证 | **Partial · locally verified**（2026-09-29：72 处仓库引用与 14 处 CLI 模板已固定，来源/结构与 9 项负控、生成器/仓库合同、本地 `check:ci-local` 全链通过；新增 workflow Dependabot。CLI Rust 模板仍需人工同步，实际 bot PR 与新目标 CI 尚未验证，父债不转 Done。身份、门禁及边界见 [Actions Wave](debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md)） |
@@ -251,11 +253,11 @@
 | **Deep / deep_capsule** | Turn Thinking Deep 路由 + deep_capsule 资产 | **已交付**（K-PERF-D1 / K-TURN-F1 Done；非冻结） |
 | **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **可选启用 · 默认仍关**（2026-07-24 LoRA directory LLM 选择链已接通；仍须 Cargo feature + 蓝图 `dual_core.enabled` + 角色包 `expert_routing.json` 显式配置） |
 | **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
-| **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
+| <a id="debt-d-port-03"></a> **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
 | **§3.1** | 纯 library API 对称化 | 历史 [`RFC_OCLIVE_KERNEL_LIBRARY.md`](./archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
 | **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
-| **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |
-| **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排。轮次 29 已先行外移纯辅助函数（`useTheaterShellUtil.ts`），主体拆分仍冻结 |
+| <a id="debt-mega-sd-01"></a> **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |
+| <a id="debt-mega-ts-01"></a> **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排。轮次 29 已先行外移纯辅助函数（`useTheaterShellUtil.ts`），主体拆分仍冻结 |
 | ~~**模式 2**~~ | — | **已解冻** · [`MODE2_RFC.md`](./theater/MODE2_RFC.md) · `outline_rewrite` |
 
 **Phase 5 结论（2026-06-25 更新）：** 朋友 cohort 产品门通过 → **模式 2 开工**；`dual_core` / `expert_routing` **机制可选、默认关**。详见 [`theater/DEVELOPMENT_ROADMAP.md`](./theater/DEVELOPMENT_ROADMAP.md) §5.5。
@@ -266,9 +268,9 @@
 
 | ID | 项 | 说明 | 触发条件 | 下一动作 |
 |----|-----|------|----------|----------|
-| **D-PORT-03** | `BackendRegistry` UFCS 转发层 | D-PORT-02 已拆窄；collapse 等 remote policy RFC | 第二 remote 插件后端落地 or D-PORT-02 解冻 | 起草 remote policy RFC；评估 UFCS 层删除 |
-| **D-READ-05** | `backend_registry` directory 子模块 | 机械拆文件；810 行可接受 | 文件 >1200 行 or 新 directory 后端类型 | **已执行**（轮次 29 · `backend_registry/{agent,directory,mcp,slots}` 子模块，零语义变更）；新触发：再度 >1200 行或新增 directory 后端类型 |
-| **D-TRAIT-01** | 28 trait 单实现裁决 | 已裁决表保留；Repository 五件套合并等长期 | 外部贡献者要求合并 trait | 单 PR 合并一对 trait + 文档 |
+| [D-PORT-03](#debt-d-port-03)（引用） | `BackendRegistry` UFCS 转发层 | 当前边界只见 §2 权威行 | 不再以已结案 D-PORT-02 为解冻条件 | 仅按权威行触发评估，不自动删除 UFCS 层 |
+| [D-READ-05](#debt-d-read-05)（引用） | `backend_registry` directory 子模块 | 当前结案范围只见 §1 权威行；轮次 29 子模块化是历史进展 | 原 >1200 行/新后端类型观察保留为后续评估候选，不重开已结案拆分 | 若再次立项，先冻结新范围与证据，不把旧“已执行”重复写作当前状态 |
+| [D-TRAIT-01](#debt-d-trait-01)（引用） | 单实现 trait 裁决 | 旧 28 trait 数是历史范围，未重新计数；裁决表保留 | 当前触发条件只见 §1 权威行 | 当前动作只见权威行 |
 | **D-POLICY-01** | Policy 三 trait 第二实现 | 等 remote policy RFC | remote policy RFC 合并 | 实现第二 `Policy*` 后端 |
 | **D-ORPHAN-02** | `oclive_schema` 微型 crate | wasm 边界评估后再定 | wasm 宿主立项 | 评估合并进 `oclive_kernel_types` |
 | **F4 / V2-remote** | remote 缺 env 静默回退 builtin | 已有 `startup_warnings`；矩阵诚实标 ⚠️ | 用户报告 silent fallback | 补 startup warning + 文档矩阵 |
@@ -349,8 +351,8 @@
 | **V-LORA-PACK-03** | `.ocadapter` 契约与导入/管理 UI | **Partial · 本地 v1 已交付（2026-07-25）**：原始 llama.cpp LoRA GGUF 与 `.ocadapter` 已打通安全导入、SHA/GGUF/architecture 校验、原子替换、成人确认、管理 UI、`llama-server --lora` 和失败回滚。仍 OPEN：revision/tokenizer/chat-template 指纹、签名/发布者信任、多 adapter/scale、角色/专家路由绑定与真实模型远端 CI smoke |
 | **V-LORA-PEFT-04** | Hugging Face/PEFT adapter 导入转换插件 | **Deferred · 必须独立插件**：插件拥有 Hub/本地 PEFT `safetensors`、Python/Transformers/转换工具依赖与 GGUF 产出；稳定内核只接收本文 v1 GGUF/`.ocadapter`，禁止把 PEFT 运行时与 llama.cpp 本地加载链耦合 |
 | **D-OPUS-05 Phase 2** | re-export import 清零 | ratchet ≤76 只降不升 |
-| **K-SUPPLY-06** | 位级可重复构建 | 内核 `kernel-v0.x` tag 稳定 + 专用 CI 镜像 |
-| **K-SUPPLY-07** | SBOM 导出 | 校企/商业客户采购或合规要求 |
+| [K-SUPPLY-06](#debt-k-supply-06)（引用） | 位级可重复构建 | 当前状态和触发条件只见 §1.5 权威行 |
+| [K-SUPPLY-07](#debt-k-supply-07)（引用） | SBOM 导出 | 当前状态和触发条件只见 §1.5 权威行 |
 | **D-HOST-RECOVERY-01** | 桌面普通前台聊天的结果恢复与剩余领域/崩溃窗口风险；旧“流失败后自动整轮重发”是历史缺陷，不能继续概括当前路径 | **Deferred／冻结（剩余范围）· 非 Full Done**。2026-09-28 关联复核：当前 `chatStoreSend.ts` 的非 abort/非 stale 流失败分支调用 `recoverMessage(request)`，复用同一请求而不自动改走 `/chat`；默认令牌下桌面同身份恢复与取消已有 [Host 检查单](CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 所列限定验收，**不是本轮 live 重跑**。历史基线 `34c2783071c49e4061bc796ac4bf73a2870a7925` 的候选链是领域原子提交后，`maybe_start_relation_transition` 仍可能失败、跳过聊天追加与成功响应，随后旧客户端重发；其重复应用结论须以第二次事务实际成功提交为前提，发生率当时未验证。这个静态历史分析不证明新收据路径仍以相同方式重复执行。**仍未证明**：全部领域提交/收据完成之间的崩溃原子性、其他发送分支与未测窗口；不能把已验桌面切片关闭扩大为全恢复保证。主动取消只中断客户端传输，Host 仍可能完成落库。**延期条件**：后续仅对明确残留窗口独立立项、复核当前源码与证据后决定策略，不复用旧业务身份 |
 | **D-HOST-ERROR-CONTEXT-01** | 错误阶段包装与 HTTP 载荷重建中的 `context`／展示信息问题 | **Deferred／冻结 · 未修复 · 非 Done**。两条机制事实：① 桌面 HTTP 往返用 `body.message` 重建 `AppError`（`kernel/crates/oclive_kernel_runtime/src/http_error.rs:35-58`），使 `AppError::error_context()` 的 `starts_with("execution_plan:")` 失配 ⇒ `context` 为 `None`，且 `message` 出现双重 `Invalid parameter:` 前缀；② 阶段前缀（`with_chat_stage`，`kernel/crates/oclive_kernel_types/src/error.rs:197-240`）使同一分支失配。`plugin_backends:` 走 `contains`，两条机制均不影响它。**范围限定**：本轮仅在已追通路径上核对过若干调用点，**两条机制的完整可达场景未穷举**，故不作全路径可达或不可达的结论；机制事实的成立不以可达性为前提。**措辞纪律**：前端缺少 `blueprint_capability_unavailable` 专门文案属**独立的前端事项**，**不记为字段丢失**——`kernelErrorContextKind()` 不做运行时白名单过滤（`distros/shared/src/api/generated/kernelErrorCodes.ts:46-53`），消费者只是未比较该 kind（`.../api/helpers.ts:134/188/196`），原因文本仍可经 `INVALID_PARAMETER_DETAIL` 显示。证据基线同上；细节见桌面交接文档 §40–§44（后续更正优先于被取代的表述）。**延期条件**：Kernel 收口后由维护者独立立项；当前不预设恢复策略、载荷调整或实现方案 |
 
@@ -377,25 +379,25 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **D-DOCDRIFT-01** | monorepo 后文档路径机械迁移 | 一次性迁移脚本已在完成后删除（历史见 `git log -- scripts/migrate-doc-paths.mjs`）；现由 `check-stale-paths.mjs` 持续门禁 |
-| **D-SCRIPT-02** | `check-stale-paths.mjs` 扩范围 | dimension5 十一检 |
-| **D-ORPHAN-04** | 删 `kernel/crates/models/` 空目录 | workspace 无引用 |
+| [D-DOCDRIFT-01](#debt-d-docdrift-01)（历史引用） | monorepo 后文档路径机械迁移 | 一次性迁移脚本已在完成后删除（历史见 `git log -- scripts/migrate-doc-paths.mjs`）；现由 `check-stale-paths.mjs` 持续门禁 |
+| [D-SCRIPT-02](#debt-d-script-02)（历史引用） | `check-stale-paths.mjs` 扩范围 | dimension5 十一检 |
+| [D-ORPHAN-04](#debt-d-orphan-04)（历史引用） | 删 `kernel/crates/models/` 空目录 | workspace 无引用 |
 
 ### 轮次 18 Done（2026-06-24）
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **O-1** | plugin-bridge 资产内核化 | `kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js`；删 desktop-tauri 副本 |
-| **O-2** | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
-| **D-DOC-RELOC-01** | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
+| [O-1](#debt-o-1)（历史引用） | plugin-bridge 资产内核化 | `kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js`；删 desktop-tauri 副本 |
+| [O-2](#debt-o-2)（历史引用） | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
+| [D-DOC-RELOC-01](#debt-d-doc-reloc-01)（历史引用） | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
 
 ### 轮次 19 Done（2026-06-24）
 
 | ID | 项 | 说明 |
 |----|-----|------|
-| **K-SUPPLY-01** | `cargo deny` 硬门禁 | dimension5 检查项（licenses+bans）· `ci.yml` dimension5 job 安装 cargo-deny |
-| **K-SUPPLY-02** | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
-| **K-SUPPLY-03** | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
+| [K-SUPPLY-01](#debt-k-supply-01)（历史引用） | `cargo deny` 硬门禁 | dimension5 检查项（licenses+bans）· `ci.yml` dimension5 job 安装 cargo-deny |
+| [K-SUPPLY-02](#debt-k-supply-02)（历史引用） | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
+| [K-SUPPLY-03](#debt-k-supply-03)（历史引用） | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
 | **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `creator-docs/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |
 
 轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。

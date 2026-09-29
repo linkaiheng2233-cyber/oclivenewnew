@@ -89,7 +89,7 @@
 
 ## 接手顺序
 
-1. 核 `git status --short --branch`、HEAD 与任务授权；用 `rg -n '<DEBT_ID>' handoff/TECHNICAL_DEBT_INVENTORY.md` 找到当前条目。相同 ID 可能有历史、观测或父/子项引用，不能按第一处 `Done` 判整债完成。
+1. 核 `git status --short --branch`、HEAD 与任务授权；用 `rg -n '<DEBT_ID>' handoff/TECHNICAL_DEBT_INVENTORY.md` 找到当前条目。命中“引用”行时跳到其 `debt-…` 锚点；§5 与 Verification 是历史证据，不维护当前状态。不得按第一处 `Done` 判整债完成；若同一 ID 出现两个未标引用的现行状态行，先登记冲突，不自行选较新/较绿的一行。
 2. 在本文件检索该 ID，读最新相关事件及其证据；再读目标计划的当前 Stage。核对 **debt ID + Minimal/Full + 能力范围 + base/head**，不只按标题或时间接手。
 3. 对照台账、QUEUE、计划契约、实际 diff 与远端 PR/CI。冲突先记录 `needs-reconcile`；检查器绿只证明其声明的结构，不替代语义对账。
 4. 取原始证据；本机忽略目录或用户盘内文件无法取得时标 `needs-evidence-access`，不得把摘要补成原始日志。已消耗业务身份不复用；未知外部进程或 dirty 不擅自清理。
@@ -103,6 +103,7 @@
 - 区分四层：**债务状态、计划/Stage 进度、验证结论、PR/CI 状态**。PR merged 不等于父债 Done，计划 closed 不等于 Full 完成，调度 blocked 不表示产品回退。
 - 只记录本轮实际核验；旧数据注明日期/SHA，遗漏历史保留 unknown，不回填伪造历史。文案更正或失败归因追加事件并链接旧件，不改冻结日志/DB/二进制。
 - 同一债优先复用 ID；新反例先查归属/重叠再决定拆债。Observe/Deferred 没有排期也保留触发条件，不因巡检自动解冻或提升优先级。
+- 每个 ID 的当前状态、优先级与完成/解冻条件只在一个权威行修改。其他章节用显式引用和稳定锚点，不复制当前状态；旧触发条件失效时登记依据，不能借历史行重开已结案上游。正文引用化和自动冲突检查分开验收。
 - 债 Done 必须满足该范围的全部门槛和 [核实协议](../AI_VERIFICATION_PROTOCOL.md)，含项目要求的目标 SHA 远端 CI及人工/实机证据。缺任一项只记执行进展，保留父债 OPEN/Partial。
 - 活跃修改由当前控制者单写；有委派时执行方返回证据和 diff，不能自行变更全局状态。单 Agent 可以完成全部职责，不强制启用子 Agent。
 - 事件用稳定编号 `DCL-YYYYMMDD-NN`，按发生顺序追加；更正引用旧编号。不要为补 CI run ID 单独造提交，先记交付报告，在下一次实质变更时入账。
@@ -220,3 +221,11 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **范围 / before → after**：K-SUPPLY-10 `OPEN → Partial · implementation awaiting verification`；72 处仓库引用和 14 处实际 CLI 生成模板固定原上游完整 SHA，新增 workflow 的兼容周更；主版本、CI 权限/触发/执行策略、stable 编译器选择、锁文件、公开 API 和构建并发均保持。QUEUE、优先级与其他父债不变。
 - **证据与自主修正**：Rust Action 选可达 master 历史提交并显式 stable，以 metadata 深比较保留原运行步骤；一次网络 EOF 独立重试、一个新增测试换行定点格式化，失败均留原件。结构正例与 9 项变异负控、真实生成器 3 项通过。全链 attempt1 在 `oclive_ci_plan` 的旧 tag 断言 native 101；追加该测试到写集、定向修补复测 5/5，混合换行另以 YAML/文本等价并保留未改行处理。attempt2 在该新断言的 rustfmt 样式 native 1，只格式化该文件后定向 fmt native 0。第三轮全链与目标 SHA CI 待独立取证，不以结构绿代替外部执行。
 - **维护边界 / 续跑**：Dependabot 不扫描 Rust 模板字面量，相关升级需同步生成器；实际 bot PR 与新目标 CI 尚未证明，父债不转 Done。第三轮全本地链 `check:ci-local` 原生 0 / 744.91 s，28 项收尾字节匹配；最后验证文字另补文档 ratchet。文档中英/台账/入口/本计划同轮同步，待父 CI 终态再推送，不取消已有验证或为结果造证据专用提交。没有发布、真实模型/语音或 CP-INT 身份消费。
+
+### DCL-20260929-03 · 重复债务行改为权威引用
+
+- **记录者 / 类型**：主控 Codex；治理实施＋读取层更正。base `245d6ca98edfa8ebb354e2609d556a455336cc73`、开场干净，M 级合同见 [ROUND-02-PLAN](ROUND-02-PLAN.md#d-debt-ledger-01--重复状态改为显式引用2026-09-29)，逐项 owner 与证据仅在 [台账 Wave](waves/WAVE-20260929-DEBT-REFERENCES.md) 维护。
+- **范围 / before → after**：D-DEBT-LEDGER-01 `OPEN · governance slice added → Partial · duplicate references normalized`。18 个重复 ID 取得明确权威行，20 处重复行改为引用/历史引用；已有 Minimal/Full、Observe/Deferred、冻结及结案裁定不变，优先级、QUEUE 与机器计划均未调整。长 Verification 迁移、全表状态词规范化及持续自动冲突检查仍缺，不升父债 Done。
+- **依据 / 自主修正**：初次临时 ID 正则漏掉 O-1/O-2，完整格式复核后补齐；首次批量补丁因历史行文字与上下文不符被原子拒绝，原台账 hash 未变，再按实际原行生成限定补丁。18 个权威状态/解冻字段原样、132 个未触及 ID 行原样、20 段 Verification 原样；只吸收三项既有触发说明并将 D-PORT-03 的过时上游解冻引用指回现行冻结条件，不作架构决策。
+- **关联 / 出口**：主台账、接手协议、COVERAGE、计划与入口同轮更新；独立静态审计、适用文档/债结构/编码/diff 逐项留原生日志。没有新增 CI 门禁、改生产源码或重跑真实业务；本机忽略证据不可取得时仍 `needs-evidence-access`，不能把本轮静态结果当全债验收。
+- **接续 / CI**：等前批 Actions exact SHA CI 终态后再推送本轮文档，两个目标分别取证；新文档不借父绿声称当前 HEAD 已绿。下一步可逐类迁移长历史或明确持续检查范围，不能默认解冻全部债务。只读审计与文档检查可另名重跑，旧证据不改。
