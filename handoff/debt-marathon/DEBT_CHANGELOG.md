@@ -36,7 +36,7 @@
 
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
-| K-PLUGIN-SEC-01 | Stage 3 原生隔离是**证据门 / 平台条件**；Stage 4 身份绑定与 K-SUPPLY-09 **协同**，其可信身份能力是该切片的**硬前置** | [插件计划](long-plans/K-PLUGIN-SEC-01.md)；Full 仍需规定平台的原生拒绝证据及可信签名/轮换/撤销，不以通用窗口 smoke 替代 | 核现行 broker/capability、既有负例和原生测试可行性；签名缺口不妨碍独立核 Stage 3，但不能据此关 Full |
+| K-PLUGIN-SEC-01 | Stage 3 原生隔离的证据门已在目标 SHA 完成；Stage 4 身份绑定以 K-SUPPLY-09 可信身份能力为**硬前置 / 当前暂缓的决策门** | [插件计划](long-plans/K-PLUGIN-SEC-01.md)与 [Stage 3 Wave](waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)；Full 仍需可信签名、轮换/撤销和开发 opt-out，不以窗口隔离代替 | Stage 4 只读梳理可复用；维护者恢复签名决策前不改生产信任根或桥授权，不关 Full |
 | K-SUPPLY-09 | **决策门 / 外部条件**：发布者信任、签名验证、轮换/撤销与开发 opt-out | 主台账 §1.5、[SUPPLY_CHAIN](../../creator-docs/security/SUPPLY_CHAIN.md)；sidecar SHA-256 不等于可信签名 | 梳理安装→身份→桥权限链及失败关闭用例；不自行读取密钥、选择信任根或开放未验证插件 |
 | K-SUPPLY-10 | **独立 CI 安全面**，不依赖 K-SUPPLY-09 结案 | 主台账 §1.5；外部 Action 完整 SHA、可追溯来源和升级维护须对应实际 workflow | 只读盘点 Action 和升级配置；若实施，单独冻结写集与 CI 对照，不混进工具链缺依赖修补 |
 | K-SUPPLY-05-Full | **生态条件 / 证据门**：当前 lock、重复依赖族与零 skip Full 条件 | [Full 计划](long-plans/K-SUPPLY-05-Full.md)；历史合并不代表当前零 `[bans.skip]`，也不重开已结案 Minimal | 只读核剩余依赖族；选定可收敛族后再修订 Stage，保留供应链审计及中英 advisory 闭环 |
@@ -269,3 +269,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；Stage 3 限定原生取证与回归修正。base `44d952b3711c646b903333d65a116ed2a7db6366`，开场工作树干净。原始 attempt、二进制身份、通过与失败边界只见 [Stage 3 Wave](waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。
 - **before → after**：Windows 原生 WebDriver session 未建立，不得计作产品失败；同源码测试变体的 WebView2 CDP 已验证宿主/另一插件 DOM 不可读、直接 IPC 被拒与 broker 正向引导。旧“插件 iframe 中 `__TAURI_INTERNALS__` 必须不存在”判据与 Windows 实况不符，现改为实际授权拒绝。生产权限/协议未变，K-PLUGIN-SEC-01 仍 Partial，Stage 3 未越级，Stage 4 身份绑定仍待 K-SUPPLY-09。
 - **出口 / 下一步**：本地适用门禁与目标 SHA 远端原生回归分别核；后者未终态前不写 Done/Stage 4。前一 `44d952b` 主 CI 也须等独立终态，不能拿其结果验本轮未来提交。
+
+### DCL-20260930-02 · Stage 3 远端验证完成，Stage 4 按维护者决策暂缓
+
+- **记录者 / 类型**：主控 Codex；K-PLUGIN-SEC-01 阶段证据与执行准入同步。`1153dc2cc3c26d9e004fa08ffca624dbb15d087f` 已推送 main；该精确 SHA 的 [主 CI 36605083928](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605083928) `completed/success`，17/17 job 含 `ci-gate` 成功；[Nightly 36605066991](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605066991) `e2e-tauri` 与原生 WebDriver step 成功，更新后的插件隔离用例实际 1 passed。原生平台细节与 Windows CDP 限定证据只见 [Stage 3 Wave](waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。
+- **before → after**：Stage 3 从“本机补充已验、目标远端待验”进入目标 SHA 限定远端验证完成；父债仍 Partial。维护者明确选择暂缓 K-SUPPLY-09 签名架构、先推进其它债务；机器计划移到 Stage 4，`planStatus=blocked`，队列设为 `blocked:signing-policy-deferred`，避免自动领取。解除条件是维护者恢复可信发布者身份、生产验签、轮换/撤销和开发 opt-out 的决策；不借 Stage 3 绿灯修改信任根或宣布 Full Done。
+- **接续 / 保留**：此次状态同步是新的文档提交，其目标 CI 与 `1153dc2c` 的实质测试提交分列；后者成功不自动证明新 HEAD。Windows `tauri-driver` session 未建立、Windows CDP 仅限定取证；旧失败、原始 attempt 与其它债务裁定不变。签名暂停不阻断独立债务，马拉松若无 runnable auto 则按队列纪律停止自动领取。

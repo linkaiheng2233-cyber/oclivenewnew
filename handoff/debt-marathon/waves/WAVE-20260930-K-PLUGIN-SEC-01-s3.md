@@ -8,8 +8,8 @@
 | 债 ID / Stage | K-PLUGIN-SEC-01 / 3 |
 | base HEAD | `44d952b3711c646b903333d65a116ed2a7db6366`；开场工作树干净 |
 | claim | Windows 原生隔离证据补齐；未改插件权限、运行时协议或生产安全策略 |
-| 结果 | 隔离 WebView2 CDP **限定通过**；仓库原生回归判据已修正，尚待更新后在远端原生任务执行 |
-| 状态 | K-PLUGIN-SEC-01 保持 **Partial**，机器计划仍 `currentStage: 3`，队列仍 `implemented` |
+| 结果 | 隔离 WebView2 CDP **限定通过**；目标提交的 Linux 原生回归和主线 CI 均成功，详见下文续验 |
+| 状态 | K-PLUGIN-SEC-01 保持 **Partial**；Stage 3 已完成限定验证，Stage 4 依维护者决策暂缓 |
 
 ## 原生结果与边界
 
@@ -36,6 +36,12 @@
 
 本轮代码已通过定向 ESLint、仓库 `vue-tsc --noEmit -p tsconfig.app.json`、`check:module-compat`、原生测试枚举及 `git diff --check`。文档默认/改文链接、旧路径、登记、债计划结构和编码检查均通过；Dimension 5 `--ci` 最终 **PASS (29 checks)**。其首轮失败来自本机缺少默认 `py` 启动器，按脚本支持的 `OCLIVE_VOICE_PYTHON` 指向便携 Python 后，语音 ratchet 与整套门禁均原生 exit 0；未改全局环境。直接 `tsc -p distros/chat-pro/tsconfig.json` 的 Vue SFC 模块解析失败是错误入口，不能作为项目 typecheck 判据。目标提交的 CI 仍独立核对。
 
-下一步是在当前源码的 Ubuntu Nightly 原生 WebDriver 任务中实际执行**更新后的** `plugin isolation` 断言，并核对精确 SHA、退出码和 job 结果。Windows CDP 作为另一平台的补充取证，不能代替 Linux CI；Stage 4 的可信安装身份仍依赖 K-SUPPLY-09，Full 不结案。若 CI 失败，先读原生步骤日志修复测试或实现，禁止放宽 DOM/IPC 拒绝断言。
+本轮初始退出条件是由 Ubuntu Nightly 原生 WebDriver 实际执行**更新后的** `plugin isolation` 断言，并核对精确 SHA、退出码和 job 结果；完成情况见下节。Windows CDP 作为另一平台的补充取证，不能代替 Linux CI；Stage 4 的可信安装身份仍依赖 K-SUPPLY-09，Full 不结案。
 
-`retry_safe`：只读复核、未使用的独立本机 attempt 可重试；已保存的 A1–C6 目录、原始日志及事实件不可覆盖。下一条精确命令：`node scripts/check-debt-marathon.mjs`，随后核对目标提交对应的 Nightly `e2e-tauri` job。
+`retry_safe`：只读复核可重试；已保存的 A1–C6 目录、原始日志及事实件不可覆盖。当前精确命令：`node scripts/check-debt-marathon.mjs --assert-no-runnable`；K-SUPPLY-09 签名决策恢复前不自动领取 Stage 4。
+
+## 目标提交的 Linux 原生回归（续验）
+
+提交 `1153dc2cc3c26d9e004fa08ffca624dbb15d087f` 已推送到 `main`，工作树与远端 ref 同一 SHA。[Nightly e2e-tauri run 36605066991](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605066991) 为该精确 SHA 的 `workflow_dispatch`，`e2e-tauri` job 和 `Native window smoke — A1.1c (WebDriver)` step 均为 `completed/success`。主窗口 smoke 与更新后的 `plugin isolation` 各实际执行 1 项并通过；后者日志显示另一插件 iframe 的 `contentDocument` 为 `null`，仍能在子 frame 找到 `button#record`。Linux 上直接 IPC API 返回 `unavailable`；Windows C6 中 API 对象存在但注册命令被拒。这是平台表现差异，不是放宽权限判据。
+
+主线 [ci.yml run 36605083928](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605083928) 也绑定同一 SHA，已 `completed/success`，17/17 job 均成功，包含 `ci-gate`、Ubuntu/Windows Rust workspace tests。Stage 3 的目标提交远端证据至此齐备；Windows CDP 仍是限定补充取证，Windows `tauri-driver` session 未建立的事实不被 Linux 结果抹去。维护者已选择暂缓 K-SUPPLY-09 签名架构并先做其它债务；Stage 4 的信任根、生产验签与开发 opt-out 不在本轮实施范围，父债仍 Partial，队列阻塞于 Stage 4。

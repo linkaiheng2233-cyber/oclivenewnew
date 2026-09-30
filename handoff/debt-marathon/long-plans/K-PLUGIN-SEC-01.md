@@ -11,7 +11,7 @@
 | **Minimal / Full** | Minimal 已阻断发行版 inline Vue；本书推进 P1 Full |
 | **Owner** | main-repo |
 | **runner** | auto（本地实现）；原生 WebView 与远程 CI 证据不可省略 |
-| **状态** | Ready · Stage 0–2 已完成；Stage 3 已实现，Windows WebView2 CDP 限定通过，更新后的原生回归仍待目标 SHA CI |
+| **状态** | Stage 0–3 已完成限定验证；Stage 4 因 K-SUPPLY-09 签名架构暂缓而阻塞，父债仍 Partial |
 | **更新** | 2026-09-30 |
 
 ## AI + OCLive
@@ -27,10 +27,10 @@
   "version": 1,
   "id": "K-PLUGIN-SEC-01",
   "runner": "auto",
-  "planStatus": "ready",
+  "planStatus": "blocked",
   "parentDebtDisposition": "done-eligible",
-  "currentStage": 3,
-  "prerequisites": [],
+  "currentStage": 4,
+  "prerequisites": ["维护者恢复 K-SUPPLY-09 的可信发布者身份、生产默认验签、轮换/撤销和开发 opt-out 决策；当前明确暂缓"],
   "stages": [
     {
       "id": 0,
@@ -185,4 +185,4 @@
 
 ## 下一跳
 
-Stage 3 的 Windows 原生补充证据与当前测试判据见 [2026-09-30 Wave](../waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)；下一步执行更新后的 Ubuntu 原生 WebDriver 回归，并保持 `currentStage: 3`。Stage 4 的可信安装身份由 K-SUPPLY-09 前置能力决定。
+Stage 3 的 Windows 原生补充证据、目标 SHA 的 Ubuntu WebDriver 与主线 CI 结果见 [2026-09-30 Wave](../waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。Stage 4 的可信安装身份由 K-SUPPLY-09 前置能力决定；维护者已选择暂缓签名架构、先做其他债务，故机器计划阻塞于 Stage 4，不将父债记为 Done。
