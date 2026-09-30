@@ -1,7 +1,7 @@
 # 技术债变动记录与 AI 接手协议
 
 **SSOT 范围**：技术债的依赖登记、变动事件、证据关联与安全续跑坐标；不维护第二份当前债务状态表。
-**最后更新**：2026-09-30。
+**最后更新**：2026-10-01。
 
 当前状态唯一以 [TECHNICAL_DEBT_INVENTORY](../TECHNICAL_DEBT_INVENTORY.md) 为准；执行准入以 [QUEUE](MARATHON_QUEUE.md)、对应 long-plan 和 [GATES](AI_AND_PIPELINE_GATES.md) 为准。通用过程以[仓库流水线](../workflows/dev-pipeline/SKILL.md)为准。本记录中的旧事件是当时快照，后续事件不能改写原始证据。依赖读下节，实际开工顺序及首批切片读 [第二轮计划](ROUND-02-PLAN.md#当前开工准备2026-09-28)。
 
@@ -289,3 +289,16 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **范围更正**：旧的“Windows/Linux/macOS 各跑完整内置 ASR→chat→TTS”不再是 K-CROSS-01 的统一结案前置。Windows 已声明支持的内置路径需正向设备 smoke；Linux/macOS 当前标为 `unsupported` 的内置路径需宿主/界面明确拒绝或禁用、无误启动的符合性证据。`HostProfile` 的发行版模块配置与 OS 语音支持矩阵仍分开。用户自建外部语音端点不等于内置能力交付。
 - **归属**：K-VOICE-03 仅负责 Linux/macOS bundled CosyVoice **TTS** 产品化；同平台 sherpa **ASR** 仍须独立界定产品范围，不借 K-VOICE-03 或 K-CROSS-01 假结案。现行平台能力见[语音轨道](../../human-docs/team/TRACK_VOICE_RECOGNITION.md#平台--asr--tts--webview差异声明)；新符合性测试尚未执行。
 - **before → after**：历史 K-CROSS Minimal 计划 `blocked:needs-reconcile` → `closed` / 队列 `done`，只表示已合入的文档里程碑无需重领；主台账父债仍 **Partial**，新范围的真实宿主证据未齐。`npm run test:distro-profile-mirror` 本机 exit 0 只证明 VS Code/desktop profile 镜像，不证明 OS 语音。旧 Wave 和原始实机缺口叙述保留为当时判断，本事件是现行范围裁定；后续执行需另冻新计划、身份与预算。
+
+### DCL-20261001-01 · 文档声明支撑调查首批入账
+
+- **记录者 / 类型**：主控 Codex；按 [Document → Code 预算与停止线](../AI_VERIFICATION_PROTOCOL.md#doc-code-support-audit) 完成首批只读分类。起点 `60249dd9a953432661805d5bc67b3777dbb4f5bc`，工作树干净；本批候选池 6 条，入选 4 条、已查 4 条、`Unknown` 0 条、未入选 2 条（K-UID-DEFAULT-02、K-AGENT-MERGE-01 已有明确 OPEN 行，本批不重复证明）。仅选活跃能力/门禁声明及一个已发生的 CI 反例；Full 目标、历史快照与其余台账事项未枚举，不计作已审。D1 每条未超 15 分钟；CI 因原生失败进入 D2，未开启 D3。未重跑业务、实机语音或 CI。
+
+| 当前声明与责任层 | 实现入口、直接证据与调查深度 | 分类及下一动作 |
+|----------------|----------------------------|----------------|
+| [K-CROSS-01 平台能力](../../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)；Chat Pro Host / 官方语音插件 | `asr_profiles.json` 将 Linux/macOS 内置 ASR 标为 `unsupported`，`rpc_server.mjs::resolvePlatformProfile` 返回 `unsupported_platform`；已有 profile 镜像测试只证配置镜像，缺 Windows 正向及 Linux/macOS 宿主/界面实机符合性。D1。 | **Evidence gap**；归既有 K-CROSS-01，不把静态拒绝代码写成三 OS 已验。 |
+| [K-RESILIENCE-01 Minimal](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md#宿主弹性代码锚点minimal)；Kernel Host | `remote_plugin/adapter.rs::call_with_builtin_fallback`、`prompt_http.rs` 调用与开/关闸单测对应；此前 `remote_plugin` 定向 29 passed，当前 HEAD 的 [主 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36741793963) 17/17 success，但本批未重跑定向测试。D1。 | **Supported（仅 Minimal）**；Full 被文档明确标 OPEN，仍归既有 K-RESILIENCE-01 实现债，不能由本分类转 Done。 |
+| [K-SUPPLY-10 Actions 维护](../../creator-docs/security/SUPPLY_CHAIN.md)；仓库 workflow / CLI 模板 | `.github/dependabot.yml` 仅扫描 workflow；`oclive-cli/src/ci_cmd.rs` 模板固定独立 SHA，源文已明示人工同步与实际 bot PR 待验。D1。 | **Evidence gap（维护闭环）**；归既有 K-SUPPLY-10。v7 仓库 workflow 与 v4 CLI 模板是原冻结时即存在的不同版本，不能仅凭版本号判新漂移。 |
+| [ci-gate 计划证据门禁](../AI_VERIFICATION_PROTOCOL.md)；CI control plane | `ci.yml` 上传/下载证据名都包含 `github.run_attempt`，而 `ci-rerun-flake.yml` 调 `gh run rerun --failed`。真实 [run 36713345514 attempt 2](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36713345514/attempts/2) 中 `ci-impact-plan=success`、责任组成功，但 `ci-gate` 下载 `...-2` 报 artifact not found；同 SHA 全量 attempt 3 成功。D2（具名重跑反例）。 | **Semantic drift / 已发生的 CI 语义缺陷**；归 K-CI-IMPACT-01 的 gate 证据路径，单独修复切片须确保失败作业重跑时仍绑定同 run、同 SHA 的有效计划，不以宽松匹配或跳过计划校验换绿。 |
+
+- **入账规则与止点**：文档领先代码的 `Implementation gap`、代码有而缺证据的 `Evidence gap`、行为不符的 `Semantic drift` 均先归现有 owner；新债须按协议取得 L3 入账证据并去重，不把 `Unknown` 升为 OPEN。已明确为未来目标的 Full/产品化范围仍保留原债，不伪装为当前能力。下一工程切片优先处理已发生且不需架构裁定的 CI 重跑证据缺陷；K-CROSS 实机条件、K-RESILIENCE Full 语义和 K-SUPPLY-10 bot 更新各守自己的准入条件。此事件是调查分类与归属，主台账现行状态、优先级和 QUEUE 均未改变。
