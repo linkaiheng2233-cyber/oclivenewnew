@@ -275,3 +275,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；K-PLUGIN-SEC-01 阶段证据与执行准入同步。`1153dc2cc3c26d9e004fa08ffca624dbb15d087f` 已推送 main；该精确 SHA 的 [主 CI 36605083928](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605083928) `completed/success`，17/17 job 含 `ci-gate` 成功；[Nightly 36605066991](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36605066991) `e2e-tauri` 与原生 WebDriver step 成功，更新后的插件隔离用例实际 1 passed。原生平台细节与 Windows CDP 限定证据只见 [Stage 3 Wave](waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。
 - **before → after**：Stage 3 从“本机补充已验、目标远端待验”进入目标 SHA 限定远端验证完成；父债仍 Partial。维护者明确选择暂缓 K-SUPPLY-09 签名架构、先推进其它债务；机器计划移到 Stage 4，`planStatus=blocked`，队列设为 `blocked:signing-policy-deferred`，避免自动领取。解除条件是维护者恢复可信发布者身份、生产验签、轮换/撤销和开发 opt-out 的决策；不借 Stage 3 绿灯修改信任根或宣布 Full Done。
 - **接续 / 保留**：此次状态同步是新的文档提交，其目标 CI 与 `1153dc2c` 的实质测试提交分列；后者成功不自动证明新 HEAD。Windows `tauri-driver` session 未建立、Windows CDP 仅限定取证；旧失败、原始 attempt 与其它债务裁定不变。签名暂停不阻断独立债务，马拉松若无 runnable auto 则按队列纪律停止自动领取。
+
+### DCL-20260930-03 · K-RESILIENCE-01 Minimal 历史计划对账收口
+
+- **记录者 / 类型**：主控 Codex；历史 Minimal 计划与机器队列对账，不实施新 ResilienceLayer。起点 `1d390bc5fbee256721b421e94ceb3c4b679402cc`，工作树干净；旧 [Stage 3 Wave](waves/WAVE-20260716-K-RESILIENCE-01-s3.md) 保持历史原文。
+- **依据**：[PR #126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 于 2026-07-16 合入，merge commit `23e4e1843ddc2c3ddf3c4cfd727131950fd50c66` 是当前 HEAD 祖先；`REMOTE_PLUGIN_PROTOCOL` 的调用点清单、`prompt_http` 使用 `call_with_builtin_fallback` 的示范接线与 adapter 回退测试仍在当前源码。`cargo test --locked -p oclive_kernel_host remote_plugin -j 1` 本机 exit 0：29 passed，0 failed，未运行 ignored 场景。
+- **before → after**：本册 `planStatus=blocked`、队列 `blocked:needs-reconcile` → `planStatus=closed`、队列 `done`，只表示历史 **Minimal 计划**已完成且无需再次领取。主台账 K-RESILIENCE-01 仍为 **Partial**，Full ResilienceLayer 仍 OPEN；不以队列 `done` 代替父债 Done，不启动 Full 的 RFC、设计或写集。
+- **出口 / 保留**：产品源码、既有 Wave 与主台账事实均未改；仅同步计划、队列和本事件。文档提交须按自身目标 SHA 单独取得门禁结果，不能借既有代码或父提交的 CI 绿灯。

@@ -34,7 +34,7 @@
 | 15 | K-PLUGIN-SEC-01 | auto | [long-plans/K-PLUGIN-SEC-01.md](./long-plans/K-PLUGIN-SEC-01.md) | blocked:signing-policy-deferred |
 | 20 | T-DOC-02 | auto | [long-plans/T-DOC-02.md](./long-plans/T-DOC-02.md) | done |
 | 30 | D-ROLEVER-01 | auto | [long-plans/D-ROLEVER-01.md](./long-plans/D-ROLEVER-01.md) | done |
-| 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | blocked:needs-reconcile |
+| 40 | K-RESILIENCE-01 | auto | [long-plans/K-RESILIENCE-01.md](./long-plans/K-RESILIENCE-01.md) | done |
 | 50 | K-SUPPLY-05-Full | auto | [long-plans/K-SUPPLY-05-Full.md](./long-plans/K-SUPPLY-05-Full.md) | blocked:needs-reconcile |
 | 60 | K-CROSS-01 | auto | [long-plans/K-CROSS-01.md](./long-plans/K-CROSS-01.md) | blocked:needs-reconcile |
 | 70 | K-PERF-10 | skip | [long-plans/K-PERF-10.md](./long-plans/K-PERF-10.md) | skip |
