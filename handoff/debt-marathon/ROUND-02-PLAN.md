@@ -249,3 +249,11 @@
 - 无可验证证据的事项保持 `Partial` / `blocked`。
 - 所有 Stage 均有 Wave、命令、SHA 和测试结果。
 - 无 runnable auto 时正常结束，不为了延长轮数而改动 skip/human 状态。
+
+## K-CI-IMPACT-01 · 失败作业重跑的计划证据绑定（2026-10-01）
+
+**尺寸 L / base**：`e0afbf4b6f0ea35368114207e492248c3ae60494`，开场工作树干净。此切片修主分支 CI 门禁的已发生缺陷，归属与原生失败见 [DCL-20261001-01](DEBT_CHANGELOG.md#dcl-20261001-01--文档声明支撑调查首批入账)；不扩展 K-CI-IMPACT-01 的选择性执行范围，也不把父债标 Done。前一提交的远端 CI 尚在执行时可本地实施与验证，不推送新 main 提交去取消它。
+
+**预期语义**：同一 workflow run 的 `ci-gate` 必须下载该次成功 `ci-impact-plan` 作业实际上传的计划，而不是猜测汇总作业的当前 attempt。`gh run rerun --failed` 没重跑计划作业时复用旧 attempt 的精确计划；计划作业若重跑则使用其新 attempt。产物缺失、计划作业失败或身份输出缺失继续 fail closed；不使用模糊 artifact 匹配、跳过验证或放宽受信规划器。GitHub 失败作业重跑保持原 `GITHUB_SHA`；此前原生 attempt 2 的计划作业输出在 `needs` 中仍为 success，唯产物名误用 `-2`。
+
+**写集与验收**：限定 `.github/workflows/ci.yml` 的计划作业输出/上传和 gate 下载坐标、`oclive_ci_plan` 的仓库工作流契约回归、必要的本计划与技术债变动事件。先用定向测试证明旧 `github.run_attempt` 查找会被拒，再跑 `oclive_ci_plan` 合同、CI 策略自测与 `dimension5 --ci`；集成门禁改动再跑 `check:ci-local`。冻结后一次推送，以目标完整 SHA 的 `ci.yml` 正式结果验证常规路径。若无法在同一 SHA 构造真实失败作业重跑，则仅记“重跑分支尚缺原生验证”，不得凭静态合同和普通绿灯关闭该缺陷。旧运行、artifact 与日志保持原样。

@@ -32,6 +32,7 @@ jobs:
       mode: ${{ steps.execution.outputs.mode }}
       reason: ${{ steps.execution.outputs.reason }}
       trusted_sha: ${{ steps.comparison.outputs.base }}
+      artifact_attempt: ${{ steps.execution.outputs.artifact_attempt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -136,6 +137,7 @@ jobs:
             --github-summary "$GITHUB_STEP_SUMMARY" \
             --pr-draft "$PR_DRAFT" \
             "${POLICY_ARGS[@]}"
+          echo "artifact_attempt=$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Upload impact evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -576,7 +578,7 @@ jobs:
         if: ${{ always() && needs.ci-impact-plan.result == 'success' }}
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
-          name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          name: oclive-ci-impact-plan-${{ github.run_id }}-${{ needs.ci-impact-plan.outputs.artifact_attempt }}
           path: target/oclive-ci/impact
       - name: Verify selected CI responsibilities
         env:

@@ -302,3 +302,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 | [ci-gate 计划证据门禁](../AI_VERIFICATION_PROTOCOL.md)；CI control plane | `ci.yml` 上传/下载证据名都包含 `github.run_attempt`，而 `ci-rerun-flake.yml` 调 `gh run rerun --failed`。真实 [run 36713345514 attempt 2](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36713345514/attempts/2) 中 `ci-impact-plan=success`、责任组成功，但 `ci-gate` 下载 `...-2` 报 artifact not found；同 SHA 全量 attempt 3 成功。D2（具名重跑反例）。 | **Semantic drift / 已发生的 CI 语义缺陷**；归 K-CI-IMPACT-01 的 gate 证据路径，单独修复切片须确保失败作业重跑时仍绑定同 run、同 SHA 的有效计划，不以宽松匹配或跳过计划校验换绿。 |
 
 - **入账规则与止点**：文档领先代码的 `Implementation gap`、代码有而缺证据的 `Evidence gap`、行为不符的 `Semantic drift` 均先归现有 owner；新债须按协议取得 L3 入账证据并去重，不把 `Unknown` 升为 OPEN。已明确为未来目标的 Full/产品化范围仍保留原债，不伪装为当前能力。下一工程切片优先处理已发生且不需架构裁定的 CI 重跑证据缺陷；K-CROSS 实机条件、K-RESILIENCE Full 语义和 K-SUPPLY-10 bot 更新各守自己的准入条件。此事件是调查分类与归属，主台账现行状态、优先级和 QUEUE 均未改变。
+
+### DCL-20261001-02 · K-CI-IMPACT-01 失败作业重跑证据绑定修补
+
+- **记录者 / 类型**：主控 Codex；主分支 CI 门禁切片，尺寸 L。base `e0afbf4b6f0ea35368114207e492248c3ae60494`、开场工作树干净；方案与止点见 [第二轮计划](ROUND-02-PLAN.md#k-ci-impact-01--失败作业重跑的计划证据绑定2026-10-01)。只改 `.github/workflows/ci.yml` 与 `oclive_ci_plan` 仓库合同测试，不改规划器、选择规则、责任组、权限或受信基线。
+- **问题 → 修改**：原 `ci-gate` 用自己的 `github.run_attempt` 找计划 artifact；失败作业重跑不一定重跑已成功的计划作业，因而误找不存在的当前 attempt 产物。现由 `ci-impact-plan` 把其实际 `GITHUB_RUN_ATTEMPT` 写入 job output，gate 以 `needs.ci-impact-plan.outputs.artifact_attempt` 精确下载同 run 的计划。计划失败、输出缺失或产物缺失仍 fail closed；Compare 的当前 attempt 采样口径未被改写。
+- **验证**：新增合同回归先对旧工作流失败，再对修补后工作流通过；`cargo test --locked -p oclive_ci_plan --test repository_contract` 6 passed。CI execution-policy 与 Compare collector 自检通过；`cargo fmt --all -- --check`、`dimension5 --ci` **29/29**、`npm run check:ci-local` 均 exit 0。首次 Dimension 5 失败系本机无 `py` 启动器；用已存在的 Python 3.12 可执行文件仅在该命令子进程设置 `OCLIVE_VOICE_PYTHON` 后，语音 ratchet 与完整本地链通过；未改语音代码或门禁。YAML 解析确认计划输出、上传名与 gate 下载名按预期连接，`git diff --check` 通过。
+- **现行结论 / 待证**：本地 **Locally verified**，K-CI-IMPACT-01 父债仍 In progress；目标 SHA 的正式 `ci.yml` 与“只重跑 gate、计划作业不重跑”的原生路径尚未取得，不能据此称重跑缺陷 Done。前一文档提交的主 CI 未终态前不推新 main，以免取消原运行；旧 attempt 与 artifact 不动。若目标运行可对成功 gate 作单作业重跑，再核计划 output 仍指原 attempt、下载成功、门禁成功和 Compare 限定口径；否则保留原生证据缺口，不构造假通过。

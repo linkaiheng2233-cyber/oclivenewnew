@@ -196,6 +196,22 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
 }
 
 #[test]
+fn failed_job_rerun_downloads_the_planners_actual_artifact_attempt() {
+    let workflow = fs::read_to_string(repo_root().join(".github/workflows/ci.yml"))
+        .expect("read main workflow");
+    let planner = workflow_job_block(&workflow, "ci-impact-plan");
+    let gate = workflow_job_block(&workflow, "ci-gate");
+
+    assert!(planner.contains("artifact_attempt: ${{ steps.execution.outputs.artifact_attempt }}"));
+    assert!(planner.contains("echo \"artifact_attempt=$GITHUB_RUN_ATTEMPT\" >> \"$GITHUB_OUTPUT\""));
+    assert!(planner
+        .contains("name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}"));
+    assert!(gate.contains("name: oclive-ci-impact-plan-${{ github.run_id }}-${{ needs.ci-impact-plan.outputs.artifact_attempt }}"));
+    assert!(!gate
+        .contains("name: oclive-ci-impact-plan-${{ github.run_id }}-${{ github.run_attempt }}"));
+}
+
+#[test]
 fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
     let root = repo_root();
     let planner = Planner::load(
