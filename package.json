@@ -91,19 +91,19 @@
     "test:e2e:tauri-native": "playwright test tauri-native.spec.ts"
   },
   "dependencies": {
-    "@sentry/vue": "^10.70.0",
+    "@sentry/vue": "^10.75.2",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-opener": "^2.5.4",
-    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
+    "@tauri-apps/plugin-opener": "^2.5.5",
+    "@tauri-apps/plugin-shell": "^2.3.6",
     "acorn": "^8.18.0",
     "acorn-walk": "^8.3.5",
     "idb-keyval": "^6.2.1",
     "mitt": "^3.0.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
-    "vue": "^3.5.41",
-    "vue-i18n": "^11.4.8"
+    "vue": "^3.5.43",
+    "vue-i18n": "^11.4.12"
   },
   "overrides": {
     "defu": "6.1.5",
@@ -114,25 +114,25 @@
     }
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.3.0",
-    "@babel/standalone": "^7.29.8",
-    "@playwright/test": "^1.62.1",
-    "@tauri-apps/cli": "^2.11.4",
+    "@antfu/eslint-config": "^9.5.1",
+    "@babel/standalone": "^7.29.9",
+    "@playwright/test": "^1.63.0",
+    "@tauri-apps/cli": "^2.11.5",
     "@types/babel__standalone": "^7.1.9",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.13.6",
     "@vitejs/plugin-vue": "^5.2.1",
-    "@vue/compiler-sfc": "3.5.41",
-    "@vue/test-utils": "^2.4.10",
+    "@vue/compiler-sfc": "3.5.43",
+    "@vue/test-utils": "^2.5.1",
     "@vue/tsconfig": "^0.9.1",
     "concurrently": "^9.2.1",
-    "eslint": "^10.8.1",
+    "eslint": "^10.11.0",
     "jsdom": "^29.1.1",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.9",
     "rollup-plugin-visualizer": "^7.0.1",
-    "typescript": "~5.8.0",
+    "typescript": "~5.9.3",
     "vite": "^6.0.3",
     "vitest": "^3.2.4",
-    "vue-tsc": "^3.3.9",
-    "webdriverio": "^9.30.0"
+    "vue-tsc": "^3.3.11",
+    "webdriverio": "^9.32.0"
   }
 }
