@@ -282,3 +282,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **依据**：[PR #126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 于 2026-07-16 合入，merge commit `23e4e1843ddc2c3ddf3c4cfd727131950fd50c66` 是当前 HEAD 祖先；`REMOTE_PLUGIN_PROTOCOL` 的调用点清单、`prompt_http` 使用 `call_with_builtin_fallback` 的示范接线与 adapter 回退测试仍在当前源码。`cargo test --locked -p oclive_kernel_host remote_plugin -j 1` 本机 exit 0：29 passed，0 failed，未运行 ignored 场景。
 - **before → after**：本册 `planStatus=blocked`、队列 `blocked:needs-reconcile` → `planStatus=closed`、队列 `done`，只表示历史 **Minimal 计划**已完成且无需再次领取。主台账 K-RESILIENCE-01 仍为 **Partial**，Full ResilienceLayer 仍 OPEN；不以队列 `done` 代替父债 Done，不启动 Full 的 RFC、设计或写集。
 - **出口 / 保留**：产品源码、既有 Wave 与主台账事实均未改；仅同步计划、队列和本事件。文档提交须按自身目标 SHA 单独取得门禁结果，不能借既有代码或父提交的 CI 绿灯。
+
+### DCL-20260930-04 · K-CROSS-01 按声明能力划分宿主验收
+
+- **记录者 / 类型**：主控 Codex；维护者确认跨平台宿主接入按**已声明能力**验收。起点 `b3ec76d24bd712ca4421def24c5ecbed0bc3a4aa`，工作树干净；[PR #126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 的历史 Minimal 文档与 Wave 原文不改。
+- **范围更正**：旧的“Windows/Linux/macOS 各跑完整内置 ASR→chat→TTS”不再是 K-CROSS-01 的统一结案前置。Windows 已声明支持的内置路径需正向设备 smoke；Linux/macOS 当前标为 `unsupported` 的内置路径需宿主/界面明确拒绝或禁用、无误启动的符合性证据。`HostProfile` 的发行版模块配置与 OS 语音支持矩阵仍分开。用户自建外部语音端点不等于内置能力交付。
+- **归属**：K-VOICE-03 仅负责 Linux/macOS bundled CosyVoice **TTS** 产品化；同平台 sherpa **ASR** 仍须独立界定产品范围，不借 K-VOICE-03 或 K-CROSS-01 假结案。现行平台能力见[语音轨道](../../human-docs/team/TRACK_VOICE_RECOGNITION.md#平台--asr--tts--webview差异声明)；新符合性测试尚未执行。
+- **before → after**：历史 K-CROSS Minimal 计划 `blocked:needs-reconcile` → `closed` / 队列 `done`，只表示已合入的文档里程碑无需重领；主台账父债仍 **Partial**，新范围的真实宿主证据未齐。`npm run test:distro-profile-mirror` 本机 exit 0 只证明 VS Code/desktop profile 镜像，不证明 OS 语音。旧 Wave 和原始实机缺口叙述保留为当时判断，本事件是现行范围裁定；后续执行需另冻新计划、身份与预算。

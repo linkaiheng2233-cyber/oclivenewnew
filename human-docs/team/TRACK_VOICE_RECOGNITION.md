@@ -144,8 +144,9 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 
 | **human-only** | 说明 |
 |----------------|------|
-| 三平台实机 smoke（Win / Linux / mac 各跑 ASR → chat → TTS） | K-CROSS-01 保持 OPEN 直至有证据；本 Stage **未**跑、**不**冒充已跑 |
-| CosyVoice Linux / mac 产品化 | 台账 **K-VOICE-03** · 与本矩阵声明正交 |
+| Windows 已交付内置语音的实机正向 smoke（ASR → chat → TTS） | **K-CROSS-01 待测**；现有自动化入口不替代真实设备证据 |
+| Linux/macOS 内置语音 `unsupported` 的宿主符合性 | **K-CROSS-01 待测**：核界面/宿主明确拒绝或禁用，且不误启动未交付引擎；不要求在不支持的平台出声 |
+| Linux/macOS 内置语音产品化 | **K-VOICE-03 只拥有 CosyVoice TTS**；sherpa ASR 须另定产品范围。两者均不作为 K-CROSS-01 的前置 |
 
 ---
 

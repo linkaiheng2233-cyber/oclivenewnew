@@ -30,7 +30,7 @@
 
 详表与 human-only 行 → [`TRACK_VOICE_RECOGNITION.md`](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)（平台差异节）。
 
-**已有自动化入口（≠ 三平台实机语音证明）**：`npm run test:distro-profile-mirror` · `npm run test:distro:smoke` · `npm run test:theater:smoke` · `node scripts/test-voice-build-directive.mjs` · `node scripts/test-voice-speak-path.mjs --probe-only` · `node scripts/check-voice-tts-ratchet.mjs`。三平台设备 smoke 仅人工；本债文档化阶段**未**跑。
+**已有自动化入口（≠ 实机语音证明）**：`npm run test:distro-profile-mirror` · `npm run test:distro:smoke` · `npm run test:theater:smoke` · `node scripts/test-voice-build-directive.mjs` · `node scripts/test-voice-speak-path.mjs --probe-only` · `node scripts/check-voice-tts-ratchet.mjs`。K-CROSS-01 后续按各 OS **已声明能力**验宿主：支持路径需正向 smoke，`unsupported` 路径需明确拒绝/禁用且不误启动内置引擎；不是要求三平台都跑完整内置语音闭环。待测边界见[语音轨道的平台表](../../human-docs/team/TRACK_VOICE_RECOGNITION.md#平台--asr--tts--webview差异声明)。
 
 ---
 
