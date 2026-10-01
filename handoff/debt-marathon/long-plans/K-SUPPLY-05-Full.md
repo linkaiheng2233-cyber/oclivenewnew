@@ -11,7 +11,7 @@
 | **Minimal / Full** | **Full** |
 | **Owner** | main-repo |
 | **状态** | Blocked · needs-reconcile（历史依赖切片已合入；Full 未完成） |
-| **更新** | 2026-09-28 |
+| **更新** | 2026-10-01 |
 
 **接手前提**：从当前 `deny.toml`、lock 与生态约束重新确认剩余 skip/依赖族，再决定获准的下一 Stage；不得把历史 PR 合入或 Stage 3 坐标当成 Full 可结案。依据见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。本轮不改依赖或运行收敛。
 
@@ -49,3 +49,17 @@
 
 ## 停条件
 生态不可消 → 停止 · Wave 写「仍须 skip: …」· **不准假 Full Done**。
+
+## 2026-10-01 · reqwest 单族重对账（D1，实施未启动）
+
+**基线 / 写集**：`053ebdadf990c9c278bfc601c1e9b1640258c962`，开场干净。限本计划、主台账、DEBT_CHANGELOG、既有 Actions Wave 的前轮远端证据，以及 `deny.toml` 的 reqwest 说明文字；不改版本、features、Cargo.lock、skip 成员或产品代码。本轮不是执行历史 Stage 3，机器计划与 QUEUE 仍 blocked:needs-reconcile；签名架构 K-SUPPLY-09 不在范围。
+
+| 核对 | 现行证据 / 结论 |
+|------|------------------|
+| 基线 | `deny.toml` 有 38 条 skip；`cargo deny --offline check bans` exit 0。临时配置删除 tree 顶层未显示的 17 条后，deny 对这 17 族均报重复并 exit 2；不能从 tree 的显示范围推断 skip 已过期 |
+| 直接客户端 | 根 Cargo.toml 的 reqwest 0.12、禁 default、启用 `rustls-tls`，由 CLI、Host、桌面继承；`cargo tree --locked --offline -e features -i reqwest@0.12.28 --depth 2` 确认当前 Windows 图使用 webpki 根与 ring |
+| 另一个版本 | `cargo tree --locked --offline --target all -i reqwest@0.13.4 --depth 3` 指向 Tauri 2.11.5；其 Cargo.toml 将该依赖限定在 Android / 非 macOS Apple 目标。当前 Windows 反向树无 0.13 条目，不能把全目标重复写成当前桌面双 HTTP 栈 |
+| 兼容止点 | reqwest 0.12.28 的 `rustls-tls` 指向 webpki roots；0.13.4 的 `rustls` 改用平台验证器并引入 aws-lc。仅改版本与 feature 名不是行为等价更新；影响云端模型、远程插件、下载等 HTTPS 调用，不只是本地恢复入口 |
+| 后续 | reqwest 保留 skip；平台根证书策略需另定，或选择其它兼容依赖族。保持旧信任策略也可研究显式 TLS 配置，但属于独立迁移切片，不能顺手扩成所有客户端重构；本轮未做升级编译或 HTTPS 实机验收 |
+
+本机源码依据为 Cargo registry 的 reqwest 0.12.28/0.13.4 `Cargo.toml`、`src/async_impl/client.rs` 与 tauri 2.11.5 `Cargo.toml`；可携带的上游说明见 [reqwest 0.13 发布说明](https://seanmonstar.com/blog/reqwest-v013-rustls-default/)。结论足以分类后停止，不为减少一个 skip 自动改变安全语义。原始负控留在本机忽略目录 `.cursor/plans/debt-rust-toolchain-update-20261001-r0/`，不随 Git 携带。

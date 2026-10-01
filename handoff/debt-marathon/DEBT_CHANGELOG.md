@@ -322,6 +322,13 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **实现 / 结果**：仅在 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的 `#[cfg(test)]` 复用 `serde_yaml_ng` 与真实 `render_ci_yaml`，从 `CARGO_MANIFEST_DIR` 向上三层扫描全部 `.github/workflows/*.yml/*.yaml`；仓库 Rust Action 引用须为唯一 40 hex pin、每处显式 `stable`，Library/Kernel 两种真实模板须含同一 pin。共享 collector 的内存负控按预期拒绝 workflow-only PR #184 新 SHA、单处仓库 pin、模板漂移、缺 stable、短 SHA 与缺 Action。
 - **本地证据**：定向 `ci_cmd::tests` native 0、5 passed；完整 `cargo test --locked -p oclive-cli -- --test-threads=1` native 0、16 套 132 passed；最终 `cargo fmt --all -- --check`、`cargo clippy --locked -p oclive-cli --all-targets -- -D warnings`、Dimension 5 `--ci` 29/29、默认及六份改文链接、docs-only stale paths、doc registry、doc mirror、debt-marathon 均 native 0。首次格式检查与 Clippy 对新增测试辅助代码报错，原日志保留，格式与类型简化后复测转绿。生产代码前缀、workflow、Cargo.lock 未改；完整 CLI 测试在临时项目构建时访问 crates.io 索引，未改仓库锁文件。K-SUPPLY-10 保持 **Partial**；本轮目标 SHA 远端 CI 与实际升级模板同步仍待证，不以既有 `36765997872` 绿灯宣称本轮完成。
 
+### DCL-20261001-06 · K-SUPPLY-05 reqwest 范围与安全止点
+
+- **记录者 / 范围**：主控 Codex；基线 `053ebdadf990c9c278bfc601c1e9b1640258c962`、开场干净。单族 D1 只读对账，结论与精确命令见 [Full 计划](long-plans/K-SUPPLY-05-Full.md#2026-10-01--reqwest-单族重对账d1实施未启动)。38 条 skip 仍须保留；tree 顶层未显示不代表 deny 的全目标依赖不存在，删除 17 条的临时负控已全部被拒，未动正式成员集。
+- **事实 / 处置**：reqwest 0.12 是 CLI/Host/桌面的直接客户端；0.13 来自 Tauri 的移动目标，不是当前 Windows 运行图的第二份客户端。升级同时涉及 webpki→平台证书验证与 crypto provider 特性变化，不能按普通版本消重执行。仅修正 `deny.toml` 中 reqwest 的过期理由，未改变门禁、依赖或网络行为；用户安全取舍待答，机器计划/QUEUE 继续 blocked:needs-reconcile，父债 Full Partial 不变。没有升级编译或真实 HTTPS 验收。
+- **前轮证据随本次实质文档入账**：K-SUPPLY-10 实际更新提交 `053ebdadf990c9c278bfc601c1e9b1640258c962` 的 [CI 36823868603](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36823868603) 为 completed/success，17/17 jobs，含正式 ci-gate；这是该 SHA 的已声明路径证据，不关闭所有模板未来维护债，也不替代本轮新提交的远端验证。
+- **本地验证**：正式 `cargo deny --offline check bans`、默认入口和四份改文链接、docs-only stale paths、doc registry、债务结构、diff 与四份中文文档 UTF-8 检查通过。只改说明与接手记录，无需重跑产品场景；本轮未推送，不声称新提交远端已验证。
+
 ### DCL-20261001-05 · K-SUPPLY-10 实际 Rust Action 更新配对模板
 
 - **记录者 / 类型**：主控 Codex；接续 DCL-20261001-04 的防漂移合同与主线 `e3030a9f3d04726381e47c810bed5e39f883904f`。真实 [Dependabot PR #184](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/184) 仅升级四份 workflow 的 14 处 Rust Action pin；在当前主线应用相同更新，并同步 CLI 生成器生产模板的五处引用。旧 PR 仅作来源，不直接合并或改动其分支。K-SUPPLY-09 签名决策仍暂缓。

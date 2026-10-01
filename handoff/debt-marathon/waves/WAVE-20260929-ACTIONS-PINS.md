@@ -69,3 +69,7 @@ Dependabot 扫描 workflow，不扫描 Rust 模板字面量；模板内原 v4/v2
 源码范围仅为上述 19 处 40 位 SHA 代换；`toolchain: stable`、其它 Action、workflow 的事件/权限/runner/命令/失败策略、Cargo.lock 与测试逻辑保持。字节替换保留原磁盘换行，Git diff 仅列出预期 19 行。既有 `ci_cmd::tests` 正控和漂移负控在新 pin 上原生 **5/5、exit 0**；`cargo fmt --all -- --check` exit 0。独立只读复核确认 14+5 差量、无遗漏生产引用及负控在新 pin 上仍有效；其范围是 D1/L2 差量审查。
 
 本地完整 `npm run check:ci-local` **attempt1 exit 1**：子进程的 `OCLIVE_VOICE_PYTHON` 被误指向 `python.cmd` 包装器，Dimension 5 的语音 registry 检查失败；保留原日志，不归因为源码。以此前已核的 portable `python.exe` 仅修正子进程环境后，**attempt2 native exit 0**：Dimension 5 **29/29**，其后的前端 lint/typecheck/build、Rust fmt/Clippy/库测试与工作区/CLI 集成测试均沿原链通过。原始日志在 `.cursor/plans/debt-rust-toolchain-update-20261001-r0/`，attempt2 `ci-local-attempt2.log` 315653 B / SHA256 `44C45ACC3CE4C99AEE0159D020198DA3C5FE919B1A1E9B3A8D085BC953B1A06C`。默认/四份改文链接、docs-only stale paths、登记、镜像、债结构及 `git diff --check` 均 exit 0。父提交 `ed6f6457` 的正式 CI 尚未终态时不推送新主线；新目标 SHA 的正式 CI 也仍待证。K-SUPPLY-10 保持 Partial：这是一项真实更新的人工同步样例，不等于建立模板的自动更新器。
+
+### 目标 SHA 远端结论（随下一实质对账入账）
+
+实际更新提交 `053ebdadf990c9c278bfc601c1e9b1640258c962` 的 [CI 36823868603](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36823868603) 已 completed/success，17/17 jobs 含 `ci-gate` 全绿；本轮再次只读核对 headSha 一致。上节待证描述是提交前快照，本段追加最终结果，不扩展独立 nightly/release 或未来升级维护范围，K-SUPPLY-10 仍 Partial。

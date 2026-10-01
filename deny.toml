@@ -32,7 +32,7 @@ multiple-versions = "deny"
 skip = [
     # --- HTTP / crypto shared across ureq · reqwest · sqlx ---
     { crate = "base64", reason = "reqwest/sqlx vs oclive-cli→ureq pin different majors; converge HTTP stack later" },
-    { crate = "reqwest", reason = "workspace crates pull different reqwest feature/version sets (kernel vs tools)" },
+    { crate = "reqwest", reason = "workspace clients use 0.12/webpki roots; Tauri 2.11.5 mobile targets require 0.13; migrating workspace clients to 0.13 rustls changes TLS defaults and needs separate review" },
     { crate = "png", reason = "image/ico vs tauri resource packing; leave until shared image crate aligns" },
     { crate = "mio", reason = "tokio vs older notify/socket2 peers; upstream tokio alignment only" },
     { crate = "wasm-streams", reason = "reqwest wasm feature matrix retains dual wasm-streams for browser target" },
