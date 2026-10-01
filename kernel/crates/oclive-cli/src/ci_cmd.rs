@@ -116,7 +116,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     needs: [build-test]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
@@ -136,7 +136,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
         with:
           toolchain: stable
       - name: OOCP test suite (enable when kernel linked to oclivenewnew)
@@ -151,7 +151,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
         with:
           toolchain: stable
       - name: rustup update
@@ -165,7 +165,7 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
         with:
           toolchain: stable
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
@@ -211,7 +211,7 @@ jobs:
     runs-on: ${{{{ matrix.os }}}}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f # master (explicit stable)
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2

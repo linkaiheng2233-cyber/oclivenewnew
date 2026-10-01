@@ -267,3 +267,11 @@
 **合同与反例**：从 `CARGO_MANIFEST_DIR` 向上三层读取 `.github/workflows/*.yml` 与 `*.yaml`，缺文件或仓库总体不含 `dtolnay/rust-toolchain` 时失败而不 skip。逐 workflow 解析；含该 Action 的每处引用必须为 40 位十六进制、显式 `with.toolchain: stable`，仓库内唯一引用 SHA 必须一致；不含该 Action 的 workflow 合法。两类真实 `render_ci_yaml` 模板均必须含该 Action、所有 SHA 等于仓库唯一 SHA 且保留 stable。内存 YAML 变异通过同一检查函数验证 bot-only 更新到 PR #184 新 SHA、只改一处仓库 pin、以及模板侧漂移均拒绝；缺 action、短 SHA、缺 stable 仅做必要覆盖，不改工作树反例。
 
 **验收 / 停止 / 收口**：先跑 `cargo test --locked -p oclive-cli ci_cmd::tests -- --test-threads=1`，再按串行约束跑 `cargo fmt --all -- --check`、`cargo clippy --locked -p oclive-cli --all-targets -- -D warnings`、`cargo test --locked -p oclive-cli -- --test-threads=1`、`node scripts/dimension5-acceptance.mjs --ci`（临时子进程使用既有 portable Python，不改全局）；随后跑默认/改文链接、docs-only stale paths、doc registry/mirror、`npm run check:debt-marathon`、`git diff --check` 与 UTF-8、无 BOM、无乱码问号串核对。失败与成功日志分存 `.cursor/plans/debt-toolchain-sync-20261001-r0/`，历史证据不改。保持 K-SUPPLY-10 `Partial`；GPT6 复核真实 diff、写集、正负控、生成字节未变与命令证据后，controller 再按授权提交/推送。
+
+### K-SUPPLY-10 · rust-toolchain 实际升级与模板同步（2026-10-01）
+
+**范围 / 基线**：接续同步合同提交 `ed6f6457e92a26aa3a41c5a1a96e4771c0d9254c` 与自适应流程文档提交 `e3030a9f3d04726381e47c810bed5e39f883904f`；开场工作树干净。真实 Dependabot PR #184 仅把四份 workflow 中 14 处 Rust Action pin 从 `f3510ffd6ce03d3e6f96856b0b93d5dc6c2e683f` 更新为 `02cb101ec7c40f2c49e1d9714d64511d8e1b74de`，没有同步 CLI 生成模板。本切片在当前主线做同等 14 处更新，并同步 CLI 五处生产模板；PR 仅作来源，不直接合并、修改或关闭其旧分支。K-SUPPLY-09 信任根决策继续暂缓。
+
+**风险与边界**：上游 compare 显示 7 个提交，`action.yml` 的执行差量是 `rustup toolchain install` 与 `rustup default` 各增 `--force-non-host`；当前 workflow/模板的 19 处均显式 `toolchain: stable`，未通过 Action 选择非宿主工具链或组件/目标。判定为当前已声明路径的兼容更新，不能称 Action 完全等价，也不能外推所有 runner、nightly/release 或新非宿主输入。若 PR head、上游差量或输入语义漂移，或需修改权限、失败策略与工具链选择，暂停本切片重新规划。
+
+**写集 / 验收**：生产写集严格为 `.github/workflows/{ci,nightly-advisory,cargo-audit-lockfile,release-kernel-checksums}.yml` 及 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的五处模板字面量，只替换上述 40 位 SHA；保留 `ci.yml` 原行尾、所有 stable、其它 Action、事件、权限、runner、脚本、Cargo.lock 与测试逻辑。文档仅更新本计划、Actions Wave、`DEBT_CHANGELOG.md` 与主台账 K-SUPPLY-10。先核文本与解析后的 YAML 差量只有预期 uses，跑现有 CLI 正负合同、fmt 与 diff；工具链影响整个 CI，再跑一次 `npm run check:ci-local` 及适用文档/债务门禁，不重复不受影响的真实业务场景。独立复核后，等待父提交 `ed6f6457` 的正式 CI 终态再推新主线；新目标 SHA 的正式 CI 含 Windows/Linux 与 `ci-gate` 成功前仅记 Locally verified。父债仍 Partial：本次仅证明一个实际升级的人工同步闭环，不宣称所有未来 Action 或模板自动更新。
