@@ -27,7 +27,7 @@ impl LocalMinimalRoleSnapshot {
     /// References and owned snapshots in authored order, including duplicates.
     /// Consumers may invoke a media adapter on each byte slice independently;
     /// unsupported media does not mutate or invalidate the logical definition.
-    #[must_use]
+    #[must_use = "iterate over the asset snapshots or explicitly discard the iterator"]
     pub fn assets(&self) -> impl ExactSizeIterator<Item = (&str, &[u8])> {
         self.definition
             .visual_assets
