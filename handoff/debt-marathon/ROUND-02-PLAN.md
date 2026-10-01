@@ -257,3 +257,13 @@
 **预期语义**：同一 workflow run 的 `ci-gate` 必须下载该次成功 `ci-impact-plan` 作业实际上传的计划，而不是猜测汇总作业的当前 attempt。`gh run rerun --failed` 没重跑计划作业时复用旧 attempt 的精确计划；计划作业若重跑则使用其新 attempt。产物缺失、计划作业失败或身份输出缺失继续 fail closed；不使用模糊 artifact 匹配、跳过验证或放宽受信规划器。GitHub 失败作业重跑保持原 `GITHUB_SHA`；此前原生 attempt 2 的计划作业输出在 `needs` 中仍为 success，唯产物名误用 `-2`。
 
 **写集与验收**：限定 `.github/workflows/ci.yml` 的计划作业输出/上传和 gate 下载坐标、`oclive_ci_plan` 的仓库工作流契约回归、必要的本计划与技术债变动事件。先用定向测试证明旧 `github.run_attempt` 查找会被拒，再跑 `oclive_ci_plan` 合同、CI 策略自测与 `dimension5 --ci`；集成门禁改动再跑 `check:ci-local`。冻结后一次推送，以目标完整 SHA 的 `ci.yml` 正式结果验证常规路径。若无法在同一 SHA 构造真实失败作业重跑，则仅记“重跑分支尚缺原生验证”，不得凭静态合同和普通绿灯关闭该缺陷。旧运行、artifact 与日志保持原样。
+
+### K-SUPPLY-10 · rust-toolchain 模板同步合同（2026-10-01）
+
+**尺寸 / 路由 / 基线**：M 级维护切片；重风险规划已裁定限定 `dtolnay/rust-toolchain` 同步语义。Luna 起草后遇模型额度限制；维护者明确自适应流程不限模型，主控接续实施与复核。base `c2dd6112c60f0aed6e0687b5d3654f863e8266f8`，开场 `main` 干净，既有精确 SHA CI `36765997872` 为 17/17 success；不恢复 main、不迁父债 Done、不升级依赖、不改生产 workflow/生成内容或 CI 编排，K-SUPPLY-09 签名暂缓。真实 Dependabot PR #184 只更新 workflow 的 Rust Action SHA，CLI 五处模板可漏同步；本切片只增加 test-only 合同检测该风险。
+
+**写集 / 闭环**：先改本文件；随后只改 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的 `#[cfg(test)]`，复用 `serde_yaml_ng` 与真实 `render_ci_yaml`；再追加本轮 Wave、`DEBT_CHANGELOG.md` 的 DCL-20261001-04、供应链中英文 §5 第 6 项一句同步合同，并按需给主台账 K-SUPPLY-10 加简短进展。生产 workflow、Cargo/lock、环境、README/CHANGELOG、生成字节均不改。影响链为仓库 workflow Action 引用 → 生成器模板合同 → CLI 渲染结果 → 测试与文档维护说明；无公共 API、宿主、权限或运行时消费者变化，生产字节应保持不变。
+
+**合同与反例**：从 `CARGO_MANIFEST_DIR` 向上三层读取 `.github/workflows/*.yml` 与 `*.yaml`，缺文件或仓库总体不含 `dtolnay/rust-toolchain` 时失败而不 skip。逐 workflow 解析；含该 Action 的每处引用必须为 40 位十六进制、显式 `with.toolchain: stable`，仓库内唯一引用 SHA 必须一致；不含该 Action 的 workflow 合法。两类真实 `render_ci_yaml` 模板均必须含该 Action、所有 SHA 等于仓库唯一 SHA 且保留 stable。内存 YAML 变异通过同一检查函数验证 bot-only 更新到 PR #184 新 SHA、只改一处仓库 pin、以及模板侧漂移均拒绝；缺 action、短 SHA、缺 stable 仅做必要覆盖，不改工作树反例。
+
+**验收 / 停止 / 收口**：先跑 `cargo test --locked -p oclive-cli ci_cmd::tests -- --test-threads=1`，再按串行约束跑 `cargo fmt --all -- --check`、`cargo clippy --locked -p oclive-cli --all-targets -- -D warnings`、`cargo test --locked -p oclive-cli -- --test-threads=1`、`node scripts/dimension5-acceptance.mjs --ci`（临时子进程使用既有 portable Python，不改全局）；随后跑默认/改文链接、docs-only stale paths、doc registry/mirror、`npm run check:debt-marathon`、`git diff --check` 与 UTF-8、无 BOM、无乱码问号串核对。失败与成功日志分存 `.cursor/plans/debt-toolchain-sync-20261001-r0/`，历史证据不改。保持 K-SUPPLY-10 `Partial`；GPT6 复核真实 diff、写集、正负控、生成字节未变与命令证据后，controller 再按授权提交/推送。

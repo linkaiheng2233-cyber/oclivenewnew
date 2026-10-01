@@ -53,3 +53,9 @@ Dependabot 扫描 workflow，不扫描 Rust 模板字面量；模板内原 v4/v2
 本切片完成条件为固定来源、范围内本地 gates 与目标 SHA 正式 CI；父债还保留模板升级维护与实际 bot 更新证据。远端 pending 不写 Done，不新增证据专用提交来填 run ID。下一次实质工作同步远端结果；K-BUILD-06/07 的独立实验与默认配置边界保持。
 
 **目标 SHA 远端终态（下一实质提交时入账）**：`245d6ca98edfa8ebb354e2609d556a455336cc73` 的正式 [ci.yml run 36528350305](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36528350305) 为 `completed/success`，17 个 job 全部 success，含 Windows/Linux Rust 与稳定 `ci-gate`。只读原始 `gh run view --json status,conclusion,headSha,jobs` 保存在本机 `.cursor/plans/debt-actions-ci-20260929-r0/run-36528350305.json`（40644 B，SHA256 `2D2028467789B1DE51C9588A210CA99143986C133E335B4C4858FFE76E684879`）；查询时逐项断言 HEAD、终态、17 项及 `ci-gate`。后续三个文档整理提交和本轮登记检查代码没有改固定引用的 workflow、Dependabot 或 CLI 生成器；该旧 SHA 的绿灯不替代它们的新目标 CI。固定引用与范围内测试已获远端实证，但 Rust 模板人工同步及实际 bot 更新 PR 未验证，K-SUPPLY-10 仍 Partial，不宣称维护机制全覆盖或父债 Done。
+
+## 2026-10-01 · K-SUPPLY-10 rust-toolchain 同步合同
+
+本轮 base `c2dd6112c60f0aed6e0687b5d3654f863e8266f8`，开场 `main` 干净；不升级依赖、不改生产 workflow、生成字节或 CI 编排。针对真实 Dependabot PR #184 只更新 workflow Rust Action、CLI 模板可能漏同步的缺口，仅在 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的 `#[cfg(test)]` 增加真实扫描合同：读取仓库 `.github/workflows/*.yml/*.yaml`，要求所有 `dtolnay/rust-toolchain` 引用唯一、40 位十六进制且显式 `toolchain: stable`；Library/Kernel 两类真实 `render_ci_yaml` 输出必须含同一 pin 与 stable。缺 Action 的单个 workflow 合法，但仓库总体缺失和任一模板缺失均拒绝。
+
+同一 collector 的内存负控已覆盖：workflow-only 改为 PR #184 新 SHA、单处仓库 pin 漂移、模板侧漂移、缺 stable、短 SHA、缺 Action；均按预期错误原因拒绝，未改工作树 workflow。定向 `ci_cmd::tests` native 0、5 passed；完整 CLI 测试 native 0、16 套 132 passed；最终 fmt、Clippy `-D warnings`、Dimension 5 `--ci` 29/29、默认及改文链接、docs-only stale paths、doc registry、doc mirror、debt-marathon 全部 native 0。首次 fmt 和 Clippy 的新增测试辅助代码问题及修复后日志分存本地 `.cursor/plans/debt-toolchain-sync-20261001-r0/`。CLI 生产代码前缀、workflow 与 Cargo.lock 差量为零；完整 CLI 测试的临时项目构建访问 crates.io 索引。K-SUPPLY-10 继续 Partial，实际依赖升级与模板同步尚未完成，尚未建立自动维护，本轮目标 SHA CI 尚未取得。
