@@ -1,7 +1,7 @@
 # 计划书覆盖审计（对照 TECHNICAL_DEBT）
 
 **SSOT 范围**：台账与计划书的覆盖关系及缺口；不决定债务状态或自动开工权限。
-**更新日期：** 2026-09-29
+**更新日期：** 2026-10-02
 **当前结论：** 不能再声称所有活跃债都有 `long-plans/`。后续新增事项未全部进入旧马拉松队列；专题 RFC/本机计划也不等于 Ready 机器契约。本轮变动见 [DCL-20260928-01](DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)。`V-MODULE-QUALITY-01` 已有的 Done 证据不变。
 **详略：** `auto` 书 = Minimal 可执行分阶 + `oclive-marathon-contract`；`skip`/`human` = stub + 触发条件。`npm run check:debt-marathon` 强制校验所有 auto 书的文件范围、验收理由、产出、回退与父债处置。**深度细则以 [`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md) + 七阶段 Skill 为准**（不在每本 stub 重复）。
 
@@ -29,7 +29,7 @@
 | Kernel/Host/可移植性 | K-CORE-BOUNDARY-01、D-CLI-BLUEPRINT-05、K-PROACTIVE-01、K-EVENT-STREAM-01、V-PORTABLE-01、V-EMBED-01 | 从现行 SSOT 选定一个边界；不自动启动物理拆分、Production Stream 或发行版全合规 |
 | 待决语义与实验 | K-UID-DEFAULT-02、K-DUAL-ROLLBACK-02、K-AGENT-MERGE-01 | 产品/架构取舍及确切冻结/解冻条件；不根据“代码已存在”默选方案 |
 | 资源/CI/开发工具 | K-RESOURCE-COORD-01、D-SCAFFOLD-RESOURCE-01、K-CI-IMPACT-01、D-CI-AI-REVIEW-03、D-SCAFFOLD-EVOLUTION-04 | 当前专题计划、测量/数据收集范围与执行权限；通用 CI 绿不替代资源 soak/选择性门禁证明 |
-| 台账/资产 | D-DEBT-LEDGER-01、D-ASSET-FOOTPRINT-01 | 已有 [重复 ID 引用化、七月 Verification 与八月工程快照迁移、持续结构门禁](waves/WAVE-20260929-DEBT-REFERENCES.md)；§5 等其它长快照、全表状态词、自由文本语义冲突及资产取舍仍需具体范围；结构治理不代替产品验收 |
+| 台账/资产 | D-DEBT-LEDGER-01、D-ASSET-FOOTPRINT-01 | 已有 [重复 ID 引用化、七月 Verification、八月工程快照与六月轮次 16–19 迁移、持续结构门禁](waves/WAVE-20260929-DEBT-REFERENCES.md)；其余长快照、全表状态词、自由文本语义冲突及资产取舍仍需具体范围；结构治理不代替产品验收 |
 | 连续性/编写器/LoRA | K-CONTINUITY-01、PE-CONTINUITY-01、V-LORA-FORGE-02、V-LORA-PACK-03、V-LORA-PEFT-04 | 人工观感、跨仓范围或适配契约；不能把运行时局部完成扩成整个创作产品 Done |
 | Deferred Host 风险 | D-HOST-RECOVERY-01、D-HOST-ERROR-CONTEXT-01 | 新范围、当前源码复核和未测窗口；历史静态推断不能直接重演为当前故障 |
 

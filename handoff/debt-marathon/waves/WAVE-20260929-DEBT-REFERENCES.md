@@ -89,3 +89,11 @@ base `245d6ca98edfa8ebb354e2609d556a455336cc73`，开场工作树干净。本机
 定向回归与主表 CLI、马拉松消费回归、Dimension 5、本轮改文链接和限定保全审计在修正后 native 0；Dimension 5 `--ci` 按实际输出为 29 checks，其中 sample workspace lib tests 明确 SKIP。`--assert-no-runnable` 的独立诊断返回 native 1，原因是既有 `K-PLUGIN-SEC-01:s3`：QUEUE `implemented`、计划 `planStatus=ready/currentStage=3`，与本轮新结构检查无关。主台账仍对 K-PLUGIN-SEC-01 保留 Partial，Windows 原生及可信身份绑定的缺口不因该机器状态变成 Full。此处只登记调度与验收口径差异，不改 QUEUE/机器计划或触发该 Stage；旧“无 runnable”推断不作为本轮验收前提。
 
 其余默认链接、六篇改文链接、docs-only 旧路径、文档登记、主债计划入口、UTF-8 与状态保全审计 native 0。保全审计证实 17 行几何修补不变更既有单元格文本、其它主台账行除导语/治理父债状态外原样，七月归档原始 bytes 匹配 S0；QUEUE 与机器计划的 Git 内容相等（行尾差异单独说明）。`git diff --check` 已去掉本轮 Dimension 5 插入行的 CRLF 尾部问题，stderr 的其它行尾提示不是检查失败。原生日志和 before/after 身份留独立证据根。持续结构门禁不证明全部自由文本一致、各项产品验收通过或 Full 完成，D-DEBT-LEDGER-01 保持 Partial。其它长工程快照、状态词及未列组合语义后续按具体触及范围继续；不改旧原件、不扩跑业务或提升旧结论。
+
+## 六月轮次 16–19 历史表归档（2026-10-02）
+
+base `53479d8cbba6bffe92213dc65fde61fefac24882`，开场工作树干净。主台账迁前原文 SHA256 `49DCAD75909783AD1BB749031CD3639100208AE514F12F2B293F59E3A8A2BA05`；本机原始副本在忽略根 `.cursor/plans/debt-ledger-june-20261002-r0/inventory-before.md`，迁移脚本同根保留，不随 Git 携带。只迁 §5 的轮次 16–19 四张表到 [六月归档](../../archive/TECHNICAL_DEBT_ROUNDS_202606.md)，主表原位留历史链接。四个标题和原文顺序保持，九处相对锚点重定位；逆向还原九处链接及归档末尾的一个段间空行后旧表正文逐字相同，主表将替换行换回后也逐字相同。迁出使登记结构历史-only 行 5→0、历史引用 9→0；146 条当前独立行、18 锚点及 9 例外不变。这是入口降噪，不是父债 Done、旧结果重验或现行状态变化。
+
+写集限定主台账、新归档、第二轮计划、本 Wave、DEBT_CHANGELOG、COVERAGE、handoff 入口与归档索引；用户已选择暂缓 reqwest，另只更新其原计划/事件。无产品、门禁、QUEUE、机器计划、旧归档或运行树改动。后续仍需处理其它长快照和自由文本语义；结构门禁不能代替这些审查。
+
+独立读盘审计通过：归档九条锚点逆向重定位并还原末尾一个段间空行后，正文逐字同迁前主台账，且主表仅移出五条历史-only 行；其它当前行除治理父债一行进展说明外未变。`node scripts/check-debt-ledger.mjs` 报 146 当前行、0 历史-only、11 当前引用、18 锚点、9 例外，native 0；默认及九篇改文链接、docs-only stale paths、文档登记、债结构和 diff 均 native 0，九篇中文文件 UTF-8 无 BOM、无替换符或连续问号串。此结构读数不是债务完成率；原始迁移脚本及迁前副本留本机忽略根，远端目标 SHA 尚须独立验收。

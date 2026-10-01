@@ -1,7 +1,7 @@
 # Technical debt inventory
 
 **SSOT 范围**：技术债当前状态、完成/解冻条件与残留范围；历史 Verification 只绑定当时的 SHA 和验收面，不是当前 HEAD 全量复验。
-**Last updated:** 2026-10-01（此前状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用、重复状态引用化、七月 Verification 与八月工程快照迁移；本次登记 K-CI-IMPACT-01 重跑证据缺陷的修复与原生验收；未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
+**Last updated:** 2026-10-02（此前状态治理、工具链/CLI 修补、构建/缓存及 PDB 消费观测、Actions 固定引用、重复状态引用化、七月 Verification 与八月工程快照迁移；本次将 §5 六月轮次 16–19 移入归档并登记 reqwest 暂缓，未重新运行全部债务的行为/实机验证）。变动与 AI 接手入口见 [DEBT_CHANGELOG](debt-marathon/DEBT_CHANGELOG.md)，依赖类型、范围及解除条件见其[依赖登记](debt-marathon/DEBT_CHANGELOG.md#依赖登记与判读)，计划覆盖缺口见 [COVERAGE](debt-marathon/COVERAGE.md)。当前状态仍唯一由本台账维护，依赖登记不自动授权开工或关闭父债。
 
 **权威行与引用**：标为“引用”的 ID 链到本文件唯一权威行，不另写当前状态或解冻条件；§5 和归档中的历史 Verification 只保留当时记录。接手同一 ID 时先跳转权威行，再核证据和范围，不能从历史标题的 Done、旧触发条件或章节名称推断当前可开工。重复项整理与历史迁移的逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。`node scripts/check-debt-ledger.mjs` 及既有债计划/Dimension 5 入口持续检查独立 ID 行、引用和锚点结构；不裁决长段落含义或每项债务的验收事实。
 
@@ -122,7 +122,7 @@
 | **K-LLM-ENV-02** | `apply_user_llm_env` 在 DB snapshot 读取后才取得进程环境锁，并把调用结束时的最新版本直接标记为已应用；并发旧调用可能覆盖新环境却清除 dirty 标记 | **P1** | 串行化完整的“读设置 → token/cache → env/provider → 版本提交”事务，或改为不可变配置快照；版本变化时必须重试而非误报已应用；用可控交错测试证明 last-writer-wins，覆盖保存设置、chat、theater 与 canonical sync 调用链 | **Remote verified · stress pending**（2026-08-01：全事务改由单一异步 mutex 串行化；只提交实际读取的起始版本，期间若出现新版本则恢复 dirty，等待调用会继续应用；稳定快照/新版本保留 dirty 单测及 Host 定向测试通过，远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) Linux/Windows Rust 全绿。尚缺更长时间、可控高并发交错/进程级压力证据，不提前升 Done） |
 | **K-FRONTEND-TYPECHECK-01** | Vite/ESLint/Vitest 均不执行 Vue/TypeScript 类型检查，CI 可在真实分支错误存在时保持全绿 | **P1** | 引入 `vue-tsc` 与正确的 shared/chat-pro/theater project/alias 边界；先修零或建立只降不升 ratchet，再接 `check`/PR 硬门禁；为插件分享、协议安装与 Theater 大纲生成补行为测试 | **Done · remote verified**（2026-08-01：引入 `vue-tsc` 并接入本地 `check`、`check:release` 与 PR frontend job；修清 shared/Chat Pro/Theater 的真实诊断与跨发行版类型边界，补齐插件分享、协议安装复核提示和 Theater cast 行为回归。远端 [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的 Ubuntu/Windows frontend job 均完成 lint、typecheck、**272** 条前端单测、**53** 条 Theater 测试与构建） |
 | **D-CI-EXECUTION-02** | Stage 1 影子规划器尚未减少现有全量 job，通用 Rust job 又重复 CLI 嵌套 Cargo E2E；可见性 job 与硬门禁混居主 workflow | **P1** | 先按所有权去重 workspace/CLI/audit，串行或离线化嵌套 Cargo build 并稳定缓存；再把 soft visibility job 明确迁至 nightly/dispatch 或升为硬门禁；选择性执行仍须等待 Shadow 漏选/过选证据 | **Done · remote verified**（2026-08-02：workspace/CLI/audit 唯一所有权与主 CI 硬门禁已由冻结实现 `728219e7` 的 [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** job 验证；迁出的 `visual-presentation-smoke`、`fuzz`、`loom`、`cli-bench`、`e2e-tauri` 及汇总由完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) **6/6** job 验证，失败不再被吞掉。去重前后既有远端总 job-seconds 为 **10491→8586（−18.2%）**；Loom 运行包级 `loom-tests` 的两个有界真模型，`ci init` 不再生成主仓专属 Loom 路径，tier→workflow 归属有契约测试。此项关闭只代表执行所有权与 Nightly 分流完成；Stage 1 继续 Shadow，选择性执行仍归 **K-CI-IMPACT-01**） |
-| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **Partial · references normalized / July and August history separated / structural gate added**（2026-09-29：[接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，18 个重复 ID 的 20 处重复行改为显式引用；首部 20 段七月 Verification 与连续八月工程收口快照迁入各自历史归档，旧裁定/顺序保留，仅重定位相对链接。持续结构检查已接入既有债计划和 Dimension 5；重复当前行、错误锚点/引用及直接状态声明反例调用同一函数。逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。§5 及其它长快照、全表状态词和自由文本语义冲突仍需另定范围；不把登记行数当未偿还债数量，不重报全仓产品验收） |
+| **D-DEBT-LEDGER-01** | 技术债 SSOT 同时承担活跃清单、完成历史与长验证日志，重复 ID 和状态复述增加漂移概率 | P2 | 每个 ID 只保留一个权威状态行；历史验证移入归档/波次记录并以链接引用；增加重复 ID/冲突状态检查，允许显式 cross-reference 但禁止双写状态 | **Partial · references normalized / June rounds, July Verification and August history separated / structural gate added**（2026-09-29：[接手协议](debt-marathon/DEBT_CHANGELOG.md) 已建立，18 个重复 ID 的 20 处重复行改为显式引用；首部 20 段七月 Verification 与连续八月工程收口快照迁入各自历史归档，旧裁定/顺序保留，仅重定位相对链接。持续结构检查已接入既有债计划和 Dimension 5；重复当前行、错误锚点/引用及直接状态声明反例调用同一函数。逐项依据见 [台账 Wave](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md)。§5 的轮次 16–19 已迁至 [六月归档](archive/TECHNICAL_DEBT_ROUNDS_202606.md)；其它长快照、全表状态词和自由文本语义冲突仍需另定范围；不把登记行数当未偿还债数量，不重报全仓产品验收） |
 | **D-ASSET-FOOTPRINT-01** | 官方角色图片直接进入 Git 与发行资源，资产体积已成为仓库主要组成 | P2 | 先建立视觉质量/解码兼容基线，再按角色包格式、loader、CSP、编写器与模块兼容链评估 WebP/AVIF 或 PNG 量化；不得只改单端后缀；发版体积和冷加载有实测收益才迁移 | **OPEN · measured**（2026-08-01：tracked working tree **98.9 MiB**；角色图片 **71** 张 / **85.7 MiB**，占 **86.6%**。这是优化候选，不等于立即引入 Git LFS） |
 
 **K-PLATFORM-01 子项**
@@ -316,39 +316,7 @@ Done 项（K-PERF-01~26、D-READ-01/02/04、K-ROBUST-01~03、Opus 4.8 Wave 0–4
 - [CHANGELOG.md](../CHANGELOG.md) `[0.5.0]` · `[Unreleased]`
 - git log `handoff/` · `kernel/crates/oclive_kernel_host`
 
-### 轮次 16 Done（2026-06-18）
-
-| ID | 项 | 说明 |
-|----|-----|------|
-| **T-LAYER-16** | Theater 测迁出 domain | `theater_director_resolver` → `distros/desktop-tauri/tests/theater_director_resolver.rs` |
-| **T-DOC-TD-01** | `theater_director` 文档扫尾 | DISTRO / ARCHITECTURE / NAMING / ROADMAP §7 / IA 头注 / domain README |
-| **T-MINIMAL-TD-01** | minimal 插件自包含 | `examples/directory-plugin-theater-director-minimal/prompts/` 本地 `buildTheaterPrompt` |
-| **T-CI-DRIFT-01** | prompt drift 门禁 | `dimension5-acceptance.mjs` + `test:theater:smoke` 双挂 |
-
-### 轮次 17 Done（2026-06-24）
-
-| ID | 项 | 说明 |
-|----|-----|------|
-| [D-DOCDRIFT-01](#debt-d-docdrift-01)（历史引用） | monorepo 后文档路径机械迁移 | 一次性迁移脚本已在完成后删除（历史见 `git log -- scripts/migrate-doc-paths.mjs`）；现由 `check-stale-paths.mjs` 持续门禁 |
-| [D-SCRIPT-02](#debt-d-script-02)（历史引用） | `check-stale-paths.mjs` 扩范围 | dimension5 十一检 |
-| [D-ORPHAN-04](#debt-d-orphan-04)（历史引用） | 删 `kernel/crates/models/` 空目录 | workspace 无引用 |
-
-### 轮次 18 Done（2026-06-24）
-
-| ID | 项 | 说明 |
-|----|-----|------|
-| [O-1](#debt-o-1)（历史引用） | plugin-bridge 资产内核化 | `kernel/crates/oclive_kernel_host/assets/plugin-bridge.iife.js`；删 desktop-tauri 副本 |
-| [O-2](#debt-o-2)（历史引用） | expert 孤儿前端清理 | 10 文件删；Tauri expert API / validation / dual_core 链保留 |
-| [D-DOC-RELOC-01](#debt-d-doc-reloc-01)（历史引用） | 文档名实归位 | `VSCODE_DISTRIBUTION` → `handoff/vscode/`；`USER_GUIDE` → `handoff/studio/`；`MUMU_UI_ACCEPTANCE` → `handoff/distros/` |
-
-### 轮次 19 Done（2026-06-24）
-
-| ID | 项 | 说明 |
-|----|-----|------|
-| [K-SUPPLY-01](#debt-k-supply-01)（历史引用） | `cargo deny` 硬门禁 | dimension5 检查项（licenses+bans）· `ci.yml` dimension5 job 安装 cargo-deny |
-| [K-SUPPLY-02](#debt-k-supply-02)（历史引用） | Release SHA256 | `generate-sha256sums.mjs` · `release-kernel-checksums.yml` · bundle 钩子 |
-| [K-SUPPLY-03](#debt-k-supply-03)（历史引用） | 插件审源码 toast | `installPath` DTO · 市场/git/zip · CLI · i18n |
-| **K-SUPPLY-DOC-01** | 供应链策略 SSOT | `creator-docs/security/SUPPLY_CHAIN.md` + 本文件 §1.5 |
+轮次 16–19（2026-06）的 Done 历史表见 [六月轮次归档](archive/TECHNICAL_DEBT_ROUNDS_202606.md)；归档不定义当前状态或开工条件。
 
 轮次 1–15 明细表已从本文件移除以降低噪音；需要历史格查 git `handoff/TECHNICAL_DEBT_INVENTORY.md` @ 2026-06-15。
 

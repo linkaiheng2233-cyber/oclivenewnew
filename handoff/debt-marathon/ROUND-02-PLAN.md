@@ -1,7 +1,7 @@
 # 第二轮马拉松计划：解除阻断后再偿还
 
 **SSOT 范围**：本文记录第二轮技术债马拉松的阶段安排及启动前复核；债务状态以 [`TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md) 为准，自动队列以 [`MARATHON_QUEUE.md`](./MARATHON_QUEUE.md) 为准。
-**最后更新**：2026-09-29（接续已冻结 Host PDB 的离线符号消费；早期基线与实验按各节日期保留）。
+**最后更新**：2026-10-02（接续六月轮次 16–19 归档；早期基线与实验按各节日期保留）。
 
 > 入口门禁：[`AI_AND_PIPELINE_GATES.md`](./AI_AND_PIPELINE_GATES.md)。本计划先处理外部阻断，不擅自把 human/skip 项改成 auto。
 
@@ -215,6 +215,14 @@
 **写集 / 保全**：主台账、本计划、DEBT_CHANGELOG、COVERAGE、同一台账 Wave、handoff 入口登记及一个新归档。本机独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/` 在编辑前保全七份原文与 HEAD。归档块原文顺序、日期、旧 SHA/CI、外部 URL 和文字除三个相对链接目录重定位外保持；重定位前后必须解析到同一现存文件，逆向重定位后正文逐字节匹配 S0。其余主台账行及既有 ID/引用/状态字段不变，QUEUE、机器计划、产品和旧证据不改。
 
 **验收 / CI 节奏**：独立迁移审计、默认/改文 Markdown 链接、docs-only 旧路径、文档登记、债结构、UTF-8 与包含新归档的 staged diff 全部适用；纯文档不重跑 Rust/业务场景。先完成本地分类提交；父 `2852b285` 的正式 CI 终态前不推 main，随后按新目标 SHA 独立取证。结构与历史归档只使 D-DEBT-LEDGER-01 继续 Partial；其它长快照、全表状态词和自由文本语义尚未治理。
+
+### D-DEBT-LEDGER-01 · 六月轮次 16–19 历史表归档（2026-10-02）
+
+**范围 / 基线**：M 级文档切片，base `53479d8cbba6bffe92213dc65fde61fefac24882`、开场工作树干净。主台账 §5 的轮次 16–19 是 2026 年 6 月完成历史，已有部分行写成指向 §1 权威状态的历史引用；迁至 `handoff/archive/TECHNICAL_DEBT_ROUNDS_202606.md`，主表原位保留明确标注“历史、非现行状态”的单一链接。§1–§4、速查坐标、轮次 1–15 提示、旧归档和所有债务当前状态不在迁移范围。
+
+**保真合同 / 写集**：从 `### 轮次 16 Done` 到“轮次 1–15 明细表”之前的四张表原顺序保留，只有九条 `(#debt-…)` 相对锚点改为 `../TECHNICAL_DEBT_INVENTORY.md#debt-…`；K-SUPPLY-DOC-01 行的“本文件 §1.5”作为原始历史措辞留存，归档页头说明其来源。迁移脚本先冻结原文和 SHA，再反向重定位比较全部表格正文；归档末尾仅去掉一个多余空行，核原/新 ID 行及四轮标题一致、锚点仍解析到当前权威行。写集为主台账、新归档、本计划、台账 Wave、DEBT_CHANGELOG、COVERAGE、handoff 入口和 archive 索引；不改产品、脚本、QUEUE、机器计划、旧证据或债务状态。reqwest 暂缓只追加到原计划/事件，单独对账。
+
+**出口**：迁移核验、`node scripts/check-debt-ledger.mjs`、默认及改文 Markdown 链接、docs-only stale paths、文档登记、`npm run check:debt-marathon`、中文 UTF-8 与暂存差量均须通过；仅文档迁移不重跑业务与 Rust。当前本地提交 `53479d8c` 尚未推送；按用户既有里程碑授权，完成本切片后分类本地提交并决定是否合并推送，目标 SHA CI 与此前 `053ebdad` 的绿灯分列。D-DEBT-LEDGER-01 仍 Partial，持续门禁已覆盖结构但不能证明自由文本语义，其他长快照与全表状态词仍待处理。
 
 ## 历史阶段安排
 

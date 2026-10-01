@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-09-28。
+**最后更新**：2026-10-02。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
@@ -95,6 +95,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | [debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md](debt-marathon/waves/WAVE-20260929-DEBT-REFERENCES.md) | D-DEBT-LEDGER-01 权威行/引用、历史迁移与持续结构检查合同和保全核对；不维护另一份当前债务状态表 |
 | [archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md](archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md) | 七月历史 Verification 的旧 SHA/CI 与限定范围；非当前 truth，不定义现行状态或开工权限 |
 | [archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md](archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md) | 八月工程与产品收口快照、旧评分和旧排期；非当前 truth，不定义现行状态或开工权限 |
+| [archive/TECHNICAL_DEBT_ROUNDS_202606.md](archive/TECHNICAL_DEBT_ROUNDS_202606.md) | 六月轮次 16–19 的旧 Done 表；非当前 truth，当前状态仍以主台账为准 |
 | [PRODUCT_LINE_TASK_BUCKETS.md](PRODUCT_LINE_TASK_BUCKETS.md) | 产品线执行分桶 |
 | [PERF_PHASES.md](PERF_PHASES.md) | 性能阶段与复现入口 |
 | [TTFT_BENCHMARK.md](TTFT_BENCHMARK.md) | TTFT 基准 |

@@ -60,6 +60,6 @@
 | 直接客户端 | 根 Cargo.toml 的 reqwest 0.12、禁 default、启用 `rustls-tls`，由 CLI、Host、桌面继承；`cargo tree --locked --offline -e features -i reqwest@0.12.28 --depth 2` 确认当前 Windows 图使用 webpki 根与 ring |
 | 另一个版本 | `cargo tree --locked --offline --target all -i reqwest@0.13.4 --depth 3` 指向 Tauri 2.11.5；其 Cargo.toml 将该依赖限定在 Android / 非 macOS Apple 目标。当前 Windows 反向树无 0.13 条目，不能把全目标重复写成当前桌面双 HTTP 栈 |
 | 兼容止点 | reqwest 0.12.28 的 `rustls-tls` 指向 webpki roots；0.13.4 的 `rustls` 改用平台验证器并引入 aws-lc。仅改版本与 feature 名不是行为等价更新；影响云端模型、远程插件、下载等 HTTPS 调用，不只是本地恢复入口 |
-| 后续 | reqwest 保留 skip；平台根证书策略需另定，或选择其它兼容依赖族。保持旧信任策略也可研究显式 TLS 配置，但属于独立迁移切片，不能顺手扩成所有客户端重构；本轮未做升级编译或 HTTPS 实机验收 |
+| 后续 | 维护者于 2026-10-02 选择暂缓 reqwest，继续其他债务。保留该 skip；若未来重启，平台证书策略及跨平台 HTTPS 验证另定独立迁移切片。本轮未做升级编译或 HTTPS 实机验收 |
 
 本机源码依据为 Cargo registry 的 reqwest 0.12.28/0.13.4 `Cargo.toml`、`src/async_impl/client.rs` 与 tauri 2.11.5 `Cargo.toml`；可携带的上游说明见 [reqwest 0.13 发布说明](https://seanmonstar.com/blog/reqwest-v013-rustls-default/)。结论足以分类后停止，不为减少一个 skip 自动改变安全语义。原始负控留在本机忽略目录 `.cursor/plans/debt-rust-toolchain-update-20261001-r0/`，不随 Git 携带。

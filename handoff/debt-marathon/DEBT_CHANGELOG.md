@@ -1,7 +1,7 @@
 # 技术债变动记录与 AI 接手协议
 
 **SSOT 范围**：技术债的依赖登记、变动事件、证据关联与安全续跑坐标；不维护第二份当前债务状态表。
-**最后更新**：2026-10-01。
+**最后更新**：2026-10-02。
 
 当前状态唯一以 [TECHNICAL_DEBT_INVENTORY](../TECHNICAL_DEBT_INVENTORY.md) 为准；执行准入以 [QUEUE](MARATHON_QUEUE.md)、对应 long-plan 和 [GATES](AI_AND_PIPELINE_GATES.md) 为准。通用过程以[仓库流水线](../workflows/dev-pipeline/SKILL.md)为准。本记录中的旧事件是当时快照，后续事件不能改写原始证据。依赖读下节，实际开工顺序及首批切片读 [第二轮计划](ROUND-02-PLAN.md#当前开工准备2026-09-28)。
 
@@ -322,15 +322,20 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **实现 / 结果**：仅在 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的 `#[cfg(test)]` 复用 `serde_yaml_ng` 与真实 `render_ci_yaml`，从 `CARGO_MANIFEST_DIR` 向上三层扫描全部 `.github/workflows/*.yml/*.yaml`；仓库 Rust Action 引用须为唯一 40 hex pin、每处显式 `stable`，Library/Kernel 两种真实模板须含同一 pin。共享 collector 的内存负控按预期拒绝 workflow-only PR #184 新 SHA、单处仓库 pin、模板漂移、缺 stable、短 SHA 与缺 Action。
 - **本地证据**：定向 `ci_cmd::tests` native 0、5 passed；完整 `cargo test --locked -p oclive-cli -- --test-threads=1` native 0、16 套 132 passed；最终 `cargo fmt --all -- --check`、`cargo clippy --locked -p oclive-cli --all-targets -- -D warnings`、Dimension 5 `--ci` 29/29、默认及六份改文链接、docs-only stale paths、doc registry、doc mirror、debt-marathon 均 native 0。首次格式检查与 Clippy 对新增测试辅助代码报错，原日志保留，格式与类型简化后复测转绿。生产代码前缀、workflow、Cargo.lock 未改；完整 CLI 测试在临时项目构建时访问 crates.io 索引，未改仓库锁文件。K-SUPPLY-10 保持 **Partial**；本轮目标 SHA 远端 CI 与实际升级模板同步仍待证，不以既有 `36765997872` 绿灯宣称本轮完成。
 
-### DCL-20261001-06 · K-SUPPLY-05 reqwest 范围与安全止点
-
-- **记录者 / 范围**：主控 Codex；基线 `053ebdadf990c9c278bfc601c1e9b1640258c962`、开场干净。单族 D1 只读对账，结论与精确命令见 [Full 计划](long-plans/K-SUPPLY-05-Full.md#2026-10-01--reqwest-单族重对账d1实施未启动)。38 条 skip 仍须保留；tree 顶层未显示不代表 deny 的全目标依赖不存在，删除 17 条的临时负控已全部被拒，未动正式成员集。
-- **事实 / 处置**：reqwest 0.12 是 CLI/Host/桌面的直接客户端；0.13 来自 Tauri 的移动目标，不是当前 Windows 运行图的第二份客户端。升级同时涉及 webpki→平台证书验证与 crypto provider 特性变化，不能按普通版本消重执行。仅修正 `deny.toml` 中 reqwest 的过期理由，未改变门禁、依赖或网络行为；用户安全取舍待答，机器计划/QUEUE 继续 blocked:needs-reconcile，父债 Full Partial 不变。没有升级编译或真实 HTTPS 验收。
-- **前轮证据随本次实质文档入账**：K-SUPPLY-10 实际更新提交 `053ebdadf990c9c278bfc601c1e9b1640258c962` 的 [CI 36823868603](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36823868603) 为 completed/success，17/17 jobs，含正式 ci-gate；这是该 SHA 的已声明路径证据，不关闭所有模板未来维护债，也不替代本轮新提交的远端验证。
-- **本地验证**：正式 `cargo deny --offline check bans`、默认入口和四份改文链接、docs-only stale paths、doc registry、债务结构、diff 与四份中文文档 UTF-8 检查通过。只改说明与接手记录，无需重跑产品场景；本轮未推送，不声称新提交远端已验证。
-
 ### DCL-20261001-05 · K-SUPPLY-10 实际 Rust Action 更新配对模板
 
 - **记录者 / 类型**：主控 Codex；接续 DCL-20261001-04 的防漂移合同与主线 `e3030a9f3d04726381e47c810bed5e39f883904f`。真实 [Dependabot PR #184](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/184) 仅升级四份 workflow 的 14 处 Rust Action pin；在当前主线应用相同更新，并同步 CLI 生成器生产模板的五处引用。旧 PR 仅作来源，不直接合并或改动其分支。K-SUPPLY-09 签名决策仍暂缓。
 - **来源 / 语义**：所选原上游 `02cb101ec7c40f2c49e1d9714d64511d8e1b74de` 相对旧 pin 的 Action 差量是在两条 rustup 安装/默认命令增加 `--force-non-host`，不是完全等价提交；仓库所有 19 处仍显式 `toolchain: stable`，没有新增非宿主工具链输入。只替换 40 位 SHA，不改 runner、权限、触发、命令、失败策略、其它 Action 或锁文件。独立 nightly/release、非宿主工具链与传递供应链范围未据此验收。
 - **验证 / 边界**：既有 CLI 生成器与仓库同步正负合同 5/5、fmt 原生 exit 0，独立只读差量复核通过。`check:ci-local` 首轮仅因把语音 Python 环境变量误指向 `.cmd` 包装器而 exit 1，原日志保留；仅改子进程为已核 `python.exe` 后第二轮 native exit 0（Dimension 5 29/29，前端构建及 Rust 工作区/CLI 集成均按原链通过）。四份改文链接、stale docs、登记、镜像、债结构、diff 检查全 exit 0；来源与细节见 [Actions Wave](waves/WAVE-20260929-ACTIONS-PINS.md#2026-10-01--pr-184-的实际-action-更新与-cli-模板同步)。目标正式 CI 待证。K-SUPPLY-10 保持 **Partial**，本次证明单个实际升级的人工配对，不宣称所有模板可自动维护。
+
+### DCL-20261001-06 · K-SUPPLY-05 reqwest 范围与安全止点
+
+- **记录者 / 范围**：主控 Codex；基线 `053ebdadf990c9c278bfc601c1e9b1640258c962`、开场干净。单族 D1 只读对账，结论与精确命令见 [Full 计划](long-plans/K-SUPPLY-05-Full.md#2026-10-01--reqwest-单族重对账d1实施未启动)。38 条 skip 仍须保留；tree 顶层未显示不代表 deny 的全目标依赖不存在，删除 17 条的临时负控已全部被拒，未动正式成员集。
+- **事实 / 处置**：reqwest 0.12 是 CLI/Host/桌面的直接客户端；0.13 来自 Tauri 的移动目标，不是当前 Windows 运行图的第二份客户端。升级同时涉及 webpki→平台证书验证与 crypto provider 特性变化，不能按普通版本消重执行。仅修正 `deny.toml` 中 reqwest 的过期理由，未改变门禁、依赖或网络行为；维护者于 2026-10-02 选择暂缓此族并继续其他债务。机器计划/QUEUE 继续 blocked:needs-reconcile，父债 Full Partial 不变。没有升级编译或真实 HTTPS 验收。
+- **前轮证据随本次实质文档入账**：K-SUPPLY-10 实际更新提交 `053ebdadf990c9c278bfc601c1e9b1640258c962` 的 [CI 36823868603](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36823868603) 为 completed/success，17/17 jobs，含正式 ci-gate；这是该 SHA 的已声明路径证据，不关闭所有模板未来维护债，也不替代本轮新提交的远端验证。
+- **本地验证**：正式 `cargo deny --offline check bans`、默认入口和四份改文链接、docs-only stale paths、doc registry、债务结构、diff 与四份中文文档 UTF-8 检查通过。只改说明与接手记录，无需重跑产品场景；本轮未推送，不声称新提交远端已验证。
+
+### DCL-20261002-01 · D-DEBT-LEDGER-01 六月轮次历史表迁移
+
+- **记录者 / 范围**：主控 Codex；base `53479d8cbba6bffe92213dc65fde61fefac24882`，开场干净。依 [第二轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--六月轮次-1619-历史表归档2026-10-02) 仅迁主台账 §5 的轮次 16–19，保留原位带历史边界的链接；新 [六月归档](../archive/TECHNICAL_DEBT_ROUNDS_202606.md) 不定义现行债务状态。
+- **保真 / 结果**：迁前主台账原文 SHA256 `49DCAD75909783AD1BB749031CD3639100208AE514F12F2B293F59E3A8A2BA05` 留本机忽略证据根；四个轮次标题、原表格顺序与文字保持，九处相对债务锚点改为指向同一主台账目标。九处链接逆向重定位并还原归档末尾的一个段间空行后，表格正文逐字比较通过；当前登记结构检查仍过，历史-only 行 5→0、主表历史引用 9→0 是内容移出造成的结构变化，不是债务关闭或测试丢失。其它当前状态与旧归档不改，D-DEBT-LEDGER-01 保持 Partial；未处理全表自由文本冲突或其它长快照。
