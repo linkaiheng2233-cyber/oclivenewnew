@@ -36,13 +36,13 @@
 - **绿灯后不做证据专用提交**：远端 CI 已绿后，禁止只为回写 run ID、数字或状态而修改同一 PR。证据先写 PR 评论/交付报告，并随下一次有实质内容的文档或代码提交入账；确需立即入账时须明确接受新一轮 CI 成本。
 - **证据严格绑定 SHA**：旧提交的成功不能证明新 HEAD；任何实质推送都使旧远端结论仅保留为历史证据。完整口径见 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) §2.4。
 
-### 强模型规划与经济模型执行
+### 按语义风险自适应规划、实施与复核
 
-用户确认日期：2026-09-05。
+用户确认日期：2026-09-05；型号门禁更新：2026-10-01。
 
-- 第二条流水线只负责按语义风险路由规划：Luna 显式实施，GPT6（`gpt-6-astra`）最终验收；不得静默替换所需模型或由主 Agent 接管实现。它复用第一条工程流水线，不替换 S/M/L、CI/Done 门禁，也不实现自动路由服务。
+- 第二条流水线按语义风险决定规划和复核深度，由当前具备相应能力的实施者执行；不绑定特定模型，也不因旧型号不可用自动停工。controller 可以接续实施，须保留写集、适用门禁与失败记录。它复用第一条工程流水线，不替换 S/M/L、CI/Done 门禁，也不实现自动路由服务。
 - 新语义、公共 contract、产品、宿主、权限或安全选择仍归用户；委派不扩大当前用户权限、写集、冻结项或保护项。只读询问不自动变实施或启动整套 Agent。
-- controller 只能在 GPT6 核对原始目标、现行 SSOT、真实 diff 与证据后建立本地提交/回滚点；CI、Done 和数字核实继续以 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) 为准。
+- controller 只能在适用复核核对原始目标、现行 SSOT、真实 diff 与证据后建立本地提交/回滚点；独立复核与自查须分开报告。CI、Done 和数字核实继续以 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) 为准。
 - 第二流水线的路由、dispatch、回传、停止/重试、预算、并行和轻任务复用细则只维护于 [`workflows/oclive-adaptive-pipeline/SKILL.md`](workflows/oclive-adaptive-pipeline/SKILL.md)；本节不复制。
 
 ---
