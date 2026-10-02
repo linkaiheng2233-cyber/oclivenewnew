@@ -29,3 +29,9 @@
 在上一切片的真实内存 SQLite／完整 `AppState` 测试末尾加入合成角色，用生产 `save_llm_user_settings_impl` 保存第三个 Ollama Base URL。调用成功后，DB 与 `OLLAMA_BASE_URL` 都是第三个值。与前一阶段“只改 DB 而未标脏，旧环境继续生效”的负例构成对照：保存设置入口确实履行标脏和应用责任，而任意直接写库不能因此自动获得相同保证。测试仍使用 `MockLlmClient`，没有真实模型、网络或用户库。
 
 **范围与止点**：定向测试 1 passed / exit 0；fmt、定向 Clippy 和 `npm run check:ci-local` 均 exit 0，综合链含工作区与 CLI 集成测试。只证明本地 provider 的保存设置主路径，不证明云端 token、LoRA、保存失败的事务性，也不外推 chat/theater/canonical sync、持久 DB 或完整 AppState 并发交错。目标 SHA 的远端结果另核，父债保持未结案。
+
+## 2026-10-03 · 对话主入口应用待刷新 DB 值
+
+在同一隔离测试中，保存设置的第三个 URL 应用完成后，直接向内存 DB 写入第四个 URL 并标脏，再调用生产 `process_message` 走合成角色和 `MockLlmClient` 的正常对话。模拟回复成功返回，进程 `OLLAMA_BASE_URL` 同时成为第四个值，证明 chat 主入口在本场景生成前消费了待应用配置。这与“不标脏时直接写库仍沿用旧环境”的负例相邻，便于区分调用者责任。
+
+**边界**：定向测试 1 passed / exit 0；第一次 fmt 仅新增 import 顺序不符，定点修正后通过；定向 Clippy、`npm run check:ci-local` 均 exit 0，后者覆盖工作区与 CLI 集成。目标远端 CI 另核。该用例不证明流式/断流、真实 provider、Theater/canonical sync、持久 DB、并发版本或跨进程环境一致性，K-LLM-ENV-02 仍未结案。

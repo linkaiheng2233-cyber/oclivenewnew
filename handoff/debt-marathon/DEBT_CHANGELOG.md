@@ -369,3 +369,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；基线 `8e39f6b6269e0a7aba3d305c9353d1fa1e1936ed`。依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--保存设置主路径接入刷新2026-10-03)和[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--保存设置主路径的标脏责任)，限于本地 provider 的保存设置主路径。
 - **before → after**：前一用例只证明直接 DB 写入后的 dirty 快路径；现加入最小合成角色，真实调用 `save_llm_user_settings_impl`。它保存第三个 URL 后，DB 和进程环境均对应新值，从而把保存入口的标脏责任与直接写库负例区别开。生产实现、模型/网络和用户数据均未改变。
 - **验证 / 剩余**：定向集成测试 1 passed；fmt、定向 Clippy、`npm run check:ci-local` 均 exit 0，目标远端 CI 待新 SHA 单独核验。只覆盖 local provider；chat/theater/canonical sync、真实持久库、完整 AppState 并发版本、长时间压力和云端/LoRA 分支仍在剩余范围。父债不升 Done。
+
+### DCL-20261003-03 · K-LLM-ENV-02 chat 主入口的待应用设置
+
+- **记录者 / 类型**：主控 Codex；基线 `1a0acca1`。依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--对话主入口消费待应用配置2026-10-03)和[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--对话主入口应用待刷新-db-值)，复用已建立的内存 DB/合成角色/Mock LLM 夹具。
+- **before → after**：保存设置入口已证明会标脏并应用，但 chat 自身只见源码调用；现把第四个 DB URL 标脏后走真实 `process_message`，模拟回复成功且环境变为该 URL。这样补上一个正常对话主路径的入口证据，不要求真实模型来证明环境刷新。
+- **验证 / 剩余**：定向测试 1 passed；第一次 fmt 仅新增 import 顺序不符，修正后通过；定向 Clippy 和 `npm run check:ci-local` 均 exit 0。目标远端 CI 待新 SHA 单独核验。流式/断流、Theater/canonical sync、持久 DB、完整 AppState 并发版本和长期压力仍缺；K-LLM-ENV-02 不升 Done。

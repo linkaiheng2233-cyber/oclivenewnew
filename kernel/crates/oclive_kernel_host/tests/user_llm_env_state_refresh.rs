@@ -1,5 +1,6 @@
 //! The integration-test binary isolates process-wide LLM environment variables.
 
+use oclive_kernel_host::domain::chat_engine::process_message;
 use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
 };
@@ -8,6 +9,7 @@ use oclive_kernel_host::service::llm_settings::{
     reload_llm_user_env_impl, save_llm_user_settings_impl, SaveLlmUserSettingsRequest,
 };
 use oclive_kernel_host::state::AppState;
+use oclive_kernel_types::models::dto::SendMessageRequest;
 use std::ffi::OsString;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -47,7 +49,7 @@ impl Drop for RestoreEnvironment {
 }
 
 #[tokio::test]
-async fn actual_state_refreshes_only_after_a_dirty_mark() {
+async fn app_state_reload_save_and_chat_apply_expected_llm_environment() {
     let _environment = RestoreEnvironment::capture();
     let temp = TempDir::new().expect("isolated role root");
     let role_dir = temp.path().join("env-probe");
@@ -144,5 +146,27 @@ async fn actual_state_refreshes_only_after_a_dirty_mark() {
             .expect("read saved base URL")
             .as_deref(),
         Some("http://127.0.0.1:33333")
+    );
+
+    state
+        .db_manager
+        .upsert_app_setting(KEY_OLLAMA_BASE, "http://127.0.0.1:44444")
+        .await
+        .expect("store pending chat setting");
+    state.mark_user_llm_env_dirty();
+    let response = process_message(
+        &state,
+        &SendMessageRequest {
+            role_id: "env-probe".to_owned(),
+            user_message: "hello".to_owned(),
+            ..Default::default()
+        },
+    )
+    .await
+    .expect("chat entry applies pending LLM environment");
+    assert_eq!(response.reply, "unused");
+    assert_eq!(
+        std::env::var("OLLAMA_BASE_URL").as_deref(),
+        Ok("http://127.0.0.1:44444")
     );
 }
