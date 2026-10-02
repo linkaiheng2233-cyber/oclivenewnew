@@ -67,6 +67,12 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 这项去重与选择性执行仍是两层控制：Stage 3.1 允许安全的草稿 PR 按计划选择责任组，用于开发反馈；ready PR 只有纯文档 Canary 可以继续选择性执行，其他 ready PR 与所有 Push 都运行全部主 CI 责任组。规划器 warning/full fallback/异常在任何状态都强制全量。目录中 `tier=nightly` 的责任组继续进入独立 Nightly/手动通道。每次调整执行所有权都必须同时更新工作流、验证目录、本地复现命令和仓库契约测试；在远端证据确认前，不以本地冷/热缓存耗时推断最终收益。
 
+#### 后续责任分层的调查输入（未实施）
+
+当前的 job 所有权去重已生效；它尚未证明每个验证器都按 Kernel 与可变化 Host 的责任边界归属。下一轮评估以 **Kernel 自身公共契约 → 通用 Host 接入契约 → 具体 Host / 发行版行为 → 发布组合** 四层逐项标注现有 validator、job 与真实调用者。Kernel 层只承诺其公共能力，不把某个 7B 或 Chat Pro Host 的业务路径当作所有 Host 的代表；通用接入层检验合法 Host 能否满足接口；具体 Host 维护自己的扩展和业务测试；组合测试在目标发行/集成里验收。这是待核的归属模型，不预判现有 CI 已错误归类，也不改变当前 `ci-gate`、Stage 3.1 选择范围或 Push 全量策略。
+
+调查先覆盖现有主 CI 责任组的拥有者、跨层依赖与已有 Compare 的漏选/过选候选，再挑能改变路由决策的少数边界追证；记录未判定项即可停止，不为消除低风险不确定性穷尽调用链。只有在同一目标 SHA 的真实 Compare、契约测试及稳定门禁能证明没有漏掉应测范围后，才提出逐类迁移。日常全量运行的节奏控制按 [`AI_VERIFICATION_PROTOCOL.md` §2.4](../../handoff/AI_VERIFICATION_PROTOCOL.md#ci-推送节奏与证据绑定) 执行，不以重构 CI 为当前债务收敛的前置条件。
+
 ### 2.5 执行通道约定
 
 - `.github/workflows/ci.yml`：`ci-impact-plan` 产出执行范围；安全草稿 PR 与 ready 的纯文档 Canary 可选择性执行，其他事件 fail-safe 全量；草稿发布 `ci-draft-gate`，ready/Push 发布受保护的 `ci-gate`，两者都核对 selected/success 与 unselected/skipped；

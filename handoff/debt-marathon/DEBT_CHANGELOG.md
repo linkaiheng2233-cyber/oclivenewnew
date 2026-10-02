@@ -375,3 +375,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；基线 `1a0acca1`。依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--对话主入口消费待应用配置2026-10-03)和[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--对话主入口应用待刷新-db-值)，复用已建立的内存 DB/合成角色/Mock LLM 夹具。
 - **before → after**：保存设置入口已证明会标脏并应用，但 chat 自身只见源码调用；现把第四个 DB URL 标脏后走真实 `process_message`，模拟回复成功且环境变为该 URL。这样补上一个正常对话主路径的入口证据，不要求真实模型来证明环境刷新。
 - **验证 / 剩余**：定向测试 1 passed；第一次 fmt 仅新增 import 顺序不符，修正后通过；定向 Clippy 和 `npm run check:ci-local` 均 exit 0。目标远端 CI 待新 SHA 单独核验。流式/断流、Theater/canonical sync、持久 DB、完整 AppState 并发版本和长期压力仍缺；K-LLM-ENV-02 不升 Done。
+
+### DCL-20261003-04 · K-CI-IMPACT-01 全量 CI 节奏与责任边界登记
+
+- **记录者 / 类型**：主控 Codex；维护者提出控制全量 CI 的使用频率，并把 Kernel/Host 责任分层作为后续 CI 设计债，而非本轮重构。归入既有 K-CI-IMPACT-01；已完成执行去重的 D-CI-EXECUTION-02 不重开。
+- **触发事实 / 例子**：同一 K-LLM-ENV-02 主题的阶段提交 `8e39f6b6` 与最终 `9114cc01` 分别取得[主 CI 37047235967](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37047235967)和[主 CI 37053114491](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37053114491)的 17/17；两个 SHA 各自的成功证据有效，但这组切片也说明“每个小步骤都先结案再继续”会重复付出全量运行成本。不能仅由次数推定工作流设计有缺陷；开发/验收节奏与验证器归属分开处理。
+- **本轮收敛 / 后续止点**：[`AI_VERIFICATION_PROTOCOL.md`](../AI_VERIFICATION_PROTOCOL.md#ci-推送节奏与证据绑定)明确同主题低/中风险切片先定向验证、批次最终 HEAD 再完整验收，真实高风险独立验收点例外；[`SOMEDAY_TOOLCHAIN_CI.md`](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#后续责任分层的调查输入未实施)登记 Kernel、通用 Host 接入、具体发行版与发布组合四层候选归属。现行 Push/ready 全量、草稿选择、正式 gate 均不改。下一步仅有界盘点现有 validator/job 的责任与 Compare 数据，足以分类即停；没有证据前不改路由、删门禁或把某个 Host 的全套测试升为 Kernel 公共契约。
