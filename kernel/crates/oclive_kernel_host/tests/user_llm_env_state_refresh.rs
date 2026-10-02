@@ -1,17 +1,21 @@
 //! The integration-test binary isolates process-wide LLM environment variables.
 
+use async_trait::async_trait;
 use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_host::domain::ports::LlmClient;
+use oclive_kernel_host::domain::theater::generate_scene;
 use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
 };
-use oclive_kernel_host::infrastructure::MockLlmClient;
+use oclive_kernel_host::error::Result;
 use oclive_kernel_host::service::llm_settings::{
     reload_llm_user_env_impl, save_llm_user_settings_impl, SaveLlmUserSettingsRequest,
 };
 use oclive_kernel_host::state::AppState;
-use oclive_kernel_types::models::dto::SendMessageRequest;
+use oclive_kernel_types::models::dto::{SendMessageRequest, TheaterSceneRequest};
+use serde_json::json;
 use std::ffi::OsString;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tempfile::TempDir;
 
 const ENV_KEYS: &[&str] = &[
@@ -48,8 +52,28 @@ impl Drop for RestoreEnvironment {
     }
 }
 
+#[derive(Default)]
+struct RecordingLlm {
+    tag_base_urls: Mutex<Vec<String>>,
+}
+
+#[async_trait]
+impl LlmClient for RecordingLlm {
+    async fn generate(&self, _model: &str, _prompt: &str) -> Result<String> {
+        Ok("unused".to_owned())
+    }
+
+    async fn generate_tag(&self, _model: &str, _prompt: &str) -> Result<String> {
+        self.tag_base_urls
+            .lock()
+            .expect("recording lock")
+            .push(std::env::var("OLLAMA_BASE_URL").unwrap_or_default());
+        Ok(r#"[{"id":"b1","cast":"a","name":"Env Probe","text":"Scene complete"}]"#.to_owned())
+    }
+}
+
 #[tokio::test]
-async fn app_state_reload_save_and_chat_apply_expected_llm_environment() {
+async fn app_state_reload_save_chat_and_theater_apply_expected_llm_environment() {
     let _environment = RestoreEnvironment::capture();
     let temp = TempDir::new().expect("isolated role root");
     let role_dir = temp.path().join("env-probe");
@@ -59,14 +83,10 @@ async fn app_state_reload_save_and_chat_apply_expected_llm_environment() {
         r#"{"id":"env-probe","name":"Env Probe","version":"1","author":"test","description":"isolated settings fixture","default_personality":[0.5,0.5,0.5,0.5,0.5,0.5,0.5],"evolution":{},"user_relations":{"friend":{"prompt_hint":"test"}},"default_relation":"friend","memory_config":{"scene_weight_multiplier":1.0,"topic_weights":{}}}"#,
     )
     .expect("role manifest");
-    let state = AppState::new_in_memory_with_llm(
-        Arc::new(MockLlmClient {
-            reply: "unused".to_owned(),
-        }),
-        temp.path(),
-    )
-    .await
-    .expect("in-memory AppState");
+    let llm = Arc::new(RecordingLlm::default());
+    let state = AppState::new_in_memory_with_llm(llm.clone(), temp.path())
+        .await
+        .expect("in-memory AppState");
 
     state
         .db_manager
@@ -168,5 +188,33 @@ async fn app_state_reload_save_and_chat_apply_expected_llm_environment() {
     assert_eq!(
         std::env::var("OLLAMA_BASE_URL").as_deref(),
         Ok("http://127.0.0.1:44444")
+    );
+
+    state
+        .db_manager
+        .upsert_app_setting(KEY_OLLAMA_BASE, "http://127.0.0.1:55555")
+        .await
+        .expect("store pending theater setting");
+    state.mark_user_llm_env_dirty();
+    let tag_calls_before = llm.tag_base_urls.lock().expect("recording lock").len();
+    let request: TheaterSceneRequest = serde_json::from_value(json!({
+        "cast_a": { "role_id": "env-probe", "name": "Env Probe" },
+        "cast_b": { "role_id": "env-probe", "name": "Env Probe" },
+        "scene_id": "env-scene",
+        "base_beats": [{ "id": "b1", "cast": "a", "name": "Env Probe", "text": "Scene starts" }],
+        "applied_tweaks": [],
+        "fallback_beats": [{ "id": "b1", "cast": "a", "name": "Env Probe", "text": "Fallback" }]
+    }))
+    .expect("valid theater scene request");
+    let scene = generate_scene(&state, &request)
+        .await
+        .expect("theater entry applies pending LLM environment");
+    assert_eq!(scene.beats[0].text, "Scene complete");
+    let observed = llm.tag_base_urls.lock().expect("recording lock");
+    assert_eq!(observed.len(), tag_calls_before + 1);
+    assert_eq!(observed[tag_calls_before], "http://127.0.0.1:55555");
+    assert_eq!(
+        std::env::var("OLLAMA_BASE_URL").as_deref(),
+        Ok("http://127.0.0.1:55555")
     );
 }

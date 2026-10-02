@@ -327,3 +327,19 @@
 **尺寸 / 起点 / 目的**：S，基于本地保存入口切片 `1a0acca1`。`process_message` 在生成前直接调用 `apply_user_llm_env`，但此前用例没有从完整 `AppState` 的 DB 值验证这条入口。复用同一隔离测试，在保存设置后直接写入第四个 URL、显式标脏、发起一个合成角色的模拟对话，核回复与环境值；不改生产代码。
 
 **止点 / 验收**：只验证一条正常 chat 主路径和 Mock LLM，不追流式、断流、Theater、canonical sync、云端或真实模型。定向测试、fmt、Clippy、文档/债务检查及一次综合本地链通过后形成独立小提交；父债仍保持未结案。待前一个远端 SHA 终态后再按顺序同步，远端每个目标分别核验。
+
+### K-LLM-ENV-02 · Theater 主入口消费待应用配置（2026-10-03）
+
+**尺寸 / 基线 / 目标**：M 级测试与债务记录切片，基线 `5eec7b42e706d28d78eb4c63ae087020c562716c`，工作树干净。本次只沿 `generate_scene → apply_user_llm_env → Theater LLM` 核一条有合成角色、有效场景和内存 SQLite 的主路径。先在 DB 写入第五个本地 URL 并显式标脏，再验证模拟生成器看到该值；与既有 chat 第四个 URL 对照。生产锁、DB 代码、公共 DTO、角色包和真实模型均不改。
+
+**写集 / 停止线**：只改 `tests/user_llm_env_state_refresh.rs`、本计划、同债 Wave、DEBT_CHANGELOG 和主台账 K-LLM-ENV-02 状态格。复用同一独立测试进程与临时角色目录；模拟生成器区分 chat 回复与 Theater 标签生成，并记录调用时环境，避免只证明函数返回后的副作用。若现有注入点不能让 Theater 走到模拟生成器，或需改生产装配/公共语义，记录缺口并跳过，不加测试专用生产钩子；不追 canonical sync、真实 provider、长时压力或其它模式。
+
+**验收 / 节奏**：先跑该集成测试、fmt、定向 Clippy、分层及适用文档/债务门禁；本批先形成可审查本地提交，不为每个测试切片触发一次全量 CI。后续同主题切片稳定时再做一次适用本地完整门禁与目标 SHA 远端验收。Theater 的本条证据不关闭完整 AppState 并发版本、持久 DB、canonical sync、流式/断流和进程级压力缺口，父债保持未结案。
+
+### K-LLM-ENV-02 · 桌面 canonical seed 的隔离文件库回归（2026-10-03）
+
+**尺寸 / 目标**：M 级同债第二切片，接续上方未推送的 Theater 测试。生产 `seed_shell_llm_from_canonical` 从 canonical `app.db` 复制设置到 UI shell 并调用 `mark_user_llm_env_dirty` / `apply_user_llm_env`；此前仅有源码对应，没有在隔离文件库上核对其行为。本切片只验证 local provider 和 Ollama Base URL 从临时 canonical 文件库进入内存 shell，旧环境先被生产 reload 应用，新值在 seed 后进入 shell DB 与进程环境。
+
+**写集 / 安全边界**：新建一个独立进程的 `distros/desktop-tauri/tests/canonical_llm_env_sync.rs`，只用临时 `OCLIVE_APP_DATA`、最小 `app_settings` 表、内存 `AppState` 和模拟 LLM；同步本计划、同债 Wave、变动事件及主台账状态。环境变量进入测试前保存、退出时恢复；所有 SQLite pool 显式关闭。不修改生产同步算法、桌面权限、公共 API、真实用户库、模型、网络或姊妹仓。若公共测试入口不可用或必须改变生产装配，则登记为未覆盖并停止该切片，不引入测试专用生产钩子。
+
+**验收 / 停止线**：新增单测试、fmt、定向 Clippy、分层与适用文档/债务检查通过；与 Theater 切片共同形成同主题本地冻结点。首轮 `check:ci-local` 因测试夹具旧目录名被 Dimension 5 拒绝，定点修正后第二轮完整本地链 exit 0。只证明一条 local-provider seed 路径，不外推双向同步、失败重试、云端 token、并发写入或启动进程联机。目标 SHA 的正式远端 CI 待独立核验；父债仍不升 Done。

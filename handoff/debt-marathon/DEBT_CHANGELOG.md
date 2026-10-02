@@ -381,3 +381,15 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；维护者提出控制全量 CI 的使用频率，并把 Kernel/Host 责任分层作为后续 CI 设计债，而非本轮重构。归入既有 K-CI-IMPACT-01；已完成执行去重的 D-CI-EXECUTION-02 不重开。
 - **触发事实 / 例子**：同一 K-LLM-ENV-02 主题的阶段提交 `8e39f6b6` 与最终 `9114cc01` 分别取得[主 CI 37047235967](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37047235967)和[主 CI 37053114491](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37053114491)的 17/17；两个 SHA 各自的成功证据有效，但这组切片也说明“每个小步骤都先结案再继续”会重复付出全量运行成本。不能仅由次数推定工作流设计有缺陷；开发/验收节奏与验证器归属分开处理。
 - **本轮收敛 / 后续止点**：[`AI_VERIFICATION_PROTOCOL.md`](../AI_VERIFICATION_PROTOCOL.md#ci-推送节奏与证据绑定)明确同主题低/中风险切片先定向验证、批次最终 HEAD 再完整验收，真实高风险独立验收点例外；[`SOMEDAY_TOOLCHAIN_CI.md`](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#后续责任分层的调查输入未实施)登记 Kernel、通用 Host 接入、具体发行版与发布组合四层候选归属。现行 Push/ready 全量、草稿选择、正式 gate 均不改。下一步仅有界盘点现有 validator/job 的责任与 Compare 数据，足以分类即停；没有证据前不改路由、删门禁或把某个 Host 的全套测试升为 Kernel 公共契约。
+
+### DCL-20261003-05 · K-LLM-ENV-02 Theater 入口的待应用设置
+
+- **记录者 / 范围**：主控 Codex；承接本地 CI 批次节奏登记，基线 `5eec7b42e706d28d78eb4c63ae087020c562716c`。按[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--theater-主入口消费待应用配置2026-10-03)只扩现有独立 Host 集成测试及同债记录，生产代码和公共契约零改动。
+- **before → after**：此前完整 `AppState` 的内存 SQLite 测试已覆盖刷新、保存与 chat，但 Theater 仅见 `generate_scene` 源码调用。现在第五个 URL 写库并标脏后，调用有效 Theater 场景；模拟 LLM 在实际标签生成时记录新 URL，返回结构化台词。生成结果、调用次数与调用时环境均被断言，不能仅凭返回后的环境推断生成前配置。
+- **验证 / 剩余**：最终字节定向测试 1 passed；首次 fmt 因新测试缩进非零，定点修正后 fmt、定向 Clippy 与分层均 exit 0。与 canonical seed 切片合批运行的 `check:ci-local` 最终 exit 0，目标 SHA 的远端 CI 仍待核，不借前一个 SHA 的绿色结果；父债保持未结案。完整 AppState 并发版本、canonical sync 其它路径、持久 DB、流式/断流、真实 provider 和长时压力仍是独立缺口，见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--theater-主入口消费待刷新-db-值)。
+
+### DCL-20261003-06 · K-LLM-ENV-02 桌面 canonical seed 的文件库对照
+
+- **记录者 / 范围**：主控 Codex；接续同债 Theater 测试，仅新增桌面集成测试与债务记录。按[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--桌面-canonical-seed-的隔离文件库回归2026-10-03)核生产 `seed_shell_llm_from_canonical`，没有改生产同步、DB schema、公共 DTO 或真实用户数据。
+- **before → after**：此前 canonical seed 只见源码中的复制、标脏与应用调用。现在以临时 canonical `app.db` 的最小 `app_settings` 表为输入，先让内存 shell 应用旧 URL，再调用生产 seed；shell DB 和进程环境均变为 canonical 新 URL。测试进程保存并恢复环境、显式关闭文件库 pool。
+- **验证 / 边界**：定向桌面测试 1 passed，fmt、定向 Clippy 与分层 exit 0。首轮 `check:ci-local` 只因新测试夹具触发旧目录名检查而止步，定点改名后第二轮完整本地链 exit 0；目标 SHA 远端 CI 另核，父债不升 Done。此证据只覆盖 local-provider seed，不证明完整桌面启动、全部迁移、双向同步、云端 token、完整 AppState 并发版本或长期压力，详见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--桌面-canonical-seed-的隔离文件库回归)。
