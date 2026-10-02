@@ -132,6 +132,8 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 - 无 BOM：首 3 字节 ≠ `EF BB BF`
 - JSON 文件须能正常解析
 
+**自动防回退（限定）**：`node scripts/check-doc-encoding.mjs` 扫描 `handoff/`、`creator-docs/`、`human-docs/` 的活跃 Markdown，拒绝无效 UTF-8、BOM、替换字符与连续三问号；Dimension 5 同时运行其负控。历史 `archive/` 不参与扫描。该门禁不能识别每个单独的 `?` 或判断中文语义，故上面的逐文件汉字数与内容复核仍是写后必检；不要因门禁通过就猜补受损原文。
+
 **已发生时**：先找干净源（git 历史提交 / 备份副本）恢复，再按本红线重写；不得把 `?` 当原文猜测回填。
 
 ---

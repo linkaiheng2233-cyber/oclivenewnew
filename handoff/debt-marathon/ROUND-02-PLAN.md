@@ -283,3 +283,11 @@
 **风险与边界**：上游 compare 显示 7 个提交，`action.yml` 的执行差量是 `rustup toolchain install` 与 `rustup default` 各增 `--force-non-host`；当前 workflow/模板的 19 处均显式 `toolchain: stable`，未通过 Action 选择非宿主工具链或组件/目标。判定为当前已声明路径的兼容更新，不能称 Action 完全等价，也不能外推所有 runner、nightly/release 或新非宿主输入。若 PR head、上游差量或输入语义漂移，或需修改权限、失败策略与工具链选择，暂停本切片重新规划。
 
 **写集 / 验收**：生产写集严格为 `.github/workflows/{ci,nightly-advisory,cargo-audit-lockfile,release-kernel-checksums}.yml` 及 `kernel/crates/oclive-cli/src/ci_cmd.rs` 的五处模板字面量，只替换上述 40 位 SHA；保留 `ci.yml` 原行尾、所有 stable、其它 Action、事件、权限、runner、脚本、Cargo.lock 与测试逻辑。文档仅更新本计划、Actions Wave、`DEBT_CHANGELOG.md` 与主台账 K-SUPPLY-10。先核文本与解析后的 YAML 差量只有预期 uses，跑现有 CLI 正负合同、fmt 与 diff；工具链影响整个 CI，再跑一次 `npm run check:ci-local` 及适用文档/债务门禁，不重复不受影响的真实业务场景。独立复核后，等待父提交 `ed6f6457` 的正式 CI 终态再推新主线；新目标 SHA 的正式 CI 含 Windows/Linux 与 `ci-gate` 成功前仅记 Locally verified。父债仍 Partial：本次仅证明一个实际升级的人工同步闭环，不宣称所有未来 Action 或模板自动更新。
+
+### K-ENCODING-01 · 活跃文档编码防回退（2026-10-02）
+
+**尺寸 / 基线 / 边界**：L，起点 `d7040c37cc95966764318a3f8aa6481c9a831b1e`、工作树干净且该 SHA 的主 CI 17/17 通过。此切片只保护 `handoff/`、`creator-docs/`、`human-docs/` 的活跃 Markdown；`archive/` 是历史原件，不改写也不作现行门禁输入。现有 307 份活跃文档在 UTF-8、无 BOM、无替换字符及连续三问号四项上均通过。CLI、产品源码、JSON、外部工作目录及历史证据不在写集。
+
+**目标 / 写集**：新增只读编码检查脚本与真实文件正负控，将其接入 Dimension 5；在本计划、K-ENCODING-01 权威行、GATES §7、DEBT_CHANGELOG 和本轮 Wave 记录可检测范围。检查必须拒绝无效 UTF-8、UTF-8 BOM、U+FFFD 与连续三问号，输出具体相对路径和原因；不以“有汉字”作为所有文档的硬门槛，因为英文文档有效。不得自动修复或猜测受损中文。门禁对现有活跃文档全量运行，避免按变更集漏掉被整体损坏的文件。
+
+**验收 / 止点**：先以临时普通文件验证四种拒绝与正常中英文、归档不参与默认扫描，再跑默认检查、Dimension 5、`check:ci-local`、适用文档/债务门禁、编码与 diff；冻结并推送后以目标完整 SHA 的正式 CI 验收。此切片无法从纯 ASCII 文件识别每一处一至两个问号替换，也不覆盖 JSON/历史或外部目录；父债仍 OPEN，写后人工逐文件汉字数检查继续有效。若现存文档出现历史例外，先核来源，不能静默加白名单或改写原件。

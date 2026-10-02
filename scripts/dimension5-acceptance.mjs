@@ -88,6 +88,11 @@ runStep('doc registry ratchet', () => {
   sh('node', ['scripts/check-doc-registry.mjs']);
 });
 
+runStep('active document encoding', () => {
+  sh(process.execPath, ['--test', 'scripts/check-doc-encoding.test.mjs']);
+  sh(process.execPath, ['scripts/check-doc-encoding.mjs']);
+});
+
 runStep('debt marathon contracts', () => {
   sh(process.execPath, ['--test', 'scripts/lib/debt-ledger.test.mjs']);
   sh('node', ['scripts/check-debt-marathon.mjs']);
