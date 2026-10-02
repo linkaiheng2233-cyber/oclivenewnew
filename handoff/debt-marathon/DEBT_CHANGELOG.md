@@ -345,3 +345,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；base `d7040c37cc95966764318a3f8aa6481c9a831b1e`、开场干净。按[本轮计划](ROUND-02-PLAN.md#k-encoding-01--活跃文档编码防回退2026-10-02)处理已发生过的中文静默损坏，事实与限制见[编码 Wave](waves/WAVE-20261002-K-ENCODING-01.md)。不改变旧事故原件或产品语义。
 - **before → after**：此前只有人工写后红线；现在对三类活跃 Markdown 全量执行 fatal UTF-8、BOM、替换字符和连续三问号硬检查，并在 Dimension 5 中运行真实文件负控。开工前 307 份、本轮新增 Wave 后 308 份均通过；历史归档及非 Markdown 不在默认扫描内。主台账 K-ENCODING-01 保持 OPEN，单个/两个问号或语义损坏仍须人工对照可信来源。
 - **本地证据 / 接续**：定向测试 6/6、默认检查、Dimension 5 30/30 及完整 `check:ci-local` 通过。首次 Dimension 5 唯一失败为本机缺 `py`，仅为随后子进程指定已安装 Python 3.12 可执行文件，未更改全局环境或语音门禁。目标 SHA 的远端 CI 仍须另验；不以父提交 CI 替代新提交证据。
+
+### DCL-20261002-03 · D-DEBT-LEDGER-01 Event Stream 长历史出权威行
+
+- **记录者 / 类型**：主控 Codex；base `5f2836ce67a8103882a383765d5a01913ccbb365`、开场干净。该 SHA 的[主 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36971687198) 已 17/17 成功。按[本轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--event-stream-长历史出权威行2026-10-02)只整理主台账入口；事实及保留条件见[本轮 Wave](waves/WAVE-20261002-DEBT-EVENT-STREAM-HISTORY.md)。
+- **before → after**：`K-EVENT-STREAM-01` 原 4,340 B 状态长行[逐字归档](../archive/TECHNICAL_DEBT_EVENT_STREAM_STATUS_20261002.md)，主表保留 ID、问题、优先级、完成条件及 OPEN，只把状态格缩成当前能力、未交付边界和追溯链接。原 R1–R4 有限真实样本、R5/R6 合成证据及 B0 Trace-only 不再与 Production 缺口混读；没有改变 RFC 或启动 Stage C。
+- **保真 / 出口**：原行 SHA256 `3C421D9F2DFCC11C7D68CFFE0BEE0741DCBAD4DC8B4E3A1D3B845B51BA575E9C`，归档与起点逐字相等；123 个独立 ID 行中只变 K-EVENT-STREAM-01 和治理父债行，前者前四格不变。默认/改文链接、旧路径、登记、债结构及活跃编码均通过；暂存差量与目标 SHA 远端结果另核。D-DEBT-LEDGER-01 保持 Partial，K-EVENT-STREAM-01 保持 OPEN，其它长历史和全表语义冲突不在本轮。
