@@ -351,3 +351,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；base `5f2836ce67a8103882a383765d5a01913ccbb365`、开场干净。该 SHA 的[主 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36971687198) 已 17/17 成功。按[本轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--event-stream-长历史出权威行2026-10-02)只整理主台账入口；事实及保留条件见[本轮 Wave](waves/WAVE-20261002-DEBT-EVENT-STREAM-HISTORY.md)。
 - **before → after**：`K-EVENT-STREAM-01` 原 4,340 B 状态长行[逐字归档](../archive/TECHNICAL_DEBT_EVENT_STREAM_STATUS_20261002.md)，主表保留 ID、问题、优先级、完成条件及 OPEN，只把状态格缩成当前能力、未交付边界和追溯链接。原 R1–R4 有限真实样本、R5/R6 合成证据及 B0 Trace-only 不再与 Production 缺口混读；没有改变 RFC 或启动 Stage C。
 - **保真 / 出口**：原行 SHA256 `3C421D9F2DFCC11C7D68CFFE0BEE0741DCBAD4DC8B4E3A1D3B845B51BA575E9C`，归档与起点逐字相等；123 个独立 ID 行中只变 K-EVENT-STREAM-01 和治理父债行，前者前四格不变。默认/改文链接、旧路径、登记、债结构及活跃编码均通过；暂存差量与目标 SHA 远端结果另核。D-DEBT-LEDGER-01 保持 Partial，K-EVENT-STREAM-01 保持 OPEN，其它长历史和全表语义冲突不在本轮。
+
+### DCL-20261002-04 · K-LLM-ENV-02 可控读取交错
+
+- **记录者 / 类型**：主控 Codex；base `19293fe8c66dbbdccb6f9d823d22736e16bb67a6`，独立于上一文档切片。计划见[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--db-读取交错的隔离回归2026-10-02)，场景和边界见[本轮 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md)。不改生产设置应用、锁或用户凭据。
+- **before → after**：原有验证只证明版本/dirty 两个原子结果；新增独立进程的内存设置集成测试，强制旧 DB 快照停在读取处，32 个新调用同时等待，验证旧调用放行前新调用不可越过读取、最终环境值属于新设置。没有把局部交错测试写成跨进程/真实 DB 压力或产品调用链全覆盖。
+- **本地证据 / 剩余**：定向用例最终字节连续 5 次 exit 0，Host lib 634 passed，定向 Clippy、fmt、分层和综合 `check:ci-local` 均 exit 0。第一次 fmt 非零仅对应新测试三处格式，定点修正后通过。新目标远端 CI 待提交后独立核验；K-LLM-ENV-02 仍保留更长时间和 save/chat/theater/canonical sync 等剩余证据门，不升 Done。
