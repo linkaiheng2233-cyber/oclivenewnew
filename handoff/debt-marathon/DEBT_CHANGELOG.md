@@ -363,3 +363,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；基线 `b912237324fd9521968084cbf25f6c7dd267cc6e`，工作树干净。上一切片的[目标 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37009520138) 17/17 success，Linux/Windows 原始日志均显示 `old_db_snapshot_cannot_overwrite_newer_concurrent_apply ... ok`。本切片依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--appstate-刷新入口的真实内存-db-回归2026-10-03)与[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--完整-appstate-的内存-sqlite-刷新边界)，不改生产实现。
 - **before → after**：替身交错证据之外，新增完整 `AppState` + 真实内存 SQLite 的刷新边界测试。直接改 DB 但不标 dirty 时生产应用函数保留旧环境；调用刷新入口、或显式标脏后，环境才对应新 DB 值。这个负例定位了各调用者的标脏责任，不宣称它们已经全部履行。
 - **验证 / 剩余**：定向测试 1 passed、Host lib 634 passed、定向 Clippy exit 0；初次 fmt 仅一处新测试换行，定点修正后复核通过。`npm run check:ci-local` exit 0，覆盖 Dimension 5、前端、Rust 格式/Clippy/lib/工作区集成与 CLI 集成。新提交远端 CI 待按目标 SHA 独立核验。真实持久库、完整 AppState 并发版本交错及 save/chat/theater/canonical sync 仍未覆盖；K-LLM-ENV-02 不升 Done。
+
+### DCL-20261003-02 · K-LLM-ENV-02 保存设置入口的标脏/应用对照
+
+- **记录者 / 类型**：主控 Codex；基线 `8e39f6b6269e0a7aba3d305c9353d1fa1e1936ed`。依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--保存设置主路径接入刷新2026-10-03)和[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--保存设置主路径的标脏责任)，限于本地 provider 的保存设置主路径。
+- **before → after**：前一用例只证明直接 DB 写入后的 dirty 快路径；现加入最小合成角色，真实调用 `save_llm_user_settings_impl`。它保存第三个 URL 后，DB 和进程环境均对应新值，从而把保存入口的标脏责任与直接写库负例区别开。生产实现、模型/网络和用户数据均未改变。
+- **验证 / 剩余**：定向集成测试 1 passed；fmt、定向 Clippy、`npm run check:ci-local` 均 exit 0，目标远端 CI 待新 SHA 单独核验。只覆盖 local provider；chat/theater/canonical sync、真实持久库、完整 AppState 并发版本、长时间压力和云端/LoRA 分支仍在剩余范围。父债不升 Done。

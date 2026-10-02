@@ -4,7 +4,9 @@ use oclive_kernel_host::domain::user_llm_env::{
     apply_user_llm_env, KEY_LLM_PROVIDER, KEY_OLLAMA_BASE,
 };
 use oclive_kernel_host::infrastructure::MockLlmClient;
-use oclive_kernel_host::service::llm_settings::reload_llm_user_env_impl;
+use oclive_kernel_host::service::llm_settings::{
+    reload_llm_user_env_impl, save_llm_user_settings_impl, SaveLlmUserSettingsRequest,
+};
 use oclive_kernel_host::state::AppState;
 use std::ffi::OsString;
 use std::sync::Arc;
@@ -48,6 +50,13 @@ impl Drop for RestoreEnvironment {
 async fn actual_state_refreshes_only_after_a_dirty_mark() {
     let _environment = RestoreEnvironment::capture();
     let temp = TempDir::new().expect("isolated role root");
+    let role_dir = temp.path().join("env-probe");
+    std::fs::create_dir(&role_dir).expect("role directory");
+    std::fs::write(
+        role_dir.join("manifest.json"),
+        r#"{"id":"env-probe","name":"Env Probe","version":"1","author":"test","description":"isolated settings fixture","default_personality":[0.5,0.5,0.5,0.5,0.5,0.5,0.5],"evolution":{},"user_relations":{"friend":{"prompt_hint":"test"}},"default_relation":"friend","memory_config":{"scene_weight_multiplier":1.0,"topic_weights":{}}}"#,
+    )
+    .expect("role manifest");
     let state = AppState::new_in_memory_with_llm(
         Arc::new(MockLlmClient {
             reply: "unused".to_owned(),
@@ -102,4 +111,38 @@ async fn actual_state_refreshes_only_after_a_dirty_mark() {
         Ok("http://127.0.0.1:22222")
     );
     assert_eq!(std::env::var("OCLIVE_LLM_BACKEND").as_deref(), Ok("ollama"));
+
+    save_llm_user_settings_impl(
+        &state,
+        &SaveLlmUserSettingsRequest {
+            role_id: "env-probe".to_owned(),
+            session_id: None,
+            provider: "local".to_owned(),
+            cloud_vendor: None,
+            cloud_api_style: None,
+            ollama_base_url: Some("http://127.0.0.1:33333".to_owned()),
+            local_models_dir: None,
+            local_model_path: None,
+            adult_content_acknowledged: false,
+            ollama_model: None,
+            remote_url: None,
+            remote_token: None,
+            remote_model: None,
+        },
+    )
+    .await
+    .expect("production save path refreshes the LLM environment");
+    assert_eq!(
+        std::env::var("OLLAMA_BASE_URL").as_deref(),
+        Ok("http://127.0.0.1:33333")
+    );
+    assert_eq!(
+        state
+            .db_manager
+            .get_app_setting(KEY_OLLAMA_BASE)
+            .await
+            .expect("read saved base URL")
+            .as_deref(),
+        Some("http://127.0.0.1:33333")
+    );
 }

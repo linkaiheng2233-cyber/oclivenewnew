@@ -23,3 +23,9 @@
 **原因与例子**：DB 中的新设置不自动等于“已应用到进程环境”。若某调用路径直接写库而漏掉标脏/刷新，旧环境会继续生效；该负例把这个责任边界变成可观察测试。它只覆盖真实内存 DB 和公开刷新入口，不证明 file-backed 持久库、并发版本竞争、save/chat/theater/canonical sync 的每个调用者均正确标脏，也不补长时间压力。
 
 **本地验证**：定向测试 1 passed / exit 0；Host lib 634 passed / exit 0；定向 Clippy `-D warnings` exit 0。首次 fmt 检查仅发现新测试一处链式调用换行，定点 rustfmt 后重新验证。`npm run check:ci-local` exit 0，包含新增集成测试及工作区、CLI 测试；目标提交的远端 CI 另按 SHA 核验。父债保持未结案。
+
+## 2026-10-03 · 保存设置主路径的标脏责任
+
+在上一切片的真实内存 SQLite／完整 `AppState` 测试末尾加入合成角色，用生产 `save_llm_user_settings_impl` 保存第三个 Ollama Base URL。调用成功后，DB 与 `OLLAMA_BASE_URL` 都是第三个值。与前一阶段“只改 DB 而未标脏，旧环境继续生效”的负例构成对照：保存设置入口确实履行标脏和应用责任，而任意直接写库不能因此自动获得相同保证。测试仍使用 `MockLlmClient`，没有真实模型、网络或用户库。
+
+**范围与止点**：定向测试 1 passed / exit 0；fmt、定向 Clippy 和 `npm run check:ci-local` 均 exit 0，综合链含工作区与 CLI 集成测试。只证明本地 provider 的保存设置主路径，不证明云端 token、LoRA、保存失败的事务性，也不外推 chat/theater/canonical sync、持久 DB 或完整 AppState 并发交错。目标 SHA 的远端结果另核，父债保持未结案。
