@@ -1,7 +1,8 @@
 //! The integration-test binary isolates process-wide LLM environment variables.
 
 use async_trait::async_trait;
-use oclive_kernel_host::domain::chat_engine::process_message;
+use oclive_kernel_contracts::{LlmGenerateOpts, LlmGenerateOutcome, LlmTokenSink};
+use oclive_kernel_host::domain::chat_engine::{process_message, process_message_stream};
 use oclive_kernel_host::domain::ports::LlmClient;
 use oclive_kernel_host::domain::theater::generate_scene;
 use oclive_kernel_host::domain::user_llm_env::{
@@ -55,6 +56,7 @@ impl Drop for RestoreEnvironment {
 #[derive(Default)]
 struct RecordingLlm {
     tag_base_urls: Mutex<Vec<String>>,
+    stream_base_urls: Mutex<Vec<String>>,
 }
 
 #[async_trait]
@@ -70,10 +72,29 @@ impl LlmClient for RecordingLlm {
             .push(std::env::var("OLLAMA_BASE_URL").unwrap_or_default());
         Ok(r#"[{"id":"b1","cast":"a","name":"Env Probe","text":"Scene complete"}]"#.to_owned())
     }
+
+    async fn generate_stream_with_opts(
+        &self,
+        _model: &str,
+        _prompt: &str,
+        on_token: LlmTokenSink,
+        _opts: Option<&LlmGenerateOpts>,
+    ) -> Result<LlmGenerateOutcome> {
+        self.stream_base_urls
+            .lock()
+            .expect("recording lock")
+            .push(std::env::var("OLLAMA_BASE_URL").unwrap_or_default());
+        let reply = "The new morning is here.";
+        on_token(reply);
+        Ok(LlmGenerateOutcome {
+            reply: reply.to_owned(),
+            prompt_eval_ms: None,
+        })
+    }
 }
 
 #[tokio::test]
-async fn app_state_reload_save_chat_and_theater_apply_expected_llm_environment() {
+async fn app_state_reload_save_chat_theater_and_stream_apply_expected_llm_environment() {
     let _environment = RestoreEnvironment::capture();
     let temp = TempDir::new().expect("isolated role root");
     let role_dir = temp.path().join("env-probe");
@@ -210,11 +231,48 @@ async fn app_state_reload_save_chat_and_theater_apply_expected_llm_environment()
         .await
         .expect("theater entry applies pending LLM environment");
     assert_eq!(scene.beats[0].text, "Scene complete");
-    let observed = llm.tag_base_urls.lock().expect("recording lock");
-    assert_eq!(observed.len(), tag_calls_before + 1);
-    assert_eq!(observed[tag_calls_before], "http://127.0.0.1:55555");
+    {
+        let observed = llm.tag_base_urls.lock().expect("recording lock");
+        assert_eq!(observed.len(), tag_calls_before + 1);
+        assert_eq!(observed[tag_calls_before], "http://127.0.0.1:55555");
+    }
     assert_eq!(
         std::env::var("OLLAMA_BASE_URL").as_deref(),
         Ok("http://127.0.0.1:55555")
     );
+
+    state
+        .db_manager
+        .upsert_app_setting(KEY_OLLAMA_BASE, "http://127.0.0.1:66666")
+        .await
+        .expect("store pending stream setting");
+    state.mark_user_llm_env_dirty();
+    let stream_calls_before = llm.stream_base_urls.lock().expect("recording lock").len();
+    let tokens = Arc::new(Mutex::new(Vec::<String>::new()));
+    let captured_tokens = Arc::clone(&tokens);
+    let on_token: LlmTokenSink = Arc::new(move |token| {
+        captured_tokens
+            .lock()
+            .expect("token lock")
+            .push(token.to_owned());
+    });
+    let response = process_message_stream(
+        &state,
+        &SendMessageRequest {
+            role_id: "env-probe".to_owned(),
+            user_message: "show me the new morning".to_owned(),
+            ..Default::default()
+        },
+        on_token,
+    )
+    .await
+    .expect("stream entry applies pending LLM environment");
+    assert_eq!(response.reply, "The new morning is here.");
+    assert_eq!(
+        tokens.lock().expect("token lock").as_slice(),
+        &["The new morning is here."]
+    );
+    let observed = llm.stream_base_urls.lock().expect("recording lock");
+    assert_eq!(observed.len(), stream_calls_before + 1);
+    assert_eq!(observed[stream_calls_before], "http://127.0.0.1:66666");
 }

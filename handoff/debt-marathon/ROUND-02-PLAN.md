@@ -343,3 +343,15 @@
 **写集 / 安全边界**：新建一个独立进程的 `distros/desktop-tauri/tests/canonical_llm_env_sync.rs`，只用临时 `OCLIVE_APP_DATA`、最小 `app_settings` 表、内存 `AppState` 和模拟 LLM；同步本计划、同债 Wave、变动事件及主台账状态。环境变量进入测试前保存、退出时恢复；所有 SQLite pool 显式关闭。不修改生产同步算法、桌面权限、公共 API、真实用户库、模型、网络或姊妹仓。若公共测试入口不可用或必须改变生产装配，则登记为未覆盖并停止该切片，不引入测试专用生产钩子。
 
 **验收 / 停止线**：新增单测试、fmt、定向 Clippy、分层与适用文档/债务检查通过；与 Theater 切片共同形成同主题本地冻结点。首轮 `check:ci-local` 因测试夹具旧目录名被 Dimension 5 拒绝，定点修正后第二轮完整本地链 exit 0。只证明一条 local-provider seed 路径，不外推双向同步、失败重试、云端 token、并发写入或启动进程联机。目标 SHA 的正式远端 CI 待独立核验；父债仍不升 Done。
+
+### K-LLM-ENV-02 · 流式对话调用时配置观察（2026-10-03）
+
+**尺寸 / 起点 / 目的**：S 级定向测试，基线 `1e9cd8e0`。复用已隔离的 Host AppState、内存 SQLite、合成角色与模拟 LLM，仅在同一测试末尾写入第六个本地 URL 并标脏，调用生产 `process_message_stream`。模拟流式生成器在收到请求时记录进程 URL 并发出一段 token，以此核实流式主路径在生成前消费待应用设置。
+
+**写集 / 停止线**：只改 `kernel/crates/oclive_kernel_host/tests/user_llm_env_state_refresh.rs`、本计划、同债 Wave、DEBT_CHANGELOG 与主台账 K-LLM-ENV-02 状态格。不改生产流式/SSE 协议、并发锁、DB schema、真实网络或模型；不扩成断流、fallback、HTTP/Tauri 联机用例。若正常流式入口不能稳定走到现有模拟生成端口，记录缺口并跳过，不加生产测试钩子。先定向测试、fmt、Clippy、分层及文档检查；合批收口才跑一次完整本地链。
+
+### K-LLM-ENV-02 · 文件库重建后的本地设置刷新（2026-10-03）
+
+**尺寸 / 目标**：S 级独立集成测试，接续流式定向测试。以临时 app-data 与合成空角色目录调用生产 `AppStateBuilder::production(...).with_llm_client(MockLlmClient)`，在第一份 AppState 写入 local provider 与 URL，关闭 pool 并释放状态；再用同一 SQLite 路径重建 AppState，执行公开刷新入口，断言落盘设置与进程环境一致。验证迁移后的文件库和重建路径，不使用用户数据库、真实模型或外部网络。
+
+**写集 / 停止线**：仅新建 `kernel/crates/oclive_kernel_host/tests/user_llm_env_file_restart.rs` 并更新本计划、同债 Wave、DEBT_CHANGELOG 与主台账状态格。生产构造未要求额外外部服务或测试专用钩子；不追崩溃中断、跨进程、云端凭据、并发旧读取、完整桌面启动或压力。定向测试、fmt、Clippy、分层及文档检查均通过；与流式切片合批的 `check:ci-local` 原生 exit 0，目标 SHA 远端 CI 待核。

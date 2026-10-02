@@ -47,3 +47,15 @@
 新增单用例独立进程 `canonical_llm_env_sync.rs`，把 `OCLIVE_APP_DATA` 指向临时目录；其中的 `app.db` 只建立与本路径相关的最小 `app_settings` 表并写入 local provider 与新 URL。内存 UI shell 先通过生产 reload 应用旧 URL；调用生产 `seed_shell_llm_from_canonical` 后，shell DB 与进程 `OLLAMA_BASE_URL` 均成为 canonical 新值，backend 仍为 `ollama`。文件库 pool 显式关闭，环境原值由 RAII 恢复；无用户数据库、真实模型或网络。
 
 **本地证据与边界**：定向测试 1 passed，fmt、定向 Clippy `-D warnings`、分层均 exit 0。首轮综合链在 Dimension 5 的旧目录名规则处止步：新测试夹具用了 `.join("roles")`；改为仅测试用的 `role-fixtures` 后，定向测试与 stale-paths 检查通过，第二轮完整 `npm run check:ci-local` exit 0。失败只涉及夹具路径名，没有放宽规则或修改生产行为。该测试证明这条 local-provider seed 路径会标脏并应用复制来的值；它没有执行完整迁移表、真实桌面启动、反向 shell→canonical 写入、云端 token、并发写入或失败恢复。目标提交远端 CI 尚待按 SHA 核验；K-LLM-ENV-02 不升 Done。
+
+## 2026-10-03 · 流式对话生成调用前应用待刷新设置
+
+在同一隔离 Host AppState 测试的 Theater 步骤之后，向内存 SQLite 写入第六个本地 URL 并标脏，调用生产 `process_message_stream` 发起另一条合成对话。模拟 `LlmClient::generate_stream_with_opts` 在**被调用时**记录 `OLLAMA_BASE_URL`、发出一个 token，并返回不同于前一回合的正文。用例断言最终回复、token、流式调用次数与调用时 URL，证明这条流式主路径在生成前消费待应用配置；不靠函数返回后的环境状态推断。
+
+**本地证据与边界**：最终字节定向测试 1 passed，fmt 与定向 Clippy `-D warnings` exit 0；与文件库重建切片合批的 `npm run check:ci-local` exit 0，含 Dimension 5、前端、Rust 工作区及 CLI 集成。只覆盖内存 DB、本地 provider、合成角色和模拟生成器；不代表 HTTP SSE、断流/fallback、客户端恢复、真实 provider、完整 AppState 并发版本、持久库或长时压力。目标 SHA 远端 CI 待核；不单独把 K-LLM-ENV-02 升 Done。
+
+## 2026-10-03 · 迁移后文件库的 AppState 重建
+
+新增独立集成测试进程，以临时 app-data、空的合成角色目录与模拟 LLM 调用生产 `AppStateBuilder::production`，让实际构造流程创建并迁移文件 `app.db`。第一份状态写入本地 provider 与 URL，执行生产 reload 后显式关闭 pool；再将进程 URL 改为旧值，用同一文件路径重建第二份状态。第二份状态能从 DB 读回新 URL，生产 reload 又将其应用到进程环境。这把“内存数据库能刷新”推进到受控文件库重建，而不碰用户库或真实服务。
+
+**本地证据与边界**：`user_llm_env_file_restart` 定向测试 1 passed，fmt、定向 Clippy `-D warnings` exit 0；与上节流式切片合批的 `npm run check:ci-local` 原生 exit 0。该测试不模拟崩溃中断、跨进程竞争、并发旧读取、云端密钥、真实角色启动或模型网络，也不逐项证明每条迁移；目标 SHA 远端结果另核，K-LLM-ENV-02 仍未结案。

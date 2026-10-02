@@ -393,3 +393,15 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 范围**：主控 Codex；接续同债 Theater 测试，仅新增桌面集成测试与债务记录。按[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--桌面-canonical-seed-的隔离文件库回归2026-10-03)核生产 `seed_shell_llm_from_canonical`，没有改生产同步、DB schema、公共 DTO 或真实用户数据。
 - **before → after**：此前 canonical seed 只见源码中的复制、标脏与应用调用。现在以临时 canonical `app.db` 的最小 `app_settings` 表为输入，先让内存 shell 应用旧 URL，再调用生产 seed；shell DB 和进程环境均变为 canonical 新 URL。测试进程保存并恢复环境、显式关闭文件库 pool。
 - **验证 / 边界**：定向桌面测试 1 passed，fmt、定向 Clippy 与分层 exit 0。首轮 `check:ci-local` 只因新测试夹具触发旧目录名检查而止步，定点改名后第二轮完整本地链 exit 0；目标 SHA 远端 CI 另核，父债不升 Done。此证据只覆盖 local-provider seed，不证明完整桌面启动、全部迁移、双向同步、云端 token、完整 AppState 并发版本或长期压力，详见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--桌面-canonical-seed-的隔离文件库回归)。
+
+### DCL-20261003-07 · K-LLM-ENV-02 流式生成调用时的待应用设置
+
+- **记录者 / 范围**：主控 Codex；基线 `1e9cd8e0`。按[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--流式对话调用时配置观察2026-10-03)复用既有隔离 AppState 夹具，只改测试与债务记录，不改生产流式或设置算法。
+- **before → after**：此前 chat 普通回合与 Theater 已有调用入口证据，但流式生成仍只见源码共用入口。现在第六个 URL 入内存 DB 并标脏后，生产 `process_message_stream` 调用模拟流式生成器；生成器在被调用时记录新 URL、发 token，回合返回独立正文。测试把环境更新与真实流式调用绑定。
+- **验证 / 剩余**：定向测试 1 passed，fmt、定向 Clippy exit 0；与文件库重建切片合批的 `check:ci-local` 原生 exit 0，目标 SHA 远端 CI 待核。该证据不覆盖 HTTP SSE/断流/fallback、完整 AppState 并发版本、真实 provider 或长时压力，父债仍未结案，见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--流式对话生成调用前应用待刷新设置)。
+
+### DCL-20261003-08 · K-LLM-ENV-02 文件库重建后的设置应用
+
+- **记录者 / 范围**：主控 Codex；接续同债流式切片，仅新增隔离 Host 集成测试和债务记录。按[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--文件库重建后的本地设置刷新2026-10-03)使用生产 AppStateBuilder、临时文件库和模拟 LLM，不改生产构造或迁移实现。
+- **before → after**：此前完整 Host AppState 的刷新证据来自内存 SQLite，桌面 canonical seed 只有最小手建表。现在让生产构造建立并迁移临时 `app.db`，第一份状态写入 local 设置并关闭 pool；第二份状态由同一路径重建，读回 URL 且生产 reload 将其应用到进程环境。
+- **验证 / 边界**：定向测试 1 passed，fmt、定向 Clippy exit 0；与流式切片合批的 `check:ci-local` 原生 exit 0，目标 SHA 远端另核。该测试不证明崩溃、跨进程、全部迁移、并发版本竞争、真实 provider 或长时压力，父债不升 Done，详见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--迁移后文件库的-appstate-重建)。
