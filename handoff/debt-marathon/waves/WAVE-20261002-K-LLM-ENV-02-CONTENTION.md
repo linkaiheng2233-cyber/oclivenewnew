@@ -15,3 +15,11 @@
 - 定向集成测试最终字节连续 5 次 exit 0，每次 1 passed；`cargo clippy --locked -p oclive_kernel_host --test user_llm_env_transaction -- -D warnings` exit 0；`cargo fmt --all -- --check` exit 0。第一次格式检查只发现新测试的三处换行，定点 rustfmt 后通过，失败事实保留在本记录。
 - `cargo test --locked -p oclive_kernel_host --lib -- --test-threads=1`：634 passed / 0 failed。分层、文档检查和 `npm run check:ci-local` 均 exit 0；综合链含 Dimension 5、前端 lint/typecheck/build、Rust fmt/Clippy/lib、workspace 与 CLI 集成。新目标提交的远端 CI 另核，不以前一提交结果替代。
 - 这是同一进程内、内存设置替身的可控交错，不是完整 `AppState` 的 version/dirty 冲突实验，更不是 save/chat/theater/canonical sync、跨进程、真实 DB 或真实 provider 压力。K-LLM-ENV-02 保持未结案；后续如扩大验证，只补已明确的剩余路径，不无界穷尽低概率交错。
+
+## 2026-10-03 · 完整 AppState 的内存 SQLite 刷新边界
+
+基于 `b912237324fd9521968084cbf25f6c7dd267cc6e` 的干净基线，新增独立测试进程 `user_llm_env_state_refresh.rs`。它使用真实内存 SQLite 和完整 `AppState`，仅注入不触发模型 I/O 的 `MockLlmClient`，角色目录位于临时目录。先写入本地 provider 与旧 URL，通过生产 `reload_llm_user_env_impl` 刷新；再直接把 DB 改为新 URL，调用 `apply_user_llm_env` 时因版本未标脏，环境仍是旧 URL；显式 `mark_user_llm_env_dirty` 后再次调用才得到新 URL。七个相关进程环境变量由测试保存和恢复，没有用户数据库、真实模型或网络调用。
+
+**原因与例子**：DB 中的新设置不自动等于“已应用到进程环境”。若某调用路径直接写库而漏掉标脏/刷新，旧环境会继续生效；该负例把这个责任边界变成可观察测试。它只覆盖真实内存 DB 和公开刷新入口，不证明 file-backed 持久库、并发版本竞争、save/chat/theater/canonical sync 的每个调用者均正确标脏，也不补长时间压力。
+
+**本地验证**：定向测试 1 passed / exit 0；Host lib 634 passed / exit 0；定向 Clippy `-D warnings` exit 0。首次 fmt 检查仅发现新测试一处链式调用换行，定点 rustfmt 后重新验证。`npm run check:ci-local` exit 0，包含新增集成测试及工作区、CLI 测试；目标提交的远端 CI 另按 SHA 核验。父债保持未结案。

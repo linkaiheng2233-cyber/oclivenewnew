@@ -307,3 +307,11 @@
 **受控场景**：内存 `AppSettingsPort` 第一次读取时捕获旧 `OLLAMA_BASE_URL` 并在闸门等待；测试将设置更新为新值，放行启动屏障上的 32 个新 `apply_user_llm_env_from_db` 调用，确认第一次未释放前后续调用均未读 DB；释放后 33 次调用均成功，最终进程环境是新值。测试单文件单用例独立进程，无真实 DB、凭据、网络或模型；记录原环境并在退出时恢复。该场景检验 DB→env 串行化，不能据此外推完整 `AppState` 版本/dirty、save/chat/theater/canonical sync 或跨进程共享环境。
 
 **验收 / 止点**：先定向运行该集成测试，再跑 Host lib/受影响集成、fmt、Clippy、分层和适用文档/债务门禁；代码触及 Rust 行为验证，里程碑跑 `check:ci-local`，推送后以目标 SHA 的远端 CI 验收。若测得环境变量竞争、测试进程未隔离或所需改动进入产品语义，停止该切片重新定界。K-LLM-ENV-02 仍维持 `Remote verified · stress pending`，只记这项可控交错子证据，不因一次测试升 Done。
+
+### K-LLM-ENV-02 · AppState 刷新入口的真实内存 DB 回归（2026-10-03）
+
+**尺寸 / 起点 / 目的**：M，基于已远端验证的 `b912237324fd9521968084cbf25f6c7dd267cc6e`、干净工作树。上一切片证明同进程内 DB 读取到环境写入受串行锁保护，但内存设置替身不经过完整 `AppState`。本切片只补一项隔离的 Host 集成测试，用真实内存 SQLite、注入的 `MockLlmClient` 和临时角色目录验证版本/dirty 快路径及显式刷新入口；不改生产应用、真实用户库、凭据、模型或网络。
+
+**受控场景 / 停止线**：建状态后先写入本地 provider 与旧 base URL，调用 `reload_llm_user_env_impl` 应把 DB 值应用到环境；直接将 DB 改为新值但不标 dirty，再调用 `apply_user_llm_env` 应保持旧环境；显式标 dirty 后再调用，应应用新值。独立集成测试进程保存并恢复七个环境变量。若状态构建要求真实 provider、用户数据或跨服务夹具，停止此切片并记录跳过，不扩大到 save/chat/Theater。该测试不声称覆盖并发版本竞争或所有调用入口。
+
+**验收**：定向集成测试、Host lib、fmt、定向 Clippy 与分层；文档/台账变动跑已改链接、编码、债结构、diff。若构成里程碑，冻结后跑一次 `check:ci-local`，推送后只用新 SHA 的 `ci.yml` 判断远端。父债保留未结案，剩余真实入口/持久库/长时间压力明确列出。

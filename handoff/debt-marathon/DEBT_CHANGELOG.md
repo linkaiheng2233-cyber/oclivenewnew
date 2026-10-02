@@ -357,3 +357,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **记录者 / 类型**：主控 Codex；base `19293fe8c66dbbdccb6f9d823d22736e16bb67a6`，独立于上一文档切片。计划见[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--db-读取交错的隔离回归2026-10-02)，场景和边界见[本轮 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md)。不改生产设置应用、锁或用户凭据。
 - **before → after**：原有验证只证明版本/dirty 两个原子结果；新增独立进程的内存设置集成测试，强制旧 DB 快照停在读取处，32 个新调用同时等待，验证旧调用放行前新调用不可越过读取、最终环境值属于新设置。没有把局部交错测试写成跨进程/真实 DB 压力或产品调用链全覆盖。
 - **本地证据 / 剩余**：定向用例最终字节连续 5 次 exit 0，Host lib 634 passed，定向 Clippy、fmt、分层和综合 `check:ci-local` 均 exit 0。第一次 fmt 非零仅对应新测试三处格式，定点修正后通过。新目标远端 CI 待提交后独立核验；K-LLM-ENV-02 仍保留更长时间和 save/chat/theater/canonical sync 等剩余证据门，不升 Done。
+
+### DCL-20261003-01 · K-LLM-ENV-02 AppState 刷新入口的内存 DB 回归
+
+- **记录者 / 类型**：主控 Codex；基线 `b912237324fd9521968084cbf25f6c7dd267cc6e`，工作树干净。上一切片的[目标 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37009520138) 17/17 success，Linux/Windows 原始日志均显示 `old_db_snapshot_cannot_overwrite_newer_concurrent_apply ... ok`。本切片依据[第二轮计划](ROUND-02-PLAN.md#k-llm-env-02--appstate-刷新入口的真实内存-db-回归2026-10-03)与[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--完整-appstate-的内存-sqlite-刷新边界)，不改生产实现。
+- **before → after**：替身交错证据之外，新增完整 `AppState` + 真实内存 SQLite 的刷新边界测试。直接改 DB 但不标 dirty 时生产应用函数保留旧环境；调用刷新入口、或显式标脏后，环境才对应新 DB 值。这个负例定位了各调用者的标脏责任，不宣称它们已经全部履行。
+- **验证 / 剩余**：定向测试 1 passed、Host lib 634 passed、定向 Clippy exit 0；初次 fmt 仅一处新测试换行，定点修正后复核通过。`npm run check:ci-local` exit 0，覆盖 Dimension 5、前端、Rust 格式/Clippy/lib/工作区集成与 CLI 集成。新提交远端 CI 待按目标 SHA 独立核验。真实持久库、完整 AppState 并发版本交错及 save/chat/theater/canonical sync 仍未覆盖；K-LLM-ENV-02 不升 Done。
