@@ -10,7 +10,7 @@ use std::path::Path;
 use std::task::{Context, Poll, Waker};
 
 use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
-use oclive_kernel_runtime::domain::minimal_role_prompt::LocalMinimalRolePrompt;
+use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
 use oclive_kernel_types::{BaseCallErrorKind, LlmBaseRequest, PromptBaseRequest};
 use oclive_validation::minimal_role_local_file::{
     load_minimal_role_local_file, LocalMinimalRoleSnapshot,
@@ -25,6 +25,7 @@ enum HostError {
     InvalidTechnicalId,
     UnknownRole,
     InvalidLocalFiles,
+    InvalidRoleDefinition,
     Capability(BaseCallErrorKind),
     PendingCapability,
     UnexpectedOutput,
@@ -95,7 +96,8 @@ impl<L: LlmBase> MinimalHost<L> {
         if requested_role_id != self.technical_id {
             return Err(HostError::UnknownRole);
         }
-        let prompt = LocalMinimalRolePrompt::new(&self.snapshot);
+        let prompt = MinimalRolePrompt::new(self.snapshot.definition())
+            .map_err(|_| HostError::InvalidRoleDefinition)?;
         let prepared = poll_immediate(prompt.assemble(PromptBaseRequest {
             materials: &["User: ", user_text],
             requirements,

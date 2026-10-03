@@ -403,3 +403,11 @@
 ### K-LLM-ENV-02 · 原并发缺陷有限验收（2026-10-03）
 
 先前的停止规则要求不再补排列组合，只核目标 SHA 正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的[正式运行](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646)已 `success`，17/17；本地综合链也已 exit 0。结合可控交错与保存、chat、Theater、canonical seed 的有限路径，按原问题办理 Done。边界和历史阶段口径见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)；不自动扩至真实 provider、跨进程或压力验证。此项只更新治理裁定，不改生产实现或重跑业务测试。
+
+### D-CLI-BLUEPRINT-05 · Prompt Base 输入去本地文件耦合（2026-10-03）
+
+**尺寸 / 起点 / 问题**：S，接续独立 Host 案例 `f1050eb7`。现有 Prompt Base 实现虽然不读文件，却持有 `LocalMinimalRoleSnapshot`；这把可移植能力绑定到一种文件适配结果。已存在共享的 `MinimalRoleDefinition`，且 Host 本就负责保留资产快照。按内核向外延伸的边界，将能力改为借用经共享校验的逻辑定义，Host 从自己的快照提供定义。
+
+**写集 / 止点**：只调整 runtime 的最小角色 Prompt Base 实现、外部 crate 测试、独立 Host 示例与本计划/角色边界/台账/事件。构造时复用 `validate_minimal_role_definition`，不复制 parser，不读取资产，不增公开旧 Prompt 字段；保留对附加非空 requirements 的拒绝和文本输出语义。已有本地 Host 案例继续通过，另加纯内存定义驱动同一能力的定向断言。若需把文件引用、角色 ID 或资源句柄加进 Base 请求，停止并复评，不污染六槽公共合同。
+
+**验收**：定向测试、示例测试与原生示例运行通过；fmt、定向 Clippy、分层和文档门禁通过即形成小提交。再与前两批合并跑一次完整本地 CI，目标 SHA 远端 CI 分列核验。此前 `c51f8415` 的远端结果只证明其自身字节，不作为本切片验收。

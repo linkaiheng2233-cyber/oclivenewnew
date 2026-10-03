@@ -446,3 +446,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 依据**：此前刻意停止追加低收益的环境排列组合，只等待既定目标 SHA 的正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的 `ci.yml` [run 37100060646](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646) 原生 `success`，17/17 作业成功；同目标本地综合链 exit 0。
 - **裁定**：原先“旧 DB 读取覆盖新环境并误清 dirty”的事务修复、可控交错和有限 save/chat/Theater/canonical 主路径完成条件已满足，主台账 K-LLM-ENV-02 转 `Done · bounded original defect`。原因、测试与界限见[同债 Wave 收口](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)。
 - **不外推**：真实 provider、云端 token、跨进程环境、所有崩溃/失败交错和压力未被本结案证明；出现具体反例再独立登记。此前各切片的 Partial 是当时状态，原文保留，不倒填成“当时已结案”。
+
+### DCL-20261003-16 · D-CLI-BLUEPRINT-05 Prompt 能力输入去文件适配耦合
+
+- **原因**：上一增量片的 `LocalMinimalRolePrompt` 借用了 `LocalMinimalRoleSnapshot`。虽然能力调用本身无 I/O，但类型上要求所有发行版先走本地文件适配，削弱最小逻辑定义的跨 Host 用途。
+- **修正**：同一 Prompt Base 实现改为 `MinimalRolePrompt`，只借用 `MinimalRoleDefinition` 并复用共享逻辑校验；独立 Host 仍持有本地快照、给能力传定义。外部 crate 增加纯内存定义调用，原本的一图文件案例、三项 Host 示例测试及原生运行继续通过，非空附加要求仍拒绝。
+- **边界**：构造成功只证明逻辑字段合格，不能证明资产存在或可显示；本地 Host 的加载器另证明受控字节快照。没有迁移旧 `PromptInput`、参考 Host 生命周期或产品回合，父债仍 Partial。
