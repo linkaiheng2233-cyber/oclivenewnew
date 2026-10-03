@@ -47,7 +47,7 @@
 
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
-| D-CLI-BLUEPRINT-05 | **决策门 / 硬前置**：公开加载/Prompt 接口迁移范围，随后统一磁盘封装与生命周期适配 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；复用既有最小定义、快照、媒体和 load-only 入口，不复制 parser。关系不是待决必填项，已确定归发行版 | 核调用者和迁移影响；接口取舍未定前不激活旧 `Role`、增加产品默认值或切换 CLI 默认生成目标 |
+| D-CLI-BLUEPRINT-05 | **已裁定接口边界 / 后续格式决策门**：保留参考 Host 旧接口、增量接入最小逻辑定义；统一磁盘封装仍待取舍 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；共享定义、本地快照、CLI 显式文件校验、Prompt Base 与独立 Host 案例已存在。关系归发行版；现有 `content.json` 只是调用方选择，不是统一文件名 | 继续以独立 Host 和可选适配层验证；磁盘格式未定前不切换 CLI 默认生成目标，不用产品默认值填充旧 `Role`，不把示例误记为参考 Host 激活 |
 | K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置 |
 | K-UID-DEFAULT-02 | **决策门**：profile 默认身份优先级与 compatibility fallback 取舍 | 主台账 §1；维护者选择后才同步 loader、profile、global/per-scene/恢复默认与文档 | 只读追踪现有默认路径及测试；不凭字段名默改用户可见默认身份 |
 | K-AGENT-MERGE-01、V-FUSED-01 | **独立范围 / 决策门**：工具 composite 与多槽实例融合不能混为同一实现 | 主台账前瞻风险及 [融合 stub](long-plans/V-FUSED-01.md)；前者须定工具冲突、权限、顺序/短路、超时/隔离与 trace，后者仍受其 Phase 3 条件约束 | 核单 Agent 行为与诊断声明；不从多 ID 推断已合并，也不以此阻断单 Agent/MCP 使用 |
@@ -63,7 +63,7 @@
 | K-RESOURCE-COORD-01、D-SCAFFOLD-RESOURCE-01 | **契约能力硬前置 / 协同**：CLI 复用已实现 types/Host Plan Compiler；目录自动装配、真实渲染和 soak 是资源父债的独立剩余范围 | [资源 RFC](../../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)、主台账；工具界面需要具体可用字段/原因码，不要求资源父债所有硬件条件先 Done | 核只读配置/诊断、round-trip 与无 GPU/observe-only 负例；不发明新 schema、设备探测或自动跨适配器授权 |
 | D-SCAFFOLD-EVOLUTION-04 | **决策门**：使用问题、一个有界目标、迁移及来源/权限/沙箱 | [脚手架 RFC](../../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)、主台账；Stage 2C 仍需单独取舍，资源工具并不自动解冻组合/namespace/离线生命周期 | 收集实际使用问题；不把依赖解析、市场/联网安装和第三方 CI 编排权并进首批 |
 | K-CI-IMPACT-01、D-CI-AI-REVIEW-03 | **数据硬前置**：AI 评测复用 Shadow/Compare 的版本化真实数据；不要求 selective 全部开放才开始采集 | 主台账前瞻风险；漏选/过选与全量结果对应同事件，训练/评测隔离。AI 不拥有降级确定性门禁、Runner 或 Secret 的权力 | 核已有数据/目录边界；无冻结评测与运行预算不训练，模拟语料不代替真实 CI 漏选证据 |
-| K-LLM-ENV-02 | **证据门**：已修并发事务仍缺更长、可控交错/进程级压力 | 主台账前瞻风险；复用当前单 mutex、版本/dirty 测试，不重复实现同一修复 | 静态核压力矩阵与隔离；运行前限定设置、进程和环境恢复，不碰用户凭据或真实 provider 配置 |
+| K-LLM-ENV-02 | **原缺陷已有限结案 / 新反例另立范围**：旧 DB 读取覆盖新环境并误清 dirty 的可控交错与目标 SHA CI 已验收；真实 provider、跨进程与长期压力不随之转绿 | 主台账 §1、[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md)；`86cbb2d5` 的 CI 17/17，不把原先 Partial 阶段倒写成完成 | 无新的可复现反例不继续扩张矩阵；若出现独立故障，另定隔离与预算，不碰用户凭据或真实 provider 配置 |
 
 ### 模型质量、语音与生态产品
 
@@ -452,3 +452,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因**：上一增量片的 `LocalMinimalRolePrompt` 借用了 `LocalMinimalRoleSnapshot`。虽然能力调用本身无 I/O，但类型上要求所有发行版先走本地文件适配，削弱最小逻辑定义的跨 Host 用途。
 - **修正**：同一 Prompt Base 实现改为 `MinimalRolePrompt`，只借用 `MinimalRoleDefinition` 并复用共享逻辑校验；独立 Host 仍持有本地快照、给能力传定义。外部 crate 增加纯内存定义调用，原本的一图文件案例、三项 Host 示例测试及原生运行继续通过，非空附加要求仍拒绝。
 - **边界**：构造成功只证明逻辑字段合格，不能证明资产存在或可显示；本地 Host 的加载器另证明受控字节快照。没有迁移旧 `PromptInput`、参考 Host 生命周期或产品回合，父债仍 Partial。
+
+### DCL-20261004-17 · 依赖图对齐最小角色与环境并发的现行裁定
+
+- **原因**：本文件顶部调度表仍将 D-CLI-BLUEPRINT-05 的旧接口取舍写成未决，并将 K-LLM-ENV-02 原缺陷写成仍等待压力证明；两者都落后于已登记的实现与验收，会让接手者重复开启错误前置。
+- **修正**：只更新这两行的**当前调度口径**。最小角色继续保留旧接口并走独立 Host 增量路径，统一磁盘格式仍是后续取舍；环境并发原缺陷按 `86cbb2d5` 的限定证据结案，真实 provider/跨进程/压力不随之验收。
+- **边界**：历史事件与原始证据不改，技术债主体状态不升格；本次不修改产品源码、角色包格式或 CLI 默认行为。
