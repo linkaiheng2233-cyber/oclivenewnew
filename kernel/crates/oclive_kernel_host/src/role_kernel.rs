@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use oclive_kernel_contracts::{
-    EventEmitter, EventModule, EventModuleRegistrar, LlmClient, LlmTokenSink,
+    EventEmitter, EventModule, EventModuleRegistrar, LlmClient, LlmTokenSink, PromptBase,
 };
 use oclive_kernel_types::models::dto::{
     MinimalRoleMessageRequest, MinimalRoleMessageResponse, RoleData, RoleInfo, RoleSummary,
@@ -23,7 +23,8 @@ use oclive_kernel_types::{
 use crate::command_error::CommandError;
 use crate::domain::chat_engine::{
     process_message, process_message_stream, process_message_stream_with_origin,
-    process_message_with_origin, process_minimal_message, process_proactive_turn,
+    process_message_with_origin, process_minimal_message, process_minimal_message_with_prompt,
+    process_proactive_turn,
 };
 use crate::domain::event_ring::{propose_proactive_turn, ProactiveTurnPermit};
 use crate::domain::host_profile::HostProfile;
@@ -248,6 +249,50 @@ impl OcliveKernel {
         request: &MinimalRoleMessageRequest,
     ) -> std::result::Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
         process_minimal_message(&self.state, role, request).await
+    }
+
+    /// Invoke the same basic text path with the Host's chosen Prompt Base.
+    ///
+    /// Supply an implementation that accepts prepared material fragments, not a
+    /// prompt already configured with this role's persona. The shared consumer
+    /// adds that persona once and passes the request's requirements unchanged.
+    /// Choose a capability whose agreement serves the current purpose; this
+    /// method does not broaden that capability's supported requirements.
+    ///
+    /// The original minimal entry remains the default literal implementation.
+    /// This additive entry uses the same model settings, one model call, result
+    /// and error carriers. The selected local future need not be `Send`; the
+    /// caller owns scheduling, cancellation and any capability resource access.
+    ///
+    /// # Errors
+    /// Returns the complete Prompt error or original Host input/settings/model
+    /// error. Empty user input is refused before any capability call. There is no
+    /// fallback, retry, persistence or synthetic product-extension state.
+    ///
+    /// ```no_run
+    /// use oclive_kernel_contracts::PromptBase;
+    /// use oclive_kernel_host::{MinimalRoleMessageError, OcliveKernel, PreparedMinimalRole};
+    /// use oclive_kernel_host::models::dto::{MinimalRoleMessageRequest, MinimalRoleMessageResponse};
+    ///
+    /// async fn send(
+    ///     kernel: &OcliveKernel,
+    ///     role: &PreparedMinimalRole,
+    ///     prompt: &dyn PromptBase,
+    /// ) -> Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
+    ///     let request = MinimalRoleMessageRequest {
+    ///         user_message: "Hello.".into(),
+    ///         requirements: "Preserve the subject.".into(),
+    ///     };
+    ///     kernel.process_minimal_message_with_prompt(role, &request, prompt).await
+    /// }
+    /// ```
+    pub async fn process_minimal_message_with_prompt(
+        &self,
+        role: &PreparedMinimalRole,
+        request: &MinimalRoleMessageRequest,
+        prompt: &dyn PromptBase,
+    ) -> std::result::Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
+        process_minimal_message_with_prompt(&self.state, role, request, prompt).await
     }
 
     /// Read the effective runtime snapshot for a role and optional isolated session.

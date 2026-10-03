@@ -497,3 +497,15 @@
 **必要回归 / 复核 / 止点**：先让新外部消费测试在旧源码编译拒绝，再验证 Host 可选择 Prompt、非空要求与材料保持、一次调用、正常空结果及完整失败原样传递；一个真实 Pending 用例核借用材料在恢复后仍有效、不会再次调用。既有最小 Prompt、独立 Host 示例和参考 Host 最小入口作为兼容回归。定向 Clippy/fmt、分层、workspace doctest及适用文档/债务门禁；公开 API 的实际外部使用由本片集成测试编译，runtime 既有 doctest=false 不改、不声称其代码块已被 doctest 执行。主控自行实现与语义自查，不声称独立审查。完成此准备/消费断点即停，不为其它五槽机械添加同形包装或扩产品路径；同主题里程碑冻结后只跑一次完整本地链并按既有授权合批推送，目标远端另核，原债继续 Partial。
 
 **实际兼容处理**：旧 `MinimalRolePrompt` 保留定义引用的存储方式，构造校验与非空要求提前拒绝不变；通过 consumer 模块内唯一准备函数消费原 Literal 实现，不直接持有 `dyn PromptBase`，避免丢掉旧类型的 `Send/Sync` 属性。新外部测试增加编译期属性断言与原完整错误说明的比较；通用消费者仍接受本地、非 Send 的实现。该实现选择不改变 Host 或 Base 的线程承诺。
+
+### D-CLI-BLUEPRINT-05 · Host 显式选择共享 Prompt 消费者（2026-10-04）
+
+**尺寸 / 基线 / 有界断点**：L 的增量公开调用面，起点 `6784db4cc1b7daa5fbcaefe3720f26c235e558ce`、工作树干净；父批远端另核，可本地开发、不推送去取消父批。维护者确认 Host 保留六槽对接与选择，共享消费者负责基础适配，并授权连续小批次实施。当前 `OcliveKernel::process_minimal_message` 仍固定 Prompt，无法通过这条实际基础入口使用已实现的公共消费者选择能力。只处理此断点及独立 Host 的用法，不进入 ChatPro 产品入口选择。
+
+**A · 参考 Host 接线**：保留旧方法签名和非空要求的原 Unsupported；增加 `process_minimal_message_with_prompt(role, request, &dyn PromptBase)`，所选 Prompt 尚未带人设，由共享消费者准备一次。domain 的同一基础编排先拒空消息，再选择原最小 Prompt 或共享消费者；之后统一复用既有 Host 模型设置、单次模型调用与三字段结果。材料/要求、正常空输出与完整 Prompt 错误不改写；失败不生成、不 fallback/重试、不填扩展默认值。facade 只薄转发，非 Send 的本地 Prompt 仍可用，不引入注册表、全局选择或生命周期管理。代码写集为 Host `process_message.rs`、chat_engine 导出、`role_kernel.rs` 和现有 `tests/minimal_role_public_api.rs`；不新增 DTO、trait、错误码、依赖或数据库迁移。
+
+**B · 独立 Host 使用**：现有 runtime `examples/minimal_role_host.rs` 增加按次选择 Prompt 的入口与一个只支持“逐片 JSON 引用并保留材料内容”要求的本地实现，复用共享消费者与示例原模型调用，不复制角色准备、拼接核心或 Kernel pipeline。引用是调用方明确选择的组装协议，解码后每片内容/次序保持，不冒充输出字节未变化或下游防注入保证。示例的旧身份/资产校验和默认路径保持；该实现的有限要求语义仅属于示例，不成为 Kernel 的要求语言。记录实际 native 运行和一项选择/拒绝回归即可，不扩大为第二个实际发行版验收。
+
+**文档 / 必要验证 / 停止**：ROLE_PACK_BOUNDARY 维护两条使用入口，MODULE_MAP 仅在现有消费者段补 Host 接线；主台账只更新本债状态格的当前能力和接续链接，前四列与 Partial 不变；本计划、DEBT_CHANGELOG 同批同步。A 先在旧方法不存在时编译红，再用生产 builder + 临时 SQLite + 内存模型验证自选/一次调用/非空要求及原样 LLM 输入、五类 Prompt 错误停止且保留完整信息、空消息零调用、正常空 Prompt 与模型结果/模型失败不修补；原五项作为兼容回归。B 保留原五项并加一项窄测、实际运行示例。定向 Clippy/fmt、workspace doctest、分层/错误码漂移/模块兼容与适用文档/债务门禁；控制方自行语义审查，不称独立审查。两片先本地提交，合成一个冻结批次只跑一次完整本地链，再按既有授权推送并核目标 CI。达到真实选择/消费主路径即停，不扩查另外五槽、媒体、全部异常或崩溃窗口；签名、双核、Event Stream 等暂停不变。
+
+**实际实施 / 兼容核对**：A 与 B 共用消费者，没有变更六槽 trait、DTO、配置或依赖。Host 的九项外部回归中，新增用例确认同一 Host 在显式选择之后再走默认入口时仍使用原 Literal，选择仅属于当前调用；本地非 Send Prompt 在真实异步让出后读到原材料。B 选择有限 JSON 协议，解码后逐片核内容而非宣称任意 Prompt 都输出同一字节。两片已合并为同一实质提交批次，避免为中间片单独完整验证。编译红、首次 fmt 红及修后结果分别保存于 `.cursor/plans/debt-minimal-role-host-choice-20261004-r0/`；当前 Host lib 635 项、外部九项、示例六项/native、定向 Clippy 与 workspace doctest 47 项已通过。后续适用文档门禁和冻结完整链另记，不将本地结果外推为目标远端已通过。

@@ -1,9 +1,12 @@
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
+use std::cell::{Cell, RefCell};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use oclive_kernel_contracts::{LlmClient, LlmGenerateOpts, LlmGenerateOutcome};
+use oclive_kernel_contracts::{
+    BaseCallFuture, LlmClient, LlmGenerateOpts, LlmGenerateOutcome, PromptBase,
+};
 use oclive_kernel_host::domain::host_profile::HostProfile;
 use oclive_kernel_host::{
     MinimalRoleMessageError, OcliveKernel, OcliveKernelConfig, PreparedMinimalRole,
@@ -11,7 +14,46 @@ use oclive_kernel_host::{
 use oclive_kernel_types::models::dto::{
     MinimalRoleMessageRequest, MinimalRoleProductExtensionStatus,
 };
-use oclive_kernel_types::{AppError, BaseCallErrorKind, MinimalRoleDefinition};
+use oclive_kernel_types::{
+    AppError, BaseCallError, BaseCallErrorKind, MinimalRoleDefinition, PromptBaseRequest,
+};
+
+struct RecordingPrompt {
+    calls: Cell<usize>,
+    materials: RefCell<Vec<String>>,
+    requirements: RefCell<String>,
+    outcome: std::result::Result<String, BaseCallError>,
+}
+
+impl RecordingPrompt {
+    fn new(outcome: std::result::Result<String, BaseCallError>) -> Self {
+        Self {
+            calls: Cell::new(0),
+            materials: RefCell::default(),
+            requirements: RefCell::default(),
+            outcome,
+        }
+    }
+}
+
+impl PromptBase for RecordingPrompt {
+    fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        self.calls.set(self.calls.get() + 1);
+        Box::pin(async move {
+            // Force a suspension before reading the consumer's borrowed fragments.
+            tokio::task::yield_now().await;
+            self.materials.replace(
+                request
+                    .materials
+                    .iter()
+                    .map(|text| (*text).into())
+                    .collect(),
+            );
+            self.requirements.replace(request.requirements.into());
+            self.outcome.clone()
+        })
+    }
+}
 
 struct RecordingLlm {
     calls: Mutex<Vec<(String, String)>>,
@@ -273,4 +315,142 @@ fn optional_local_adapter_keeps_snapshots_without_rereading_or_defining_a_format
         ("portrait.bin", b"original".as_slice())
     );
     assert_eq!(role.definition().persona_prompt, "A local guide.");
+}
+
+#[tokio::test]
+async fn host_can_select_prompt_with_extra_requirements_and_local_async_state() {
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(&temp, "Selected capability reply.", false).await;
+    let role = role();
+    let request = MinimalRoleMessageRequest {
+        user_message: "  Hello, café.\r\n".into(),
+        requirements: "  Preserve the subject.\r\n".into(),
+    };
+    let prompt = RecordingPrompt::new(Ok("  Prepared by the selected Prompt.\r\n".into()));
+    let response = kernel
+        .process_minimal_message_with_prompt(&role, &request, &prompt)
+        .await
+        .unwrap();
+
+    assert_eq!(response.role_id, "converter-owned-id");
+    assert_eq!(response.reply, "Selected capability reply.");
+    assert_eq!(
+        response.product_extensions,
+        MinimalRoleProductExtensionStatus::Unavailable
+    );
+    assert_eq!(prompt.calls.get(), 1);
+    assert_eq!(
+        *prompt.materials.borrow(),
+        [
+            "【角色设定】\n",
+            "A guide prepared by a distro converter.",
+            "\n\n【输入材料】\n",
+            "User: ",
+            "  Hello, café.\r\n",
+        ]
+    );
+    assert_eq!(*prompt.requirements.borrow(), request.requirements);
+    assert!(kernel.list_roles().await.unwrap().is_empty());
+    {
+        let calls = llm.calls.lock().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].1, "  Prepared by the selected Prompt.\r\n");
+    }
+    let default_request = MinimalRoleMessageRequest {
+        user_message: "Default remains literal.".into(),
+        requirements: String::new(),
+    };
+    kernel
+        .process_minimal_message(&role, &default_request)
+        .await
+        .unwrap();
+    assert_eq!(prompt.calls.get(), 1);
+    {
+        let calls = llm.calls.lock().unwrap();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(
+            calls[1].1,
+            "【角色设定】\nA guide prepared by a distro converter.\n\n【输入材料】\nUser: Default remains literal."
+        );
+    }
+    close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn selected_prompt_errors_stop_before_model_and_preserve_complete_error() {
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(&temp, "Must not generate.", false).await;
+    let role = role();
+    for kind in [
+        BaseCallErrorKind::Failed,
+        BaseCallErrorKind::Unavailable,
+        BaseCallErrorKind::Unsupported,
+        BaseCallErrorKind::Cancelled,
+        BaseCallErrorKind::TimedOut,
+    ] {
+        let expected = BaseCallError {
+            kind,
+            detail: Some("selected provider detail\r\n".into()),
+        };
+        let prompt = RecordingPrompt::new(Err(expected.clone()));
+        let result = kernel
+            .process_minimal_message_with_prompt(&role, &request(), &prompt)
+            .await;
+        match result {
+            Err(MinimalRoleMessageError::Prompt(actual)) => assert_eq!(actual, expected),
+            other => panic!("expected the provider's complete error, got {other:?}"),
+        }
+        assert_eq!(prompt.calls.get(), 1);
+        assert!(llm.calls.lock().unwrap().is_empty());
+    }
+    close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn empty_user_input_does_not_invoke_selected_prompt_or_model() {
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(&temp, "Must not generate.", false).await;
+    let prompt = RecordingPrompt::new(Ok("Must not assemble.".into()));
+    let request = MinimalRoleMessageRequest {
+        user_message: " \r\n".into(),
+        requirements: "Do not discard this requirement.".into(),
+    };
+    assert!(matches!(
+        kernel
+            .process_minimal_message_with_prompt(&role(), &request, &prompt)
+            .await,
+        Err(MinimalRoleMessageError::Host(AppError::EmptyMessage))
+    ));
+    assert_eq!(prompt.calls.get(), 0);
+    assert!(prompt.materials.borrow().is_empty());
+    assert!(llm.calls.lock().unwrap().is_empty());
+    close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn selected_prompt_empty_output_and_model_failure_are_not_rewritten() {
+    for fail in [true, false] {
+        let temp = tempfile::tempdir().unwrap();
+        let (kernel, llm) = kernel(&temp, "", fail).await;
+        let prompt = RecordingPrompt::new(Ok(String::new()));
+        let result = kernel
+            .process_minimal_message_with_prompt(&role(), &request(), &prompt)
+            .await;
+        if fail {
+            assert!(matches!(
+                result,
+                Err(MinimalRoleMessageError::Host(AppError::OllamaError(message)))
+                    if message == "synthetic model failure"
+            ));
+        } else {
+            assert_eq!(result.unwrap().reply, "");
+        }
+        assert_eq!(prompt.calls.get(), 1);
+        {
+            let calls = llm.calls.lock().unwrap();
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].1, "");
+        }
+        close_fixture(kernel, temp).await;
+    }
 }

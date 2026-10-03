@@ -10,9 +10,10 @@ use std::path::Path;
 use std::task::{Context, Poll, Waker};
 
 use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
+use oclive_kernel_runtime::domain::minimal_role_consumer::MinimalRolePromptConsumer;
 use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
 use oclive_kernel_types::{
-    BaseCallErrorKind, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
+    BaseCallError, BaseCallErrorKind, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
 };
 use oclive_validation::minimal_role_local_file::{
     load_minimal_role_local_file, LocalMinimalRoleSnapshot,
@@ -56,6 +57,36 @@ impl LlmBase for EchoLlm {
         Box::pin(async move {
             self.calls.set(self.calls.get() + 1);
             Ok(format!("echo: {}", request.input))
+        })
+    }
+}
+
+// This requirement and JSON assembly agreement belong only to this example
+// implementation. Quoting preserves decoded fragments, not output bytes or a
+// downstream model's prompt-injection resistance.
+const QUOTED_MATERIAL_REQUIREMENT: &str = "quote each material as a JSON string";
+
+#[derive(Default)]
+struct QuotedMaterialPrompt {
+    calls: Cell<usize>,
+}
+
+impl PromptBase for QuotedMaterialPrompt {
+    fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        Box::pin(async move {
+            self.calls.set(self.calls.get() + 1);
+            if request.requirements != QUOTED_MATERIAL_REQUIREMENT {
+                return Err(BaseCallError {
+                    kind: BaseCallErrorKind::Unsupported,
+                    detail: Some(
+                        "this example supports only the material quoting agreement".into(),
+                    ),
+                });
+            }
+            serde_json::to_string(request.materials).map_err(|error| BaseCallError {
+                kind: BaseCallErrorKind::Failed,
+                detail: Some(error.to_string()),
+            })
         })
     }
 }
@@ -168,15 +199,46 @@ impl<L: LlmBase, C: HostContent> MinimalHost<L, C> {
         user_text: &str,
         requirements: &str,
     ) -> Result<String, HostError> {
+        self.reply_using_prompt(requested_role_id, user_text, requirements, None)
+    }
+
+    fn reply_with_prompt(
+        &self,
+        requested_role_id: &str,
+        user_text: &str,
+        requirements: &str,
+        prompt: &dyn PromptBase,
+    ) -> Result<String, HostError> {
+        self.reply_using_prompt(requested_role_id, user_text, requirements, Some(prompt))
+    }
+
+    fn reply_using_prompt(
+        &self,
+        requested_role_id: &str,
+        user_text: &str,
+        requirements: &str,
+        selected_prompt: Option<&dyn PromptBase>,
+    ) -> Result<String, HostError> {
         if requested_role_id != self.technical_id {
             return Err(HostError::UnknownRole);
         }
-        let prompt = MinimalRolePrompt::new(self.content.definition())
-            .map_err(|_| HostError::InvalidRoleDefinition)?;
-        let prepared = poll_immediate(prompt.assemble(PromptBaseRequest {
-            materials: &["User: ", user_text],
+        let materials = ["User: ", user_text];
+        let request = PromptBaseRequest {
+            materials: &materials,
             requirements,
-        }))?;
+        };
+        let prepared = match selected_prompt {
+            Some(prompt) => {
+                let consumer = MinimalRolePromptConsumer::new(self.content.definition(), prompt)
+                    .map_err(|_| HostError::InvalidRoleDefinition)?;
+                poll_immediate(consumer.assemble(request))?
+            }
+            None => {
+                let prompt = MinimalRolePrompt::new(self.content.definition())
+                    .map_err(|_| HostError::InvalidRoleDefinition)?;
+                poll_immediate(prompt.assemble(request))?
+            }
+        };
         poll_immediate(self.llm.generate(LlmBaseRequest { input: &prepared }))
     }
 
@@ -226,6 +288,31 @@ fn run_demo() -> Result<(), HostError> {
     {
         return Err(HostError::UnexpectedOutput);
     }
+    let prompt = QuotedMaterialPrompt::default();
+    let quoted_reply = memory_host.reply_with_prompt(
+        "memory-host-id",
+        "Hello again.",
+        QUOTED_MATERIAL_REQUIREMENT,
+        &prompt,
+    )?;
+    let quoted_input = quoted_reply
+        .strip_prefix("echo: ")
+        .ok_or(HostError::UnexpectedOutput)?;
+    let fragments: Vec<String> =
+        serde_json::from_str(quoted_input).map_err(|_| HostError::UnexpectedOutput)?;
+    if fragments
+        != [
+            "【角色设定】\n",
+            "A guide from another distro.",
+            "\n\n【输入材料】\n",
+            "User: ",
+            "Hello again.",
+        ]
+        || prompt.calls.get() != 1
+        || memory_host.llm.calls.get() != 2
+    {
+        return Err(HostError::UnexpectedOutput);
+    }
     Ok(())
 }
 
@@ -234,7 +321,7 @@ fn main() {
         eprintln!("minimal role Host example failed: {error:?}");
         std::process::exit(1);
     }
-    println!("minimal role Host example: local and in-memory calls passed");
+    println!("minimal role Host example: local, in-memory and selected Prompt calls passed");
 }
 
 #[cfg(test)]
@@ -351,5 +438,66 @@ mod tests {
             ),
             Err(HostError::InvalidLocalFiles)
         ));
+    }
+
+    #[test]
+    fn host_selects_material_quoting_without_changing_the_default_agreement() {
+        let directory = files();
+        let host = MinimalHost::load(
+            directory.path(),
+            "content.json",
+            "host-owned-guide-id",
+            EchoLlm::default(),
+        )
+        .unwrap();
+        let prompt = QuotedMaterialPrompt::default();
+        let user_text = "  Hello, café.\r\n";
+        let reply = host
+            .reply_with_prompt(
+                "host-owned-guide-id",
+                user_text,
+                QUOTED_MATERIAL_REQUIREMENT,
+                &prompt,
+            )
+            .unwrap();
+        let fragments: Vec<String> =
+            serde_json::from_str(reply.strip_prefix("echo: ").unwrap()).unwrap();
+        assert_eq!(
+            fragments,
+            [
+                "【角色设定】\n",
+                "A curious guide.",
+                "\n\n【输入材料】\n",
+                "User: ",
+                user_text
+            ]
+        );
+        assert_eq!(prompt.calls.get(), 1);
+        assert_eq!(host.llm.calls.get(), 1);
+
+        assert_eq!(
+            host.reply(
+                "host-owned-guide-id",
+                user_text,
+                QUOTED_MATERIAL_REQUIREMENT
+            ),
+            Err(HostError::Capability(BaseCallErrorKind::Unsupported))
+        );
+        assert_eq!(
+            host.reply_with_prompt("other-id", user_text, QUOTED_MATERIAL_REQUIREMENT, &prompt),
+            Err(HostError::UnknownRole)
+        );
+        assert_eq!(prompt.calls.get(), 1);
+        assert_eq!(
+            host.reply_with_prompt(
+                "host-owned-guide-id",
+                user_text,
+                "unhandled requirement",
+                &prompt
+            ),
+            Err(HostError::Capability(BaseCallErrorKind::Unsupported))
+        );
+        assert_eq!(prompt.calls.get(), 2);
+        assert_eq!(host.llm.calls.get(), 1);
     }
 }

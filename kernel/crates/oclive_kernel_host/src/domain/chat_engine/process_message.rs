@@ -53,7 +53,38 @@ pub async fn process_minimal_message(
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
 > {
+    process_minimal_message_using_prompt(state, role, request, None).await
+}
+
+/// The same minimal text path with a Host-selected, unconfigured Prompt Base.
+/// The shared consumer prepares role materials; selection and the capability's
+/// requirement agreement remain the caller's responsibility.
+///
+/// # Errors
+/// Returns the original Host error or complete selected Prompt failure.
+pub async fn process_minimal_message_with_prompt(
+    state: &AppState,
+    role: &crate::service::role::minimal::PreparedMinimalRole,
+    request: &oclive_kernel_types::models::dto::MinimalRoleMessageRequest,
+    prompt: &dyn oclive_kernel_contracts::PromptBase,
+) -> std::result::Result<
+    oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
+    crate::domain::chat_engine::message_error::MinimalRoleMessageError,
+> {
+    process_minimal_message_using_prompt(state, role, request, Some(prompt)).await
+}
+
+async fn process_minimal_message_using_prompt(
+    state: &AppState,
+    role: &crate::service::role::minimal::PreparedMinimalRole,
+    request: &oclive_kernel_types::models::dto::MinimalRoleMessageRequest,
+    selected_prompt: Option<&dyn oclive_kernel_contracts::PromptBase>,
+) -> std::result::Result<
+    oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
+    crate::domain::chat_engine::message_error::MinimalRoleMessageError,
+> {
     use oclive_kernel_contracts::PromptBase;
+    use oclive_kernel_runtime::domain::minimal_role_consumer::MinimalRolePromptConsumer;
     use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
     use oclive_kernel_types::models::dto::{
         MinimalRoleMessageResponse, MinimalRoleProductExtensionStatus,
@@ -63,14 +94,27 @@ pub async fn process_minimal_message(
     if request.user_message.trim().is_empty() {
         return Err(crate::error::AppError::EmptyMessage.into());
     }
-    let prompt = MinimalRolePrompt::new(role.definition())
-        .map_err(|errors| crate::error::AppError::InvalidParameter(errors.join("; ")))?;
-    let prepared = prompt
-        .assemble(PromptBaseRequest {
-            materials: &["User: ", &request.user_message],
-            requirements: &request.requirements,
-        })
-        .await?;
+    let invalid_role =
+        |errors: Vec<String>| crate::error::AppError::InvalidParameter(errors.join("; "));
+    let materials = ["User: ", request.user_message.as_str()];
+    let prompt_request = PromptBaseRequest {
+        materials: &materials,
+        requirements: &request.requirements,
+    };
+    let prepared = match selected_prompt {
+        Some(prompt) => {
+            MinimalRolePromptConsumer::new(role.definition(), prompt)
+                .map_err(invalid_role)?
+                .assemble(prompt_request)
+                .await?
+        }
+        None => {
+            MinimalRolePrompt::new(role.definition())
+                .map_err(invalid_role)?
+                .assemble(prompt_request)
+                .await?
+        }
+    };
     crate::domain::user_llm_env::apply_user_llm_env(state).await?;
     let model = state.ollama_model.read().clone();
     let generated = crate::domain::slot_runner::SlotRunner::generate_llm_single(

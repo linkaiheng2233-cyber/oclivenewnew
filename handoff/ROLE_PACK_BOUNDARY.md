@@ -183,6 +183,10 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 
 §0.7 的 `MinimalRolePrompt` 复用同一准备逻辑并选择原 `LiteralMaterialAssembler`；原输出字节、非空要求的提前 `Unsupported` 及完整错误说明保持不变，旧类型的 `Send/Sync` 属性也保留。新消费者沿用 Base 的本地 future，不增强线程或取消承诺。[外部 crate 测试](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_consumer.rs) 验证 Host 自选 Prompt、额外要求与片段保持、全部 typed 失败/空结果原样传递、一次调用及真实 Pending 后的借用有效性；原 Prompt、独立 Host 示例和参考 Host 基础入口用于兼容回归。它不证明各发行版都已装配这层、所有六槽必须调用，或真实模型/媒体、HTTP/Tauri/UI 已接入；原债仍按实际发行版缺口保持 Partial。
 
+**参考 Host 的显式选择入口**：[`OcliveKernel::process_minimal_message_with_prompt`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 接收 §0.9 的准备句柄、原基础请求和调用者选定的 `&dyn PromptBase`。所选实现应消费准备后的材料，不应已配置同一角色的人设；共享消费者添加一次人设，并原样交付 `requirements`。旧 `process_minimal_message` 继续使用原 Literal 协议，不记住前一次选择。两种入口共用同一基础编排、当前模型设置、单次模型调用与基础结果；空用户输入先拒绝，Prompt 失败时不调用模型，完整错误、正常空输出与原模型失败均不改写。调用者仍负责能力是否满足用途及本地异步调度；没有全局注册、重试或产品扩展状态。
+
+**独立 Host 的用法**：[`minimal_role_host` 示例](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs) 的 `reply_with_prompt` 复用同一消费者，展示 Host 按次选择“逐片 JSON 引用”的能力。其有限要求属于示例，JSON 解码后的人设和材料内容、顺序逐片保持，不声称输出字节不变、防注入或 Kernel 已定义统一要求语言。原本地/纯内存来源、技术身份校验和默认 Literal 路径保持。参考 Host 的九项外部回归包含原五项兼容用例；独立示例六项及 native 运行通过。证据限于内存能力与隔离数据，不扩大 §0.9 的产品/传输范围；公开 Host 用法的 `no_run` rustdoc 仅证明编译。
+
 ## 1. 当前参考宿主内部划分
 
 | 组件 | 职责 | 面向 |
