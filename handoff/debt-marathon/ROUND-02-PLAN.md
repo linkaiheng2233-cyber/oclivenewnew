@@ -457,3 +457,11 @@
 **写集 / 闭环**：CLI `src/templates/lib.rs.hbs`、`README.generated.hbs`、`generator.rs` 的现有 library 合同测试、新增 `tests/e2e_minimal_role_library.rs` 与其隔离 fixture；CLI 指南中英、ROLE_PACK_BOUNDARY、本计划、主台账和 DEBT_CHANGELOG 同步。输入是开发者转换后的定义/资产 → 原准备句柄 → 原 Host 基础方法 → 原三字段结果 → 生成库消费者；无新 DTO、运行依赖、权限、格式、命令或数据库迁移。未链接的 serde stub、旧 rich API、kernel-server 和默认角色包生成保持原逻辑。隔离生成项目沿用根 lock 的已解析版本，避免离线用例只在旧机器缓存上成立。原试加 Host dev-dependency 被默认轻量依赖树回归拒绝，已撤回；改为沿用 `diagnostics-host` 显式启用消费测试，由外层 Cargo 准备 Host 闭包。CI 写集仅扩至 `ci.yml` 的既有 cli job 新增这一条特性测试命令；runner、job 选择、actions/permissions、默认命令和 gate 均不变，不在此重新设计 CI。
 
 **验收 / 停止**：先在旧模板上跑新生成合同的拒绝，再生成独立 library 并由真实 Cargo 编译/运行一次生产 Host + 内存 LLM，核原样 reply、显式 unavailable 与 typed Unsupported 的零新增生成；生成 rustdoc 用法也编译。复用仓库外 Cargo target，嵌套 Cargo 串行，不另建整套 Host 验证。CLI 定向测、Clippy/fmt、workspace doctest 与适用文档/债务门禁完成后形成可审查提交；整批冻结才跑完整本地链并按已有授权推送，不为每个小改启动正式 CI。父批 success 不替代新 SHA；原债保持 Partial。完成实际生成消费即停，不补 HTTP/Tauri/UI、全平台、真实模型/媒体或生命周期证据。主控自行实施和 diff 自查，不声称独立复核。
+
+### D-DEBT-LEDGER-01 · 最小角色当前状态与接手用法收敛（2026-10-04）
+
+**尺寸 / 基线 / 原因**：M 级文档治理，起点 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2`，工作树干净。D-CLI-BLUEPRINT-05 的当前状态格累积多轮历史，先前“未接”的阶段描述与当前实现并列；CLI `pack create` 指南还笼统写生成/识别未实现，不能准确区分已有显式文件准备与没有统一磁盘生成器。整理现行入口，不重新测绘代码或降低产品承诺。
+
+**写集 / 保全**：主台账只缩短 D-CLI-BLUEPRINT-05 的状态格，ID、问题、优先级与完成条件原文不变；将起点整行原文保存到 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md`。同步本计划、台账 Wave、DEBT_CHANGELOG 及 CLI 指南中英的 `create` 说明，共七份文档。当前状态仍唯一由主台账负责，归档仅保留历史；D-CLI-BLUEPRINT-05 与 D-DEBT-LEDGER-01 均不转 Done，QUEUE/机器计划、Rust/模板/门禁和运行原件不动。
+
+**验收 / CI 节奏 / 止点**：机械比较快照与起点整行、前四列及其它权威行保持原文；核现有 `validate-minimal-local` 与边界 §0.5/§0.9 的主路径即可。默认及改文链接、镜像、docs-only 旧路径、登记、债结构、编码及 diff 通过后形成本地文档提交；不重复 Rust、业务场景或完整本地链，也不为这一小片立即再推送触发全量 CI，随下一实质批次统一推送。上一工程目标的远端结果单独核对，不把它当本文档 HEAD 的验收。主控自行按 diff 复核；完成该行与指南的准确分层即停止，不迁其它长状态、不新增所有未覆盖面的调查任务。

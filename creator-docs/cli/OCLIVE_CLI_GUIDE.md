@@ -389,7 +389,7 @@ cargo run -p oclive-cli -- pack publish ./out/my-role -o ./dist/com.example.demo
 - **`validate --profile legacy`**：校验 `manifest.json` / `settings.json` 合并、`plugin_backends`、`min_runtime_version` 与 `--host-version` 等（旧包路径）。
 - **`validate --profile robot-soul`**：在 **legacy** 校验通过后追加现有参考宿主的 RobotSoulPack 规则；通过不代表符合新最小 contract（见 ROLE_PACK_SPEC §6）。
 - **`validate --profile portable-core`**：校验 v2/v3/v4 蓝图，以及非空 `core_personality.txt`、启用的 `portrait_catalog` 和七个固定默认情绪图片 ID；七图集是推荐的可选跨发行版标准，但该参考宿主 profile 不等于只需一图 + persona prompt 的 [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md)。
-- **`create`**：生成当前参考宿主格式的可校验目录；该格式族的新 Stable 样例推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。内核最小角色 contract 的生成/识别能力尚未实现，跟踪于 [TECHNICAL_DEBT_INVENTORY.md](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05`。
+- **`create`**：生成当前参考宿主格式的可校验目录；该格式族的新 Stable 样例推荐 **`--format-blueprint-v4`**，`--format-blueprint-v2` 仅保留兼容；`--flat` 时 `-o` 即为角色根。此命令不生成跨发行版最小角色包，逻辑 contract 不规定统一磁盘格式；开发者提供的定义文件和资产现可用 [`validate-minimal-local`](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备)只读准备，生成库的基础文本用法见[生成物说明](#生成物说明)。丰富生命周期和实际发行版适配的剩余范围由 [D-CLI-BLUEPRINT-05](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 跟踪，不能从准备成功推断角色已激活。
 - **`publish`**：将角色目录打成 **ZIP**，扩展名 **`.oclivepack`**；ZIP 内顶层文件夹名为包内 **`meta.id`**（v2/v3/v4）或 **`manifest.id`**（legacy）。
 
 **JSON Schema**（IDE / `ajv` 等）：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.json`、`pipeline.ocblueprint.v3.schema.json`、`pipeline.ocblueprint.v4.schema.json`；legacy 见 `role_pack_manifest.schema.json`、`role_pack_settings.schema.json`、`role_pack_index.schema.json`。

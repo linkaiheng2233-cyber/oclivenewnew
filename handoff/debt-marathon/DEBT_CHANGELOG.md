@@ -500,3 +500,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 
 - **证据 / 状态变动**：目标 `96ca9d29832c9560e1427843db76154dbb63d915` 的正式 [CI 37144457163](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37144457163) conclusion=success，17/17（含 Windows/Linux Rust 与 ci-gate）；同冻结点的完整本地链和四项执行计划回归已通过。D-HOST-ROLE-ACTIVATION-01 从 Partial · Locally verified 转为 Done，随这次生成库实质返修提交入账，不为单独写绿灯另造证据提交。
 - **有限范围**：只关闭 required capability 拒绝前污染选角/插件 UI 状态的原缺陷，保持已有/全局/未迁移 legacy 禁用设置语义；不包含 DB 发布失败、并发切换或崩溃原子性，也不把该修复当最小角色接入证据。D-CLI-BLUEPRINT-05 仍 Partial，本轮新 SHA 仍须独立核 CI。签名、双核、Event Stream 等暂缓项不变。
+
+### DCL-20261004-24 · 最小角色状态行与 CLI 用法去除过期表述
+
+- **原因 / 已完成**：最小角色的台账状态格逐轮累加，早期“Host 未接”与近期基础入口并列；CLI `create` 指南也未区分生成器和显式文件准备，容易让接手者重新领取已完成的工作。按[本片计划](ROUND-02-PLAN.md#d-debt-ledger-01--最小角色当前状态与接手用法收敛2026-10-04)保全起点 `5dc3d1d0` 整行，当前行缩为已有基础调用与剩余发行版适配，细节见[台账 Wave](waves/WAVE-20260929-DEBT-REFERENCES.md#最小角色长状态与当前接手入口2026-10-04)。中英指南只纠正当前能力分类并链接现有 SSOT，没有缩减产品承诺来假装实现。
+- **证据 / 当前接续**：工程冻结点 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2` 的 `17-ci-local-final` 原生 exit 0、前后 SHA 相同、临时 Python 配置恢复 true；已按既有授权推送，正式 CI 另核，不用父 SHA 的绿灯替代。文档迁移机械核原行/前四列/其它权威行，适用门禁完成后只建本地提交，随下一实质批次统一推送。
+- **状态 / 停止**：两项债仍 Partial；未修改 QUEUE、机器计划、产品源码、模板、门禁、旧证据或运行数据。本片不重新跑 Rust/真实模型/媒体/业务身份，整理这一处后即停，不让历史未覆盖范围变成无限补证队列。下一施工仍从选定发行版的实际基础接入断点出发，公共边界改变时再列具体决策；暂缓的签名、双核、Event Stream 等不变。
