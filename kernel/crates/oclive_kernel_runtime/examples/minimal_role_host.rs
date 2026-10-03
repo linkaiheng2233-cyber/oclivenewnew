@@ -1,9 +1,9 @@
 //! A separate, bounded Host example for the portable minimal-role content.
 //!
-//! The Host chooses a technical ID, owns the validated local snapshot, selects a
+//! The Host chooses a technical ID, owns local or in-memory content, selects a
 //! Prompt Base implementation and an in-memory LLM, and decides when to call them.
 //! It does not register a role in the reference `AppState` or define a mandatory
-//! six-slot turn order. The immediate poller is valid only for these local adapters.
+//! six-slot turn order. The immediate poller is valid only for these in-memory capabilities.
 
 use std::cell::Cell;
 use std::path::Path;
@@ -11,10 +11,13 @@ use std::task::{Context, Poll, Waker};
 
 use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
 use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
-use oclive_kernel_types::{BaseCallErrorKind, LlmBaseRequest, PromptBaseRequest};
+use oclive_kernel_types::{
+    BaseCallErrorKind, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
+};
 use oclive_validation::minimal_role_local_file::{
     load_minimal_role_local_file, LocalMinimalRoleSnapshot,
 };
+use oclive_validation::validate_minimal_role_definition;
 
 const MAX_DEFINITION_BYTES: usize = 64 * 1024;
 const MAX_ASSET_BYTES: usize = 4 * 1024 * 1024;
@@ -26,6 +29,7 @@ enum HostError {
     UnknownRole,
     InvalidLocalFiles,
     InvalidRoleDefinition,
+    InvalidRoleAssets,
     Capability(BaseCallErrorKind),
     PendingCapability,
     UnexpectedOutput,
@@ -56,13 +60,60 @@ impl LlmBase for EchoLlm {
     }
 }
 
-struct MinimalHost<L> {
+// This adapter seam belongs to the example Host. It is not a new Kernel port or
+// a requirement that other distros use the local file format.
+trait HostContent {
+    fn definition(&self) -> &MinimalRoleDefinition;
+    fn asset_count(&self) -> usize;
+    fn assets(&self) -> Box<dyn ExactSizeIterator<Item = (&str, &[u8])> + '_>;
+}
+
+impl HostContent for LocalMinimalRoleSnapshot {
+    fn definition(&self) -> &MinimalRoleDefinition {
+        LocalMinimalRoleSnapshot::definition(self)
+    }
+
+    fn asset_count(&self) -> usize {
+        LocalMinimalRoleSnapshot::assets(self).len()
+    }
+
+    fn assets(&self) -> Box<dyn ExactSizeIterator<Item = (&str, &[u8])> + '_> {
+        Box::new(LocalMinimalRoleSnapshot::assets(self))
+    }
+}
+
+struct MemoryContent {
+    definition: MinimalRoleDefinition,
+    asset_bytes: Vec<Vec<u8>>,
+}
+
+impl HostContent for MemoryContent {
+    fn definition(&self) -> &MinimalRoleDefinition {
+        &self.definition
+    }
+
+    fn asset_count(&self) -> usize {
+        self.asset_bytes.len()
+    }
+
+    fn assets(&self) -> Box<dyn ExactSizeIterator<Item = (&str, &[u8])> + '_> {
+        Box::new(
+            self.definition
+                .visual_assets
+                .iter()
+                .zip(&self.asset_bytes)
+                .map(|(reference, bytes)| (reference.as_str(), bytes.as_slice())),
+        )
+    }
+}
+
+struct MinimalHost<L, C> {
     technical_id: String,
-    snapshot: LocalMinimalRoleSnapshot,
+    content: C,
     llm: L,
 }
 
-impl<L: LlmBase> MinimalHost<L> {
+impl<L: LlmBase> MinimalHost<L, LocalMinimalRoleSnapshot> {
     fn load(
         asset_root: &Path,
         definition_reference: &str,
@@ -80,9 +131,33 @@ impl<L: LlmBase> MinimalHost<L> {
             MAX_TOTAL_ASSET_BYTES,
         )
         .map_err(|_| HostError::InvalidLocalFiles)?;
+        Self::new(technical_id, snapshot, llm)
+    }
+}
+
+impl<L: LlmBase, C: HostContent> MinimalHost<L, C> {
+    fn new(technical_id: &str, content: C, llm: L) -> Result<Self, HostError> {
+        if technical_id.trim().is_empty() {
+            return Err(HostError::InvalidTechnicalId);
+        }
+        validate_minimal_role_definition(content.definition())
+            .map_err(|_| HostError::InvalidRoleDefinition)?;
+        let mut assets = content.assets();
+        if content.asset_count() != content.definition().visual_assets.len()
+            || assets.len() != content.definition().visual_assets.len()
+            || content
+                .definition()
+                .visual_assets
+                .iter()
+                .zip(&mut assets)
+                .any(|(expected, (actual, bytes))| expected != actual || bytes.is_empty())
+        {
+            return Err(HostError::InvalidRoleAssets);
+        }
+        drop(assets);
         Ok(Self {
             technical_id: technical_id.to_owned(),
-            snapshot,
+            content,
             llm,
         })
     }
@@ -96,7 +171,7 @@ impl<L: LlmBase> MinimalHost<L> {
         if requested_role_id != self.technical_id {
             return Err(HostError::UnknownRole);
         }
-        let prompt = MinimalRolePrompt::new(self.snapshot.definition())
+        let prompt = MinimalRolePrompt::new(self.content.definition())
             .map_err(|_| HostError::InvalidRoleDefinition)?;
         let prepared = poll_immediate(prompt.assemble(PromptBaseRequest {
             materials: &["User: ", user_text],
@@ -105,8 +180,8 @@ impl<L: LlmBase> MinimalHost<L> {
         poll_immediate(self.llm.generate(LlmBaseRequest { input: &prepared }))
     }
 
-    fn visual_assets(&self) -> impl ExactSizeIterator<Item = (&str, &[u8])> {
-        self.snapshot.assets()
+    fn visual_assets(&self) -> Box<dyn ExactSizeIterator<Item = (&str, &[u8])> + '_> {
+        self.content.assets()
     }
 }
 
@@ -133,6 +208,24 @@ fn run_demo() -> Result<(), HostError> {
     {
         return Err(HostError::UnexpectedOutput);
     }
+    let memory_host = MinimalHost::new(
+        "memory-host-id",
+        MemoryContent {
+            definition: MinimalRoleDefinition {
+                persona_prompt: "A guide from another distro.".into(),
+                visual_assets: vec!["memory:portrait".into()],
+            },
+            asset_bytes: vec![b"synthetic-memory-portrait".to_vec()],
+        },
+        EchoLlm::default(),
+    )?;
+    if memory_host.reply("memory-host-id", "Hello.", "")?
+        != "echo: 【角色设定】\nA guide from another distro.\n\n【输入材料】\nUser: Hello."
+        || memory_host.visual_assets().len() != 1
+        || memory_host.llm.calls.get() != 1
+    {
+        return Err(HostError::UnexpectedOutput);
+    }
     Ok(())
 }
 
@@ -141,7 +234,7 @@ fn main() {
         eprintln!("minimal role Host example failed: {error:?}");
         std::process::exit(1);
     }
-    println!("minimal role Host example: bounded local call passed");
+    println!("minimal role Host example: local and in-memory calls passed");
 }
 
 #[cfg(test)]
@@ -179,6 +272,45 @@ mod tests {
             "echo: 【角色设定】\nA curious guide.\n\n【输入材料】\nUser: Hello."
         );
         assert_eq!(host.llm.calls.get(), 1);
+    }
+
+    #[test]
+    fn memory_adapter_uses_the_same_host_path_without_a_local_role_file() {
+        let content = MemoryContent {
+            definition: MinimalRoleDefinition {
+                persona_prompt: "A guide from another distro.".into(),
+                visual_assets: vec!["memory:portrait".into()],
+            },
+            asset_bytes: vec![b"synthetic-memory-portrait".to_vec()],
+        };
+        let host = MinimalHost::new("memory-host-id", content, EchoLlm::default()).unwrap();
+        assert_eq!(host.visual_assets().next().unwrap().0, "memory:portrait");
+        assert_eq!(
+            host.reply("memory-host-id", "Hello.", "").unwrap(),
+            "echo: 【角色设定】\nA guide from another distro.\n\n【输入材料】\nUser: Hello."
+        );
+        assert_eq!(host.llm.calls.get(), 1);
+    }
+
+    #[test]
+    fn memory_adapter_rejects_unpaired_or_empty_assets_before_host_construction() {
+        let definition = MinimalRoleDefinition {
+            persona_prompt: "A guide.".into(),
+            visual_assets: vec!["memory:portrait".into()],
+        };
+        for asset_bytes in [vec![], vec![Vec::new()], vec![vec![1], vec![2]]] {
+            assert!(matches!(
+                MinimalHost::new(
+                    "memory-host-id",
+                    MemoryContent {
+                        definition: definition.clone(),
+                        asset_bytes,
+                    },
+                    EchoLlm::default(),
+                ),
+                Err(HostError::InvalidRoleAssets)
+            ));
+        }
     }
 
     #[test]

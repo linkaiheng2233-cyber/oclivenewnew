@@ -47,7 +47,7 @@
 
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
-| D-CLI-BLUEPRINT-05 | **已裁定接口边界 / 后续格式决策门**：保留参考 Host 旧接口、增量接入最小逻辑定义；统一磁盘封装仍待取舍 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；共享定义、本地快照、CLI 显式文件校验、Prompt Base 与独立 Host 案例已存在。关系归发行版；现有 `content.json` 只是调用方选择，不是统一文件名 | 继续以独立 Host 和可选适配层验证；磁盘格式未定前不切换 CLI 默认生成目标，不用产品默认值填充旧 `Role`，不把示例误记为参考 Host 激活 |
+| D-CLI-BLUEPRINT-05 | **已裁定逻辑契约 / 宿主接入缺口**：保留参考 Host 旧接口、增量接入最小逻辑定义；跨发行版不要求统一磁盘封装 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；共享定义、本地快照、CLI 显式文件校验、Prompt Base 与双来源独立 Host 案例已存在。关系归发行版；`content.json` 只是本地适配示例 | 继续核参考 Host 内部增量接入点与真实发行版映射；不切换 CLI 默认生成目标，不用产品默认值填充旧 `Role`，不把示例误记为参考 Host 激活 |
 | K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置 |
 | K-UID-DEFAULT-02 | **决策门**：profile 默认身份优先级与 compatibility fallback 取舍 | 主台账 §1；维护者选择后才同步 loader、profile、global/per-scene/恢复默认与文档 | 只读追踪现有默认路径及测试；不凭字段名默改用户可见默认身份 |
 | K-AGENT-MERGE-01、V-FUSED-01 | **独立范围 / 决策门**：工具 composite 与多槽实例融合不能混为同一实现 | 主台账前瞻风险及 [融合 stub](long-plans/V-FUSED-01.md)；前者须定工具冲突、权限、顺序/短路、超时/隔离与 trace，后者仍受其 Phase 3 条件约束 | 核单 Agent 行为与诊断声明；不从多 ID 推断已合并，也不以此阻断单 Agent/MCP 使用 |
@@ -458,3 +458,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因**：本文件顶部调度表仍将 D-CLI-BLUEPRINT-05 的旧接口取舍写成未决，并将 K-LLM-ENV-02 原缺陷写成仍等待压力证明；两者都落后于已登记的实现与验收，会让接手者重复开启错误前置。
 - **修正**：只更新这两行的**当前调度口径**。最小角色继续保留旧接口并走独立 Host 增量路径，统一磁盘格式仍是后续取舍；环境并发原缺陷按 `86cbb2d5` 的限定证据结案，真实 provider/跨进程/压力不随之验收。
 - **边界**：历史事件与原始证据不改，技术债主体状态不升格；本次不修改产品源码、角色包格式或 CLI 默认行为。
+
+### DCL-20261004-18 · D-CLI-BLUEPRINT-05 双来源 Host 与磁盘边界
+
+- **原因 / 取舍**：仅有本地快照的 Host 示例仍容易让接手者以为 `content.json` 是跨发行版标准。维护者认可保留最小逻辑契约、发行版自行适配磁盘来源；最终二次审核前，按该方向实施可逆的独立示例和文档，不改旧参考 Host API。
+- **本片**：示例 Host 内部内容来源接口同时接收本地快照与纯内存定义/资产，同一技术 ID 选择、Prompt Base 与内存 LLM 路径；Host 在能力调用前核逻辑字段和资产数、顺序、非空字节。角色边界与主台账不再把统一磁盘封装/生成器写成 Kernel 合规前置。
+- **验收 / 边界**：五项示例测试、原生示例运行与定向 Clippy/fmt 通过后形成小提交；纯内存来源仍是合成夹具，不代表第二发行版已实接。不解码视觉资产、不建参考 `AppState`、不触碰 CLI 默认格式。`D-CLI-BLUEPRINT-05` 仍 Partial；格式取舍会在本轮汇报中单列供维护者二次审核。
