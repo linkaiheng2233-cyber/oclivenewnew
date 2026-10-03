@@ -512,3 +512,15 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **实际失败 / 归因**：`5dc3d1d0` 的[正式 run 37149237736](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37149237736)中原 CLI clippy/测试步骤通过，新增消费步骤 native 101。作业 `111279751539` 的原始日志显示子 Cargo 的消费和 rustdoc 各一项成功，但 `CARGO_TERM_COLOR=always` 在 `Doc-tests` 与 crate 名之间插入 ANSI 控制字节，外层纯文本标题断言拒绝；这是我新增测试的日志合同缺陷，不是生产入口失败，也不能因此忽略正式红灯。原日志保存在 `.cursor/plans/debt-minimal-role-library-20261004-r0/18-remote-cli.log`。
 - **修复 / 有效回归**：只在该测试的子 Cargo 参数中指定 `--color never`，保留 native exit、命名消费和两项成功计数断言，不新建解析器或修改工作流。按[返修计划](ROUND-02-PLAN.md#生成库消费回归--cargo-彩色日志合同修补2026-10-04)在同一进程级 `CARGO_TERM_COLOR=always` 下，旧测试 `19-colored-consumer-red` 原生 101，修后 `20-colored-consumer-green` 原生 0；两次均恢复原环境。定向 Clippy/fmt 和文档门禁后冻结，main 修复的完整本地链与新 SHA 远端单独核。
 - **状态 / 节奏**：D-CLI-BLUEPRINT-05 保持 Partial，`5dc3d1d0` 不标作远端通过；文档迁移的本地提交 `4f98d34e` 与这次必要修复合批，不为中间片单独触发全量。未改模板、产品 API、依赖、角色、模型、用户数据或暂停项；确认这一实际失败修正后停止扩证。CI 红灯归因与失败原件保留，不以无变化 rerun 或删断言掩盖。
+
+### DCL-20261004-26 · CI 公共契约与模型特化的渐进分责
+
+- **维护者确认 / 原因**：Kernel CI 与面向特定 7B 模型的工程应按责任分开，模块化能为选路提供实际依据；无需完整重设计。复用 [K-CI-IMPACT-01 原计划](ROUND-02-PLAN.md#k-ci-impact-01--公共契约与模型特化的渐进归属2026-10-04)和 [CI 设计 §2.4](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#24-主工作流的执行所有权)，不新建债或第二份架构表。
+- **实际变化 / 有限出口**：设计补明公共接口与具体模型质量/资源承诺分列；先整理实际接口、依赖、责任和独立测试，需要时才拆代码。下一次实施只选一个有实际重复/过选依据的范围，足以决定路由即停；公共依赖、组合回归、真实 Compare 与未知保守策略保留，不通过改名或删影响边冒充模块化。
+- **基线 / 状态 / 验收范围**：起点 `5b3153ae3bbe0a0bf0b3359202d22c36a0f62b89` 干净，仅设计、计划和本事件三文件；K-CI-IMPACT-01 状态及当前 workflow、模块描述、validation catalog、影响图、选择范围、ci-gate 和暂停项不变。按该计划完成适用文档/债结构、编码及 diff 自查后本地保留，随下次实质批次推送；不为设计片重复 Rust、业务验证或全量 CI，不声称分层代码已实施。
+- **本地复核**：默认及本片链接、docs-only 旧路径、文档登记/镜像、债计划结构和编码均原生 exit 0，三份改文逐文件核有汉字、无 BOM 和连续问号；`git diff --check` exit 0（Git 换行提示另列）。日志在 `.cursor/plans/debt-ci-boundaries-20261004-r0/`，主控按最终 diff 自查，不声称独立审查。完成方向落点即停止扩证；最小角色的产品入口问题由下一事件接续。
+
+### DCL-20261004-27 · 最小角色发行版入口需要产品范围裁定
+
+- **有界调用链核对 / 真实断点**：`PreparedMinimalRole` 和基础结果不激活丰富角色、不承诺落库/恢复；ChatPro 的 `distros/shared/src/api/role.ts` 仍要求丰富 `RoleData` / `RoleInfo`，`roleStore.mapRoleInfo` 应用关系/人格等产品状态，`chatStoreSend` 消费丰富回复并更新状态。已有 Rust 入口不能靠补默认字段或前端强转接入这些消费者；达到这一断点即停，不扩查全部聊天/媒体路径。
+- **待决 / 保护 / 下一步**：已询问独立基础会话与主聊天统一接入的产品范围，区别在角色生命周期、历史与恢复要求；[待决计划](ROUND-02-PLAN.md#d-cli-blueprint-05--参考发行版入口的待决边界2026-10-04)记录接续位置。回答前不改变生产契约、传输、加载缓存、选角或 UI；回答后列所选有限写集与必要回归再施工。原债保持 Partial，已有共享契约/转换器责任和暂停项不重开。只读核对可安全重做，原业务身份和冻结证据不得复用或改写。
