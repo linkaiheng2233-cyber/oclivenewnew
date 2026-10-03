@@ -440,3 +440,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **起点 / 原因**：基线 `c51f8415f702fa8b90da666827cd125cddb41220`。维护者选择先从现有 Base 能力做独立最小 Host 案例，旧参考 Host 接口与主链继续稳定；此前只有 CLI 快照准备与单个 Prompt 能力调用，没有 Host 对身份、快照所有权和失败止点的组合。
 - **本片**：新增可运行的 `minimal_role_host` 示例：Host 自定技术 ID、持有有界本地快照、调用现有 Prompt Base 和内存 Echo LLM。正常、错身份、额外要求拒绝及缺资产的 3 项示例测试通过；原生示例运行 exit 0。错身份与 Prompt 拒绝均未到达 LLM。
 - **边界 / 后续**：例子无参考 `AppState`、DB、网络、真实模型、视觉渲染与跨平台发行版结论；即时 future 驱动仅服务本例。独立 Host 的最小装配案例已形成，但统一磁盘载体/生成、产品 Host 生命周期与真实分发仍缺，父债保持 Partial。
+
+### DCL-20261003-15 · K-LLM-ENV-02 原并发缺陷有限结案
+
+- **原因 / 依据**：此前刻意停止追加低收益的环境排列组合，只等待既定目标 SHA 的正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的 `ci.yml` [run 37100060646](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646) 原生 `success`，17/17 作业成功；同目标本地综合链 exit 0。
+- **裁定**：原先“旧 DB 读取覆盖新环境并误清 dirty”的事务修复、可控交错和有限 save/chat/Theater/canonical 主路径完成条件已满足，主台账 K-LLM-ENV-02 转 `Done · bounded original defect`。原因、测试与界限见[同债 Wave 收口](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)。
+- **不外推**：真实 provider、云端 token、跨进程环境、所有崩溃/失败交错和压力未被本结案证明；出现具体反例再独立登记。此前各切片的 Partial 是当时状态，原文保留，不倒填成“当时已结案”。

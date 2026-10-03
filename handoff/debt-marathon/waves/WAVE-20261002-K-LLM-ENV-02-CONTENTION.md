@@ -59,3 +59,9 @@
 新增独立集成测试进程，以临时 app-data、空的合成角色目录与模拟 LLM 调用生产 `AppStateBuilder::production`，让实际构造流程创建并迁移文件 `app.db`。第一份状态写入本地 provider 与 URL，执行生产 reload 后显式关闭 pool；再将进程 URL 改为旧值，用同一文件路径重建第二份状态。第二份状态能从 DB 读回新 URL，生产 reload 又将其应用到进程环境。这把“内存数据库能刷新”推进到受控文件库重建，而不碰用户库或真实服务。
 
 **本地证据与边界**：`user_llm_env_file_restart` 定向测试 1 passed，fmt、定向 Clippy `-D warnings` exit 0；与上节流式切片合批的 `npm run check:ci-local` 原生 exit 0。该测试不模拟崩溃中断、跨进程竞争、并发旧读取、云端密钥、真实角色启动或模型网络，也不逐项证明每条迁移；目标 SHA 远端结果另核，K-LLM-ENV-02 仍未结案。
+
+## 2026-10-03 · 原缺陷的有限收口
+
+目标提交 `86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的[正式 CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646) 已完成，原生结果 `success`、17/17 作业成功；此前同一目标的 `npm run check:ci-local` exit 0。生产修复把 DB 读取、缓存/token 与进程环境写入及实际读取版本的提交纳入同一异步锁。可控旧读/新写交错确认最终采用新值；保存设置、普通/流式 chat、Theater、桌面 canonical seed 和临时文件库重建的有限主路径证据见上文。按维护者设定的收益停止线，**K-LLM-ENV-02 就原先“旧读取覆盖新环境并误清 dirty”缺陷标 Done**。
+
+这个结案不把进程环境变成跨进程事务，也不覆盖任意失败交错、真实 provider、云端凭据、全部迁移、崩溃中断或长时压力。旧各节“当时待核目标 CI / 父债未结案”保留为阶段事实，本节给出当前裁定；新反例另开范围，不用它们倒推本次有限结案无效。

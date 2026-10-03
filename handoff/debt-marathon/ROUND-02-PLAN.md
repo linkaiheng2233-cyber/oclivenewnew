@@ -399,3 +399,7 @@
 **写集 / 边界**：只新增 runtime crate 的独立 `minimal_role_host` 示例，附在示例中的隔离测试；同步本计划、角色边界、债务台账与变动事件。示例用临时根目录的一图加 prompt 走真实本地加载器，Host 自己指定技术 ID，持有快照并调用现有 Prompt Base 与内存 Echo LLM；错误在 Prompt 阶段即停止，不产生第二次 LLM 调用。它不接参考 `AppState`、不把最小内容伪装为完整 `Role`、不引入持久化/网络/真实模型/显示器或固定六槽顺序。
 
 **验收 / 止点**：`cargo test --example minimal_role_host` 覆盖正常调用、错身份、额外要求拒绝与缺资产加载失败；`cargo run --example minimal_role_host` 原生 exit 0，输出只报告有界案例通过，不打印人设或资产。定向 Clippy、fmt、文档/债结构通过即停止；本切片不从示例外推参考 Host 生命周期或跨平台发行版验收。与后续同主题切片合并后才跑下一次完整 CI。
+
+### K-LLM-ENV-02 · 原并发缺陷有限验收（2026-10-03）
+
+先前的停止规则要求不再补排列组合，只核目标 SHA 正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的[正式运行](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646)已 `success`，17/17；本地综合链也已 exit 0。结合可控交错与保存、chat、Theater、canonical seed 的有限路径，按原问题办理 Done。边界和历史阶段口径见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)；不自动扩至真实 provider、跨进程或压力验证。此项只更新治理裁定，不改生产实现或重跑业务测试。
