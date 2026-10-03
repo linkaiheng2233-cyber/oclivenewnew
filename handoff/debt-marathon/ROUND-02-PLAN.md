@@ -391,3 +391,11 @@
 **写集 / 停止线**：只在 runtime domain 增加一个借用快照的 Base 实现及定向测试，更新本计划、角色边界文档、台账与变动记录。复用已有文本连接核心，额外非空要求明确拒绝；不改 `PromptInput` / `PromptAssembler` / `AppState` / `load_role` / `process_message`，不注册新默认后端或做第二条回合流水线。此片的成功是能力输入可用，不是 Host 角色激活；Host 绑定另立小片。
 
 **验收**：外部 crate 测试经 `&dyn PromptBase` 以一图加 prompt 的本地快照调用，检查原样人设、材料顺序和额外要求拒绝；runtime 定向 Clippy、fmt、分层及适用文档门禁通过。与上一 CLI 小片合并形成里程碑再跑一次完整本地 CI；远端仅以推送后的目标 SHA 判断。
+
+### D-CLI-BLUEPRINT-05 · 独立最小 Host 装配案例（2026-10-03）
+
+**尺寸 / 起点 / 目的**：S，基线 `c51f8415f702fa8b90da666827cd125cddb41220`。维护者选择先做独立最小 Host 装配案例，再决定是否迁入参考 Host。现有 CLI 与 Prompt Base 能力已具备，但缺一个 Host 自己持有快照、绑定技术身份、择用能力并处理失败的可运行路径。
+
+**写集 / 边界**：只新增 runtime crate 的独立 `minimal_role_host` 示例，附在示例中的隔离测试；同步本计划、角色边界、债务台账与变动事件。示例用临时根目录的一图加 prompt 走真实本地加载器，Host 自己指定技术 ID，持有快照并调用现有 Prompt Base 与内存 Echo LLM；错误在 Prompt 阶段即停止，不产生第二次 LLM 调用。它不接参考 `AppState`、不把最小内容伪装为完整 `Role`、不引入持久化/网络/真实模型/显示器或固定六槽顺序。
+
+**验收 / 止点**：`cargo test --example minimal_role_host` 覆盖正常调用、错身份、额外要求拒绝与缺资产加载失败；`cargo run --example minimal_role_host` 原生 exit 0，输出只报告有界案例通过，不打印人设或资产。定向 Clippy、fmt、文档/债结构通过即停止；本切片不从示例外推参考 Host 生命周期或跨平台发行版验收。与后续同主题切片合并后才跑下一次完整 CI。

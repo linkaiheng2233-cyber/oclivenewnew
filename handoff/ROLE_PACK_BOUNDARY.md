@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-03。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小快照到独立 Prompt Base 的增量适配见 §0.7。旧公开接口仍耦合完整 `Role`，统一磁盘入口、生成器与 Host 生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-03。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小快照到独立 Prompt Base 的增量适配见 §0.7，独立最小 Host 案例见 §0.8。旧公开接口仍耦合完整 `Role`，统一磁盘入口、生成器与**参考 Host** 生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -146,6 +146,12 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 维护者选择保留参考运行时旧公开接口、增量接入最小角色。新增 [`LocalMinimalRolePrompt`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_prompt.rs)：它借用 §0.5 已验证的 `LocalMinimalRoleSnapshot`，作为可经 `&dyn PromptBase` 调用的一个独立实现。作者人设只来自快照，资产字节仍由调用方持有；它不构造完整 `Role`，不补角色名、关系、人格向量或 `slot_registry`。输入材料与人设放在不同文本段，当前调用若带额外非空 `requirements` 则明确返回 `Unsupported`，不清空真实要求以换取表面成功。文本段标记不保证下游模型抵抗注入。
 
 [外部 crate 定向测试](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_prompt.rs) 用一图加 prompt 的本地快照驱动真实 Base trait 调用，并检查额外要求的拒绝。这只证明**最小内容可进入一个 Prompt 能力实现**；没有在 `AppState` 注册它，没有让参考 Host 的 `load_role` / `process_message` 接受最小目录，也不证明 LLM、视觉显示或跨宿主回合。旧 `PromptInput` / `PromptAssembler` 与完整角色缓存保持原样。下一步要在 Host 自有的身份、资源及生命周期边界中选择绑定方式，再测一条真实装配路径；不得把本能力调用误写成角色激活。
+
+### 0.8 独立最小 Host 装配案例
+
+维护者选择从内核能力向外延伸，先做独立 Host 案例，保留参考 Host 的旧接口。[`minimal_role_host` 示例](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs)用调用方指定的本地根目录与定义文件加载一图加 prompt 的快照；Host 自己给出技术 ID、持有快照和资产字节、按该 ID 选择角色，并经 §0.7 的 Prompt Base 和内存 Echo LLM 完成一轮。错误身份在能力调用前拒绝，额外要求的 `Unsupported` 在 LLM 前停止；缺失资产则不构造 Host。该案例不写入作者角色定义的技术 ID、关系或 backend 默认值。
+
+案例的即时 future 驱动器只适合本例的内存能力；真实 Host 必须自行管理异步调度、资源权限、生命周期和领域效果。示例的 3 项隔离测试与原生运行验证**独立装配路径可行**，不是参考 `AppState`、ChatPro、真实模型、持久库、视觉渲染、跨平台发行版或安全隔离验收。最小角色的统一磁盘载体、生成器及参考 Host 兼容接入仍由技术债分片管理，不能因本例将 `D-CLI-BLUEPRINT-05` 标成 Done。
 
 ## 1. 当前参考宿主内部划分
 

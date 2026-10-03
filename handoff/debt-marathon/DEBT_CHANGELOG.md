@@ -434,3 +434,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **起点 / 原因**：接续本地提交 `e2ad3066`。维护者选择保留旧接口增量接入；CLI 能校验最小本地快照，但参考 Host 的 Prompt 入口与缓存仍依赖完整 `Role`。
 - **本片**：新增借用 `LocalMinimalRoleSnapshot` 的 `LocalMinimalRolePrompt`，经现有 `PromptBase` 能力调用。人设来自已验证快照，材料保持顺序；复用现有文本连接核心，非空附加要求返回 `Unsupported`。一图加 prompt 的外部 crate 测试通过；不构造产品默认关系、人格向量、角色名或蓝图。
 - **边界 / 后续**：这是单个能力实现的接入，未注册到参考 Host 的 `AppState`、角色加载或回合流程，也未解码视觉资产。旧 Prompt 接口不变，D-CLI-BLUEPRINT-05 仍 Partial；下一片须明确 Host 如何拥有快照、绑定技术身份并治理资源，不能把本片写成角色已激活。
+
+### DCL-20261003-14 · D-CLI-BLUEPRINT-05 独立最小 Host 装配
+
+- **起点 / 原因**：基线 `c51f8415f702fa8b90da666827cd125cddb41220`。维护者选择先从现有 Base 能力做独立最小 Host 案例，旧参考 Host 接口与主链继续稳定；此前只有 CLI 快照准备与单个 Prompt 能力调用，没有 Host 对身份、快照所有权和失败止点的组合。
+- **本片**：新增可运行的 `minimal_role_host` 示例：Host 自定技术 ID、持有有界本地快照、调用现有 Prompt Base 和内存 Echo LLM。正常、错身份、额外要求拒绝及缺资产的 3 项示例测试通过；原生示例运行 exit 0。错身份与 Prompt 拒绝均未到达 LLM。
+- **边界 / 后续**：例子无参考 `AppState`、DB、网络、真实模型、视觉渲染与跨平台发行版结论；即时 future 驱动仅服务本例。独立 Host 的最小装配案例已形成，但统一磁盘载体/生成、产品 Host 生命周期与真实分发仍缺，父债保持 Partial。
