@@ -11,10 +11,8 @@ use oclive_kernel_types::{
 };
 use oclive_validation::validate_minimal_role_definition;
 
-use super::base_prompt::concat_prepared_text;
-
-const PERSONA_HEADING: &str = "【角色设定】\n";
-const MATERIAL_HEADING: &str = "\n\n【输入材料】\n";
+use super::base_prompt::LiteralMaterialAssembler;
+use super::minimal_role_consumer::assemble_minimal_role_materials;
 
 /// A borrowed Prompt Base implementation for one validated logical minimal role.
 ///
@@ -55,12 +53,8 @@ impl PromptBase for MinimalRolePrompt<'_> {
                     ),
                 });
             }
-            let mut fragments = Vec::with_capacity(request.materials.len() + 3);
-            fragments.push(PERSONA_HEADING);
-            fragments.push(self.definition.persona_prompt.as_str());
-            fragments.push(MATERIAL_HEADING);
-            fragments.extend_from_slice(request.materials);
-            Ok(concat_prepared_text(&fragments))
+            assemble_minimal_role_materials(self.definition, &LiteralMaterialAssembler, request)
+                .await
         })
     }
 }

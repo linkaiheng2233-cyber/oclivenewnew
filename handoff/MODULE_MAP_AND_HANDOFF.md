@@ -368,6 +368,8 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 
 ### 3.1 三层解耦
 
+**最小角色的共享消费者**：[`MinimalRolePromptConsumer`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs) 负责准备最小角色的人设/材料片段，并消费 Host 显式选择的 `PromptBase`；定义与接入范围见 [ROLE_PACK_BOUNDARY §0.10](ROLE_PACK_BOUNDARY.md#010-共享消费者复用准备并选择-prompt)。它保留当前材料及要求，直接交还所选实现的结果/错误，不接管调度、资源授权、状态应用或其它槽位。Host 仍经原六槽契约调用能力；该消费者不是所有槽位的强制入口、固定六阶段或新的 Kernel 核心职责。扩展继续由对应开发者/Host 按原契约承接，不能经此基础材料准备自动兑现。
+
 | 层 | 含义 |
 |----|------|
 | **编译期** | 各槽 `trait` + `PluginHost`；换实现 **不改** `process_message` 顺序 |

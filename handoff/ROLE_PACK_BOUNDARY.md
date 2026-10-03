@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期、HTTP/Tauri 与 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期、HTTP/Tauri 与 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -174,6 +174,14 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 **当前证据与止点**：五项新增外部 crate 回归经生产 Host builder（临时 SQLite、内存模型）覆盖准备/一次调用、无伪造扩展与无角色/聊天/收据落库、拒绝要求/空输入、模型失败/已完成空输出及本地快照适配；既有丰富门面的用户、流式与事件授权回合回归通过。这里只是**嵌入式 Rust 单次文本入口**，没有最小角色的历史、多轮记忆、持久化恢复、流式传输、HTTP/Tauri 命令、ChatPro UI、视觉或真实模型/语音验收。Host 调度与资源策略仍由已装配客户端和调用方承担；Prompt Base future 不保证 `Send`。D-CLI-BLUEPRINT-05 保持 Partial，后续按实际发行版接入需求选择下一片，不为穷尽这些边缘路径扩证。
 
 **生成库消费入口**：CLI 已链接的 `library` 直接重导出上述准备句柄、基础请求/结果、扩展状态与错误原类型，生成 README 和 rustdoc 分列基础与丰富路径；用法见 [CLI 指南](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#生成物说明)。不新增包装回合、转换器协议、角色包格式或运行依赖；未链接的 serde stub 仍不可调用 Host。生成库调用仍限于本节的嵌入式基本文本，不表示 HTTP/Tauri/UI 接通。
+
+### 0.10 共享消费者：复用准备并选择 Prompt
+
+[`MinimalRolePromptConsumer`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs) 借用已校验的最小逻辑定义和调用方选择的 `&dyn PromptBase`。每次显式调用添加 §0.7 已有的人设/材料标题，人设字节原样作为独立片段，当前材料逐片保留字节、顺序、重复项和空项，`requirements` 原样交给所选 Prompt。Host 必须选择能满足当前用途的实现；消费者不清空要求，也不保证任意实现能处理要求。所选实现的正常空文本与完整错误直接返回，只有一次能力调用，无 fallback、重试或输出修补。
+
+这是一份可复用的内容准备与消费实现，不是新的六槽 contract，也不是统一角色包磁盘格式。逻辑定义可来自开发者转换或已有本地准备；资产仍归 Host/Adapter 持有。它不读取文件、不构造完整 `Role`、不补扩展默认值，不驱动其它槽位或持有 Host 状态。六槽与 Host 的职责只维护于 [MODULE_MAP §3.1](MODULE_MAP_AND_HANDOFF.md#31-三层解耦)。这里的“无损”限于已有材料/要求和所选实现的结果/错误；新增标题是明确的准备规则，不表示原请求未增加任何片段，不承诺零分配/延迟，或丰富扩展被投影到 Base 后仍全部保留。
+
+§0.7 的 `MinimalRolePrompt` 复用同一准备逻辑并选择原 `LiteralMaterialAssembler`；原输出字节、非空要求的提前 `Unsupported` 及完整错误说明保持不变，旧类型的 `Send/Sync` 属性也保留。新消费者沿用 Base 的本地 future，不增强线程或取消承诺。[外部 crate 测试](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_consumer.rs) 验证 Host 自选 Prompt、额外要求与片段保持、全部 typed 失败/空结果原样传递、一次调用及真实 Pending 后的借用有效性；原 Prompt、独立 Host 示例和参考 Host 基础入口用于兼容回归。它不证明各发行版都已装配这层、所有六槽必须调用，或真实模型/媒体、HTTP/Tauri/UI 已接入；原债仍按实际发行版缺口保持 Partial。
 
 ## 1. 当前参考宿主内部划分
 

@@ -524,3 +524,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 
 - **有界调用链核对 / 真实断点**：`PreparedMinimalRole` 和基础结果不激活丰富角色、不承诺落库/恢复；ChatPro 的 `distros/shared/src/api/role.ts` 仍要求丰富 `RoleData` / `RoleInfo`，`roleStore.mapRoleInfo` 应用关系/人格等产品状态，`chatStoreSend` 消费丰富回复并更新状态。已有 Rust 入口不能靠补默认字段或前端强转接入这些消费者；达到这一断点即停，不扩查全部聊天/媒体路径。
 - **待决 / 保护 / 下一步**：已询问独立基础会话与主聊天统一接入的产品范围，区别在角色生命周期、历史与恢复要求；[待决计划](ROUND-02-PLAN.md#d-cli-blueprint-05--参考发行版入口的待决边界2026-10-04)记录接续位置。回答前不改变生产契约、传输、加载缓存、选角或 UI；回答后列所选有限写集与必要回归再施工。原债保持 Partial，已有共享契约/转换器责任和暂停项不重开。只读核对可安全重做，原业务身份和冻结证据不得复用或改写。
+
+### DCL-20261004-28 · 最小角色准备与 Prompt 实现解除固定绑定
+
+- **维护者确认 / 原因**：先在 Host 与能力之间提供最小角色的共享消费者，Host 仍经原六槽契约对接。已有 `MinimalRolePrompt` 将人设/材料准备与固定拼接绑在一起，另一个 Host 不能复用准备去选择自己的 Prompt。按[本片计划](ROUND-02-PLAN.md#d-cli-blueprint-05--可选择-prompt-的最小角色共享消费者2026-10-04)先处理这一个实际缺口，DCL-27 的 ChatPro 产品入口留待后续选择，不阻塞共享切片；不重新调查全部六槽或建通用调度框架。
+- **实现 / 例子 / 自行决定**：新增 `MinimalRolePromptConsumer`，借用最小定义与 Host 自选 Prompt，使用唯一准备函数保留原人设、每片材料、次序/边界及额外要求，一次调用后原样交还结果/完整错误。例如 Host 可选择能处理“保留主题”要求的 Prompt，而不是为了使用旧拼接实现偷偷清空要求。旧实现仍选择 Literal，保留原输出和 Unsupported 说明；自查发现直接持有通用消费者会改变旧类型的 auto traits，改为保留原定义引用并共享准备函数，编译断言确认原 Send/Sync。无新 DTO/trait/依赖、状态或权限，也没有填关系/人格默认值；模块权责与角色使用分别更新各自 SSOT。
+- **已取得证据 / 边界**：新外部调用先在旧源码因模块不存在原生 101，实现后四项通过，覆盖自选 Prompt、全部五类 typed 错误/正常空输出、一次调用及真实 Pending 后仍可读的借用；旧最小 Prompt 两项、runtime lib 273 项、独立 Host 示例五项与参考 Host 最小入口五项通过。日志在 `.cursor/plans/debt-minimal-role-consumer-20261004-r0/`，后续适用门禁与冻结批次完整本地链分开记录。主控直接实施和 diff 自查，不声称独立审查或 runtime doctest 已执行；新公开调用面由真实外部集成测试编译。原债仍 Partial，真实媒体、产品生命周期、HTTP/Tauri/UI 与其它暂停项不扩大。
+- **适用复核 / 批次节奏**：runtime all-targets/all-features Clippy、最终 fmt、workspace doctest（46 项，runtime 既有 doctest=false）、分层、模块兼容、默认及四份改文链接、文档登记/镜像、债计划结构、编码及 diff 均通过。首次 fmt 只拒绝我新增测试的一处换行，原日志保留，规范化后通过。逐文件汉字/BOM/连续问号检查与最终 diff 自查完成。上一生成库冻结点 `5b3153ae3bbe0a0bf0b3359202d22c36a0f62b89` 的正式 [CI 37153013370](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37153013370) 已 success、17/17；不替代当前新增源码的验收。此片与已核设计提交合成一个里程碑，冻结后一次完整本地链并推送，目标远端单独核，不用原债 Partial 混称未取得的全发行版成功。
