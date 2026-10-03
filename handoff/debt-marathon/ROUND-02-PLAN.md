@@ -375,3 +375,11 @@
 **写集 / 隔离**：仅 `scripts/check-doc-encoding.mjs`、其测试、本计划、同债 Wave、DEBT_CHANGELOG 与主台账状态格。通过 `git ls-files -z` 取官方角色 JSON，避免遍历未跟踪的 `.oclive_directory_plugin_data` 聊天记录或其它本机运行数据；路径若经过符号链接则拒绝。无自动修复，不改角色内容、产品加载语义、历史事故原件或外部文件。
 
 **验收 / 停止线**：测试须证明已跟踪角色 JSON 入选、未跟踪运行数据排除，且坏 JSON 字节被现有检查拒绝；默认检查与 `dimension5 --ci` 通过，随后做适用文档链接、债结构、编码与 diff 检查。当前角色 JSON 基线无四类异常即停止，不扩为全仓 JSON 搜查、不追单个问号与语义还原；K-ENCODING-01 保持 OPEN，正式目标 SHA CI 另核。
+
+### D-CLI-BLUEPRINT-05 · 显式最小角色本地校验入口（2026-10-03）
+
+**尺寸 / 基线 / 目标**：M，起点 `86cbb2d5a6651da8a0caba594933f8c8a67850b5`、工作树干净。维护者选择继续最小角色包接入；本片只让 CLI 复用已有 `load_minimal_role_local_file`，对调用方指定的定义文件及资产根做有界只读准备。新增 `pack validate-minimal-local <asset-root> <definition-reference>`，预算是 CLI 可覆写的本地策略，不冻结统一包名或磁盘版本。
+
+**写集 / 边界**：CLI `pack_cmd.rs`、一份 CLI 集成测试、本计划、`ROLE_PACK_BOUNDARY`、角色包规范中英摘要、CLI crate README、主台账和 DEBT_CHANGELOG。旧 `pack validate/create` 及参考宿主加载逻辑不变；不生成角色目录、不注入旧 `Role` 的关系/人格默认值、不改 `slot_registry`、公开 Prompt 接口或回合编排。成功只说明逻辑定义与非空本地资产快照合格，不证明媒体可解码、角色激活、真实跨宿主回合或抗并发目录替换。
+
+**验收 / 停止线**：CLI 定向测试用无蓝图的一图加 prompt 目录证明正向入口，缺资产与越界定义路径必须拒绝，原参考宿主 `pack validate` 对同目录仍拒绝。跑 fmt、CLI 定向 Clippy、分层和适用文档/债务门禁；同主线后续切片形成里程碑时才再跑全量本地与目标 SHA 远端 CI。若实现需改变公开 `PromptInput`、角色缓存或生命周期，停止本片并向维护者提出具体迁移取舍，不以第二套解析器或补产品默认值绕过。

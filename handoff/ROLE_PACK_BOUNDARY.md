@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-09-12。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现；builtin Prompt 的私有角色适配见 §0.6，公开接口仍耦合旧 `Role`，统一磁盘入口与生命周期/CLI 接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-03。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，公开接口仍耦合旧 `Role`，统一磁盘入口、生成器与生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -40,14 +40,14 @@
 
 **发行版能力与宿主装配**：ChatPro 自行定义关系、好感度和 ChatPro runtime semantics；直播发行版自行定义 stream state / audience interaction model；其他发行版维护自己的扩展模型。七维人格、场景、知识、`memory_seed`、作者/展示名/产品版本、UI、语音、市场信息可由产品包承载，但没有内核统一解释或注入默认值的义务。`slot_registry`、`runtime_config`、backend/provider/model、URL、资源预算与权限授权属于独立宿主装配输入。
 
-生命周期仍需要技术标识与命名空间；适配/加载边界可提供内部角色句柄和传输版本信息。这些是技术封装，不增加作者侧必填内容，也不要求采用发行版的 `meta.id/name/version`。磁盘文件名、传输 schema 与视觉资产描述/解析规则留在后续实现切片中确定。
+生命周期仍需要技术标识与命名空间；适配/加载边界可提供内部角色句柄和传输版本信息。这些是技术封装，不增加作者侧必填内容，也不要求采用发行版的 `meta.id/name/version`。统一磁盘文件名、传输 schema 与视觉资产描述/解析规则留在后续实现切片中确定；CLI 的显式文件参数不冻结它们。
 
 ```text
 发行版角色包 ──发行版适配器──> 最小角色定义（persona + 视觉资产）──> 内核生命周期
 宿主配置 ─────宿主装配─────> 能力绑定 ──> 六槽 ports / 外围设施
 ```
 
-这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影、本地文件读取、可选媒体能力与加载准备见 §0.2–0.5；统一磁盘入口、生命周期适配与 CLI 生成/校验仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
+这两个输入可以由同一个发行版适配器准备，但不能再用一个“完整 v4 角色包”名称把它们视为同一层。共享逻辑投影、本地文件读取、可选媒体能力与加载准备见 §0.2–0.5；CLI 显式文件校验见 §0.5，统一磁盘入口、生成器与生命周期适配仍由 [TECHNICAL_DEBT_INVENTORY.md](TECHNICAL_DEBT_INVENTORY.md) 的 `D-CLI-BLUEPRINT-05` 分阶段跟踪。下文 §1 起记录当前参考宿主的组合格式，不将其关系字段或蓝图要求反向纳入最小 contract。
 
 ### 0.2 第一代码切片：共享逻辑投影（无 I/O）
 
@@ -106,7 +106,9 @@
 - 定义文件预算与资产预算独立，均由调用方提供；定义原始缓冲在解析后、资产读取前释放。它们不是整个进程的内存/时间硬上限，解析后的字符串与容器另有开销。调用方仍须在整个调用期间防止根目录、路径和文件被并发改动；这不是可变目录的原子快照或文件系统隔离机制。
 - 未知产品字段仍被忽略并丢弃，不从中加载额外路径或注入默认关系/能力；不适合 richer pack 无损回写。返回快照只证明逻辑与本地实体检查通过；PNG/其他媒体验证及宿主能否消费各自独立，启用 `media-png` 也不会让此加载函数自动调用解码器。
 
-**运行接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。公开的 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。涉及这些公共接口的拆分/迁移范围须另行确认，本切片未修改它们；CLI、统一磁盘入口与真实跨宿主运行验收也未完成。
+**运行接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。公开的 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。涉及这些公共接口的拆分/迁移范围须另行确认，本切片未修改它们；统一磁盘入口与真实跨宿主运行验收也未完成。
+
+CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`，仅复用本节的只读准备入口；三个字节预算默认为 64 KiB / 4 MiB / 16 MiB 且可由调用方覆盖。命令不扫描目录、不规定文件名、不生成包或旧 `Role`，也不自动启用 §0.4 的 PNG 校验。原 `pack validate/create` 的参考宿主语义保持不变。CLI 成功只证明定义和本地非空资产快照在所给预算下可读取，不是生命周期激活。
 
 [加载准备测试](../kernel/crates/oclive_validation/tests/minimal_role_local_file.rs) 包含 9 项默认测试与 1 项 `media-png` 组合测试；定义文件的包内/包外链接检查复用 [本地文件集成测试](../kernel/crates/oclive_validation/tests/minimal_role_local_assets.rs) 的临时链接夹具。测试不使用官方角色包、真实消息、宿主回合或持久化状态。
 
@@ -125,7 +127,7 @@
 
 **共用文本段回归**：另在未改生产代码的 `0ea96034` 上捕获一组合成动态输入，固定普通输出和两个分段的 3 个摘要；它覆盖临时状态、旧聊天记忆净化、身份模板、扩展段、上一轮约束与空用户输入。沿用前述 12 个摘要，重构后 Prompt 定向测试 42 项、runtime 库测试 201 项及 Clippy/格式/分层、module-compat 本地通过。Host 的远端输入快照与缓存路径选择两项纯契约测试通过；未调用真实插件服务或模型。两种布局没有被合并为同一输出。
 
-**当前实施止点**：本节只确认现有 builtin 的 legacy Role 私有适配和共同文本段复用，不要求新增文本准备对象、独立布局层或新的公共输入。小 Kernel / Host / Adapter 的已确认分工仍以 [MODULE_MAP §0.1](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；其 §0.2 候选与 §0.3 未完成接口对照，不是自动实施未来架构的授权。公开 Prompt 输入迁移、Minimal Role 生命周期、CLI 和跨宿主接入继续是尚未完成的工作，范围须另行明确；不得将私有投影升级成公共 schema、补齐旧 `Role` 的产品默认值冒充接入，或由此恢复 Event Stream/R7、扩展 Memory contract。
+**当前实施止点**：本节只确认现有 builtin 的 legacy Role 私有适配和共同文本段复用，不要求新增文本准备对象、独立布局层或新的公共输入。小 Kernel / Host / Adapter 的已确认分工仍以 [MODULE_MAP §0.1](MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；其 §0.2 候选与 §0.3 未完成接口对照，不是自动实施未来架构的授权。公开 Prompt 输入迁移、Minimal Role 生命周期、CLI 生成器和跨宿主接入继续是尚未完成的工作，范围须另行明确；CLI 的显式文件校验只属于 §0.5 的准备能力。不得将私有投影升级成公共 schema、补齐旧 `Role` 的产品默认值冒充接入，或由此恢复 Event Stream/R7、扩展 Memory contract。
 
 本轮实施止点和第二片撤回结论只约束当前切片的必要性，不是永久禁止准备层、布局层或其他设计；未来有已确认需求时，可在既定权责边界内重新评估，涉及公共契约或职责变化仍须先行确认。当前不因此添加预留机制，也不恢复已撤回方案。
 
@@ -277,7 +279,7 @@ v2 文件若含 `runtime_config`：`pack validate` **警告并忽略**；稳定�
 |----|------|------|
 | 文件 | 单文件 `pipeline.ocblueprint` | 可选拆 `role.meta.json` + `pipeline.ocblueprint`（未排期） |
 | 引擎字段 | v2 兼容读取 `meta.*` | v4 顶层 **`runtime_config`**，禁止与 `meta` 双写 |
-| CLI | `pack validate` 全量 v2/v3/v4；`creator` 与 `portable-core` 是专用 profile，均不等于 kernel minimal | 先实现最小逻辑 contract 的共享校验/适配，再让 `init` 生成该最小输入；不以迁移完整 v4 为目标 |
+| CLI | `pack validate` 全量 v2/v3/v4；`creator` 与 `portable-core` 是专用 profile，均不等于 kernel minimal；`validate-minimal-local` 只读校验显式文件和资产 | 后续确定统一磁盘入口，再让生成器产出该最小输入；不以迁移完整 v4 为目标 |
 | 编写器 | 新建 v4；导入 v2 后无损保持 v2 | 默认「角色」视图 / 高级「蓝图」视图 |
 
 **`--profile creator` 与完整示例包**：`distros/chat-pro/roles/mumu` 等**完整示例包**含 evolution、`slot_registry` 与引擎向字段，应用**默认** `pack validate`（全量 v2/v3/v4）。对 **`--profile creator`** 会失败 — **不是 bug**，说明该包超出「纯创作者子集」。验证 creator profile 请用 `pack create` 生成的最小包或仅含 §2 字段的包。

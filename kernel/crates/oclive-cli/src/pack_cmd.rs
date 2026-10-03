@@ -24,6 +24,8 @@ pub struct PackArgs {
 pub enum PackCommands {
     /// Validate role pack directory (default: exact blueprint v2/v3/v4 dispatch)
     Validate(PackValidateArgs),
+    /// Check a caller-selected minimal role JSON file and its local assets (no activation)
+    ValidateMinimalLocal(PackValidateMinimalLocalArgs),
     /// Generate a minimal valid role pack directory
     Create(PackCreateArgs),
     /// Pack role pack directory into `.oclivepack` (ZIP; top-level folder is role id)
@@ -51,6 +53,23 @@ pub struct PackValidateArgs {
     /// Profile: `default` (blueprint v2/v3/v4) | `legacy` | `creator` | `robot-soul` | `portable-core` (see ROLE_PACK_SPEC)
     #[arg(long, default_value = "default")]
     pub profile: String,
+}
+
+#[derive(Parser, Debug)]
+pub struct PackValidateMinimalLocalArgs {
+    /// Root containing the definition and its referenced assets
+    pub asset_root: PathBuf,
+    /// Portable path to the JSON definition, relative to asset_root
+    pub definition_reference: String,
+    /// Maximum size of the definition file in bytes
+    #[arg(long, default_value_t = 64 * 1024)]
+    pub max_definition_bytes: usize,
+    /// Maximum size of one asset in bytes
+    #[arg(long, default_value_t = 4 * 1024 * 1024)]
+    pub max_asset_bytes: usize,
+    /// Maximum combined size of all assets in bytes
+    #[arg(long, default_value_t = 16 * 1024 * 1024)]
+    pub max_total_asset_bytes: usize,
 }
 
 #[derive(Parser, Debug)]
@@ -101,12 +120,29 @@ pub struct PackPublishArgs {
 pub fn run_pack(args: PackArgs) -> Result<()> {
     match args.command {
         PackCommands::Validate(a) => run_validate(a),
+        PackCommands::ValidateMinimalLocal(a) => run_validate_minimal_local(a),
         PackCommands::Create(a) => run_create(a),
         PackCommands::Publish(a) => run_publish(a),
         PackCommands::MigrateToBlueprint(a) => run_migrate_to_blueprint(a),
         PackCommands::ValidatePersona(a) => run_validate_portable(a, true),
         PackCommands::ValidateMemory(a) => run_validate_portable(a, false),
     }
+}
+
+fn run_validate_minimal_local(args: PackValidateMinimalLocalArgs) -> Result<()> {
+    let snapshot = oclive_validation::minimal_role_local_file::load_minimal_role_local_file(
+        &args.asset_root,
+        &args.definition_reference,
+        args.max_definition_bytes,
+        args.max_asset_bytes,
+        args.max_total_asset_bytes,
+    )
+    .map_err(|errors| anyhow::anyhow!(errors.join("\n")))?;
+    println!(
+        "Minimal role local preparation passed ({} assets); runtime activation and media decoding not checked",
+        snapshot.assets().len()
+    );
+    Ok(())
 }
 
 fn run_validate_portable(args: PortableDocumentArgs, persona: bool) -> Result<()> {

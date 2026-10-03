@@ -37,6 +37,8 @@ cargo run -p oclive-cli -- init --non-interactive --preset minimal -o /tmp/my-ke
 
 **Shell 补全**：`cargo run -p oclive-cli -- completions bash`（亦支持 `zsh`、`fish`、`powershell`）；安装说明见 CLI 指南「巩固强化」节。
 
+**最小角色本地准备**：`cargo run -p oclive-cli -- pack validate-minimal-local <资产根目录> <相对定义文件>` 复用共享逻辑校验与有界资产读取。默认限制为定义文件 64 KiB、单资产 4 MiB、资产总量 16 MiB；可用 `--max-definition-bytes`、`--max-asset-bytes`、`--max-total-asset-bytes` 按宿主策略覆盖。文件名由调用方指定；成功不代表媒体解码或角色激活，现有 `pack validate/create` 仍服务参考宿主组合格式。语义边界见 [ROLE_PACK_BOUNDARY §0](../../../handoff/ROLE_PACK_BOUNDARY.md#0-三层-contract不得混称)。
+
 **领域感知 CI（Stage 1 影子模式）**：
 
 ```bash

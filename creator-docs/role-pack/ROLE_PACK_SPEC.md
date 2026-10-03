@@ -452,6 +452,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/my-role --host
 |------|------|
 | `pack validate <dir>` | 按 `schema_version` 精确分派 v2/v3/v4 蓝图目录校验 |
 | `pack validate <dir> --profile portable-core` | v2/v3/v4 参考宿主蓝图 + 七图视觉 profile；七图集为推荐可选标准，非 kernel minimal 校验 |
+| `pack validate-minimal-local <asset-root> <definition-reference>` | 对调用方指定的最小角色 JSON 与本地资产作有界只读准备；不要求参考宿主蓝图，也不激活角色或解码媒体；见 [边界 §0.5](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备) |
 | `pack validate-persona <file>` | 校验 `.ocpersona` Persona 迁移文件 |
 | `pack validate-memory <file>` | 校验 `.ocmemory` Memory 迁移文件 |
 | `pack validate <dir> --profile legacy` | legacy manifest/settings |

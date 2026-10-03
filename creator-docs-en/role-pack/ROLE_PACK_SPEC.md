@@ -31,6 +31,8 @@ In the current **reference host**, every supported blueprint version uses one en
 
 See the [Chinese ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.md) for directory layout, legacy manifest/settings, validation, and `oclive collab`.
 
+`oclive-cli pack validate-minimal-local <asset-root> <definition-reference>` checks a caller-selected minimal role JSON file and bounded local asset snapshots without requiring a reference-host blueprint. It does not decode media or activate a role; see [the minimal role boundary](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备).
+
 ### Optional scene narrative continuity
 
 `scenes/{scene_id}/scene.json` may contain a `continuity` object. It is separate from core, mutable, and ephemeral personality data, and old packs without it keep legacy behavior.
