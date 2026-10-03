@@ -642,7 +642,7 @@ cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 - **`roles/default/settings.json`**（当前非双核 `init` 的 legacy 参考宿主示例）：含 `_comment_*` 与六槽 `plugin_backends`，另有会被 legacy `PluginBackends` 忽略的 `complex_emotion` 设施提示键；`none` 已是六槽合法 Noop 后端，但关闭 prompt / llm 会破坏健康主链。现行参考宿主蓝图格式的新 Stable 样例使用 v4；这不等于 `init` 应迁移为完整 v4，也不定义内核最小角色 contract。
 - **`CONFIG_REFERENCE.md`（项目根）**：预设矩阵与各槽一句话；含 **开发者编译选项（Monolith）** 与 RFC 链接。
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
-- **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 还包含 `OcliveKernel::start → load_role → process_message → shutdown` 示例。
+- **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 分列旧 `load_role → process_message` 与开发者转换后 `PreparedMinimalRole → process_minimal_message` 用法。最小角色句柄、请求、结果、扩展状态和 typed error 直接重导出原类型；基础结果明确产品扩展不可用，不保存聊天或构造完整 `Role`，具体范围见 [ROLE_PACK_BOUNDARY §0.9](../../handoff/ROLE_PACK_BOUNDARY.md#09-参考-rust-host-的增量基础文本入口)。`library-embed --kernel-source <主仓根>` 默认不生成角色包，转换器由开发者提供；无 `--kernel-source` 仍是 serde 占位库。
 
 ---
 

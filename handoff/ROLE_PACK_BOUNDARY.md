@@ -173,6 +173,8 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 
 **当前证据与止点**：五项新增外部 crate 回归经生产 Host builder（临时 SQLite、内存模型）覆盖准备/一次调用、无伪造扩展与无角色/聊天/收据落库、拒绝要求/空输入、模型失败/已完成空输出及本地快照适配；既有丰富门面的用户、流式与事件授权回合回归通过。这里只是**嵌入式 Rust 单次文本入口**，没有最小角色的历史、多轮记忆、持久化恢复、流式传输、HTTP/Tauri 命令、ChatPro UI、视觉或真实模型/语音验收。Host 调度与资源策略仍由已装配客户端和调用方承担；Prompt Base future 不保证 `Send`。D-CLI-BLUEPRINT-05 保持 Partial，后续按实际发行版接入需求选择下一片，不为穷尽这些边缘路径扩证。
 
+**生成库消费入口**：CLI 已链接的 `library` 直接重导出上述准备句柄、基础请求/结果、扩展状态与错误原类型，生成 README 和 rustdoc 分列基础与丰富路径；用法见 [CLI 指南](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#生成物说明)。不新增包装回合、转换器协议、角色包格式或运行依赖；未链接的 serde stub 仍不可调用 Host。生成库调用仍限于本节的嵌入式基本文本，不表示 HTTP/Tauri/UI 接通。
+
 ## 1. 当前参考宿主内部划分
 
 | 组件 | 职责 | 面向 |

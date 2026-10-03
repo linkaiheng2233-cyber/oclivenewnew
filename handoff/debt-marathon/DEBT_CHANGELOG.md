@@ -486,3 +486,11 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **自行修正 / 保留日志**：首轮编译把已有 LlmGenerateOutcome 的字段写错，随后测试实现漏了 generate_tag 并误用了 SQLx shim 未导出的 Connection；均按真实契约修正，没有改生产契约迁就测试。首轮运行四项通过、一项仅在 TempDir 清理时报 Windows 文件占用；测试加入最多两秒的独占打开释放检查，清理仍须成功。Clippy 又检出测试显式 drop 的锁仍跨 await，被词法作用域修正。所有失败/成功日志分存在 `.cursor/plans/debt-minimal-role-host-20261004-r0/`。删除旧失败夹具 `.tmpQdYRu3` 的安全检查与清理命令被工具自动审批整体拒绝（blocked by policy），没有重试或绕过，目录留待后续授权清理；不据此宣称旧失败清理成功。
 - **范围 / 状态**：本片是参考 Rust Host 的单次文本入口，不是 ChatPro UI、传输、渲染、真实模型/语音、多轮记忆或持久化恢复验收；也不关闭原债全部生命周期和跨发行版适配。D-CLI-BLUEPRINT-05 仍 Partial，完成基础主路径后停止扩证。K-SUPPLY-09 签名、双核及 Event Stream 等冻结项不变。
 - **批次门禁返修**：`87c4debf` 的第一次完整本地链在 Dimension 5 路径门禁 exit 1：测试的临时根写成 `join("roles")`，触发现有旧路径禁用规则；这是夹具命名问题，不是真实角色目录选择错误。改为明确 `fixture-role-root`，同步未建丰富角色目录的断言，不增加规则白名单；全路径检查与五项新/一项旧门面回归均通过。原失败日志 `08-ci-local.log(.err)` 保留，新增 `09-fixture-path.log(.err)`；规范化本次长断言的纯格式换行后，在新冻结点重跑完整链，而非无代码 rerun。
+
+### DCL-20261004-22 · 生成 library 直接消费最小角色入口
+
+- **原因 / 实际偿还**：上一批已实现基础 Host，生成库却仍只在根部提供丰富角色类型与用法；开发者需要深入模块路径猜接入方式。已链接 library 的模板现在直接重导出五个既有最小角色类型，生成 README 与 rustdoc 分列最小基础和旧丰富入口。没有新增包装调用、DTO、转换器协议、角色默认状态或运行依赖；转换器和资产策略仍由开发者负责，默认 init 格式不切换。
+- **实现 / 兼容**：`lib.rs.hbs` 和 `README.generated.hbs` 为生产差量；现有 library 模板合同测试新增类型与用法断言。新的 CLI E2E 真实生成独立 library，测试消费方只通过该库的公开路径装配 Host + 内存模型，核一次原样 reply、显式 unavailable 及 typed Unsupported 的零新增生成；旧丰富入口同库编译，原模板七项回归通过。CLI 既有 optional Host 同时作为 dev-dependency 准备依赖闭包，隔离项目沿用 workspace lock 的已解析版本，不依赖本机碰巧存在的最新缓存；不新增运行依赖、不改根 lock。未链接的 serde stub、kernel-server、Host 主编排、官方包、HTTP/Tauri/UI 无修改。
+- **已取得证据 / 自查**：新增生成合同先红 exit 101（旧模板缺 PreparedMinimalRole），改后通过；CLI 单元 85 项、模板集成 7 项、生成消费一项与生成 rustdoc 一项、CLI all-targets/all-features Clippy、workspace doctest 及适用文档/债务检查通过。使用生产 builder 和隔离文件 SQLite，但模型是内存替身，不外推真实模型、媒体或产品发行验收。主控按最终 diff 自查，不声称独立复核。冻结批次只跑一次完整本地链，目标远端结论另核。
+- **自行修正 / 原始失败**：首次生成消费的子 Cargo 已 exit 0，外层却把 Cargo 的 doctest 标题误当 stdout 而失败；修为检查真实 stderr，同时保存两段原始输出，并要求消费与 rustdoc 各一项成功，防止零 doctest 冒充编译证据。新增文件中重复的无角色目录断言触发旧路径 ratchet，移除该重复断言，原 library-embed 模板回归仍验证不生成角色包；没有加入白名单或改路径规则。失败与成功日志分别保存在 `.cursor/plans/debt-minimal-role-library-20261004-r0/`；消费子进程退出后显式关闭临时项目，未遗留用户态资源。
+- **状态 / 止点**：D-CLI-BLUEPRINT-05 继续 Partial，本片只偿还已链接 library 的可调用性和接手用法缺口，不把生成库当作第二个实际发行版、丰富生命周期或 ChatPro UI 接入。父批 `96ca9d29` 的 CI 不替代本片新目标；没有恢复 K-SUPPLY-09、双核或 Event Stream 冻结工作。完成生成消费主路径后停止扩证，后续只选实际使用断点或另一个已具备实施条件的债务。

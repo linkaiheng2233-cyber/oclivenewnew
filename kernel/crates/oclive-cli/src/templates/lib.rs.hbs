@@ -1,4 +1,22 @@
 //! `{{ safe_package_name }}` — oclive-cli 生成的可嵌入库。
+{{#if kernel_linked}}
+//!
+//! Developer converters prepare content and assets; this basic text entry does
+//! not load a rich role or synthesize unavailable product extensions.
+//!
+//! ```no_run
+//! use {{ rust_lib_name }}::{types, MinimalRoleMessageError, MinimalRoleMessageRequest,
+//!     MinimalRoleMessageResponse, OcliveKernel, PreparedMinimalRole};
+//!
+//! async fn basic_text(host: &OcliveKernel, definition: types::MinimalRoleDefinition,
+//!     assets: Vec<Vec<u8>>) -> Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
+//!     let role = PreparedMinimalRole::new("developer-role", definition, assets)?;
+//!     host.process_minimal_message(&role, &MinimalRoleMessageRequest {
+//!         user_message: "Hello".into(), requirements: String::new(),
+//!     }).await
+//! }
+//! ```
+{{/if}}
 
 {{#if kernel_linked}}
 pub use oclive_kernel_contracts as contracts;
@@ -7,7 +25,11 @@ pub use oclive_kernel_runtime as runtime;
 pub use oclive_kernel_types as types;
 
 pub use oclive_kernel_host::{
-    KernelError, KernelResult, OcliveKernel, OcliveKernelBuilder, OcliveKernelConfig,
+    KernelError, KernelResult, MinimalRoleMessageError, OcliveKernel, OcliveKernelBuilder,
+    OcliveKernelConfig, PreparedMinimalRole,
+};
+pub use oclive_kernel_types::models::dto::{
+    MinimalRoleMessageRequest, MinimalRoleMessageResponse, MinimalRoleProductExtensionStatus,
 };
 
 /// 内核契约 API 版本（见 `oclive_kernel_runtime::RUNTIME_API_VERSION`）。
@@ -15,7 +37,7 @@ pub fn runtime_api_version() -> &'static str {
     oclive_kernel_runtime::RUNTIME_API_VERSION
 }
 {{#if library_kernel_demo}}
-// 该库直接导出完整角色内核 facade；调用方无需启动 Tauri 或 HTTP 服务。
+// 该库直接导出参考 Host 的丰富角色和基础文本入口；无需启动 Tauri 或 HTTP。
 // 使用 `OcliveKernel::builder` 注入自定义 LLM/HostProfile，或用
 // `OcliveKernel::start` 采用环境配置。
 {{/if}}

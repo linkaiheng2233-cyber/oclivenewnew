@@ -21,6 +21,27 @@ cargo run -- --port 8420
 - **library 形态**：本 crate 直接导出 `OcliveKernel` 稳定句柄；角色加载、完整 `process_message` 编排、持久化、插件、Event Ring 与资源协调均走主仓同一条内核路径，不需要 Tauri 或 HTTP。
 - `OcliveKernel::start` 使用环境选择的 HostProfile / LLM；设备宿主可改用 `OcliveKernel::builder(...).with_llm_client(...)` 注入自己的 `contracts::LlmClient`。
 
+### 开发者转换后的最小角色：基础文本
+
+本 crate 直接导出 `PreparedMinimalRole`、`MinimalRoleMessageRequest`、`MinimalRoleMessageResponse`、`MinimalRoleProductExtensionStatus` 和 `MinimalRoleMessageError`，均为主仓已有类型。转换器自行提供逻辑定义与按引用顺序配对的非空资产字节；不要求统一文件名，也不需要 `load_role` 或关系、人格、蓝图默认值。
+
+```rust,no_run
+use {{ rust_lib_name }}::{types, MinimalRoleMessageError, MinimalRoleMessageRequest,
+    MinimalRoleMessageResponse, OcliveKernel, PreparedMinimalRole};
+
+async fn basic_text(host: &OcliveKernel, definition: types::MinimalRoleDefinition,
+    assets: Vec<Vec<u8>>) -> Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
+    let role = PreparedMinimalRole::new("developer-role", definition, assets)?;
+    host.process_minimal_message(&role, &MinimalRoleMessageRequest {
+        user_message: "你好".into(), requirements: String::new(),
+    }).await
+}
+```
+
+返回的 `reply` 是模型原样文本，`product_extensions` 明确为 `Unavailable`；非空额外要求在模型前返回 typed `Unsupported`。这是一轮嵌入式非流式调用，不保存聊天或启用多轮记忆、关系、人格、媒体渲染；Host 构造仍使用配置指定的运行目录与数据库。模型选择、资源与权限由 Host 管理，错误不会变成伪造的成功回复。资产预算和转换由调用方负责。该 future 不保证 `Send`，不能直接当作 Tauri 命令。
+
+### 已有丰富角色路径
+
 ```rust,no_run
 use {{ rust_lib_name }}::{types, KernelResult, OcliveKernel, OcliveKernelConfig};
 

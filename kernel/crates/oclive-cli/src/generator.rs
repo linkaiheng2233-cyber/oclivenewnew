@@ -767,9 +767,20 @@ mod tests {
         assert!(lib.contains("OcliveKernelConfig"));
         assert!(lib.contains("KernelResult"));
         assert!(!lib.contains("demo_resolve_api_port"));
+        for public_type in [
+            "PreparedMinimalRole",
+            "MinimalRoleMessageError",
+            "MinimalRoleMessageRequest",
+            "MinimalRoleMessageResponse",
+            "MinimalRoleProductExtensionStatus",
+        ] {
+            assert!(lib.contains(public_type), "missing {public_type}");
+        }
 
         let readme = std::fs::read_to_string(out.path().join("README.md")).unwrap();
         assert!(readme.contains("process_message"));
+        assert!(readme.contains("process_minimal_message"));
+        assert!(readme.contains("product_extensions"));
         assert!(!readme.contains("完整对话编排仍在"));
     }
 }

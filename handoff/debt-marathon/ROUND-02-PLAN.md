@@ -449,3 +449,11 @@
 **写集 / 关联面**：`oclive_kernel_types/src/models/dto/minimal_role.rs` 及 dto 导出；Host `service/role/minimal.rs`、role 模块声明、`domain/chat_engine/process_message.rs`、共用 `message_error.rs` 及导出、`role_kernel.rs`、`lib.rs`；新增 `tests/minimal_role_public_api.rs`。角色边界、主台账、本计划及 DEBT_CHANGELOG 同片同步，角色规范中英仅更新接入事实并链接 SSOT；本地快照与 Prompt 的 rustdoc 仅修正当前接入事实。准备句柄可直接接开发者转换后的内存数据，也可从已校验本地快照准备，复用解析与资产读取而不另建通用转换器 trait。旧 RoleCache、角色选角、丰富回合、收据和 HTTP/Tauri 不改。无新 crate、权限、错误码、DB 迁移或角色磁盘格式。
 
 **验收 / 停止线**：合成数据走生产 OcliveKernel builder 与新增门面，证明一次 Prompt/模型调用、资产快照保留、无伪造扩展字段/无角色运行态和聊天落库；必要失败只核无效准备输入、空消息、真实额外要求及模型失败，保留已完成空文本。原 rich facade 集成测试作为兼容回归。新公开 API 跑 workspace doctest，Host lib、适用 Clippy/fmt、分层、module-compat 与文档/债务门禁；控制方自行语义审查，不称独立审查。完成同主题切片后一次全量本地链、冻结提交与推送；目标远端成功前原债仍 Partial。不给此单次 Rust 文本调用赋予历史、多轮记忆、持久化恢复、流式、渲染、语音或 ChatPro UI 接入结论，不扩查那些路径。测试仅临时夹具与内存模型；不使用真实模型、用户 DB、网络或进程插件。
+
+### D-CLI-BLUEPRINT-05 · 生成 library 的最小角色调用面（2026-10-04）
+
+**尺寸 / 起点 / 原因**：M 的有限消费片，起点 `96ca9d29832c9560e1427843db76154dbb63d915`，工作树干净，父批正式 CI 另核。基础 Host 已能处理开发者转换后的最小角色，但 CLI 已链接的 library 仍只在根部导出旧丰富门面，并只给丰富角色示例。本片让生成库直接导出已有最小角色句柄、请求、结果、扩展状态和 typed error，提供能编译的 Rust 用法；不增加薄转发函数或第二条编排。
+
+**写集 / 闭环**：CLI `src/templates/lib.rs.hbs`、`README.generated.hbs`、`generator.rs` 的现有 library 合同测试、`Cargo.toml` 的测试依赖，以及新增 `tests/e2e_minimal_role_library.rs` 与其隔离 fixture；CLI 指南中英、ROLE_PACK_BOUNDARY、本计划、主台账和 DEBT_CHANGELOG 同步。输入是开发者转换后的定义/资产 → 原准备句柄 → 原 Host 基础方法 → 原三字段结果 → 生成库消费者；无新 DTO、运行依赖、权限、格式、命令或数据库迁移。未链接的 serde stub、旧 rich API、kernel-server 和默认角色包生成保持原逻辑。CLI 既有 optional Host 依赖同时声明为 dev-dependency，让外层 Cargo 准备其闭包；隔离生成项目沿用根 lock 的已解析版本，避免离线用例只在旧机器缓存上成立。默认 CLI 的 Host 生产特性不变。
+
+**验收 / 停止**：先在旧模板上跑新生成合同的拒绝，再生成独立 library 并由真实 Cargo 编译/运行一次生产 Host + 内存 LLM，核原样 reply、显式 unavailable 与 typed Unsupported 的零新增生成；生成 rustdoc 用法也编译。复用仓库外 Cargo target，嵌套 Cargo 串行，不另建整套 Host 验证。CLI 定向测、Clippy/fmt、workspace doctest 与适用文档/债务门禁完成后形成可审查提交；整批冻结才跑完整本地链并按已有授权推送，不为每个小改启动正式 CI。父批 success 不替代新 SHA；原债保持 Partial。完成实际生成消费即停，不补 HTTP/Tauri/UI、全平台、真实模型/媒体或生命周期证据。主控自行实施和 diff 自查，不声称独立复核。
