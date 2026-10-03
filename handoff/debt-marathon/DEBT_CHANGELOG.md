@@ -416,3 +416,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 
 - **起点 / 改动**：base `7b0b41a145847bfefcedd642f29b1e16d3ad52cc`，工作树干净；按[第二轮计划](ROUND-02-PLAN.md#d-debt-ledger-01--k-llm-env-02-长状态行收敛2026-10-03)，将 K-LLM-ENV-02 的完整原状态行[转为历史快照](../archive/TECHNICAL_DEBT_LLM_ENV_STATUS_20261003.md)，权威行只保留当前修复状态、有限证据与待验收事项。
 - **不变量 / 边界**：原问题、优先级、完成条件、历史文字和链接均保留；K-LLM-ENV-02 与 D-DEBT-LEDGER-01 仍为 Partial。双核 NULL 回滚是冻结决策门，发行版默认身份也是语义选择，本轮均跳过。纯文档迁移只做原行保全及适用文档检查，不重跑业务或全量 CI。
+
+### DCL-20261003-11 · K-ENCODING-01 跟踪角色 JSON 防回退
+
+- **起点 / 原因**：base `1b3680b9d4084357deeee0ceba0b40100503f05e`，工作树干净；活跃 Markdown 已有自动字节检查，官方角色 JSON 仍依赖人工写后检查。按[本轮计划](ROUND-02-PLAN.md#k-encoding-01--官方角色-json-编码防回退2026-10-03)将 Git 跟踪角色 JSON 加入同一只读检查，未跟踪的本机聊天记录明确排除。
+- **before → after**：默认检查从当前 310 份活跃 Markdown 扩为 310 份 Markdown + 123 份跟踪角色 JSON；复用无效 UTF-8、BOM、U+FFFD 与连续三问号判据，不读取运行期 JSON，也不改角色数据。隔离测试证明入选/排除与坏 JSON 拒绝。
+- **验证 / 限制**：测试 8/8、默认扫描 433 份及 Dimension 5 `--ci` 30/30 通过。Dimension 5 首轮仅因本机语音检查缺直接可执行 Python 而失败；第二轮命令局部指定已安装 Python 后通过，未改全局环境。其它 JSON、单/双问号、语义损坏与历史恢复不在本切片；K-ENCODING-01 维持 OPEN，目标 SHA 远端 CI 待核，详见[编码 Wave](waves/WAVE-20261002-K-ENCODING-01.md#2026-10-03--官方角色-json-的受控扩面)。

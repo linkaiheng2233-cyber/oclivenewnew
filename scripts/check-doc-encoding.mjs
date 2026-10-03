@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-/** Reject known silent text corruption in active project documentation. */
+/** Reject known silent text corruption in active docs and tracked role JSON. */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const activeRoots = ['handoff', 'creator-docs', 'human-docs'];
+const roleJsonRoot = 'distros/chat-pro/roles';
 const decoder = new TextDecoder('utf-8', { fatal: true });
 
 export function collectMarkdownFiles(root = repoRoot) {
@@ -22,6 +24,28 @@ export function collectMarkdownFiles(root = repoRoot) {
     }
   }
   for (const rel of activeRoots) visit(path.join(root, rel));
+  return files.sort();
+}
+
+export function collectTrackedRoleJsonFiles(root = repoRoot) {
+  // Git's index excludes local chat history and other untracked runtime data.
+  const listed = execFileSync('git', ['ls-files', '-z', '--', roleJsonRoot], { cwd: root });
+  const files = [];
+  for (const relative of listed.toString('utf8').split('\0')) {
+    if (!relative.startsWith(`${roleJsonRoot}/`) || !relative.endsWith('.json')) continue;
+    const segments = relative.split('/');
+    if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+      throw new Error(`invalid tracked role path: ${relative}`);
+    }
+    let target = root;
+    for (const segment of segments) {
+      target = path.join(target, segment);
+      if (fs.lstatSync(target).isSymbolicLink()) {
+        throw new Error(`symbolic link in tracked role JSON: ${relative}`);
+      }
+    }
+    files.push(target);
+  }
   return files.sort();
 }
 
@@ -44,7 +68,7 @@ export function checkDocumentBytes(bytes) {
 
 function main(args) {
   const files = [];
-  if (args.length === 0) files.push(...collectMarkdownFiles());
+  if (args.length === 0) files.push(...collectMarkdownFiles(), ...collectTrackedRoleJsonFiles());
   else {
     for (let i = 0; i < args.length; i += 2) {
       if (args[i] !== '--file' || !args[i + 1]) {
@@ -66,7 +90,7 @@ function main(args) {
     for (const failure of failures) console.error(`  ${failure}`);
     process.exitCode = 1;
   } else {
-    console.log(`doc encoding ok (${files.length} active Markdown files)`);
+    console.log(`doc encoding ok (${files.length} active Markdown and tracked role JSON files)`);
   }
 }
 

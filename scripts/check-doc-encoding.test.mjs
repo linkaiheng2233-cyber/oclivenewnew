@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { collectMarkdownFiles } from './check-doc-encoding.mjs';
+import { collectMarkdownFiles, collectTrackedRoleJsonFiles } from './check-doc-encoding.mjs';
 
 const script = fileURLToPath(new URL('./check-doc-encoding.mjs', import.meta.url));
 
@@ -16,10 +16,10 @@ function removeFixture(dir) {
   fs.rmSync(target, { recursive: true, force: true });
 }
 
-function runFixture(bytes) {
+function runFixture(bytes, extension = 'md') {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-doc-encoding-'));
   try {
-    const file = path.join(dir, 'sample.md');
+    const file = path.join(dir, `sample.${extension}`);
     fs.writeFileSync(file, bytes);
     return spawnSync(process.execPath, [script, '--file', file], { encoding: 'utf8' });
   } finally {
@@ -30,6 +30,29 @@ function runFixture(bytes) {
 test('accepts normal Chinese and English Markdown', () => {
   const result = runFixture(Buffer.from('# 标题\nEnglish text\n', 'utf8'));
   assert.equal(result.status, 0, result.stderr);
+});
+
+test('rejects damaged role JSON bytes', () => {
+  const result = runFixture(Buffer.from('{"reply":"???"}\n'), 'json');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /sample\.json: three or more consecutive question marks/);
+});
+
+test('scans tracked role JSON without reading untracked runtime chats', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-doc-tree-'));
+  try {
+    const tracked = path.join(dir, 'distros/chat-pro/roles/demo/config.json');
+    const runtime = path.join(dir, 'distros/chat-pro/roles/.oclive_directory_plugin_data/chats/demo/session.json');
+    fs.mkdirSync(path.dirname(tracked), { recursive: true });
+    fs.mkdirSync(path.dirname(runtime), { recursive: true });
+    fs.writeFileSync(tracked, '{"name":"demo"}\n');
+    fs.writeFileSync(runtime, '{"reply":"???"}\n');
+    execFileSync('git', ['init', '--quiet'], { cwd: dir });
+    execFileSync('git', ['-c', 'core.autocrlf=false', 'add', '--', 'distros/chat-pro/roles/demo/config.json'], { cwd: dir });
+    assert.deepEqual(collectTrackedRoleJsonFiles(dir), [tracked]);
+  } finally {
+    removeFixture(dir);
+  }
 });
 
 for (const [name, bytes, diagnostic] of [
