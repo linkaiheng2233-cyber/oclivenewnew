@@ -15,6 +15,7 @@ use crate::infrastructure::directory_plugins::{
     dependency_report, parse_manifest_version, DirectoryPluginRuntime,
 };
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
+use crate::infrastructure::plugin_state::RolePluginState;
 
 fn registered_consumers(profile: &HostProfile) -> Vec<CapabilityConsumerDiagnostic> {
     let chat_pro_host = matches!(
@@ -93,6 +94,16 @@ pub fn build_capability_registry(
     profile: &HostProfile,
     role_id: &str,
 ) -> CapabilityRegistryDiagnostic {
+    let plugin_state = runtime.role_plugin_state_for(role_id);
+    build_capability_registry_with_plugin_state(runtime, grants, profile, &plugin_state)
+}
+
+pub(crate) fn build_capability_registry_with_plugin_state(
+    runtime: &DirectoryPluginRuntime,
+    grants: &HighRiskGrantStore,
+    profile: &HostProfile,
+    plugin_state: &RolePluginState,
+) -> CapabilityRegistryDiagnostic {
     runtime.ensure_plugin_roots_scanned();
     let roots = runtime.plugin_roots.read().clone();
     let mut manifests = roots
@@ -112,8 +123,6 @@ pub fn build_capability_registry(
             parse_manifest_version(&manifest.version).map(|version| (plugin_id.clone(), version))
         })
         .collect();
-    let plugin_state = runtime.role_plugin_state_for(role_id);
-
     let providers = manifests
         .into_iter()
         .map(|(plugin_id, manifest)| {

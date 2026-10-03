@@ -7,7 +7,7 @@ use oclive_kernel_types::{
 
 use crate::command_error::CommandError;
 use crate::domain::execution_plan::{compile_execution_plan, CompileExecutionPlanInput};
-use crate::infrastructure::capability_registry::build_capability_registry;
+use crate::infrastructure::capability_registry::build_capability_registry_with_plugin_state;
 use crate::state::AppState;
 
 #[must_use]
@@ -19,11 +19,14 @@ pub fn build_execution_plan_diagnostics_for_role(
     let session_namespace = crate::service::role::session_namespace(&role.id, session_id);
     let core_backends =
         state.effective_plugin_backends_for_session(role, session_namespace.as_str());
-    let registry = build_capability_registry(
+    let plugin_state = state
+        .directory_plugins
+        .preview_role_plugin_state(&role.id, role.plugin_state_ui_baseline());
+    let registry = build_capability_registry_with_plugin_state(
         state.directory_plugins.as_ref(),
         state.high_risk_grants.as_ref(),
         state.host_profile.as_ref(),
-        &role.id,
+        &plugin_state,
     );
     let plan = compile_execution_plan(&CompileExecutionPlanInput {
         role_id: &role.id,
@@ -163,12 +166,30 @@ mod tests {
         .unwrap();
     }
 
+    fn write_voice_provider(plugin_dir: &Path) {
+        fs::create_dir_all(plugin_dir).unwrap();
+        fs::write(
+            plugin_dir.join("manifest.json"),
+            serde_json::json!({
+                "schema_version": 1,
+                "id": "com.example.voice",
+                "version": "1.0.0",
+                "provides": ["voice.asr"],
+                "process": {"command": "not-started-by-plan"}
+            })
+            .to_string(),
+        )
+        .unwrap();
+    }
+
     #[tokio::test]
     async fn blocked_required_extension_still_has_read_only_diagnostics() {
         let dir = tempdir().unwrap();
         let roles = dir.path().join("roles");
         let role_dir = roles.join("blocked");
         write_v4_pack(&role_dir, true, "render.live2d", None);
+        write_v4_pack(&roles.join("previous"), false, "render.live2d", None);
+        let app_data = dir.path().join("app-data");
         let state = AppStateBuilder::in_memory_test(
             Arc::new(MockLlmClient { reply: "ok".into() }),
             &roles,
@@ -178,9 +199,33 @@ mod tests {
             distro_id: "desktop".into(),
             ..HostProfile::default()
         })
+        .with_app_data_dir(&app_data)
         .build()
         .await
         .unwrap();
+
+        load_role_impl(&state, "previous", false).await.unwrap();
+        let previous_ui = crate::infrastructure::plugin_state::RolePluginState {
+            slots: crate::infrastructure::plugin_state::PluginStateFile {
+                disabled_plugins: vec!["com.example.disabled-for-previous".into()],
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        state
+            .directory_plugins
+            .save_role_plugin_state("previous", previous_ui)
+            .unwrap();
+        let active_path = app_data.join("oclive_last_role_id.txt");
+        let plugin_state_path = app_data.join("plugin_state.json");
+        let previous_active_bytes = fs::read(&active_path).unwrap();
+        let previous_plugin_bytes = fs::read(&plugin_state_path).unwrap();
+        let previous_slots = state.directory_plugins.effective_slots();
+        assert_eq!(previous_active_bytes, b"previous");
+        assert_eq!(
+            previous_slots.disabled_plugins,
+            vec!["com.example.disabled-for-previous"]
+        );
 
         let report = get_execution_plan_diagnostics_impl(
             &state,
@@ -208,6 +253,16 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(error.contains("execution_plan:"), "{error}");
+        assert_eq!(fs::read(active_path).unwrap(), previous_active_bytes);
+        assert_eq!(fs::read(plugin_state_path).unwrap(), previous_plugin_bytes);
+        assert_eq!(state.directory_plugins.effective_slots(), previous_slots);
+        assert!(!state.role_cache.read().contains_key("blocked"));
+        assert!(!state
+            .db_manager
+            .role_runtime_exists("blocked")
+            .await
+            .unwrap());
+        state.db_manager.close_pool().await;
     }
 
     #[tokio::test]
@@ -219,19 +274,7 @@ mod tests {
         let plugin_dir = dir
             .path()
             .join("distros/chat-pro/plugins/com.example.voice");
-        fs::create_dir_all(&plugin_dir).unwrap();
-        fs::write(
-            plugin_dir.join("manifest.json"),
-            serde_json::json!({
-                "schema_version": 1,
-                "id": "com.example.voice",
-                "version": "1.0.0",
-                "provides": ["voice.asr"],
-                "process": {"command": "not-started-by-plan"}
-            })
-            .to_string(),
-        )
-        .unwrap();
+        write_voice_provider(&plugin_dir);
         let state = AppStateBuilder::in_memory_test(
             Arc::new(MockLlmClient { reply: "ok".into() }),
             &roles,
@@ -261,6 +304,13 @@ mod tests {
             Some("com.example.voice")
         );
         load_role_impl(&state, "voice-role", false).await.unwrap();
+        assert!(state.role_cache.read().contains_key("voice-role"));
+        assert!(state
+            .db_manager
+            .role_runtime_exists("voice-role")
+            .await
+            .unwrap());
+        state.db_manager.close_pool().await;
     }
 
     #[tokio::test]
@@ -272,19 +322,7 @@ mod tests {
         let plugin_dir = dir
             .path()
             .join("distros/chat-pro/plugins/com.example.voice");
-        fs::create_dir_all(&plugin_dir).unwrap();
-        fs::write(
-            plugin_dir.join("manifest.json"),
-            serde_json::json!({
-                "schema_version": 1,
-                "id": "com.example.voice",
-                "version": "1.0.0",
-                "provides": ["voice.asr"],
-                "process": {"command": "not-started-by-plan"}
-            })
-            .to_string(),
-        )
-        .unwrap();
+        write_voice_provider(&plugin_dir);
 
         let desktop = AppStateBuilder::in_memory_test(
             Arc::new(MockLlmClient { reply: "ok".into() }),
@@ -331,5 +369,107 @@ mod tests {
         assert!(role_dir
             .join(oclive_validation::PIPELINE_BLUEPRINT_FILENAME)
             .is_file());
+    }
+
+    #[tokio::test]
+    async fn activation_preview_preserves_plugin_settings_precedence() {
+        let disabled = serde_json::json!({"disabled_plugins": ["com.example.voice"]});
+        let cases = [
+            ("legacy-disabled", disabled.clone(), false),
+            (
+                "global-disabled",
+                serde_json::json!({"schema_version": 3, "global": disabled, "roles": {}}),
+                false,
+            ),
+            (
+                "stored-role-wins-over-legacy",
+                serde_json::json!({
+                    "schema_version": 3,
+                    "legacy_v1": disabled,
+                    "roles": {"voice-role": {}}
+                }),
+                true,
+            ),
+        ];
+        for (label, settings, activatable) in cases {
+            let dir = tempdir().unwrap();
+            let roles = dir.path().join("distros/chat-pro/roles");
+            write_v4_pack(
+                &roles.join("voice-role"),
+                true,
+                "voice.asr",
+                Some("com.example.voice"),
+            );
+            write_voice_provider(
+                &dir.path()
+                    .join("distros/chat-pro/plugins/com.example.voice"),
+            );
+            let app_data = dir.path().join("app-data");
+            fs::create_dir_all(&app_data).unwrap();
+            let plugin_path = app_data.join("plugin_state.json");
+            let original_bytes = serde_json::to_vec(&settings).unwrap();
+            fs::write(&plugin_path, &original_bytes).unwrap();
+            let state = AppStateBuilder::in_memory_test(
+                Arc::new(MockLlmClient { reply: "ok".into() }),
+                &roles,
+                None,
+            )
+            .with_host_profile(HostProfile {
+                distro_id: "desktop".into(),
+                ..HostProfile::default()
+            })
+            .with_app_data_dir(&app_data)
+            .build()
+            .await
+            .unwrap();
+            let original_slots = state.directory_plugins.effective_slots();
+            let role = state.storage.load_role("voice-role").unwrap();
+            let report = build_execution_plan_diagnostics_for_role(&state, &role, None);
+            assert_eq!(report.plan.activatable, activatable, "{label}");
+            assert_eq!(fs::read(&plugin_path).unwrap(), original_bytes, "{label}");
+            assert!(
+                !app_data.join("oclive_last_role_id.txt").exists(),
+                "{label}"
+            );
+            let loaded = load_role_impl(&state, "voice-role", false).await;
+            if activatable {
+                loaded.unwrap();
+                assert!(
+                    state.role_cache.read().contains_key("voice-role"),
+                    "{label}"
+                );
+            } else {
+                assert!(loaded.unwrap_err().to_string().contains("execution_plan:"));
+                assert_eq!(
+                    report.capability_registry.providers[0].availability,
+                    oclive_kernel_types::CapabilityProviderAvailability::Disabled,
+                    "{label}"
+                );
+                assert_eq!(fs::read(&plugin_path).unwrap(), original_bytes, "{label}");
+                assert!(
+                    !app_data.join("oclive_last_role_id.txt").exists(),
+                    "{label}"
+                );
+                assert_eq!(
+                    state.directory_plugins.effective_slots(),
+                    original_slots,
+                    "{label}"
+                );
+                assert!(
+                    !state.role_cache.read().contains_key("voice-role"),
+                    "{label}"
+                );
+            }
+            assert_eq!(
+                state
+                    .db_manager
+                    .role_runtime_exists("voice-role")
+                    .await
+                    .unwrap(),
+                activatable,
+                "{label}"
+            );
+            state.db_manager.close_pool().await;
+        }
     }
 }

@@ -44,11 +44,12 @@ pub async fn load_role_impl(
     let role = state.storage.load_role(role_id)?;
     let role = Arc::new(role);
 
+    crate::service::execution_plan::ensure_role_execution_plan_activatable(state, role.as_ref())?;
+
     state.directory_plugins.set_active_role_id(role_id);
     state
         .directory_plugins
         .ensure_role_plugin_state(role_id, role.plugin_state_ui_baseline());
-    crate::service::execution_plan::ensure_role_execution_plan_activatable(state, role.as_ref())?;
 
     state.invalidate_personality_cache_for_role(role_id);
 

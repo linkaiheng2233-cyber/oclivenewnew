@@ -292,6 +292,39 @@ impl DirectoryPluginRuntime {
         RolePluginState::merge_global_defaults(store.global.as_ref(), &raw)
     }
 
+    // Preview the same state that activation would initialize, without consuming
+    // legacy settings or publishing an unvalidated role to memory/disk.
+    pub(crate) fn preview_role_plugin_state(
+        &self,
+        role_id: &str,
+        ui: &UiConfig,
+    ) -> RolePluginState {
+        let (global, legacy) = {
+            let store = self.plugin_state_store.read();
+            if let Some(raw) = store.roles.get(role_id) {
+                return RolePluginState::merge_global_defaults(store.global.as_ref(), raw);
+            }
+            (store.global.clone(), store.legacy_v1.clone())
+        };
+        let mut raw = Self::initial_role_plugin_state(ui, legacy);
+        self.sanitize_role_shell(&mut raw);
+        RolePluginState::merge_global_defaults(global.as_ref(), &raw)
+    }
+
+    fn initial_role_plugin_state(
+        ui: &UiConfig,
+        legacy: Option<PluginStateFile>,
+    ) -> RolePluginState {
+        if ui.is_effectively_empty() {
+            RolePluginState {
+                slots: legacy.unwrap_or_default(),
+                ..Default::default()
+            }
+        } else {
+            RolePluginState::from_ui_config(ui)
+        }
+    }
+
     #[must_use]
     pub fn global_plugin_state(&self) -> RolePluginState {
         self.plugin_state_store
@@ -340,18 +373,12 @@ impl DirectoryPluginRuntime {
             if store.roles.contains_key(role_id) {
                 return;
             }
-            if ui.is_effectively_empty() {
-                if let Some(leg) = store.legacy_v1.take() {
-                    RolePluginState {
-                        shell_plugin_id: String::new(),
-                        slots: leg,
-                    }
-                } else {
-                    RolePluginState::default()
-                }
+            let legacy = if ui.is_effectively_empty() {
+                store.legacy_v1.take()
             } else {
-                RolePluginState::from_ui_config(ui)
-            }
+                None
+            };
+            Self::initial_role_plugin_state(ui, legacy)
         };
         self.sanitize_role_shell(&mut new_state);
         let mut store = self.plugin_state_store.write();
