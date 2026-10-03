@@ -428,3 +428,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **起点 / 原因**：基线 `86cbb2d5a6651da8a0caba594933f8c8a67850b5`，工作树干净；维护者选择最小角色包接入为下一主线。现有共享加载器能准备定义与本地资产，但 CLI 只能按参考宿主蓝图/legacy 格式校验目录。
 - **本片**：按[第二轮计划](ROUND-02-PLAN.md#d-cli-blueprint-05--显式最小角色本地校验入口2026-10-03)，CLI 新增 `pack validate-minimal-local`，直接复用同一个只读加载器；调用方选择资产根与定义文件，预算有界。无蓝图的一图加 prompt 正向通过，缺资产与定义路径越界拒绝；旧 `pack validate` 行为不变。定向集成测试 2/2、Clippy、分层、债结构、中英镜像、链接、登记、旧路径及编码检查均 exit 0；fmt 首次只发现新测试一处换行，定点修正后 exit 0。本片仅形成本地提交，后续同主线里程碑再跑完整本地与目标 SHA CI。
 - **边界**：这只把既有准备能力暴露给 CLI；没有统一磁盘包名、生成器、媒体解码或 Host 生命周期。公开 `PromptInput` 与 `Arc<Role>` 缓存的迁移是下一决策门，不用产品默认值冒充完成。主台账保持 Partial。
+
+### DCL-20261003-13 · D-CLI-BLUEPRINT-05 最小快照进入 Prompt Base
+
+- **起点 / 原因**：接续本地提交 `e2ad3066`。维护者选择保留旧接口增量接入；CLI 能校验最小本地快照，但参考 Host 的 Prompt 入口与缓存仍依赖完整 `Role`。
+- **本片**：新增借用 `LocalMinimalRoleSnapshot` 的 `LocalMinimalRolePrompt`，经现有 `PromptBase` 能力调用。人设来自已验证快照，材料保持顺序；复用现有文本连接核心，非空附加要求返回 `Unsupported`。一图加 prompt 的外部 crate 测试通过；不构造产品默认关系、人格向量、角色名或蓝图。
+- **边界 / 后续**：这是单个能力实现的接入，未注册到参考 Host 的 `AppState`、角色加载或回合流程，也未解码视觉资产。旧 Prompt 接口不变，D-CLI-BLUEPRINT-05 仍 Partial；下一片须明确 Host 如何拥有快照、绑定技术身份并治理资源，不能把本片写成角色已激活。

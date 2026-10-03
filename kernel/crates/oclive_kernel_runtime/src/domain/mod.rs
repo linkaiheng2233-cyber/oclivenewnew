@@ -21,6 +21,7 @@ pub mod local_plugin_bridge;
 pub mod local_plugin_memory_pick;
 pub mod memory_engine;
 pub mod memory_retrieval;
+pub mod minimal_role_prompt;
 pub mod personality_engine;
 pub mod plugin_resolution;
 pub mod policy;

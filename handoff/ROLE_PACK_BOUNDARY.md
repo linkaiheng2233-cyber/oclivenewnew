@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-03。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，公开接口仍耦合旧 `Role`，统一磁盘入口、生成器与生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-03。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小快照到独立 Prompt Base 的增量适配见 §0.7。旧公开接口仍耦合完整 `Role`，统一磁盘入口、生成器与 Host 生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -106,7 +106,7 @@
 - 定义文件预算与资产预算独立，均由调用方提供；定义原始缓冲在解析后、资产读取前释放。它们不是整个进程的内存/时间硬上限，解析后的字符串与容器另有开销。调用方仍须在整个调用期间防止根目录、路径和文件被并发改动；这不是可变目录的原子快照或文件系统隔离机制。
 - 未知产品字段仍被忽略并丢弃，不从中加载额外路径或注入默认关系/能力；不适合 richer pack 无损回写。返回快照只证明逻辑与本地实体检查通过；PNG/其他媒体验证及宿主能否消费各自独立，启用 `media-png` 也不会让此加载函数自动调用解码器。
 
-**运行接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。公开的 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。涉及这些公共接口的拆分/迁移范围须另行确认，本切片未修改它们；统一磁盘入口与真实跨宿主运行验收也未完成。
+**参考 Host 生命周期接入仍缺失**：当前 [`OcliveKernel::load_role`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 仍委托原角色服务；[`load_role_impl`](../kernel/crates/oclive_kernel_host/src/service/role/mod.rs) 从存储取得完整 `Role` 并建立运行态，缓存也存储 `Arc<Role>`。旧 [`PromptInput`](../kernel/crates/oclive_kernel_types/src/prompt.rs) / [`PromptAssembler`](../kernel/crates/oclive_kernel_contracts/src/prompt_assembler.rs) 同样引用该完整模型。因此不能把本入口返回值直接送入现有生命周期，不能通过补齐旧 `Role` 的产品默认值宣称接入成功。维护者已选择保留旧接口、增量接入；§0.7 的 Prompt Base 能力不改变这条生命周期链。统一磁盘入口与真实跨宿主运行验收也未完成。
 
 CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`，仅复用本节的只读准备入口；三个字节预算默认为 64 KiB / 4 MiB / 16 MiB 且可由调用方覆盖。命令不扫描目录、不规定文件名、不生成包或旧 `Role`，也不自动启用 §0.4 的 PNG 校验。原 `pack validate/create` 的参考宿主语义保持不变。CLI 成功只证明定义和本地非空资产快照在所给预算下可读取，不是生命周期激活。
 
@@ -140,6 +140,12 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 | 新增纯布局四组合测试、准备对象跨借用期测试 | 随新抽象撤回；不为了测试尚未要求的中间对象而保留实现。稳定基线原有 42 项 Prompt 测试与 15 个固定输出摘要原样保留。 |
 
 本次纠偏后的运行源码与上述稳定基线一致；只有本节的当前实现止点与审查记录变更。它不是公开 Prompt 解耦、生命周期接入或物理拆分的完成声明。
+
+### 0.7 增量切片：本地最小快照的 Prompt Base 能力
+
+维护者选择保留参考运行时旧公开接口、增量接入最小角色。新增 [`LocalMinimalRolePrompt`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_prompt.rs)：它借用 §0.5 已验证的 `LocalMinimalRoleSnapshot`，作为可经 `&dyn PromptBase` 调用的一个独立实现。作者人设只来自快照，资产字节仍由调用方持有；它不构造完整 `Role`，不补角色名、关系、人格向量或 `slot_registry`。输入材料与人设放在不同文本段，当前调用若带额外非空 `requirements` 则明确返回 `Unsupported`，不清空真实要求以换取表面成功。文本段标记不保证下游模型抵抗注入。
+
+[外部 crate 定向测试](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_prompt.rs) 用一图加 prompt 的本地快照驱动真实 Base trait 调用，并检查额外要求的拒绝。这只证明**最小内容可进入一个 Prompt 能力实现**；没有在 `AppState` 注册它，没有让参考 Host 的 `load_role` / `process_message` 接受最小目录，也不证明 LLM、视觉显示或跨宿主回合。旧 `PromptInput` / `PromptAssembler` 与完整角色缓存保持原样。下一步要在 Host 自有的身份、资源及生命周期边界中选择绑定方式，再测一条真实装配路径；不得把本能力调用误写成角色激活。
 
 ## 1. 当前参考宿主内部划分
 

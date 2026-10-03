@@ -383,3 +383,11 @@
 **写集 / 边界**：CLI `pack_cmd.rs`、一份 CLI 集成测试、本计划、`ROLE_PACK_BOUNDARY`、角色包规范中英摘要、CLI crate README、主台账和 DEBT_CHANGELOG。旧 `pack validate/create` 及参考宿主加载逻辑不变；不生成角色目录、不注入旧 `Role` 的关系/人格默认值、不改 `slot_registry`、公开 Prompt 接口或回合编排。成功只说明逻辑定义与非空本地资产快照合格，不证明媒体可解码、角色激活、真实跨宿主回合或抗并发目录替换。
 
 **验收 / 停止线**：CLI 定向测试用无蓝图的一图加 prompt 目录证明正向入口，缺资产与越界定义路径必须拒绝，原参考宿主 `pack validate` 对同目录仍拒绝。跑 fmt、CLI 定向 Clippy、分层和适用文档/债务门禁；同主线后续切片形成里程碑时才再跑全量本地与目标 SHA 远端 CI。若实现需改变公开 `PromptInput`、角色缓存或生命周期，停止本片并向维护者提出具体迁移取舍，不以第二套解析器或补产品默认值绕过。
+
+### D-CLI-BLUEPRINT-05 · 最小快照到 Prompt Base 的增量适配（2026-10-03）
+
+**尺寸 / 起点 / 目的**：S，接续 `e2ad3066`。维护者选择保留旧接口增量接入；先让已验证的最小角色本地快照能够配置一项真实可调用的 Prompt Base 能力，不把旧 Host 的完整 `Role`、关系/人格/蓝图默认值带入该能力。
+
+**写集 / 停止线**：只在 runtime domain 增加一个借用快照的 Base 实现及定向测试，更新本计划、角色边界文档、台账与变动记录。复用已有文本连接核心，额外非空要求明确拒绝；不改 `PromptInput` / `PromptAssembler` / `AppState` / `load_role` / `process_message`，不注册新默认后端或做第二条回合流水线。此片的成功是能力输入可用，不是 Host 角色激活；Host 绑定另立小片。
+
+**验收**：外部 crate 测试经 `&dyn PromptBase` 以一图加 prompt 的本地快照调用，检查原样人设、材料顺序和额外要求拒绝；runtime 定向 Clippy、fmt、分层及适用文档门禁通过。与上一 CLI 小片合并形成里程碑再跑一次完整本地 CI；远端仅以推送后的目标 SHA 判断。
