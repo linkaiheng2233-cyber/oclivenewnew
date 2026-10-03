@@ -297,6 +297,9 @@ jobs:
         # CLI E2E tests spawn nested Cargo builds. Serial test execution avoids package-cache
         # lock contention; the full crate run already includes kernel_ensure_plan_snapshot.
         run: cargo test --locked -p oclive-cli -- --test-threads=1
+      - name: test generated library Host consumer
+        # Host integration is opt-in; keep the default CLI dependency graph lightweight.
+        run: cargo test --locked -p oclive-cli --features diagnostics-host --test e2e_minimal_role_library -- --test-threads=1
 
   # ARM64 Linux cross-compile smoke (no tests on target; catches arch-specific breakages)
   rust-arm64-cross:

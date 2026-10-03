@@ -56,6 +56,3 @@ ctrlc = "3.4"
 [dev-dependencies]
 tempfile = { workspace = true }
 serde_json = { workspace = true }
-# Prepare the Host dependency closure before the offline generated-library E2E.
-# The production dependency remains optional behind diagnostics-host above.
-oclive_kernel_host = { path = "../oclive_kernel_host" }
