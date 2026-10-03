@@ -62,7 +62,8 @@ impl fmt::Debug for LocalMinimalRoleSnapshot {
 /// This is not a filesystem sandbox or an atomic snapshot of a mutable directory.
 /// Returned bytes do not change when the source is later modified. No URLs, media
 /// decoders, role directories, default product fields or legacy `Role` are created.
-/// The result is preparation only: it cannot be passed to today's lifecycle API.
+/// The result is preparation only: the reference Host can adapt it into a prepared
+/// minimal text handle, but it cannot be passed to the rich `load_role` API.
 ///
 /// # Errors
 ///

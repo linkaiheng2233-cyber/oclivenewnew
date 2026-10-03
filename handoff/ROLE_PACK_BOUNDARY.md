@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host** 生命周期接入尚未实现。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期、HTTP/Tauri 与 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -48,7 +48,7 @@
 | 可选扩展缺失、未映射或当前不可用 | 发行版明确标注该扩展不可用；不填中性分数、默认关系或假输出冒充扩展执行，不暗示视觉资产已被渲染 |
 | 调用方明确要求尚不支持的扩展，或基础能力本身不可用 | 如实返回对应不支持/不可用结果；不丢弃真实要求以获得成功，不承诺缺模型、权限或资源时仍能生成 |
 
-这是各发行版应兑现的接入目标，**不是当前所有发行版已经通过验收**。§0.7–0.8 只有能力与独立 Host 的有限实现；参考 Host 仍有完整 `Role` 输入与丰富回复 DTO 耦合，不能仅给旧返回字段填值就宣称最小闭环已接通。逐发行版的转换、基础路径和扩展不可用表示，随 D-CLI-BLUEPRINT-05 的实际切片分别落实。
+这是各发行版应兑现的接入目标，**不是当前所有发行版已经通过验收**。§0.7–0.8 是能力与独立 Host 的有限实现；§0.9 已为参考 Rust Host 增加基础文本调用，旧丰富入口仍有完整 `Role` 与丰富回复 DTO 耦合，不能仅给旧返回字段填值就宣称最小闭环已接通。逐发行版的转换、基础路径和扩展不可用表示，随 D-CLI-BLUEPRINT-05 的实际切片分别落实。
 
 生命周期仍需要技术标识与命名空间；适配/加载边界可提供内部角色句柄和传输版本信息。这些是技术封装，不增加作者侧必填内容，也不要求采用发行版的 `meta.id/name/version`。磁盘文件名、传输 schema 与视觉资产描述/解析规则由发行版适配器确定；CLI 的显式文件参数不冻结跨发行版格式。若将来确有跨发行版交换包需求，再独立提出版本化格式，不反向扩张当前最小数据契约。
 
@@ -162,6 +162,16 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 维护者选择从内核能力向外延伸，先做独立 Host 案例，保留参考 Host 的旧接口。[`minimal_role_host` 示例](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs)让同一 Host 从两种来源装配：调用方指定的本地文件快照，或另一发行版提供的纯内存定义与资产字节。两者都由 Host 给出技术 ID、校验定义与资产配对、按 ID 选择角色，再把**逻辑定义**交给 §0.7 的 Prompt Base，与内存 Echo LLM 完成一轮。错误身份在能力调用前拒绝，额外要求的 `Unsupported` 在 LLM 前停止；缺失、空白或不配对的资产不构造 Host。该案例不写入作者角色定义的技术 ID、关系或 backend 默认值。
 
 案例内的内容来源接口只属于示例 Host，不是新的 Kernel 公共 port；纯内存来源使用合成资产，不代表已有第二个发行版已实接。即时 future 驱动器只适合本例的内存能力；真实 Host 必须自行管理异步调度、资源权限、生命周期和领域效果。示例的 5 项隔离测试与原生运行验证**两种来源可走同一独立装配路径**，不是参考 `AppState`、ChatPro、真实模型、持久库、视觉渲染、跨平台发行版或安全隔离验收。跨发行版只固定 §0.1 的逻辑契约；磁盘封装和版本由发行版适配，不将示例 `content.json` 升为统一文件名。参考 Host 兼容接入仍由技术债分片管理，不能因本例将 `D-CLI-BLUEPRINT-05` 标成 Done。
+
+### 0.9 参考 Rust Host 的增量基础文本入口
+
+[`PreparedMinimalRole`](../kernel/crates/oclive_kernel_host/src/service/role/minimal.rs) 接收开发者已转换的定义、逐引用非空资产字节与 Host 技术 ID，或适配 §0.5 已读取的本地快照；构造时复用共享校验，字段私有，资产数与定义一致，持有自己的快照。它不规定引用 scheme、文件名或统一转换器协议，也不构造完整 `Role`、激活选角或写产品运行态。资产可供发行版消费者读取，但准备成功不表示媒体已解码或渲染；字节预算和转换真实性由提供者负责。
+
+参考 [`OcliveKernel::process_minimal_message`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 把该句柄与 `MinimalRoleMessageRequest { user_message, requirements }` 薄转发到现有 [`process_message.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) 内的基础分支：共享 Prompt Base 整理人设与输入，沿用 Host 当前模型设置及已装配 `LlmClient` 的 `generate_with_opts`，一次非流式生成。不会新建第二套角色/六槽解析器，也不会把丰富 pipeline 的全部阶段当作基础文本前置。旧 `process_message`、RoleCache、`load_role`、收据和丰富 DTO 保持原调用面。
+
+[`MinimalRoleMessageResponse`](../kernel/crates/oclive_kernel_types/src/models/dto/minimal_role.rs) 只提供技术 `role_id`、模型原样 `reply` 与 `product_extensions: unavailable`。这里表示**本基础路径未执行**关系、人格、情绪等产品扩展，不表示 Kernel Base 不可用或 Host 其他路径失效。不存在假中性分数、关系状态或聊天行 ID。非空额外要求经 Prompt 返回 typed `Unsupported`，在模型前停止；空消息返回原 `EmptyMessage`；模型或设置失败保留原 AppError，不返回安全话术、不由本编排新增重试。正常完成的空文本仍保留为空；质量与领域成功不能由返回字符串非空代替。
+
+**当前证据与止点**：五项新增外部 crate 回归经生产 Host builder（临时 SQLite、内存模型）覆盖准备/一次调用、无伪造扩展与无角色/聊天/收据落库、拒绝要求/空输入、模型失败/已完成空输出及本地快照适配；既有丰富门面的用户、流式与事件授权回合回归通过。这里只是**嵌入式 Rust 单次文本入口**，没有最小角色的历史、多轮记忆、持久化恢复、流式传输、HTTP/Tauri 命令、ChatPro UI、视觉或真实模型/语音验收。Host 调度与资源策略仍由已装配客户端和调用方承担；Prompt Base future 不保证 `Send`。D-CLI-BLUEPRINT-05 保持 Partial，后续按实际发行版接入需求选择下一片，不为穷尽这些边缘路径扩证。
 
 ## 1. 当前参考宿主内部划分
 

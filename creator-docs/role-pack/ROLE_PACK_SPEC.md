@@ -347,7 +347,7 @@ cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --host-ve
 cargo run -p oclive-cli -- pack validate ./distros/chat-pro/roles/mumu --profile portable-core
 ```
 
-`portable-core` 验证的是当前参考宿主七图 profile，不代替 kernel minimal 的独立验收。后者已有共享逻辑校验、从调用方指定 JSON 文件准备定义与资产快照的入口，以及独立可选静态 PNG 能力；PNG 不是必需格式，其他格式的 unsupported 不等于角色非法。CLI 已接显式本地校验，独立 Prompt Base 与 Host 案例也已实现；参考 Host 生命周期仍未接最小定义（见边界文 §0.2–0.8）。发行版开发者负责转换器，让最小内容进入基础闭环并明确标注不可用的扩展；这是接入目标，不表示各发行版已经验收，详见边界文 §0.1。各发行版的 UI、语音、视觉、插件或硬件能力仍由自己的 capability-conformance 验收负责。
+`portable-core` 验证的是当前参考宿主七图 profile，不代替 kernel minimal 的独立验收。后者已有共享逻辑校验、从调用方指定 JSON 文件准备定义与资产快照的入口，以及独立可选静态 PNG 能力；PNG 不是必需格式，其他格式的 unsupported 不等于角色非法。CLI 已接显式本地校验，独立 Prompt Base 与 Host 案例也已实现；参考 Rust Host 新增基础文本调用，丰富生命周期及 HTTP/Tauri/UI 仍未接最小定义（见边界文 §0.2–0.9）。发行版开发者负责转换器，让最小内容进入基础闭环并明确标注不可用的扩展；这是接入目标，不表示各发行版已经验收，详见边界文 §0.1。各发行版的 UI、语音、视觉、插件或硬件能力仍由自己的 capability-conformance 验收负责。
 
 ### Chat Pro 成人角色扩展（`adult_extension.json` · 可选）
 

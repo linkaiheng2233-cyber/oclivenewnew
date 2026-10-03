@@ -441,3 +441,11 @@
 **有界调查结论 / 下一施工点**：已有共享定义、快照及 Prompt Base 足以停止对数据面补证。参考 Host 的 `load_role_impl → role_cache<Arc<Role>> → process_message` 仍走丰富角色；旧 `SendMessageResponse` 要求情绪、关系和人格等字段，不能用默认值冒充这些扩展已有结果。下一片先分开“开发者准备的最小内容与技术身份”“Host 基础输入/结果”“可选产品扩展状态”，保留旧调用面作为兼容适配；新增路径仍在 Host 既定回合入口内组织，不另造六槽解析器或复制整条 pipeline。准确类型和代码写集在实施该片前按实际调用点确定，不预定新 crate、通用转换器协议或中央生命周期框架。
 
 **有限验收 / 停止**：先让一个参考发行版的最小内容走基础文本闭环，显式拒绝不支持的扩展要求，同时保留现有丰富角色正常路径；无显示 Host 可以不渲染资产。仅这两条主路径及必要失败回归，不预先追全部媒体、语音、市场格式、跨平台或崩溃窗口。文档不支撑的实现缺口继续留在原债，不转为无界调查；如实现确需改变已冻结的公共结果/错误语义，再提出具体取舍。
+
+### D-CLI-BLUEPRINT-05 · 参考 Rust Host 基础文本入口（2026-10-04）
+
+**尺寸 / 基线 / 冻结语义**：L 的有限增量切片，起点 `c6d75a9b`、工作树干净。维护者已确认继续施工。开发者先把自有格式转为共享定义与逐引用资产字节；Host 准备一个私有字段的不可变角色句柄，技术 ID 不成为作者字段。现有 `OcliveKernel` 增加基础文本方法，薄转发到既有 `process_message.rs`：校验消息 → 共享 MinimalRolePrompt → 现有 Host 模型设置与已装配 LlmClient 的非流式生成 → 简洁结果。不能构造默认 `Role`，不能把无扩展结果转为旧 `SendMessageResponse`。结果明确表示本路径的产品扩展不可用；非空额外要求仍通过 Prompt 的 typed Unsupported 拒绝，在模型调用前停止。模型失败保留原 AppError，不造 fallback 或重试。
+
+**写集 / 关联面**：`oclive_kernel_types/src/models/dto/minimal_role.rs` 及 dto 导出；Host `service/role/minimal.rs`、role 模块声明、`domain/chat_engine/process_message.rs`、共用 `message_error.rs` 及导出、`role_kernel.rs`、`lib.rs`；新增 `tests/minimal_role_public_api.rs`。角色边界、主台账、本计划及 DEBT_CHANGELOG 同片同步，角色规范中英仅更新接入事实并链接 SSOT；本地快照与 Prompt 的 rustdoc 仅修正当前接入事实。准备句柄可直接接开发者转换后的内存数据，也可从已校验本地快照准备，复用解析与资产读取而不另建通用转换器 trait。旧 RoleCache、角色选角、丰富回合、收据和 HTTP/Tauri 不改。无新 crate、权限、错误码、DB 迁移或角色磁盘格式。
+
+**验收 / 停止线**：合成数据走生产 OcliveKernel builder 与新增门面，证明一次 Prompt/模型调用、资产快照保留、无伪造扩展字段/无角色运行态和聊天落库；必要失败只核无效准备输入、空消息、真实额外要求及模型失败，保留已完成空文本。原 rich facade 集成测试作为兼容回归。新公开 API 跑 workspace doctest，Host lib、适用 Clippy/fmt、分层、module-compat 与文档/债务门禁；控制方自行语义审查，不称独立审查。完成同主题切片后一次全量本地链、冻结提交与推送；目标远端成功前原债仍 Partial。不给此单次 Rust 文本调用赋予历史、多轮记忆、持久化恢复、流式、渲染、语音或 ChatPro UI 接入结论，不扩查那些路径。测试仅临时夹具与内存模型；不使用真实模型、用户 DB、网络或进程插件。

@@ -1,7 +1,8 @@
 //! A Prompt Base capability configured from portable minimal-role content.
 //!
 //! This is an additive capability implementation, not the reference Host's role
-//! activation path. The caller owns asset resolution, the current invocation, and
+//! activation path. The reference Host's additive minimal text entry can use it;
+//! the caller owns asset resolution, the current invocation, and
 //! any choice to use this slot. This text-only slot never reads or renders assets.
 
 use oclive_kernel_contracts::{BaseCallFuture, PromptBase};

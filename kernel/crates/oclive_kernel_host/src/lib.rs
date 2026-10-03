@@ -27,7 +27,8 @@ pub(crate) mod test_faults;
 pub mod utils;
 
 pub use role_kernel::{
-    KernelError, KernelResult, OcliveKernel, OcliveKernelBuilder, OcliveKernelConfig,
+    KernelError, KernelResult, MinimalRoleMessageError, OcliveKernel, OcliveKernelBuilder,
+    OcliveKernelConfig, PreparedMinimalRole,
 };
 
 use std::path::Path;

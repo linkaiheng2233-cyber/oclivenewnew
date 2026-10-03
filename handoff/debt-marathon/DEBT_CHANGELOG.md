@@ -477,3 +477,11 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **维护者裁定 / 原因**：对上一事件的产品范围问题，维护者明确开发者为扩展格式准备转换器；最小角色须能在发行版跑基础闭环，扩展缺失明确不可用。核现有角色边界、角色规范及 HostProfile，已有“自有格式分别映射内容与能力”的分工与此一致；缺的是基础运行路径的实现，不能继续把格式取舍当 blocker。
 - **本片**：在角色边界 §0.1 明确转换器、基础能力和扩展不可用的责任；纠正图中将生命周期归给小 Kernel 的用词。角色规范中英修正“CLI 未接”的过期说法，并只摘要链接边界。第二轮计划把下一施工点限于一个参考发行版的基础路径与旧丰富路径兼容；不新增公共转换器协议或假设所有发行版已验证。
 - **债务 / 止点**：D-CLI-BLUEPRINT-05 仍 Partial，后续只沿现有入口处理内容/基础结果/产品扩展的真实耦合，不继续扩大示例和数据证明。缺模型/资源不能伪装成功；调用方明确要求的未支持扩展仍须拒绝，不靠丢弃要求通过。不重跑业务用例或全量 CI来验证本次文档裁定。
+
+### DCL-20261004-21 · 参考 Rust Host 的最小角色基础文本接入
+
+- **原因 / 实际变化**：数据面和独立示例已经足够，继续补示例不能偿还“参考 Host 仍要求完整 Role”的实现债。本片在原 OcliveKernel 增加 `process_minimal_message`，由既定 `process_message.rs` 编排共享 Prompt 与 Host 已装配模型客户端；开发者转换后构造不可变 `PreparedMinimalRole`，也可适配已读取的本地快照。技术 ID、资产快照由 Host 持有，不创建旧 Role、蓝图或产品默认状态。
+- **基础结果 / 兼容**：增量 DTO 只有角色技术 ID、模型原样 reply 和 `product_extensions: unavailable`；仅表示本路径不执行产品扩展。非空额外要求在模型前经 typed Unsupported 停止；空消息、模型和设置错误保留对应原错误，无本编排 fallback/重试。正常空文本原样保留。旧丰富角色服务、RoleCache、HTTP/Tauri、收据和 SendMessageResponse 无修改；额外要求不被新请求反序列化静默吞掉。公开 facade 薄转发，错误放在既有共用 message_error，不从领域实现反向依赖 facade。
+- **本地证据 / 复核**：新增外部 crate 五项回归和既有 rich facade 一项回归通过；Host/types all-targets/all-features Clippy、workspace doctest、分层与 module-compat 均 exit 0，文档镜像与债务结构检查通过。控制方按实际 diff 做语义自查，不冒充独立审查。公共 API 故使用 doctest；本主题合并先前能力拒绝修复与方向文档，在冻结提交上只跑一次完整本地链后推送。前一个 `10e4d4c1` 的正式 run `37139976177` 已核为 success、17/17，但不替代本片目标 SHA 的 CI。
+- **自行修正 / 保留日志**：首轮编译把已有 LlmGenerateOutcome 的字段写错，随后测试实现漏了 generate_tag 并误用了 SQLx shim 未导出的 Connection；均按真实契约修正，没有改生产契约迁就测试。首轮运行四项通过、一项仅在 TempDir 清理时报 Windows 文件占用；测试加入最多两秒的独占打开释放检查，清理仍须成功。Clippy 又检出测试显式 drop 的锁仍跨 await，被词法作用域修正。所有失败/成功日志分存在 `.cursor/plans/debt-minimal-role-host-20261004-r0/`。删除旧失败夹具 `.tmpQdYRu3` 的安全检查与清理命令被工具自动审批整体拒绝（blocked by policy），没有重试或绕过，目录留待后续授权清理；不据此宣称旧失败清理成功。
+- **范围 / 状态**：本片是参考 Rust Host 的单次文本入口，不是 ChatPro UI、传输、渲染、真实模型/语音、多轮记忆或持久化恢复验收；也不关闭原债全部生命周期和跨发行版适配。D-CLI-BLUEPRINT-05 仍 Partial，完成基础主路径后停止扩证。K-SUPPLY-09 签名、双核及 Event Stream 等冻结项不变。

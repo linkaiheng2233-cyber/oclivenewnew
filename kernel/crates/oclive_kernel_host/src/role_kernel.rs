@@ -2,7 +2,8 @@
 //!
 //! This facade is the composition boundary for trusted Rust hosts. It delegates to the same
 //! [`AppState`](crate::state::AppState), role service, turn pipeline, Event Ring, persistence, and
-//! plugin wiring used by HTTP and Tauri; it does not define a second orchestration path.
+//! plugin wiring used by HTTP and Tauri. The additive minimal text entry also delegates to the
+//! canonical chat entry, but does not construct a rich role or promise its persistence/extensions.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -11,7 +12,8 @@ use oclive_kernel_contracts::{
     EventEmitter, EventModule, EventModuleRegistrar, LlmClient, LlmTokenSink,
 };
 use oclive_kernel_types::models::dto::{
-    RoleData, RoleInfo, RoleSummary, SendMessageRequest, SendMessageResponse, TurnOrigin,
+    MinimalRoleMessageRequest, MinimalRoleMessageResponse, RoleData, RoleInfo, RoleSummary,
+    SendMessageRequest, SendMessageResponse, TurnOrigin,
 };
 use oclive_kernel_types::{
     EventModuleDeclaration, EventModuleRegistryEntry, EventModuleRegistryPolicy,
@@ -21,13 +23,16 @@ use oclive_kernel_types::{
 use crate::command_error::CommandError;
 use crate::domain::chat_engine::{
     process_message, process_message_stream, process_message_stream_with_origin,
-    process_message_with_origin, process_proactive_turn,
+    process_message_with_origin, process_minimal_message, process_proactive_turn,
 };
 use crate::domain::event_ring::{propose_proactive_turn, ProactiveTurnPermit};
 use crate::domain::host_profile::HostProfile;
 use crate::error::AppError;
 use crate::service::role::{get_role_info_impl, list_roles_impl, load_role_impl};
 use crate::state::{AppState, AppStateBuilder};
+
+pub use crate::domain::chat_engine::message_error::MinimalRoleMessageError;
+pub use crate::service::role::minimal::PreparedMinimalRole;
 
 /// Stable error surface for the in-process kernel.
 ///
@@ -224,6 +229,25 @@ impl OcliveKernel {
     /// Returns role-pack, capability-plan, or persistence errors.
     pub async fn load_role(&self, role_id: &str) -> KernelResult<RoleData> {
         load_role_impl(&self.state, role_id, false).await
+    }
+
+    /// Invoke the basic text path on already prepared developer content.
+    ///
+    /// Reuses the Host's current model settings and assembled model client. No
+    /// rich `Role`, role activation, chat persistence, retry or product extension
+    /// is created. Asset bytes remain available through the handle for a distro
+    /// renderer; this method never decodes or renders them. The Host owner manages
+    /// scheduling and cancellation; the Base Prompt future need not be `Send`.
+    ///
+    /// # Errors
+    /// Returns typed Prompt Unsupported for nonempty extra requirements, or the
+    /// original Host input/settings/model error. Failures are not fallback replies.
+    pub async fn process_minimal_message(
+        &self,
+        role: &PreparedMinimalRole,
+        request: &MinimalRoleMessageRequest,
+    ) -> std::result::Result<MinimalRoleMessageResponse, MinimalRoleMessageError> {
+        process_minimal_message(&self.state, role, request).await
     }
 
     /// Read the effective runtime snapshot for a role and optional isolated session.

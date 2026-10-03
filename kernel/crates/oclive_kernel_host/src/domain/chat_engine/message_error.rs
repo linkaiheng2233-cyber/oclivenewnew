@@ -6,6 +6,16 @@ use crate::domain::chat_engine::turn_error::TurnError;
 use crate::error::AppError;
 use thiserror::Error;
 
+/// Typed errors for the additive in-process minimal text path. No new HTTP or
+/// IPC error-code mapping is defined: callers match the variant and its source.
+#[derive(Debug, Error)]
+pub enum MinimalRoleMessageError {
+    #[error(transparent)]
+    Host(#[from] AppError),
+    #[error(transparent)]
+    Prompt(#[from] oclive_kernel_types::BaseCallError),
+}
+
 /// Stage name for experimental core [`DualPipelineRunner`](crate::domain::dual_pipeline::DualPipelineRunner).
 pub const STAGE_DUAL_CORE_EXPERIMENTAL: &str = "dual_core_experimental";
 

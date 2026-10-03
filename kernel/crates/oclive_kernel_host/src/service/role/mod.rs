@@ -5,6 +5,7 @@ pub mod delete;
 pub mod display;
 pub mod identity;
 pub mod interaction;
+pub mod minimal;
 pub mod runtime;
 pub mod slot_session;
 

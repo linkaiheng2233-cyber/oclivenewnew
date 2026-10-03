@@ -39,6 +39,51 @@ use oclive_kernel_contracts::LlmTokenSink;
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Reference Host's additive single-call text path, organized at the canonical
+/// turn entry rather than in the public facade. It deliberately does not enter
+/// the rich preflight/TurnContext or publish synthetic extension state.
+///
+/// # Errors
+/// Returns the original Host error or the Prompt Base failure carrier.
+pub async fn process_minimal_message(
+    state: &AppState,
+    role: &crate::service::role::minimal::PreparedMinimalRole,
+    request: &oclive_kernel_types::models::dto::MinimalRoleMessageRequest,
+) -> std::result::Result<
+    oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
+    crate::domain::chat_engine::message_error::MinimalRoleMessageError,
+> {
+    use oclive_kernel_contracts::PromptBase;
+    use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
+    use oclive_kernel_types::models::dto::{
+        MinimalRoleMessageResponse, MinimalRoleProductExtensionStatus,
+    };
+    use oclive_kernel_types::PromptBaseRequest;
+
+    if request.user_message.trim().is_empty() {
+        return Err(crate::error::AppError::EmptyMessage.into());
+    }
+    let prompt = MinimalRolePrompt::new(role.definition())
+        .map_err(|errors| crate::error::AppError::InvalidParameter(errors.join("; ")))?;
+    let prepared = prompt
+        .assemble(PromptBaseRequest {
+            materials: &["User: ", &request.user_message],
+            requirements: &request.requirements,
+        })
+        .await?;
+    crate::domain::user_llm_env::apply_user_llm_env(state).await?;
+    let model = state.ollama_model.read().clone();
+    let generated = crate::domain::slot_runner::SlotRunner::generate_llm_single(
+        &state.llm, &model, &prepared, None,
+    )
+    .await?;
+    Ok(MinimalRoleMessageResponse {
+        role_id: role.technical_id().to_owned(),
+        reply: generated.reply,
+        product_extensions: MinimalRoleProductExtensionStatus::Unavailable,
+    })
+}
+
 /// # Errors
 ///
 /// Returns [`Err`] with a human-readable message when the operation fails.
