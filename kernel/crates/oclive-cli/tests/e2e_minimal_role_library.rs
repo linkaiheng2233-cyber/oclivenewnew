@@ -48,7 +48,8 @@ fn generated_library_runs_minimal_text_and_keeps_rich_entry() {
     let result = Command::new("cargo")
         // Read the repository Cargo config and reuse its external target/cache.
         .current_dir(&root)
-        .args(["test", "--offline", "--manifest-path"])
+        // CI may force ANSI color; assertions below consume plain Cargo output.
+        .args(["test", "--offline", "--color", "never", "--manifest-path"])
         .arg(&manifest)
         .env("OCLIVE_LIBRARY_FIXTURE_DATA", project.join("fixture-data"))
         .output()

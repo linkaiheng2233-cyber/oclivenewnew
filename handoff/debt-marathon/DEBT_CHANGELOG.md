@@ -506,3 +506,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 已完成**：最小角色的台账状态格逐轮累加，早期“Host 未接”与近期基础入口并列；CLI `create` 指南也未区分生成器和显式文件准备，容易让接手者重新领取已完成的工作。按[本片计划](ROUND-02-PLAN.md#d-debt-ledger-01--最小角色当前状态与接手用法收敛2026-10-04)保全起点 `5dc3d1d0` 整行，当前行缩为已有基础调用与剩余发行版适配，细节见[台账 Wave](waves/WAVE-20260929-DEBT-REFERENCES.md#最小角色长状态与当前接手入口2026-10-04)。中英指南只纠正当前能力分类并链接现有 SSOT，没有缩减产品承诺来假装实现。
 - **证据 / 当前接续**：工程冻结点 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2` 的 `17-ci-local-final` 原生 exit 0、前后 SHA 相同、临时 Python 配置恢复 true；已按既有授权推送，正式 CI 另核，不用父 SHA 的绿灯替代。文档迁移机械核原行/前四列/其它权威行，适用门禁完成后只建本地提交，随下一实质批次统一推送。
 - **状态 / 停止**：两项债仍 Partial；未修改 QUEUE、机器计划、产品源码、模板、门禁、旧证据或运行数据。本片不重新跑 Rust/真实模型/媒体/业务身份，整理这一处后即停，不让历史未覆盖范围变成无限补证队列。下一施工仍从选定发行版的实际基础接入断点出发，公共边界改变时再列具体决策；暂缓的签名、双核、Event Stream 等不变。
+
+### DCL-20261004-25 · 生成消费测试在 CI 彩色日志下误拒绝
+
+- **实际失败 / 归因**：`5dc3d1d0` 的[正式 run 37149237736](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37149237736)中原 CLI clippy/测试步骤通过，新增消费步骤 native 101。作业 `111279751539` 的原始日志显示子 Cargo 的消费和 rustdoc 各一项成功，但 `CARGO_TERM_COLOR=always` 在 `Doc-tests` 与 crate 名之间插入 ANSI 控制字节，外层纯文本标题断言拒绝；这是我新增测试的日志合同缺陷，不是生产入口失败，也不能因此忽略正式红灯。原日志保存在 `.cursor/plans/debt-minimal-role-library-20261004-r0/18-remote-cli.log`。
+- **修复 / 有效回归**：只在该测试的子 Cargo 参数中指定 `--color never`，保留 native exit、命名消费和两项成功计数断言，不新建解析器或修改工作流。按[返修计划](ROUND-02-PLAN.md#生成库消费回归--cargo-彩色日志合同修补2026-10-04)在同一进程级 `CARGO_TERM_COLOR=always` 下，旧测试 `19-colored-consumer-red` 原生 101，修后 `20-colored-consumer-green` 原生 0；两次均恢复原环境。定向 Clippy/fmt 和文档门禁后冻结，main 修复的完整本地链与新 SHA 远端单独核。
+- **状态 / 节奏**：D-CLI-BLUEPRINT-05 保持 Partial，`5dc3d1d0` 不标作远端通过；文档迁移的本地提交 `4f98d34e` 与这次必要修复合批，不为中间片单独触发全量。未改模板、产品 API、依赖、角色、模型、用户数据或暂停项；确认这一实际失败修正后停止扩证。CI 红灯归因与失败原件保留，不以无变化 rerun 或删断言掩盖。

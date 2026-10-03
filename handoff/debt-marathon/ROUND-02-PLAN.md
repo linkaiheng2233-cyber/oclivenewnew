@@ -465,3 +465,9 @@
 **写集 / 保全**：主台账只缩短 D-CLI-BLUEPRINT-05 的状态格，ID、问题、优先级与完成条件原文不变；将起点整行原文保存到 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md`。同步本计划、台账 Wave、DEBT_CHANGELOG 及 CLI 指南中英的 `create` 说明，共七份文档。当前状态仍唯一由主台账负责，归档仅保留历史；D-CLI-BLUEPRINT-05 与 D-DEBT-LEDGER-01 均不转 Done，QUEUE/机器计划、Rust/模板/门禁和运行原件不动。
 
 **验收 / CI 节奏 / 止点**：机械比较快照与起点整行、前四列及其它权威行保持原文；核现有 `validate-minimal-local` 与边界 §0.5/§0.9 的主路径即可。默认及改文链接、镜像、docs-only 旧路径、登记、债结构、编码及 diff 通过后形成本地文档提交；不重复 Rust、业务场景或完整本地链，也不为这一小片立即再推送触发全量 CI，随下一实质批次统一推送。上一工程目标的远端结果单独核对，不把它当本文档 HEAD 的验收。主控自行按 diff 复核；完成该行与指南的准确分层即停止，不迁其它长状态、不新增所有未覆盖面的调查任务。
+
+### 生成库消费回归 · Cargo 彩色日志合同修补（2026-10-04）
+
+**尺寸 / 起点 / 实际失败**：L 的有限 CI 修复，起点 `4f98d34ec49dd94a0260251785a80cea95012b7c`，工作树干净。`5dc3d1d0` 的正式 CI `37149237736` 中原 CLI 步骤通过，新增消费步骤失败；子 Cargo 消费和 rustdoc 实际成功，但 CI 强制彩色日志在 `Doc-tests` 与 crate 名间插入 ANSI 控制字节，使外层纯文本断言误拒绝。保留原作业日志，不通过无变化 rerun 或删断言假绿。
+
+**写集 / 验收 / 止点**：仅 CLI `tests/e2e_minimal_role_library.rs` 为子 Cargo 显式指定 `--color never`，同步本计划与 DEBT_CHANGELOG 的失败归因；不改模板、产品 API、依赖、工作流或原断言。用进程级 `CARGO_TERM_COLOR=always` 在旧测试复现拒绝，修后同配置消费和 rustdoc 各一项成功，恢复原环境；定向 Clippy/fmt 与改文/债结构门禁后冻结，按 main 修复要求一次完整本地链，再合并已核文档切片统一推送并核新 SHA CI。确认这一个实际失败修正即停，不新建 Cargo 日志解析器或扩平台研究；主控自行审查，不声称独立复核。
