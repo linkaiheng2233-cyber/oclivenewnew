@@ -82,7 +82,7 @@ async fn kernel(
     reply: &'static str,
     fail: bool,
 ) -> (OcliveKernel, Arc<RecordingLlm>) {
-    let roles = temp.path().join("roles");
+    let roles = temp.path().join("fixture-role-root");
     std::fs::create_dir(&roles).unwrap();
     let llm = Arc::new(RecordingLlm {
         calls: Mutex::default(),
@@ -162,7 +162,10 @@ async fn prepared_minimal_content_runs_without_rich_role_or_synthetic_extensions
     let value = serde_json::to_value(response).unwrap();
     assert_eq!(value.as_object().unwrap().len(), 3);
     assert_eq!(value["product_extensions"], "unavailable");
-    assert!(!temp.path().join("roles/converter-owned-id").exists());
+    assert!(!temp
+        .path()
+        .join("fixture-role-root/converter-owned-id")
+        .exists());
     assert!(kernel.list_roles().await.unwrap().is_empty());
 
     let db_path = kernel.config().database_path().to_owned();
