@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期、HTTP/Tauri 与 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期与 ChatPro 选角 / 主聊天 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -190,6 +190,16 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 **独立 Host 的用法**：[`minimal_role_host` 示例](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs) 的 `reply_with_prompt` 复用同一消费者，展示 Host 按次选择“逐片 JSON 引用”的能力。其有限要求属于示例，JSON 解码后的人设和材料内容、顺序逐片保持，不声称输出字节不变、防注入或 Kernel 已定义统一要求语言。原本地/纯内存来源、技术身份校验和默认 Literal 路径保持。参考 Host 的九项外部回归包含原五项兼容用例；独立示例六项及 native 运行通过。证据限于内存能力与隔离数据，不扩大 §0.9 的产品/传输范围；公开 Host 用法的 `no_run` rustdoc 仅证明编译。
 
 **核心外共享基础文本操作**：同模块的 `MinimalRoleTextConsumer` 借用最小定义和调用者绑定的 `PromptBase` / `LlmBase`，复用原 Prompt 消费者，正常完成后将其输出逐字交给 LLM 一次，再原样返回正文。`MinimalRoleTextError::Prompt` / `Llm` 分辨失败阶段并保留完整 BaseCallError；Prompt 失败时模型零调用，不自动 retry/fallback，也不以正常空文本判定质量成功。非 Send 的本地异步实现可用，输入持有到 LLM 完成，调度/取消及外部效果仍由原契约与调用者负责。它不拥有角色身份、资产/状态/存储或资源授权，也不规定其它槽调用。独立示例的显式选择分支已使用这个操作；示例自己的窄错误表示只展示原因 kind，公共操作仍保留全部错误。八项外部回归包括旧四项，并验证两阶段完整失败、调用账、正常空值、逻辑拒绝及两个 Pending 边界；这不表示参考 Host 的旧 LlmClient 已迁移为 LlmBase，或 ChatPro 主流程接线已完成。
+
+### 0.11 主流程接线的基础文本传输
+
+参考 Host 提供受保护的 `POST /chat/minimal`；桌面注册 `send_minimal_message(req)`，经已有 `ChatBackend::Http` 与带默认鉴权头的 Rust 客户端调用。shared 的 [`sendMinimalMessage`](../distros/shared/src/api/chat.ts) 使用这个 IPC 命令，不从渲染层 fetch、获取令牌或换发旧 `/chat`。这是后续主聊天消费者的传输接口，**不是另一个基础会话产品**；本片没有接选角或 composer，也没有真实 IPC / TCP / webview 运行证据。
+
+[`MinimalRoleLocalMessageRequest`](../kernel/crates/oclive_kernel_types/src/models/dto/minimal_role.rs) 分为 `source { role_id, asset_root, definition_reference }` 与 `message { user_message, requirements }`。这是参考 Host 的可选本地适配封装：开发者转换器显式提供技术身份、绝对资产根和相对定义引用；不要求统一文件名、产品关系 / 人格 / 元数据或装配蓝图。来源与消息都拒绝未知字段，不能把 adult、scene 或收据身份混入以暗示这些能力已经执行。Host 复用 §0.5 的有界读取，采用 64 KiB 定义、4 MiB 单资产、16 MiB 总资产预算；预算属于这个 Host，不能扩大成通用最小内容合同或实际媒体有效性承诺。
+
+canonical [`process_minimal_local_message`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) 负责调用准备与 §0.9 的既有基础编排，API 只转发结果。阻塞读文件与局部非 Send Base future 在 Host 的 blocking worker 中执行，借当前 Tokio Handle 获得 I/O；不改变六槽 future 的约束。没有当前 runtime 时返回 Host 错误，不在外部调用面制造 panic。原文只检查全空白，不裁剪人设、有效消息或正常模型输出；不注册丰富角色、不初始化产品状态、不创建聊天行 / 收据，也不自动重试或恢复。
+
+这个默认传输绑定 Literal Prompt，只接受空 `requirements`；非空要求在 I/O / 模型调用前按本端点的输入约束返回既有 `INVALID_PARAMETER`，而不把它清空或将这个端点的限制推广到所有 Prompt。原进程内可选 Prompt 仍返回完整 typed Base 错误；本片未建立通用 BaseCallError 的 wire 映射。基础结果仍只含 `role_id`、原样 `reply`、`product_extensions: unavailable`；既有 Host 错误经现有 HTTP / IPC 错误链传递。真正的主聊天落地还需要角色状态与结果消费者接线，历史、幂等恢复、流式和媒体不由这个结果承诺。
 
 ## 1. 当前参考宿主内部划分
 

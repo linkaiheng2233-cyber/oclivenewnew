@@ -12,6 +12,25 @@ export interface SendMessageRequest {
   adult?: AdultInteractionRequest | null
 }
 
+/** Reference Host local converter output; this is not a universal package layout. */
+export interface MinimalRoleLocalSource {
+  role_id: string
+  asset_root: string
+  definition_reference: string
+}
+
+export interface MinimalRoleLocalMessageRequest {
+  source: MinimalRoleLocalSource
+  message: { user_message: string, requirements?: string }
+}
+
+/** No synthetic product metrics, stored row IDs, history or recovery guarantee. */
+export interface MinimalRoleMessageResponse {
+  role_id: string
+  reply: string
+  product_extensions: 'unavailable'
+}
+
 export type AdultInteractionAction = 'message' | 'continue' | 'exit'
 export type AdultInteractionState = 'inactive' | 'active' | 'ended'
 
@@ -240,6 +259,13 @@ export async function sendMessage(
   req: SendMessageRequest,
 ): Promise<SendMessageResponse> {
   return invokeWithFriendlyError<SendMessageResponse>('send_message', { req })
+}
+
+/** One basic call through the authenticated Rust client; never retries as rich chat. */
+export async function sendMinimalMessage(
+  req: MinimalRoleLocalMessageRequest,
+): Promise<MinimalRoleMessageResponse> {
+  return invokeWithFriendlyError<MinimalRoleMessageResponse>('send_minimal_message', { req })
 }
 
 export async function beginAdultStageGeneration(

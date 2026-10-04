@@ -206,6 +206,28 @@ pub(crate) async fn chat(
     }))
 }
 
+/// Protected, additive basic transport; rich chat routes retain their DTOs and
+/// receipt semantics. The canonical Host entry owns loading and invocation.
+pub(crate) async fn chat_minimal(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<oclive_kernel_types::models::dto::MinimalRoleLocalMessageRequest>,
+) -> Result<Json<oclive_kernel_types::models::dto::MinimalRoleMessageResponse>, ApiError> {
+    crate::domain::chat_engine::process_minimal_local_message(state, request)
+        .await
+        .map(Json)
+        .map_err(|error| {
+            let status = if matches!(
+                error,
+                AppError::EmptyMessage | AppError::InvalidParameter(_)
+            ) {
+                axum::http::StatusCode::BAD_REQUEST
+            } else {
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR
+            };
+            api_error(status, error.kernel_error_body())
+        })
+}
+
 pub(crate) async fn recover_chat(
     State(state): State<Arc<AppState>>,
     Json(mut req): Json<SendMessageRequest>,

@@ -137,6 +137,7 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
 
     let protected = Router::new()
         .route("/chat", post(chat::chat))
+        .route("/chat/minimal", post(chat::chat_minimal))
         .route("/chat/recover", post(chat::recover_chat))
         .route("/chat/stream", post(chat::chat_stream))
         .route(

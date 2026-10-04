@@ -4,6 +4,10 @@ use oclive_kernel_types::{AppError, MinimalRoleDefinition, Result};
 use oclive_validation::minimal_role_local_file::LocalMinimalRoleSnapshot;
 use oclive_validation::validate_minimal_role_definition;
 
+const MAX_DEFINITION_BYTES: usize = 64 * 1024;
+const MAX_ASSET_BYTES: usize = 4 * 1024 * 1024;
+const MAX_TOTAL_ASSET_BYTES: usize = 16 * 1024 * 1024;
+
 /// Immutable Host-owned minimal content and technical identity.
 ///
 /// Developers own format conversion, asset resolution and byte budgets. This
@@ -16,6 +20,33 @@ pub struct PreparedMinimalRole {
 }
 
 impl PreparedMinimalRole {
+    /// Resolve an explicitly selected local converter output using this Host's
+    /// byte policy and the shared loader. This performs blocking file I/O; async
+    /// transports must call it from their blocking worker, not a runtime thread.
+    ///
+    /// # Errors
+    /// Returns InvalidParameter for blank identity, a relative root or any shared
+    /// loader failure. It never attempts to load a rich role or infer a filename.
+    pub fn from_local_source(
+        source: &oclive_kernel_types::models::dto::MinimalRoleLocalSource,
+    ) -> Result<Self> {
+        let root = std::path::Path::new(&source.asset_root);
+        if source.role_id.trim().is_empty() || !root.is_absolute() {
+            return Err(AppError::InvalidParameter(
+                "minimal source needs a nonblank technical ID and absolute asset root".into(),
+            ));
+        }
+        let snapshot = oclive_validation::minimal_role_local_file::load_minimal_role_local_file(
+            root,
+            &source.definition_reference,
+            MAX_DEFINITION_BYTES,
+            MAX_ASSET_BYTES,
+            MAX_TOTAL_ASSET_BYTES,
+        )
+        .map_err(|errors| AppError::InvalidParameter(errors.join("; ")))?;
+        Self::from_local_snapshot(source.role_id.clone(), &snapshot)
+    }
+
     /// Prepare converter output. `asset_bytes` corresponds positionally to every
     /// authored reference, including duplicates; references need not be paths.
     ///

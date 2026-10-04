@@ -7,8 +7,9 @@ use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_types::models::dto::{
     AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
     CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
-    ListAdultStagedBeatsResponse, SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
-    TheaterSceneRequest, TheaterSceneResponse,
+    ListAdultStagedBeatsResponse, MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
+    SendMessageRequest, SendMessageResponse, StageAdultBeatRequest, TheaterSceneRequest,
+    TheaterSceneResponse,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -19,6 +20,52 @@ use futures_util::StreamExt;
 
 /// Upper bound for one un-delimited SSE frame; protects the decoder from an endless partial block.
 const MAX_SSE_BLOCK_BYTES: usize = 4 * 1024 * 1024;
+
+#[cfg(test)]
+mod minimal_transport_tests {
+    use oclive_kernel_types::models::dto::{
+        MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
+        MinimalRoleProductExtensionStatus,
+    };
+    use serde_json::json;
+
+    #[test]
+    fn renderer_source_and_basic_result_use_the_shared_types_without_rich_defaults() {
+        let body = json!({
+            "source": {"role_id":"converter-owned-id", "asset_root":"E:/fixture-assets",
+                "definition_reference":"chosen-content.json"},
+            "message": {"user_message":"  current material\r\n", "requirements":""}
+        });
+        let request: MinimalRoleLocalMessageRequest = serde_json::from_value(body.clone()).unwrap();
+        assert_eq!(serde_json::to_value(&request).unwrap(), body);
+        let wire = json!({"role_id":request.source.role_id,"reply":"",
+            "product_extensions":"unavailable"});
+        let response: MinimalRoleMessageResponse = serde_json::from_value(wire.clone()).unwrap();
+        assert!(response.reply.is_empty());
+        assert_eq!(
+            response.product_extensions,
+            MinimalRoleProductExtensionStatus::Unavailable
+        );
+        assert_eq!(serde_json::to_value(response).unwrap(), wire);
+        let rich = json!({"reply":"pretend rich success","favorability_current":0});
+        assert!(serde_json::from_value::<MinimalRoleMessageResponse>(rich).is_err());
+    }
+
+    #[test]
+    fn minimum_rejections_use_existing_auth_input_and_model_error_mapping() {
+        for (status, code) in [
+            (401, "KERNEL_AUTH_REQUIRED"),
+            (400, "INVALID_PARAMETER"),
+            (500, "LLM_ERROR"),
+        ] {
+            let wire = json!({"error":{"code":code,"message":"synthetic failure"}}).to_string();
+            assert_eq!(
+                super::app_error_from_http_response(status, &wire).code(),
+                code
+            );
+        }
+    }
+}
 
 /// First index of `needle` inside `haystack`, byte-wise (the delimiter is ASCII, so byte search is
 /// exactly what a UTF-8 stream needs).
@@ -278,29 +325,56 @@ impl KernelHttpClient {
         Req: Serialize + ?Sized,
         Res: DeserializeOwned,
     {
+        Self::post_chat_json(
+            conn,
+            &format!("/chat/adult-stage/{route}"),
+            "adult stage",
+            request,
+        )
+        .await
+    }
+
+    pub async fn send_minimal_message_via_http(
+        conn: &KernelConnection,
+        request: &MinimalRoleLocalMessageRequest,
+    ) -> Result<MinimalRoleMessageResponse, AppError> {
+        Self::post_chat_json(conn, "/chat/minimal", "minimal text", request).await
+    }
+
+    /// All these JSON chat operations use the token-bearing Rust client. Sharing
+    /// transport does not share their distinct DTOs, activation or retry policy.
+    async fn post_chat_json<Req, Res>(
+        conn: &KernelConnection,
+        route: &str,
+        operation: &str,
+        request: &Req,
+    ) -> Result<Res, AppError>
+    where
+        Req: Serialize + ?Sized,
+        Res: DeserializeOwned,
+    {
         if !Self::ensure_healthy(conn).await {
             return Err(Self::offline_err());
         }
         let response = conn
             .http_client()
-            .post(format!(
-                "{}/chat/adult-stage/{route}",
-                conn.base_url.trim_end_matches('/')
-            ))
+            .post(format!("{}{route}", conn.base_url.trim_end_matches('/')))
             .json(request)
             .send()
             .await
-            .map_err(|error| Self::map_send_err(&conn.base_url, "adult stage request", error))?;
+            .map_err(|error| {
+                Self::map_send_err(&conn.base_url, &format!("{operation} request"), error)
+            })?;
         let status = response.status();
         let text = response
             .text()
             .await
-            .map_err(|error| AppError::OllamaError(format!("adult stage body: {error}")))?;
+            .map_err(|error| AppError::OllamaError(format!("{operation} body: {error}")))?;
         if !status.is_success() {
             return Err(app_error_from_http_response(status.as_u16(), &text));
         }
         serde_json::from_str(&text)
-            .map_err(|error| AppError::OllamaError(format!("adult stage JSON: {error}")))
+            .map_err(|error| AppError::OllamaError(format!("{operation} JSON: {error}")))
     }
 
     pub async fn begin_adult_stage_via_http(

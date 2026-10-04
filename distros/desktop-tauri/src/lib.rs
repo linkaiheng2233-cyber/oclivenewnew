@@ -341,6 +341,7 @@ pub fn run() {
             api::settings::set_remote_fallback_to_builtin,
             // ?? chat ??
             api::chat::send_message,
+            api::chat::send_minimal_message,
             api::chat::recover_message,
             api::chat_stream::send_message_stream,
             api::chat_stream::cancel_message_stream,

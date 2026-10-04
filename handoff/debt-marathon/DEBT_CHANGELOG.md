@@ -553,3 +553,16 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **必要证据 / 自纠**：新外部调用先因两个公开符号不存在编译红（101），实现后八项外部回归通过（原四项＋新四项），包含两阶段各五类错误、Prompt 失败模型零调用、正常空值、逻辑无效零调用及两个真实 Pending 边界。runtime lib 273 项、旧最小 Prompt 两项与独立示例六项/native 通过。自己新增测试曾在完成后仍持有 future 时移动被借用原文，编译器拒绝；改为只复制断言预期。Clippy 又拒绝单元素预期 clone，改为 from_ref 借用比较；两次失败、首次 fmt 差异和修后结果各自保留在 `.cursor/plans/debt-minimal-role-text-consumer-20261004-r0/`，没有放宽 lint 或实现语义。
 - **复核 / 范围**：控制方按材料/要求、一次调用、阶段与完整错误、借用及默认兼容自行复核，不声称独立审查。适用门禁和冻结批次的完整本地链分开记录；runtime doctest=false 不改，公开操作由真实外部集成调用编译。小 Kernel、主流程传输/UI、持久化恢复和其它槽未改，父债仍 Partial；这片不是 ChatPro 主流程完成或所有发行版/真实模型已验收。
 - **2026-10-04 局部验收**：最终源码的 runtime all-targets/all-features Clippy、fmt、workspace doctest 47 项、参考 Host 九项兼容及示例 native 运行均 exit 0；分层、模块兼容、默认/已改文链接、docs-only 旧路径、文档登记/镜像、债结构、编码与 diff 检查通过。生产及测试 diff 已在有限写集内自行总审，未增加状态、副作用或核心契约。接下来冻结本批提交，只跑一次完整本地链，目标远端与父 SHA 分开判定；全量结果尚不由这些局部门禁代替。
+
+### DCL-20261004-32 · 共享基础文本操作的冻结点已通过
+
+- **目标证据**：`692aa7f4c51fcd89c9282dd1745f569a203a3516` 的一次完整本地 `check:ci-local` 原生 exit 0（1091.399 秒，同进程核前后 SHA / 空工作树 / 临时环境恢复）；[正式 CI 37184869027](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37184869027) completed/success，17/17 包含 ci-gate。推送后本地 / origin/main 相同且工作树干净；原始 receipt 在 `.cursor/plans/debt-minimal-role-text-consumer-20261004-r0/`。监听首尝试因 GitHub API EOF exit 1，重新连接同一个 run 最终 exit 0；没有将它归为产品 / CI 作业失败，没有 rerun 或为回写绿灯再造提交。
+- **范围 / 接续**：只收口 DCL-31 的共同基础操作和独立消费者，不把父债改 Done。核心外共享层、发行版主流程方向已明确；在下一实质传输片一并入账这份结果，避免证据回写触发全矩阵。选角 / UI、丰富生命周期与媒体范围仍各自保持边界，签名、双核、Event Stream 等暂停项不变。
+
+### DCL-20261004-33 · 最小角色的受保护基础传输
+
+- **原因 / 实际接线**：主流程的丰富角色 / 回复不能靠填零状态承接最小角色。按[有限传输计划](ROUND-02-PLAN.md#d-cli-blueprint-05--主流程接线的最小文本传输适配2026-10-04)增加来源与消息的共享封装，复用唯一逻辑 JSON / 本地快照加载器与 canonical 基础编排，再经受保护 `/chat/minimal`、已鉴权桌面 Rust 桥、注册 IPC 和 shared API 输出现有基础 DTO。例如开发者将自己的包转换成一个显式指定文件与资产根，传输无需它提供关系 / 人格 / 蓝图，回复也不捏造这些状态；本片尚未把选角 / composer 接到这一调用。
+- **自主实施决定**：默认传输绑定既有 Literal Prompt，非空要求先按本端点输入规则拒绝，不清空或做通用 Base-error wire 映射；旧进程内可选 Prompt 的 typed 错误保持。文件 / 局部非 Send 调用由 Host worker 和当前 Tokio Handle 承担，无 runtime 返回错误，不将 Send 限制加给六槽。加载预算是参考 Host 的固定本地策略，不是作者通用要求。桌面 JSON 调用复用既有带令牌客户端，成人路由的 URL / 错误标签保持；不在渲染层暴露令牌、放宽 Host 鉴权或新增重试。
+- **已有窄测 / 自纠**：新 Host 外部测试先因 DTO 缺失 native 101，实现后五项通过，包含真实 Router 鉴权、一次模型 / 原文结果、坏来源 / 越界 / 三类字节超限 / 要求拒绝、原模型错误与无 runtime；九项旧基础 API 回归通过。shared 三项新测试与旧 stream / send 合计 27 项通过，桌面二项 DTO / 既有错误合同通过，typecheck / ESLint 已通过。初次 shared 命令误用根目录路径而未找到用例，正确 cwd 后实际执行；首次 fmt 命令使用了不存在的 package，纠正后记录纯格式差异并只格式化写集；新增测试一处箭头括号 lint 已修，没有放宽门禁。失败与成功各自保存于 `.cursor/plans/debt-minimal-role-transport-20261004-r0/`。
+- **验收边界 / 状态**：控制方直接实施并做语义自查，不声称独立审查；后续适用门禁另记实际结果。Router 用内存模型且不监听端口，shared 用 IPC 替身，桌面合同测不算真实 IPC / TCP / webview 通过。旧丰富角色、发送 / 恢复 / SSE、六槽 trait、核心职责与用户数据未改；未取得选角 / UI 接入、收据 / 历史 / 恢复或媒体证据。父债仍 Partial，这片仅本地保留，主流程关联切片完成后再对预定冻结点跑一次完整本地与目标远端 CI。
+- **2026-10-04 本地总审**：最终两端 all-targets/all-features Clippy、fmt、workspace doctest 48 项、typecheck、ESLint、layering、错误码漂移、module-compat、默认 / 五份改文链接、docs-only 旧路径、文档登记、债结构、编码与 diff 均原生 exit 0。typed 输入、鉴权挂载、原文与单次模型、旧成人 URL / 标签、worker / 非 Send 边界及所有状态声明已按真实 diff 自查；父债前四列机器比对不变。预期注入错误 stderr 与 Git 换行提示未写成“零错误日志”。无新依赖 / 核心 trait / 官方角色 / 业务身份或真实外部调用，不为此开发切片重复全量；结论限于 Locally verified，下一片直接做主聊天的最小角色状态和基础结果消费。

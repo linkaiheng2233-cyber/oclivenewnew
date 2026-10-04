@@ -39,6 +39,57 @@ use oclive_kernel_contracts::LlmTokenSink;
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Reference Host transport adapter for an explicit local minimum-role source.
+/// Blocking loading and the local (not necessarily Send) Base future stay on one
+/// worker. The current Tokio handle supplies I/O; no new scheduler or runtime is
+/// created. This does not activate a rich role, persist or retry the text call.
+///
+/// # Errors
+/// Returns existing Host errors. This fixed transport rejects unsupported
+/// requirements before loading; it defines no general Base-error wire mapping.
+pub async fn process_minimal_local_message(
+    state: Arc<AppState>,
+    request: oclive_kernel_types::models::dto::MinimalRoleLocalMessageRequest,
+) -> Result<oclive_kernel_types::models::dto::MinimalRoleMessageResponse> {
+    if request.message.user_message.trim().is_empty() {
+        return Err(crate::error::AppError::EmptyMessage);
+    }
+    if !request.message.requirements.is_empty() {
+        return Err(crate::error::AppError::InvalidParameter(
+            "the bound minimal transport Prompt does not support additional requirements".into(),
+        ));
+    }
+    let runtime = tokio::runtime::Handle::try_current().map_err(|error| {
+        crate::error::AppError::Unknown(format!("minimal transport needs a Tokio runtime: {error}"))
+    })?;
+    tokio::task::spawn_blocking(move || {
+        let role =
+            crate::service::role::minimal::PreparedMinimalRole::from_local_source(&request.source)?;
+        runtime.block_on(async {
+            match process_minimal_message(&state, &role, &request.message).await {
+                Ok(response) => Ok(response),
+                Err(crate::domain::chat_engine::message_error::MinimalRoleMessageError::Host(
+                    error,
+                )) => Err(error),
+                // With validated content and empty requirements the fixed Literal
+                // Prompt is infallible. Preserve any unexpected diagnostic as a
+                // Host failure, not a general conversion of Base error semantics.
+                Err(
+                    crate::domain::chat_engine::message_error::MinimalRoleMessageError::Prompt(
+                        error,
+                    ),
+                ) => Err(crate::error::AppError::Unknown(format!(
+                    "bound minimal Prompt failed: {error}"
+                ))),
+            }
+        })
+    })
+    .await
+    .map_err(|error| {
+        crate::error::AppError::Unknown(format!("minimal text worker failed: {error}"))
+    })?
+}
+
 /// Reference Host's additive single-call text path, organized at the canonical
 /// turn entry rather than in the public facade. It deliberately does not enter
 /// the rich preflight/TurnContext or publish synthetic extension state.

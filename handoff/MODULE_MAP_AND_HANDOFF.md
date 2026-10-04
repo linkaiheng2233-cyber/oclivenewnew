@@ -368,7 +368,7 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 
 ### 3.1 三层解耦
 
-**最小角色的共享消费者**：[`MinimalRolePromptConsumer`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs) 负责准备最小角色的人设/材料片段，并消费 Host 显式选择的 `PromptBase`；同模块的 `MinimalRoleTextConsumer` 为可选的基础文本操作复用它，再消费绑定的 `LlmBase`。这些共同维护实现位于小 Kernel 外，定义与实际接入范围见 [ROLE_PACK_BOUNDARY §0.10](ROLE_PACK_BOUNDARY.md#010-共享消费者复用准备并选择-prompt)。参考 Host 的增量入口和独立 Host 示例已按次接入 Prompt；示例的显式选择分支已复用基础文本操作，原默认能力与基础编排保留。它们保留材料/要求及能力结果/完整错误，不接管 Host 调度、资源授权、状态应用或其它槽位。Host 仍经原六槽契约调用能力；消费者不是所有槽位的强制入口、固定六阶段或新的 Kernel 核心职责。扩展继续由对应开发者/Host 按原契约承接，不能经此基础材料准备自动兑现。
+**最小角色的共享消费者**：[`MinimalRolePromptConsumer`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs) 负责准备最小角色的人设/材料片段，并消费 Host 显式选择的 `PromptBase`；同模块的 `MinimalRoleTextConsumer` 为可选的基础文本操作复用它，再消费绑定的 `LlmBase`。这些共同维护实现位于小 Kernel 外，定义与实际接入范围见 [ROLE_PACK_BOUNDARY §0.10](ROLE_PACK_BOUNDARY.md#010-共享消费者复用准备并选择-prompt)。参考 Host 的增量入口和独立 Host 示例已按次接入 Prompt；示例的显式选择分支已复用基础文本操作，原默认能力与基础编排保留。它们保留材料/要求及能力结果/完整错误，不接管 Host 调度、资源授权、状态应用或其它槽位。参考 Host 的本地来源准备与 canonical 基础入口另由 HTTP / 桌面 Rust 桥薄接线，采用既有鉴权和默认 Prompt；传输适配与剩余 UI 范围见[角色边界 §0.11](ROLE_PACK_BOUNDARY.md#011-主流程接线的基础文本传输)，不把加载 I/O 或异步 worker 归入小 Kernel。Host 仍经原六槽契约调用能力；消费者不是所有槽位的强制入口、固定六阶段或新的 Kernel 核心职责。扩展继续由对应开发者/Host 按原契约承接，不能经此基础材料准备自动兑现。
 
 | 层 | 含义 |
 |----|------|

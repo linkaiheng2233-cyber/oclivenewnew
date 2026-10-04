@@ -1,4 +1,4 @@
-//! Additive, in-process reference Host text interaction for prepared minimal roles.
+//! Additive reference Host text interaction for prepared minimal roles.
 //!
 //! These types do not replace the rich chat wire DTOs or promise persistence,
 //! recovery, streaming, rendering or multi-turn memory.
@@ -14,6 +14,39 @@ pub struct MinimalRoleMessageRequest {
     /// any nonempty value rather than silently dropping it.
     #[serde(default)]
     pub requirements: String,
+}
+
+/// An explicit converter-produced local source for the reference Host.
+/// This is transport metadata, not a universal package layout or extra author
+/// content. The Host owns byte budgets; the definition reference stays relative
+/// to the absolute asset root. No implicit filename or rich-pack fallback exists.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MinimalRoleLocalSource {
+    pub role_id: String,
+    pub asset_root: String,
+    pub definition_reference: String,
+}
+
+/// One non-streaming, non-persistent reference Host invocation from a local
+/// converter source. The transport binds the default Literal Prompt and rejects
+/// nonempty requirements instead of silently discarding them.
+///
+/// ```
+/// use oclive_kernel_types::models::dto::MinimalRoleLocalMessageRequest;
+/// let request: MinimalRoleLocalMessageRequest = serde_json::from_str(r#"{
+///   "source": {"role_id":"local-id", "asset_root":"/installed/content",
+///     "definition_reference":"chosen-content.json"},
+///   "message": {"user_message":"hello"}
+/// }"#).unwrap();
+/// assert!(request.message.requirements.is_empty());
+/// assert_eq!(request.source.role_id, "local-id");
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MinimalRoleLocalMessageRequest {
+    pub source: MinimalRoleLocalSource,
+    pub message: MinimalRoleMessageRequest,
 }
 
 /// Product extensions are not executed by the basic text path. This does not
