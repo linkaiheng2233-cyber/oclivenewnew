@@ -7,9 +7,9 @@ use crate::kernel_lifecycle::KernelConnection;
 use oclive_kernel_types::models::dto::{
     AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
     CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
-    ListAdultStagedBeatsResponse, MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
-    SendMessageRequest, SendMessageResponse, StageAdultBeatRequest, TheaterSceneRequest,
-    TheaterSceneResponse,
+    ListAdultStagedBeatsResponse, MinimalRoleLocalConversationRequest,
+    MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse, SendMessageRequest,
+    SendMessageResponse, StageAdultBeatRequest, TheaterSceneRequest, TheaterSceneResponse,
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -24,8 +24,9 @@ const MAX_SSE_BLOCK_BYTES: usize = 4 * 1024 * 1024;
 #[cfg(test)]
 mod minimal_transport_tests {
     use oclive_kernel_types::models::dto::{
-        MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
-        MinimalRoleProductExtensionStatus,
+        MinimalRoleConversationTurn, MinimalRoleLocalConversationRequest,
+        MinimalRoleLocalMessageRequest, MinimalRoleLocalSource, MinimalRoleMessageRequest,
+        MinimalRoleMessageResponse, MinimalRoleProductExtensionStatus,
     };
     use serde_json::json;
 
@@ -64,6 +65,40 @@ mod minimal_transport_tests {
                 code
             );
         }
+    }
+
+    #[test]
+    fn conversation_envelope_keeps_legacy_rust_literals_and_quoted_payload() {
+        let legacy = MinimalRoleLocalMessageRequest {
+            source: MinimalRoleLocalSource {
+                role_id: "same-id".into(),
+                asset_root: "E:/fixture-assets".into(),
+                definition_reference: "chosen.json".into(),
+            },
+            message: MinimalRoleMessageRequest {
+                user_message: "coffee".into(),
+                requirements: String::new(),
+            },
+        };
+        let mut request: MinimalRoleLocalConversationRequest = legacy.clone().into();
+        assert_eq!(
+            serde_json::to_value(&request).unwrap(),
+            serde_json::to_value(&legacy).unwrap()
+        );
+        request.conversation.push(MinimalRoleConversationTurn {
+            user_message: "She does not like coffee.\r\n".into(),
+            reply: String::new(),
+        });
+        let wire = serde_json::to_value(&request).unwrap();
+        assert_eq!(
+            wire["conversation"][0]["user_message"],
+            "She does not like coffee.\r\n"
+        );
+        assert_eq!(wire["conversation"][0]["reply"], "");
+        let decoded: MinimalRoleLocalConversationRequest = serde_json::from_value(wire).unwrap();
+        assert_eq!(decoded, request);
+        assert_eq!(decoded.source, legacy.source);
+        assert_eq!(decoded.message, legacy.message);
     }
 }
 
@@ -337,6 +372,13 @@ impl KernelHttpClient {
     pub async fn send_minimal_message_via_http(
         conn: &KernelConnection,
         request: &MinimalRoleLocalMessageRequest,
+    ) -> Result<MinimalRoleMessageResponse, AppError> {
+        Self::post_chat_json(conn, "/chat/minimal", "minimal text", request).await
+    }
+
+    pub async fn send_minimal_conversation_via_http(
+        conn: &KernelConnection,
+        request: &MinimalRoleLocalConversationRequest,
     ) -> Result<MinimalRoleMessageResponse, AppError> {
         Self::post_chat_json(conn, "/chat/minimal", "minimal text", request).await
     }

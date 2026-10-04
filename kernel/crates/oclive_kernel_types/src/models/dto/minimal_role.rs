@@ -1,7 +1,8 @@
 //! Additive reference Host text interaction for prepared minimal roles.
 //!
 //! These types do not replace the rich chat wire DTOs or promise persistence,
-//! recovery, streaming, rendering or multi-turn memory.
+//! recovery, streaming, rendering or persisted memory. The optional conversation
+//! carries only caller-supplied completed turns of the current temporary binding.
 
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +29,15 @@ pub struct MinimalRoleLocalSource {
     pub definition_reference: String,
 }
 
+/// Caller-supplied quoted material from one completed temporary conversation turn.
+/// This is not a storage identity, receipt or proof that a server committed it.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MinimalRoleConversationTurn {
+    pub user_message: String,
+    pub reply: String,
+}
+
 /// One non-streaming, non-persistent reference Host invocation from a local
 /// converter source. The transport binds the default Literal Prompt and rejects
 /// nonempty requirements instead of silently discarding them.
@@ -40,6 +50,9 @@ pub struct MinimalRoleLocalSource {
 ///   "message": {"user_message":"hello"}
 /// }"#).unwrap();
 /// assert!(request.message.requirements.is_empty());
+/// let with_conversation: oclive_kernel_types::models::dto::MinimalRoleLocalConversationRequest
+///     = request.clone().into();
+/// assert!(with_conversation.conversation.is_empty());
 /// assert_eq!(request.source.role_id, "local-id");
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -47,6 +60,31 @@ pub struct MinimalRoleLocalSource {
 pub struct MinimalRoleLocalMessageRequest {
     pub source: MinimalRoleLocalSource,
     pub message: MinimalRoleMessageRequest,
+}
+
+/// Additive transport envelope for quoted current-binding conversation.
+/// The original local request stays source compatible, including struct literals.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct MinimalRoleLocalConversationRequest {
+    pub source: MinimalRoleLocalSource,
+    pub message: MinimalRoleMessageRequest,
+    /// Optional current-binding candidates, oldest first. The reference Host
+    /// accepts at most eight complete turns and 64 KiB of combined UTF-8 content.
+    /// Missing means empty; explicit null is not a conversation. No rich memory
+    /// or saved history is opened by this field.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub conversation: Vec<MinimalRoleConversationTurn>,
+}
+
+impl From<MinimalRoleLocalMessageRequest> for MinimalRoleLocalConversationRequest {
+    fn from(request: MinimalRoleLocalMessageRequest) -> Self {
+        Self {
+            source: request.source,
+            message: request.message,
+            conversation: Vec::new(),
+        }
+    }
 }
 
 /// Product extensions are not executed by the basic text path. This does not

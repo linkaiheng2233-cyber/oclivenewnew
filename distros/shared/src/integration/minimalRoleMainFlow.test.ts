@@ -132,7 +132,7 @@ describe('minimal role in the main chat flow', () => {
     expect(wrapper.text()).toContain('retained rich reply')
   })
 
-  it('keeps completed bubbles visible as local conversation without supplying historical context to the Host', async () => {
+  it('keeps completed bubbles visible and supplies only this temporary conversation to the Host', async () => {
     const { wrapper } = renderMainFlow()
     await selectSource(wrapper)
     const source = useMinimalRoleChatStore().source!
@@ -146,7 +146,11 @@ describe('minimal role in the main chat flow', () => {
     await settle()
     for (const text of ['first user', 'first reply', 'second user', 'second reply'])
       expect(wrapper.text()).toContain(text)
-    expect(ipc.mock.calls[1][1]).toEqual({ req: { source, message: { user_message: 'second user', requirements: '' } } })
+    expect(ipc.mock.calls[1][1]).toEqual({ req: {
+      source,
+      message: { user_message: 'second user', requirements: '' },
+      conversation: [{ user_message: 'first user', reply: 'first reply' }],
+    } })
   })
 
   it('stops waiting without accepting a late reply or sending a recovery request', async () => {

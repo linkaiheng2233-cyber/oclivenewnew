@@ -24,8 +24,9 @@ pub mod turn_prefetch;
 
 pub use process_message::{
     process_message, process_message_stream, process_message_stream_with_origin,
-    process_message_with_origin, process_minimal_local_message, process_minimal_message,
-    process_minimal_message_with_prompt, process_proactive_turn, recover_message,
+    process_message_with_origin, process_minimal_local_conversation, process_minimal_local_message,
+    process_minimal_message, process_minimal_message_with_prompt, process_proactive_turn,
+    recover_message,
 };
 
 use turn_context::TurnContext;

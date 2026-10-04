@@ -22,6 +22,8 @@ export interface MinimalRoleLocalSource {
 export interface MinimalRoleLocalMessageRequest {
   source: MinimalRoleLocalSource
   message: { user_message: string, requirements?: string }
+  /** Completed turns of this temporary binding; never saved/rich memory IDs. */
+  conversation?: readonly { user_message: string, reply: string }[]
 }
 
 /** No synthetic product metrics, stored row IDs, history or recovery guarantee. */

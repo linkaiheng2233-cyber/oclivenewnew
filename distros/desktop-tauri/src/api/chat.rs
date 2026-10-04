@@ -10,7 +10,7 @@ use oclive_kernel_host::state::SharedAppState;
 use oclive_kernel_types::models::dto::{
     AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
     CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
-    ListAdultStagedBeatsResponse, MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
+    ListAdultStagedBeatsResponse, MinimalRoleLocalConversationRequest, MinimalRoleMessageResponse,
     SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
 };
 use oclive_kernel_types::models::RolePackChatStorageConfig;
@@ -63,12 +63,12 @@ pub async fn send_message(
 /// Additive minimum text transport; no rich activation, resend or recovery.
 #[tauri::command]
 pub async fn send_minimal_message(
-    req: MinimalRoleLocalMessageRequest,
+    req: MinimalRoleLocalConversationRequest,
     app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<MinimalRoleMessageResponse, crate::api::error::CommandError> {
     ChatBackend::from_app(&app, state.inner().clone())
-        .send_minimal_message(&req)
+        .send_minimal_conversation(&req)
         .await
         .map_err(Into::into)
 }

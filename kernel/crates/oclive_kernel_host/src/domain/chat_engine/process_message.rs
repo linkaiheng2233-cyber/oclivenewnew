@@ -51,12 +51,35 @@ pub async fn process_minimal_local_message(
     state: Arc<AppState>,
     request: oclive_kernel_types::models::dto::MinimalRoleLocalMessageRequest,
 ) -> Result<oclive_kernel_types::models::dto::MinimalRoleMessageResponse> {
+    process_minimal_local_conversation(state, request.into()).await
+}
+
+/// The same transport operation with explicit current-binding quoted candidates.
+/// Budget checks precede source loading. No persisted or rich memory is opened.
+///
+/// # Errors
+/// Returns the original Host input/loading/model errors under the same fixed
+/// capability agreement as [`process_minimal_local_message`].
+pub async fn process_minimal_local_conversation(
+    state: Arc<AppState>,
+    request: oclive_kernel_types::models::dto::MinimalRoleLocalConversationRequest,
+) -> Result<oclive_kernel_types::models::dto::MinimalRoleMessageResponse> {
     if request.message.user_message.trim().is_empty() {
         return Err(crate::error::AppError::EmptyMessage);
     }
     if !request.message.requirements.is_empty() {
         return Err(crate::error::AppError::InvalidParameter(
             "the bound minimal transport Prompt does not support additional requirements".into(),
+        ));
+    }
+    let conversation_bytes = request.conversation.iter().fold(0usize, |total, turn| {
+        total
+            .saturating_add(turn.user_message.len())
+            .saturating_add(turn.reply.len())
+    });
+    if request.conversation.len() > 8 || conversation_bytes > 64 * 1024 {
+        return Err(crate::error::AppError::InvalidParameter(
+            "minimal conversation budget is eight turns and 64 KiB of UTF-8 content".into(),
         ));
     }
     let runtime = tokio::runtime::Handle::try_current().map_err(|error| {
@@ -66,7 +89,41 @@ pub async fn process_minimal_local_message(
         let role =
             crate::service::role::minimal::PreparedMinimalRole::from_local_source(&request.source)?;
         runtime.block_on(async {
-            match process_minimal_message(&state, &role, &request.message).await {
+            use oclive_kernel_contracts::MemoryBase;
+            use oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval;
+            use oclive_kernel_types::MemoryBaseRequest;
+
+            let candidates: Vec<String> = request
+                .conversation
+                .iter()
+                .map(|turn| {
+                    format!(
+                        "Quoted prior user:\n{}\nQuoted prior assistant:\n{}",
+                        turn.user_message, turn.reply,
+                    )
+                })
+                .collect();
+            let material_refs: Vec<&str> = candidates.iter().map(String::as_str).collect();
+            let selected = QueryMemoryRetrieval
+                .retrieve(MemoryBaseRequest {
+                    materials: &material_refs,
+                    query: &request.message.user_message,
+                })
+                .await
+                .map_err(|error| {
+                    // This fixed no-I/O implementation has no failure path; retain
+                    // any unexpected diagnostic without inventing a wire mapping.
+                    crate::error::AppError::Unknown(format!("bound minimal Memory failed: {error}"))
+                })?;
+            match process_minimal_message_using_prompt(
+                &state,
+                &role,
+                &request.message,
+                None,
+                &selected,
+            )
+            .await
+            {
                 Ok(response) => Ok(response),
                 Err(crate::domain::chat_engine::message_error::MinimalRoleMessageError::Host(
                     error,
@@ -104,7 +161,7 @@ pub async fn process_minimal_message(
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
 > {
-    process_minimal_message_using_prompt(state, role, request, None).await
+    process_minimal_message_using_prompt(state, role, request, None, &[]).await
 }
 
 /// The same minimal text path with a Host-selected, unconfigured Prompt Base.
@@ -122,7 +179,7 @@ pub async fn process_minimal_message_with_prompt(
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
 > {
-    process_minimal_message_using_prompt(state, role, request, Some(prompt)).await
+    process_minimal_message_using_prompt(state, role, request, Some(prompt), &[]).await
 }
 
 async fn process_minimal_message_using_prompt(
@@ -130,6 +187,7 @@ async fn process_minimal_message_using_prompt(
     role: &crate::service::role::minimal::PreparedMinimalRole,
     request: &oclive_kernel_types::models::dto::MinimalRoleMessageRequest,
     selected_prompt: Option<&dyn oclive_kernel_contracts::PromptBase>,
+    conversation_materials: &[String],
 ) -> std::result::Result<
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
@@ -147,7 +205,16 @@ async fn process_minimal_message_using_prompt(
     }
     let invalid_role =
         |errors: Vec<String>| crate::error::AppError::InvalidParameter(errors.join("; "));
-    let materials = ["User: ", request.user_message.as_str()];
+    let mut materials = Vec::new();
+    if !conversation_materials.is_empty() {
+        materials.push("\n\n【当前会话检索材料（引用）】\n");
+        for material in conversation_materials {
+            materials.push(material.as_str());
+            materials.push("\n");
+        }
+        materials.push("\n【当前用户输入】\n");
+    }
+    materials.extend(["User: ", request.user_message.as_str()]);
     let prompt_request = PromptBaseRequest {
         materials: &materials,
         requirements: &request.requirements,

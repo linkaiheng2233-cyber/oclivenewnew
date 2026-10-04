@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-05。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14，参考 Host 正文 Base 绑定与当前会话 Memory 见 §0.15–0.16。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -197,7 +197,7 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 
 参考 Host 提供受保护的 `POST /chat/minimal`；桌面注册 `send_minimal_message(req)`，经已有 `ChatBackend::Http` 与带默认鉴权头的 Rust 客户端调用。shared 的 [`sendMinimalMessage`](../distros/shared/src/api/chat.ts) 使用这个 IPC 命令，不从渲染层 fetch、获取令牌或换发旧 `/chat`。这是后续主聊天消费者的传输接口，**不是另一个基础会话产品**；本片没有接选角或 composer，也没有真实 IPC / TCP / webview 运行证据。
 
-[`MinimalRoleLocalMessageRequest`](../kernel/crates/oclive_kernel_types/src/models/dto/minimal_role.rs) 分为 `source { role_id, asset_root, definition_reference }` 与 `message { user_message, requirements }`。这是参考 Host 的可选本地适配封装：开发者转换器显式提供技术身份、绝对资产根和相对定义引用；不要求统一文件名、产品关系 / 人格 / 元数据或装配蓝图。来源与消息都拒绝未知字段，不能把 adult、scene 或收据身份混入以暗示这些能力已经执行。Host 复用 §0.5 的有界读取，采用 64 KiB 定义、4 MiB 单资产、16 MiB 总资产预算；预算属于这个 Host，不能扩大成通用最小内容合同或实际媒体有效性承诺。
+[`MinimalRoleLocalMessageRequest`](../kernel/crates/oclive_kernel_types/src/models/dto/minimal_role.rs) 分为 `source { role_id, asset_root, definition_reference }` 与 `message { user_message, requirements }`。这是参考 Host 的可选本地适配封装：开发者转换器显式提供技术身份、绝对资产根和相对定义引用；不要求统一文件名、产品关系 / 人格 / 元数据或装配蓝图。可选当前会话候选的增量字段另见 §0.16。来源与消息都拒绝未知字段，不能把 adult、scene 或收据身份混入以暗示这些能力已经执行。Host 复用 §0.5 的有界读取，采用 64 KiB 定义、4 MiB 单资产、16 MiB 总资产预算；预算属于这个 Host，不能扩大成通用最小内容合同或实际媒体有效性承诺。
 
 canonical [`process_minimal_local_message`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) 负责调用准备与 §0.9 的既有基础编排，API 只转发结果。阻塞读文件与局部非 Send Base future 在 Host 的 blocking worker 中执行，借当前 Tokio Handle 获得 I/O；不改变六槽 future 的约束。没有当前 runtime 时返回 Host 错误，不在外部调用面制造 panic。原文只检查全空白，不裁剪人设、有效消息或正常模型输出；不注册丰富角色、不初始化产品状态、不创建聊天行 / 收据，也不自动重试或恢复。
 
@@ -207,7 +207,7 @@ canonical [`process_minimal_local_message`](../kernel/crates/oclive_kernel_host/
 
 shared 的 [`useMinimalRoleChatStore`](../distros/shared/src/stores/minimalRoleChatStore.ts) 提供显式来源绑定、临时气泡和一次基础发送。它供发行版主聊天接线复用，**没有新增另一个会话产品**；ChatPro 现有选角区 / composer 的实际调用见 §0.13。`bindSource` 复制并冻结三个来源字段；这是临时输入绑定，不是文件校验、Host 角色激活或扩展发现。Host 仍在每次调用时按 §0.11 权威检查文件 / 资产与预算；角色文件可能在两次调用间改变，不宣称已锁住内容快照。
 
-最小状态不构造 `RoleInfo`，也不接入旧 chatStore 的 DB / IDB / persist 链。正文和正常空模型输出原样成为 `ChatMessage`；气泡 / 回合标识用 `minimal-local-*` 明确表示客户端本地身份，不当作后端行 ID。保留先前完成气泡只为当前界面展示，下一次请求不携带历史，不表示多轮记忆。重新绑定清空会话；空白输入或无绑定先拒绝，失败移除在途用户气泡并保留原错误，无普通发送 / 恢复 / 重试。返回身份 / unavailable / 正文类型异常时拒绝消费，不能用假产品状态补齐响应。
+最小状态不构造 `RoleInfo`，也不接入旧 chatStore 的 DB / IDB / persist 链。正文和正常空模型输出原样成为 `ChatMessage`；气泡 / 回合标识用 `minimal-local-*` 明确表示客户端本地身份，不当作后端行 ID。已完成气泡现在同时作为 §0.16 的当前会话候选；这不表示持久历史或长期记忆。重新绑定清空会话；空白输入或无绑定先拒绝，失败移除在途用户气泡并保留原错误，无普通发送 / 恢复 / 重试。返回身份 / unavailable / 正文类型异常时拒绝消费，不能用假产品状态补齐响应。
 
 取消、新发送和重绑定使旧调用失效，旧成功 / 失败不会覆盖新气泡、加载状态或最终事件。取消只停止客户端展示，非流式 IPC 与 Host 生成仍可能继续；本片没有服务端取消协议。提交 / 最终事件复用真实 hostEventBus，并显式 `skip_auto_tts: true`；既有语音提交消费者也尊重该标记，避免加载配置、角色语音档案和预热媒体资源，原未标记的语音行为保持。扩展仍表示 unavailable，不发送 fake emotion / relation / scene 或 stream 字段。
 
@@ -235,7 +235,7 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 
 这个案例的 Event 协议生成器与正文 LLM 是内存替身，**每条六槽路径 2 次假生成**（分析 1 + 正文 1），不是只调用一次模型；native 示例另保留原三次基础调用，整个演示共 7 次假生成。该 Host 选择无额外 Emotion 背景、将情绪报告作为 Event 背景，并委托纯计算任务；这些是有限操作的私有输入安排，不成为其它 Host 的固定次序 / 任务 / 格式。原六项加新三项案例测试验证实际装配、技术身份拒绝及 Event 格式 / Agent 任务 / Prompt 要求失败；后续失败不会抹掉已发生的分析，未声称回滚或零副作用。案例的旧窄 HostError 只展示原因 kind，共享消费者仍保留完整错误。
 
-**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，尚未把所选生产 Memory / Emotion / Event / Agent 全部装配到本入口。参考 Rust Host 的真实正文模型可按 §0.15 显式绑定给消费者；其它能力的产品材料来源 / 任务策略仍分别处理，不用四槽空值或“扩展不可用”冒充运行。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
+**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，当前会话 Memory 的生产消费见 §0.16；Emotion / Event / Agent 的产品材料来源 / 任务策略仍分别处理。参考 Rust Host 的真实正文模型可按 §0.15 显式绑定给消费者，不用四槽空值或“扩展不可用”冒充运行。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
 
 ### 0.15 复用参考 Host 已装配的正文模型
 
@@ -243,7 +243,17 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 
 Base 视图按 typed Host 错误投射：`HighRiskCapabilityNotGranted` / `RemoteServiceUnavailable` 为 Unavailable，其余 Failed，原诊断保留。此边界的 AppError 没有 typed 超时 / 取消来源，不从文本猜 TimedOut / Cancelled；旧基础入口仍直接保留原 Host 错误。没有适配层额外重试、预热、聊天 / 角色落库或全局六阶段；原用户设置同步及其环境更新保持，由 Host 承担，不归小 Kernel。借用能力需要调用方调度本地 future，drop 不证明 provider 已停止。
 
-[参考 Host 公共 API 回归](../kernel/crates/oclive_kernel_host/tests/minimal_role_public_api.rs)实际使用生产 builder 和内存 LlmClient，把同一准备句柄与原生 Memory / Emotion / Event / Prompt / Agent 绑定给共享消费者，再消费 Host 的这个 LLM 视图；检索、分析和显式有限任务结果进入最终输入，人设一次。本测试显式选择 Event 分析和正文共两次假生成，不改变 ChatPro 的默认调用数，也不声称真实模型能满足 Event 协议或正文质量。其它回归核原输入 / 空输入、正常空回复、构造零调用、失败完整诊断与旧入口保留原 AppError；生产 ChatPro 尚未因此接入其它四槽。
+[参考 Host 公共 API 回归](../kernel/crates/oclive_kernel_host/tests/minimal_role_public_api.rs)实际使用生产 builder 和内存 LlmClient，把同一准备句柄与原生 Memory / Emotion / Event / Prompt / Agent 绑定给共享消费者，再消费 Host 的这个 LLM 视图；检索、分析和显式有限任务结果进入最终输入，人设一次。本测试显式选择 Event 分析和正文共两次假生成，不改变 ChatPro 的默认调用数，也不声称真实模型能满足 Event 协议或正文质量。其它回归核原输入 / 空输入、正常空回复、构造零调用、失败完整诊断与旧入口保留原 AppError；这个 LLM 绑定本身不替代其它槽的实际材料 / 任务接线。
+
+### 0.16 当前最小会话材料的 Memory 消费
+
+维护者选择当前临时会话，**不设计持久记忆身份，不读取旧完整角色记忆**。主聊天 store 只快照当前绑定已完成的 user/reply 对，先移除旧在途用户气泡，再在本轮 submit 事件前取值；失败、取消、晚结果和其它绑定不能进入候选。正常空回复仍是完成对。两套主 composer 沿同一个共享 store 发送，返回完整角色仍保留旧丰富上下文，但不将其拷给最小会话。
+
+参考 Host 以新增 `MinimalRoleLocalConversationRequest` 承载可选 `conversation: [{ user_message, reply }]`，缺省为空且序列化空值省略；明确 null 或未知字段拒绝。旧 `MinimalRoleLocalMessageRequest` 保留原两个字段及 Rust struct literal 用法，旧本地入口仍可调用，通过 `From` 转成空候选的新封装；HTTP 与原 IPC 命令接收增量封装，旧 wire 载荷仍有效。它是调用者提供的引用文本，不是存储、身份、权限、收据或服务端落库证明，也不是最小角色作者的新字段。最多最近八个完整对话对、原正文合计 UTF-8 64 KiB；前端取预算内连续的最近后缀，保留原字节和发言人，不切断文字或跳过过大最新对拼接旧材料。Host 独立检查预算，超限先于资产读取 / 模型调用返回 INVALID_PARAMETER。当前用户消息与人设仍走原输入 / 资产规则，不被计作“已完成会话”。
+
+Host 在 canonical 本地入口显式绑定已有 `QueryMemoryRetrieval` 的 Memory Base，以本轮用户原文查询候选。每个候选保留 prior user / assistant 的引用标签；选中整对原文进入共享 Prompt 人设 / 材料准备，然后使用 §0.15 的同一正文 helper。此检索是既有有限词项规则，不承诺语义召回、持久记忆或防注入；正常无命中直接沿原基础 Prompt，旧无字段载荷也保留原 Prompt 字节，不读取 rich MemoryRepository。正文仍一次客户端调用，不额外启用 Emotion / Event / Agent 或模型分析。
+
+IPC / HTTP 沿 §0.11 的已鉴权薄转发，`product_extensions: unavailable` 仍说明丰富产品扩展，不代表已调用的 Memory Base 不可用。旧客户端可省略字段；新会话字段需配套的新 Host，旧 Host 若拒绝则保留错误，不能删除材料、换 rich 发送或重试来假装兼容。实际 HTTP 回归核配对文本、主体 / 否定保持、未命中、旧载荷、预算及零 rich 行；真实 store / 主列表 / IPC 对象回归核第二轮、取消失败、切换、快照与最近后缀。模型和 IPC 为内存替身，没有真实模型质量、桌面进程或持久恢复验收。参考生产路径目前接通 Memory / Prompt / LLM；其余槽继续按合法材料 / 任务分别处理，不把这个切片称为全六槽迁移。
 
 ## 1. 当前参考宿主内部划分
 

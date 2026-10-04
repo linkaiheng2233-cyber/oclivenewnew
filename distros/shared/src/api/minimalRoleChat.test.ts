@@ -47,6 +47,18 @@ describe('minimal text transport', () => {
     expect(mocks.invoke).toHaveBeenCalledExactlyOnceWith('send_minimal_message', { req: request })
   })
 
+  it('carries explicit temporary conversation through the same authenticated IPC request', async () => {
+    const withConversation: MinimalRoleLocalMessageRequest = {
+      ...request,
+      conversation: [{ user_message: 'She does not like coffee.\r\n', reply: '' }],
+    }
+    mocks.invoke.mockResolvedValueOnce({ role_id: request.source.role_id, reply: 'text', product_extensions: 'unavailable' })
+    await sendMinimalMessage(withConversation)
+    expect(mocks.invoke).toHaveBeenCalledExactlyOnceWith('send_minimal_message', { req: withConversation })
+    expect(mocks.invoke.mock.calls[0]?.[1].req).toBe(withConversation)
+    expect(mocks.invoke.mock.calls[0]?.[1].req.conversation).toBe(withConversation.conversation)
+  })
+
   it('does not discard commitments to obtain success from the default Prompt', async () => {
     const unsupported = { ...request, message: { ...request.message, requirements: 'retain topic' } }
     mocks.invoke.mockRejectedValueOnce(JSON.stringify({ code: 'INVALID_PARAMETER', message: 'requirements unsupported by this bound Prompt' }))

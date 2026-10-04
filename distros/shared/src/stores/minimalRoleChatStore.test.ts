@@ -99,6 +99,7 @@ describe('transient minimal role chat consumption', () => {
       { user_message: 'second', requirements: '' },
     ])
     expect(requests[1]).not.toHaveProperty('history')
+    expect(requests[1].conversation).toEqual([{ user_message: 'first', reply: result().reply }])
   })
 
   it('rejects missing bindings and blank messages before creating events or invoking IPC', async () => {
@@ -221,5 +222,65 @@ describe('transient minimal role chat consumption', () => {
     expect(store.messages).toEqual([])
     expect(sent).not.toHaveBeenCalled()
     expect(store.isLoading).toBe(false)
+  })
+
+  it('snapshots only completed current turns before submit listeners can change state', async () => {
+    const store = useMinimalRoleChatStore()
+    store.bindSource(source())
+    mocks.invoke.mockResolvedValue(result())
+    await store.sendMessage('  coffee\r\n')
+    const mutate = () => {
+      store.messages[0]!.content = 'changed by synchronous listener'
+    }
+    hostEventBus.on('message:submit', mutate)
+    try {
+      await store.sendMessage('coffee again')
+      expect(mocks.invoke.mock.calls[1]?.[1].req.conversation).toEqual([
+        { user_message: '  coffee\r\n', reply: result().reply },
+      ])
+    }
+    finally {
+      hostEventBus.off('message:submit', mutate)
+    }
+    store.bindSource(source('other'))
+    mocks.invoke.mockResolvedValueOnce(result('other'))
+    await store.sendMessage('new role')
+    expect(mocks.invoke.mock.calls[2]?.[1].req).not.toHaveProperty('conversation')
+  })
+
+  it('never contributes failed or cancelled turns to later memory candidates', async () => {
+    const store = useMinimalRoleChatStore()
+    store.bindSource(source())
+    mocks.invoke.mockResolvedValueOnce(result('minimal-fixture', ''))
+    await store.sendMessage('completed empty reply')
+    mocks.invoke.mockRejectedValueOnce(JSON.stringify({ code: 'LLM_ERROR', message: 'fixture failure' }))
+    await expect(store.sendMessage('failed')).rejects.toMatchObject({ code: 'LLM_ERROR' })
+    const pending = deferred()
+    mocks.invoke.mockReturnValueOnce(pending.promise)
+    const cancelled = store.sendMessage('cancelled')
+    store.cancelPendingSend()
+    mocks.invoke.mockResolvedValueOnce(result())
+    await store.sendMessage('current')
+    expect(mocks.invoke.mock.calls[3]?.[1].req.conversation).toEqual([
+      { user_message: 'completed empty reply', reply: '' },
+    ])
+    pending.resolve(result('minimal-fixture', 'obsolete'))
+    expect(await cancelled).toBeUndefined()
+  })
+
+  it('sends at most the latest eight complete turns within the UTF-8 byte budget', async () => {
+    const store = useMinimalRoleChatStore()
+    store.bindSource(source())
+    mocks.invoke.mockResolvedValue(result('minimal-fixture', ''))
+    for (let index = 0; index < 10; index++)
+      await store.sendMessage(`turn-${index}`)
+    await store.sendMessage('next')
+    expect(mocks.invoke.mock.calls.at(-1)?.[1].req.conversation.map((turn: { user_message: string }) => turn.user_message))
+      .toEqual(Array.from({ length: 8 }, (_, index) => `turn-${index + 2}`))
+    // One latest oversized pair means no contiguous suffix fits: do not cut its
+    // words or skip it to smuggle in older candidates.
+    await store.sendMessage('😀'.repeat(16 * 1024 + 1))
+    await store.sendMessage('after large turn')
+    expect(mocks.invoke.mock.calls.at(-1)?.[1].req).not.toHaveProperty('conversation')
   })
 })

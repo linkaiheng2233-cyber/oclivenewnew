@@ -210,9 +210,9 @@ pub(crate) async fn chat(
 /// receipt semantics. The canonical Host entry owns loading and invocation.
 pub(crate) async fn chat_minimal(
     State(state): State<Arc<AppState>>,
-    Json(request): Json<oclive_kernel_types::models::dto::MinimalRoleLocalMessageRequest>,
+    Json(request): Json<oclive_kernel_types::models::dto::MinimalRoleLocalConversationRequest>,
 ) -> Result<Json<oclive_kernel_types::models::dto::MinimalRoleMessageResponse>, ApiError> {
-    crate::domain::chat_engine::process_minimal_local_message(state, request)
+    crate::domain::chat_engine::process_minimal_local_conversation(state, request)
         .await
         .map(Json)
         .map_err(|error| {

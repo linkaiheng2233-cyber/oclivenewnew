@@ -274,3 +274,77 @@ fn minimum_local_transport_without_a_runtime_returns_a_host_error_before_generat
     assert!(fixture.llm.prompts.lock().unwrap().is_empty());
     runtime.block_on(fixture.close());
 }
+
+#[tokio::test]
+async fn minimum_transport_selects_quoted_current_conversation_without_rich_memory() {
+    let fixture = Fixture::new(false).await;
+    let mut request = serde_json::to_value(fixture.request()).unwrap();
+    request["message"]["user_message"] = json!("coffee");
+    request["conversation"] = json!([
+        {"user_message":"She said she does not like coffee.\r\n", "reply":"Her statement was quoted, not yours."},
+        {"user_message":"He prefers tea.", "reply":"Only tea was discussed."}
+    ]);
+    let (status, wire) = fixture.post(request.clone(), true).await;
+    assert_eq!(status, StatusCode::OK, "{wire}");
+    {
+        let prompts = fixture.llm.prompts.lock().unwrap();
+        assert_eq!(prompts.len(), 1);
+        assert_eq!(prompts[0].matches("  authored persona\r\n").count(), 1);
+        assert!(prompts[0].contains("She said she does not like coffee.\r\n"));
+        assert!(prompts[0].contains("Her statement was quoted, not yours."));
+        assert!(!prompts[0].contains("He prefers tea."));
+        assert!(prompts[0].contains("User: coffee"));
+    }
+    request["message"]["user_message"] = json!("unmatched-subject");
+    assert_eq!(fixture.post(request, true).await.0, StatusCode::OK);
+    {
+        let prompts = fixture.llm.prompts.lock().unwrap();
+        assert_eq!(prompts.len(), 2);
+        assert_eq!(
+            prompts[1],
+            "【角色设定】\n  authored persona\r\n\n\n【输入材料】\nUser: unmatched-subject"
+        );
+    }
+    fixture.assert_no_rich_activation().await;
+    fixture.close().await;
+}
+
+#[tokio::test]
+async fn minimum_conversation_budget_is_rejected_before_loading_or_generation() {
+    let fixture = Fixture::new(false).await;
+    let mut request = serde_json::to_value(fixture.request()).unwrap();
+    // Source is deliberately missing: budget rejection must precede file loading.
+    request["source"]["definition_reference"] = json!("does-not-exist.json");
+    for conversation in [
+        json!(vec![json!({"user_message":"a", "reply":"b"}); 9]),
+        json!([{ "user_message":"😀".repeat(16 * 1024), "reply":"x" }]),
+    ] {
+        request["conversation"] = conversation;
+        let (status, wire) = fixture.post(request.clone(), true).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{wire}");
+        assert_eq!(wire["error"]["code"], "INVALID_PARAMETER");
+        assert!(wire["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("conversation budget"));
+    }
+    for conversation in [
+        json!(null),
+        json!([{ "user_message":"a", "reply":"b", "session_id":"old-rich" }]),
+    ] {
+        request["conversation"] = conversation;
+        assert_eq!(
+            fixture.post(request.clone(), true).await.0,
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+    }
+    assert!(fixture.llm.prompts.lock().unwrap().is_empty());
+    request["source"]["definition_reference"] = json!("chosen-content.json");
+    request["conversation"] = json!([
+        { "user_message": "a".repeat(64 * 1024), "reply": "" }
+    ]);
+    assert_eq!(fixture.post(request, true).await.0, StatusCode::OK);
+    assert_eq!(fixture.llm.prompts.lock().unwrap().len(), 1);
+    fixture.assert_no_rich_activation().await;
+    fixture.close().await;
+}

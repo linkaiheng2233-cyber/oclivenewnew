@@ -13,8 +13,9 @@ use oclive_kernel_host::state::AppState;
 use oclive_kernel_types::models::dto::{
     AdultStagedBeatDto, BeginAdultStageGenerationRequest, BeginAdultStageGenerationResponse,
     CancelAdultStageGenerationRequest, CommitAdultStagedBeatRequest, ListAdultStagedBeatsRequest,
-    ListAdultStagedBeatsResponse, MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse,
-    SendMessageRequest, SendMessageResponse, StageAdultBeatRequest,
+    ListAdultStagedBeatsResponse, MinimalRoleLocalConversationRequest,
+    MinimalRoleLocalMessageRequest, MinimalRoleMessageResponse, SendMessageRequest,
+    SendMessageResponse, StageAdultBeatRequest,
 };
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -26,20 +27,29 @@ pub enum ChatBackend {
 }
 
 impl ChatBackend {
-    pub async fn send_minimal_message(
+    pub async fn send_minimal_conversation(
         &self,
-        req: &MinimalRoleLocalMessageRequest,
+        req: &MinimalRoleLocalConversationRequest,
     ) -> Result<MinimalRoleMessageResponse, AppError> {
         match self {
-            Self::Http(conn) => KernelHttpClient::send_minimal_message_via_http(conn, req).await,
+            Self::Http(conn) => {
+                KernelHttpClient::send_minimal_conversation_via_http(conn, req).await
+            }
             Self::Local(state) => {
-                oclive_kernel_host::domain::chat_engine::process_minimal_local_message(
+                oclive_kernel_host::domain::chat_engine::process_minimal_local_conversation(
                     state.clone(),
                     req.clone(),
                 )
                 .await
             }
         }
+    }
+
+    pub async fn send_minimal_message(
+        &self,
+        req: &MinimalRoleLocalMessageRequest,
+    ) -> Result<MinimalRoleMessageResponse, AppError> {
+        self.send_minimal_conversation(&req.clone().into()).await
     }
 
     pub async fn recover_message(

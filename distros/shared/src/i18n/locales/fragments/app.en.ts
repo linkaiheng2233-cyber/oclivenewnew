@@ -9,7 +9,7 @@ export default {
       bind: 'Bind to main chat',
       return: 'Return to rich role',
       stopWaiting: 'Stop waiting',
-      scope: 'Basic text only. Relationships, scenes, portraits, personality, adult interaction, plugin tools, voice, history and role settings are unavailable. Messages remain in this view only.',
+      scope: 'Basic text can retrieve material from this conversation. Relationships, scenes, portraits, personality, adult interaction, plugin tools, voice, saved history and role settings are unavailable. Messages remain in this view and are not shared after switching.',
       validationHint: 'Binding does not mean loaded. The Host checks files and the model on send. Stop waiting discards the UI result; the Host may continue generating.',
     },
     locale: {

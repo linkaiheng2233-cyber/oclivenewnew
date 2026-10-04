@@ -18,7 +18,8 @@ export function snapshotMinimalRoleSource(input: MinimalRoleLocalSource): Readon
 /**
  * Transient state for a distro's main chat to consume. Binding is not Host
  * activation: the Host validates the explicit source on every text call.
- * No rich RoleInfo, historical context, stored row IDs or persistence is implied.
+ * No rich RoleInfo, persisted history, stored row IDs or persistence is implied.
+ * Only completed turns of this binding become bounded Memory Base candidates.
  */
 export const useMinimalRoleChatStore = defineStore('minimal-role-chat', () => {
   const source = shallowRef<Readonly<MinimalRoleLocalSource> | null>(null)
@@ -54,6 +55,28 @@ export const useMinimalRoleChatStore = defineStore('minimal-role-chat', () => {
     messages.value = []
   }
 
+  function snapshotConversation(): { user_message: string, reply: string }[] {
+    const turns: { user_message: string, reply: string }[] = []
+    const encoder = new TextEncoder()
+    let bytes = 0
+    // Successful turns are adjacent pairs. Walk only a bounded recent suffix;
+    // never truncate a quotation or skip a too-large latest pair for older data.
+    for (let index = messages.value.length - 2; index >= 0 && turns.length < 8; index -= 2) {
+      const user = messages.value[index]
+      const assistant = messages.value[index + 1]
+      if (user?.role !== 'user' || assistant?.role !== 'assistant')
+        break
+      if (user.content.length + assistant.content.length > 64 * 1024 - bytes)
+        break
+      const pairBytes = encoder.encode(user.content).byteLength + encoder.encode(assistant.content).byteLength
+      if (bytes + pairBytes > 64 * 1024)
+        break
+      turns.unshift({ user_message: user.content, reply: assistant.content })
+      bytes += pairBytes
+    }
+    return turns
+  }
+
   async function sendMessage(content: string): Promise<MinimalRoleMessageResponse | undefined> {
     const bound = source.value
     if (!bound)
@@ -61,6 +84,7 @@ export const useMinimalRoleChatStore = defineStore('minimal-role-chat', () => {
     if (!content.trim())
       throw new Error('minimal message must not be blank')
     cancelPendingSend()
+    const conversation = snapshotConversation()
     const ownGeneration = generation
     const isCurrent = () => ownGeneration === generation && source.value === bound
     const userId = `minimal-local-user-${crypto.randomUUID()}`
@@ -80,6 +104,7 @@ export const useMinimalRoleChatStore = defineStore('minimal-role-chat', () => {
       const response = await sendMinimalMessage({
         source: bound,
         message: { user_message: content, requirements: '' },
+        ...(conversation.length ? { conversation } : {}),
       })
       if (!isCurrent())
         return
