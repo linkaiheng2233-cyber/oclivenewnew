@@ -1,14 +1,18 @@
-//! Shared minimal-role preparation and an optional basic text operation.
+//! Shared minimal-role consumption through Host-selected Base capabilities.
 //!
 //! The Host supplies the current materials, requirements, and capability. This
 //! Prompt consumer prepares the same persona/material sections as the reference
-//! minimal prompt. The text consumer passes that selected Prompt's result to a
-//! bound LLM Base. Neither chooses capabilities, resolves assets, loads a legacy
+//! minimal prompt. The six-Base consumer exposes independent calls; the optional
+//! text operation passes the selected Prompt's result to a bound LLM Base.
+//! None chooses capabilities, resolves assets, loads a legacy
 //! `Role`, owns Host state, or prescribes a six-slot turn order.
 
-use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
+use oclive_kernel_contracts::{
+    AgentBase, BaseCallFuture, EmotionBase, EventBase, LlmBase, MemoryBase, PromptBase,
+};
 use oclive_kernel_types::{
-    BaseCallError, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
+    AgentBaseRequest, BaseCallError, EmotionBaseRequest, EventBaseRequest, LlmBaseRequest,
+    MemoryBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
 };
 use oclive_validation::validate_minimal_role_definition;
 
@@ -53,6 +57,113 @@ impl<'a> MinimalRolePromptConsumer<'a> {
 impl PromptBase for MinimalRolePromptConsumer<'_> {
     fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
         assemble_minimal_role_materials(self.definition, self.prompt, request)
+    }
+}
+
+/// Six capabilities explicitly selected and borrowed by the caller.
+///
+/// This binding is for the optional six-Base consumer, not a requirement that every
+/// Host construct all slots for every operation. Each implementation's published
+/// agreement must serve the request the caller sends to it. No registry, capability
+/// discovery, asset resolution, permission or state ownership is introduced here.
+pub struct MinimalRoleBaseBindings<'a> {
+    /// Selects from the caller's supplied memory material.
+    pub memory: &'a dyn MemoryBase,
+    /// Analyses the caller's material under the selected implementation's agreement.
+    pub emotion: &'a dyn EmotionBase,
+    /// Analyses the caller's described event without publishing it.
+    pub event: &'a dyn EventBase,
+    /// Assembles fragments prepared by the existing minimal-role Prompt consumer.
+    pub prompt: &'a dyn PromptBase,
+    /// Generates from the input the caller has already prepared.
+    pub llm: &'a dyn LlmBase,
+    /// Processes the caller's delegated task under its existing authorisation.
+    pub agent: &'a dyn AgentBase,
+}
+
+/// An additive six-slot consumption surface outside the small Kernel.
+///
+/// The same minimal definition can be used with different Base implementations.
+/// Only Prompt prepares the authored persona; other requests pass through unchanged.
+/// The definition is not a hidden context bundle, a storage key, a permission grant,
+/// or a requirement that each implementation understand a complete role format.
+///
+/// Each call invokes only its bound capability, without retry or post-processing.
+/// In particular, LLM does not implicitly invoke Prompt, Event does not invoke
+/// Emotion, and Agent's report does not grant effects. The caller owns dependencies,
+/// scheduling, memory scope, resources, state application and invocation lifetime.
+/// Normal empty results and full errors retain the existing Base semantics. Local
+/// futures may borrow non-`Send` implementations; dropping one is not proof that
+/// external execution or effects stopped.
+pub struct MinimalRoleBaseConsumer<'a> {
+    prompt: MinimalRolePromptConsumer<'a>,
+    memory: &'a dyn MemoryBase,
+    emotion: &'a dyn EmotionBase,
+    event: &'a dyn EventBase,
+    llm: &'a dyn LlmBase,
+    agent: &'a dyn AgentBase,
+}
+
+impl<'a> MinimalRoleBaseConsumer<'a> {
+    /// Validate the logical definition and borrow the six caller-bound capabilities.
+    ///
+    /// Validation performs no capability calls. Visual references are checked as
+    /// content only; the caller still resolves and renders assets. The selected
+    /// Prompt must accept prepared fragments rather than already adding this persona.
+    ///
+    /// # Errors
+    /// Returns the existing field/index diagnostics for invalid minimal content.
+    pub fn new(
+        definition: &'a MinimalRoleDefinition,
+        bindings: MinimalRoleBaseBindings<'a>,
+    ) -> Result<Self, Vec<String>> {
+        Ok(Self {
+            prompt: MinimalRolePromptConsumer::new(definition, bindings.prompt)?,
+            memory: bindings.memory,
+            emotion: bindings.emotion,
+            event: bindings.event,
+            llm: bindings.llm,
+            agent: bindings.agent,
+        })
+    }
+}
+
+impl MemoryBase for MinimalRoleBaseConsumer<'_> {
+    fn retrieve<'a>(&'a self, request: MemoryBaseRequest<'a>) -> BaseCallFuture<'a, Vec<String>> {
+        self.memory.retrieve(request)
+    }
+}
+
+impl EmotionBase for MinimalRoleBaseConsumer<'_> {
+    fn analyze<'a>(
+        &'a self,
+        request: EmotionBaseRequest<'a>,
+    ) -> BaseCallFuture<'a, Option<String>> {
+        self.emotion.analyze(request)
+    }
+}
+
+impl EventBase for MinimalRoleBaseConsumer<'_> {
+    fn analyze<'a>(&'a self, request: EventBaseRequest<'a>) -> BaseCallFuture<'a, Option<String>> {
+        self.event.analyze(request)
+    }
+}
+
+impl PromptBase for MinimalRoleBaseConsumer<'_> {
+    fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        self.prompt.assemble(request)
+    }
+}
+
+impl LlmBase for MinimalRoleBaseConsumer<'_> {
+    fn generate<'a>(&'a self, request: LlmBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        self.llm.generate(request)
+    }
+}
+
+impl AgentBase for MinimalRoleBaseConsumer<'_> {
+    fn execute<'a>(&'a self, request: AgentBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        self.agent.execute(request)
     }
 }
 

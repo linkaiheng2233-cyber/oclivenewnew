@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧公开接口仍耦合完整 `Role`，**参考 Host 的丰富生命周期与 ChatPro 选角 / 主聊天 UI** 尚未接入最小角色。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-04。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -41,6 +41,8 @@
 **发行版能力与宿主装配**：ChatPro 自行定义关系、好感度和 ChatPro runtime semantics；直播发行版自行定义 stream state / audience interaction model；其他发行版维护自己的扩展模型。七维人格、场景、知识、`memory_seed`、作者/展示名/产品版本、UI、语音、市场信息可由产品包承载，但没有内核统一解释或注入默认值的义务。`slot_registry`、`runtime_config`、backend/provider/model、URL、资源预算与权限授权属于独立宿主装配输入。
 
 **2026-10-04 维护者明确的兼容目标**：发行版开发者负责提供转换器，将最小内容接入自己的产品角色表示；也可将自有丰富格式投影到同一最小逻辑定义。符合这一接入目标的发行版应让最小角色完成基础交互闭环，关系、人格演化、语音等扩展缺失时明确报告不可用，而不把它们升级成基础内容的必填项。转换器不必生成统一磁盘包，也不得通过捏造扩展已实现、注入隐式产品默认值来假装兼容。
+
+**六槽目标补充（同日维护者澄清）**：最小角色的通用运行涵盖 Memory / Emotion / Event / Prompt / LLM / Agent 六槽的基础消费，不止 Prompt / LLM 文本回复。同一份最小定义在发行版更换记忆或情绪实现后仍可使用，不要求角色作者为每种实现改包或补丰富字段。六槽是否参与某次操作及其真实依赖由 Host 决定，不强制每次调用全部六槽或按固定顺序运行；所选实现仍须支持本次用途并有合法资源。产品的关系、七维人格等扩展不可用，不能代替缺失的 Base 消费；反过来也不把 Base 报告解释为这些产品状态。可返回的完整角色上下文保留于 §0.13 的兼容切换，不改变这条六槽目标。
 
 | 接入情况 | 基础闭环与扩展边界 |
 |----------|--------------------|
@@ -220,6 +222,16 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 [`useMainShellChat`](../distros/chat-pro/src/composables/useMainShellChat.ts) 与 shared `useChatSend` 将最小发送 / 消费接到 §0.12 状态；已完成临时气泡都可见，列表历史分割为 0，下次请求仍只带当前正文。关系 / 场景 / 立绘 / 人格 / 成人 / 插件工具 / 语音 / 历史及角色设置不可用；模型管理保留为 Host 资源入口。丰富面板与工具停用，关联快照轮询、插件角色变更 / ASR、语音预热和设置 / 录音热键也检查当前范围。已经按住的录音只结束一次；旧角色包主题清除，返回时恢复，不将其属性展示成最小角色能力。
 
 主流程联动证据来自真实 Pinia / mitt、实际来源表单 / composer / 消息列表及共用 hook，只有 IPC 和浏览器缺失的 ResizeObserver / matchMedia 等环境能力用内存替身。scope 回归另核实际轮询守卫、角色事件与热键消费者，真实按键注册器验证停用后释放按住状态并能再次启用；语音仍为既有内存消费者测试。两套壳通过类型与构建检查；这不算真实桌面 / 联机模型 / 音频、持久化恢复或所有发行版验收。足以落实参考发行版的基础主流程接线，不把未验媒体 / 平台扩成这一片必须穷尽的清单，父债继续 Partial。
+
+### 0.14 六槽可替换的最小角色消费
+
+共享运行库在既有消费者模块提供 [`MinimalRoleBaseBindings` / `MinimalRoleBaseConsumer`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs)。调用者显式绑定六个 Base 实现；构造时复用唯一最小定义校验，借用定义与能力，不构造完整 `Role`、读取资产或补产品默认值。所选 Prompt 必须消费尚未添加本角色人设的片段；共享消费者复用 §0.10 的既有人设准备。其它五槽接收调用者按对应 Base 形状提供的原请求，不向每个槽隐式塞人设、状态包、身份或权限。
+
+六种方法仍是独立的 Base 调用：Memory 只接本次候选材料与查询，Emotion / Event 接本次材料与可选背景，Agent 接合法委托的任务与背景，LLM 接已经准备的输入。LLM 不自动调用 Prompt，Event 不自动调用 Emotion；各槽只调用绑定的那个能力一次，完整返回正常结果或原错误，不重试、修补或推断领域效果。共享消费者不提供固定六阶段、存储或权限机制；Host 仍负责材料来源 / 命名空间、资源授权、调用依赖、异步调度和结果应用。具体请求 / 结果语义以 [MODULE_MAP 的六槽契约](MODULE_MAP_AND_HANDOFF.md) §0.6 为准。
+
+[外部 crate 回归](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs)使用同一份最小定义，分别绑定生产关键词 Memory / Emotion 和顺序不同的关键词检索 / 保留材料主体的内存 Emotion。两组都实际消费六槽，并让检索与分析材料进入最终 Prompt / LLM；调用关系不同，人设只准备一次。五项测试另核请求原值、独立调用、正常空值与五类完整失败、逻辑拒绝零调用、本地非 Send 的 Pending 借用；旧消费者八项回归保持。这是可复用六槽接入面的局部证据，不是第二个发行版实接或模型质量保证。
+
+**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，尚未把所选生产 Memory / Emotion / Event / Agent 全部装配到本入口。下一片应接实际绑定与消费，不用四槽空值或“扩展不可用”冒充运行；新增能力调用、任务授权和产品策略须按实际缺口处理。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
 
 ## 1. 当前参考宿主内部划分
 
