@@ -372,6 +372,8 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 
 **六槽可替换消费（2026-10-04）**：同模块的 `MinimalRoleBaseConsumer` 借用最小定义与 `MinimalRoleBaseBindings` 的六个选定实现，沿原 Base traits 提供六种独立调用。Prompt 复用上述人设准备，其余请求 / 完整结果 / 错误直接交给对应能力，不增加角色格式、隐含上下文包、额外调用、权限或状态。Host 可以更换 Memory / Emotion 并组织不同的实际依赖；材料来源、任务授权、异步调度与结果应用仍归 Host。这个可选六槽装配不要求所有 Host 的每次操作都实例化或调用六槽。实现与有限证据见[角色边界 §0.14](ROLE_PACK_BOUNDARY.md#014-六槽可替换的最小角色消费)；现行参考 Host / ChatPro 生产绑定仍是基础文本路径，不能以共享调用面存在就宣称生产六槽接线完成。
 
+**独立 Host 的原生六槽接线案例**：既有 `minimal_role_host` 现从两种内容来源消费同一最小定义，并显式选择原生 Memory / Emotion / Event / Prompt / Agent 和内存 LLM；具体选择、有限任务、假生成账与测试范围统一见[角色边界 §0.14](ROLE_PACK_BOUNDARY.md#014-六槽可替换的最小角色消费)。这是一个实际消费者，Host 的材料组织与结果使用在案例内；它不沿用旧丰富 Event 所需的人格 / 情绪 / 历史，不转译产品数值 DTO 或迁移默认 AppState 装配，也不将案例操作提升为 Kernel 回合或共享固定流程。
+
 | 层 | 含义 |
 |----|------|
 | **编译期** | 各槽 `trait` + `PluginHost`；换实现 **不改** `process_message` 顺序 |

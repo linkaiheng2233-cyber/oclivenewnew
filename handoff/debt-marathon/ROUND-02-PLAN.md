@@ -564,3 +564,13 @@
 **止点 / 关联批次**：这片完成的是共享六槽调用接入，不声称现有发行版已迁移全部生产绑定。实际 Host 装配是下一片，必须核具体 provider 是否能承担 Base 视图，不能靠返回空值、把四槽标扩展不可用或直接把数值 DTO 换名绕过缺口；涉及额外模型调用、权限或产品策略的新取舍再问维护者。当前先跑六槽 / 旧消费者窄测、runtime Clippy / fmt、workspace doctest及分层 / 文档 / 债务门禁，本地保留；同一关联批次冻结时只跑一次完整链与目标远端，不把每个小片独立推送。第一轮不调查所有发行版、媒体、崩溃窗口或六槽实现，证据够实施即停。
 
 **本片局部出口**：六槽共享入口、同一定义的两种 Memory / Emotion 装配及必要失败 / 空值 / 借用边界已实现；旧基础操作保持。实际检查与一次本机 Python 门禁修正见 [DCL-36](DEBT_CHANGELOG.md#dcl-20261004-36--同一最小角色的六槽可替换消费)。这一片在本地保留，下一片直接处理参考 Host 的实际能力绑定，不继续扩大共享调用面的反例调查。
+
+### D-CLI-BLUEPRINT-05 · 独立 Host 的原生六槽装配案例（2026-10-04）
+
+**基线 / 有限出口**：M 的案例接线，起点 `f48095a1a63f2fb676b7aaea46b3fea9272d410f` 干净、ahead 1、仅局部验收。只在已有 `minimal_role_host` 案例追加一条 Host 自己选择的六槽操作，沿既有本地 / 内存内容适配与共享消费者运行。参考生产 Host 的旧 Event 需要真实人格 / 情绪 / 历史，其 Agent 有工具资源 / 授权约束；不能填默认值或替换当前产品装配来假装接通。本片提供能运行的开发者用法，不为 ChatPro 开启新调用或资源。
+
+**行为 / 选择**：同一份最小内容分别绑定原生 KeywordMemoryBase / KeywordEmotionBase 与 QueryMemoryRetrieval / BuiltinUserEmotionAnalyzer，Prompt 使用现有 BuiltinPromptAssembler 的 Base 视图，Event 使用独立 LlmEventAnalyzer，Agent 显式委托 ScalarCountAgent 支持的纯计算任务；六槽全部实际消费，不转换产品数值结果。Host 组织候选材料 / 查询、当前消息、分析背景和合法委托；实际结果进入最终 Prompt / LLM，人设只准备一次。Event 的协议生成器与正文模型为明确内存替身，前者一次、后者一次，各路径总 2 次假生成；不宣称真实模型质量。其它 Host 可选不同依赖，案例操作不是公共固定流程。原文本 / 自选 Prompt 路径保持。
+
+**写集 / 复核**：`kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs`；仅修正 `domain/base_memory.rs` / `base_event.rs` / `base_agent.rs` 中“任何 Host 尚未接入”的过时范围措辞；同步 ROLE_PACK_BOUNDARY §0.14、MODULE_MAP 的案例接线、父债第五列、本计划与 DEBT_CHANGELOG。不增公共请求或 trait、依赖、生产 AppState / ChatPro / 默认角色 / 授权 / 存储 / rich lifecycle。新案例回归先编译红，再验两种真实内容来源与六槽装配、技术身份拒绝零生成、分析格式 / Agent 要求失败不达正文模型且已发生的分析不被称为零调用。跑案例九项（旧六 + 新三）、原六槽 / 消费者回归、案例 native、runtime Clippy / fmt 与适用文档 / 分层 / 模块门禁。controller 实施与自查，不称独立审查；局部通过后本地保留，关联冻结点才一次全量链与目标远端。达到实际装配与错误出口即停，不继续穷尽模型 / 跨平台 / 媒体，也不把父债标 Done。
+
+**本片出口 / 批次冻结（2026-10-05）**：九项案例与原消费者 / 六槽共 22 项、native 实际运行、Clippy / fmt 和适用文档 / 债务门禁已通过，见 [DCL-37](DEBT_CHANGELOG.md#dcl-20261004-37--独立-host-接入原生六槽)。这两片相关范围至此稳定，在干净最终 SHA 做一次完整本地链与一次推送，远端必须核同一 SHA；不继续追加公共消费者验证或宣称生产 Host 已完成。下一片的生产绑定保持独立：只接有实际资源 / 材料和已确定语义的能力，不擅自开启丰富 Event / Agent 的额外模型或工具授权。

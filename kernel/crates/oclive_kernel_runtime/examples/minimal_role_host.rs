@@ -1,21 +1,31 @@
 //! A separate, bounded Host example for the portable minimal-role content.
 //!
 //! The Host chooses a technical ID, owns local or in-memory content, selects a
-//! Prompt Base implementation and an in-memory LLM, and decides when to call them.
+//! Prompt or six-Base implementations and in-memory generators, and decides when to call them.
 //! It does not register a role in the reference `AppState` or define a mandatory
 //! six-slot turn order. The immediate poller is valid only for these in-memory capabilities.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::path::Path;
 use std::task::{Context, Poll, Waker};
 
-use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
+use oclive_kernel_contracts::{
+    AgentBase, BaseCallFuture, EmotionBase, EventBase, LlmBase, MemoryBase, PromptBase,
+};
+use oclive_kernel_runtime::domain::base_agent::ScalarCountAgent;
+use oclive_kernel_runtime::domain::base_emotion::KeywordEmotionBase;
+use oclive_kernel_runtime::domain::base_event::LlmEventAnalyzer;
+use oclive_kernel_runtime::domain::base_memory::KeywordMemoryBase;
 use oclive_kernel_runtime::domain::minimal_role_consumer::{
-    MinimalRoleTextConsumer, MinimalRoleTextError,
+    MinimalRoleBaseBindings, MinimalRoleBaseConsumer, MinimalRoleTextConsumer, MinimalRoleTextError,
 };
 use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
+use oclive_kernel_runtime::domain::prompt_assembler::BuiltinPromptAssembler;
+use oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval;
+use oclive_kernel_runtime::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
 use oclive_kernel_types::{
-    BaseCallError, BaseCallErrorKind, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
+    AgentBaseRequest, BaseCallError, BaseCallErrorKind, EmotionBaseRequest, EventBaseRequest,
+    LlmBaseRequest, MemoryBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
 };
 use oclive_validation::minimal_role_local_file::{
     load_minimal_role_local_file, LocalMinimalRoleSnapshot,
@@ -60,6 +70,72 @@ impl LlmBase for EchoLlm {
             self.calls.set(self.calls.get() + 1);
             Ok(format!("echo: {}", request.input))
         })
+    }
+}
+
+// These are this example's synthetic input and task agreements, not Kernel defaults.
+const DEMO_COUNT_TASK: &str = "请统计材料中 Unicode 标量值的个数";
+const DEMO_EVENT_REPORT: &str = "本次输入表达了聊天意愿；不宣称事件已经发生。";
+const DEMO_EVENT_REPLY: &str = "ANALYSIS\n本次输入表达了聊天意愿；不宣称事件已经发生。";
+
+// A declared stand-in for Event's generator. It exercises the real analyzer's
+// preparation and response projection, not model understanding or real inference.
+struct ScriptedEventModel {
+    reply: String,
+    calls: Cell<usize>,
+    input: RefCell<String>,
+}
+
+impl ScriptedEventModel {
+    fn new(reply: &str) -> Self {
+        Self {
+            reply: reply.into(),
+            calls: Cell::new(0),
+            input: RefCell::default(),
+        }
+    }
+}
+
+impl LlmBase for ScriptedEventModel {
+    fn generate<'a>(&'a self, request: LlmBaseRequest<'a>) -> BaseCallFuture<'a, String> {
+        Box::pin(async move {
+            self.calls.set(self.calls.get() + 1);
+            *self.input.borrow_mut() = request.input.into();
+            Ok(self.reply.clone())
+        })
+    }
+}
+
+// Input and result belong to this finite example operation, not a public role,
+// turn, state or six-slot wire format. The caller owns the memory scope and task.
+struct HostSixInput<'a> {
+    user_text: &'a str,
+    memory: MemoryBaseRequest<'a>,
+    delegated: AgentBaseRequest<'a>,
+    requirements: &'a str,
+}
+
+struct HostSixResult {
+    memory: Vec<String>,
+    emotion: Option<String>,
+    event: Option<String>,
+    agent: String,
+    reply: String,
+}
+
+fn native_bindings<'a>(
+    memory: &'a dyn MemoryBase,
+    emotion: &'a dyn EmotionBase,
+    event: &'a dyn EventBase,
+    llm: &'a dyn LlmBase,
+) -> MinimalRoleBaseBindings<'a> {
+    MinimalRoleBaseBindings {
+        memory,
+        emotion,
+        event,
+        prompt: &BuiltinPromptAssembler,
+        llm,
+        agent: &ScalarCountAgent,
     }
 }
 
@@ -254,6 +330,64 @@ impl<L: LlmBase, C: HostContent> MinimalHost<L, C> {
     fn visual_assets(&self) -> Box<dyn ExactSizeIterator<Item = (&str, &[u8])> + '_> {
         self.content.assets()
     }
+
+    // One explicitly chosen Host graph. It is not the common consumer's policy:
+    // other Hosts can use other dependencies, tasks and legitimately bound resources.
+    fn reply_with_bases(
+        &self,
+        requested_role_id: &str,
+        input: HostSixInput<'_>,
+        bindings: MinimalRoleBaseBindings<'_>,
+    ) -> Result<HostSixResult, HostError> {
+        if requested_role_id != self.technical_id {
+            return Err(HostError::UnknownRole);
+        }
+        let consumer = MinimalRoleBaseConsumer::new(self.content.definition(), bindings)
+            .map_err(|_| HostError::InvalidRoleDefinition)?;
+        let memory = poll_immediate(MemoryBase::retrieve(&consumer, input.memory))?;
+        let emotion = poll_immediate(EmotionBase::analyze(
+            &consumer,
+            EmotionBaseRequest {
+                material: input.user_text,
+                context: None,
+            },
+        ))?;
+        let event = poll_immediate(EventBase::analyze(
+            &consumer,
+            EventBaseRequest {
+                material: input.user_text,
+                context: emotion.as_deref(),
+            },
+        ))?;
+        let agent = poll_immediate(AgentBase::execute(&consumer, input.delegated))?;
+        let mut materials = vec!["User: ", input.user_text, "\nMemory:\n"];
+        materials.extend(memory.iter().map(String::as_str));
+        if let Some(report) = &emotion {
+            materials.extend(["\nEmotion analysis:\n", report.as_str()]);
+        }
+        if let Some(report) = &event {
+            materials.extend(["\nEvent analysis:\n", report.as_str()]);
+        }
+        materials.extend(["\nDelegated task report:\n", agent.as_str()]);
+        let prepared = poll_immediate(PromptBase::assemble(
+            &consumer,
+            PromptBaseRequest {
+                materials: &materials,
+                requirements: input.requirements,
+            },
+        ))?;
+        let reply = poll_immediate(LlmBase::generate(
+            &consumer,
+            LlmBaseRequest { input: &prepared },
+        ))?;
+        Ok(HostSixResult {
+            memory,
+            emotion,
+            event,
+            agent,
+            reply,
+        })
+    }
 }
 
 fn run_demo() -> Result<(), HostError> {
@@ -326,11 +460,99 @@ fn run_demo() -> Result<(), HostError> {
 }
 
 fn main() {
-    if let Err(error) = run_demo() {
+    if let Err(error) = run_demo().and_then(|()| run_six_base_demo()) {
         eprintln!("minimal role Host example failed: {error:?}");
         std::process::exit(1);
     }
-    println!("minimal role Host example: local, in-memory and selected Prompt calls passed");
+    println!("minimal role Host example: local, in-memory, selected Prompt and native six-Base calls passed");
+}
+
+fn run_six_base_demo() -> Result<(), HostError> {
+    let definition = MinimalRoleDefinition {
+        persona_prompt: "A curious guide.".into(),
+        visual_assets: vec!["portrait.bin".into()],
+    };
+    // Explicitly converted file and memory representations carry the same definition.
+    let directory = tempfile::tempdir().map_err(|_| HostError::InvalidLocalFiles)?;
+    std::fs::write(
+        directory.path().join("content.json"),
+        serde_json::to_vec(&definition).map_err(|_| HostError::InvalidRoleDefinition)?,
+    )
+    .map_err(|_| HostError::InvalidLocalFiles)?;
+    std::fs::write(directory.path().join("portrait.bin"), b"synthetic-portrait")
+        .map_err(|_| HostError::InvalidLocalFiles)?;
+    let local_host = MinimalHost::load(
+        directory.path(),
+        "content.json",
+        "local-six",
+        EchoLlm::default(),
+    )?;
+    let memory_host = MinimalHost::new(
+        "memory-six",
+        MemoryContent {
+            definition,
+            asset_bytes: vec![b"synthetic-portrait".to_vec()],
+        },
+        EchoLlm::default(),
+    )?;
+    let candidates = ["她昨天说喜欢咖啡。", "另一个人喜欢茶。"];
+    let user_text = "她说：我很开心，想聊咖啡。";
+    let request = || HostSixInput {
+        user_text,
+        memory: MemoryBaseRequest {
+            materials: &candidates,
+            query: "咖啡",
+        },
+        delegated: AgentBaseRequest {
+            task: DEMO_COUNT_TASK,
+            context: Some("aé😀"),
+        },
+        requirements: "",
+    };
+    for alternate in [false, true] {
+        let event_model = ScriptedEventModel::new(DEMO_EVENT_REPLY);
+        let event = LlmEventAnalyzer::new(&event_model);
+        let outcome = if alternate {
+            memory_host.reply_with_bases(
+                "memory-six",
+                request(),
+                native_bindings(
+                    &QueryMemoryRetrieval,
+                    &BuiltinUserEmotionAnalyzer,
+                    &event,
+                    &memory_host.llm,
+                ),
+            )?
+        } else {
+            local_host.reply_with_bases(
+                "local-six",
+                request(),
+                native_bindings(
+                    &KeywordMemoryBase,
+                    &KeywordEmotionBase,
+                    &event,
+                    &local_host.llm,
+                ),
+            )?
+        };
+        if outcome.memory != [candidates[0]]
+            || !outcome
+                .emotion
+                .as_ref()
+                .is_some_and(|report| report.contains("开心"))
+            || outcome.event.as_deref() != Some(DEMO_EVENT_REPORT)
+            || outcome.agent != "本次完成了计数：3 个 Unicode 标量值。"
+            || !outcome.reply.contains(&outcome.agent)
+            || outcome.reply.matches("A curious guide.").count() != 1
+            || event_model.calls.get() != 1
+        {
+            return Err(HostError::UnexpectedOutput);
+        }
+    }
+    if local_host.llm.calls.get() != 1 || memory_host.llm.calls.get() != 1 {
+        return Err(HostError::UnexpectedOutput);
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -508,5 +730,180 @@ mod tests {
         );
         assert_eq!(prompt.calls.get(), 2);
         assert_eq!(host.llm.calls.get(), 1);
+    }
+
+    #[test]
+    fn the_same_local_and_memory_content_runs_all_six_native_bases() {
+        let directory = files();
+        let local_host = MinimalHost::load(
+            directory.path(),
+            "content.json",
+            "local-six",
+            EchoLlm::default(),
+        )
+        .unwrap();
+        let memory_host = MinimalHost::new(
+            "memory-six",
+            MemoryContent {
+                definition: local_host.content.definition().clone(),
+                asset_bytes: local_host
+                    .visual_assets()
+                    .map(|(_, bytes)| bytes.to_vec())
+                    .collect(),
+            },
+            EchoLlm::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            local_host.content.definition(),
+            memory_host.content.definition()
+        );
+        assert_eq!(
+            local_host.visual_assets().collect::<Vec<_>>(),
+            memory_host.visual_assets().collect::<Vec<_>>()
+        );
+        let candidates = ["她昨天说喜欢咖啡。", "另一个人喜欢茶。"];
+        let user = "她说：我很开心，想聊咖啡。";
+        for alternate in [false, true] {
+            let event_model = ScriptedEventModel::new(DEMO_EVENT_REPLY);
+            let event = LlmEventAnalyzer::new(&event_model);
+            let memory: &dyn MemoryBase = if alternate {
+                &QueryMemoryRetrieval
+            } else {
+                &KeywordMemoryBase
+            };
+            let emotion: &dyn EmotionBase = if alternate {
+                &BuiltinUserEmotionAnalyzer
+            } else {
+                &KeywordEmotionBase
+            };
+            let input = HostSixInput {
+                user_text: user,
+                memory: MemoryBaseRequest {
+                    materials: &candidates,
+                    query: "咖啡",
+                },
+                delegated: AgentBaseRequest {
+                    task: DEMO_COUNT_TASK,
+                    context: Some("aé😀"),
+                },
+                requirements: "",
+            };
+            let outcome = if alternate {
+                memory_host.reply_with_bases(
+                    "memory-six",
+                    input,
+                    native_bindings(memory, emotion, &event, &memory_host.llm),
+                )
+            } else {
+                local_host.reply_with_bases(
+                    "local-six",
+                    input,
+                    native_bindings(memory, emotion, &event, &local_host.llm),
+                )
+            }
+            .unwrap();
+            assert_eq!(outcome.memory, vec![candidates[0]]);
+            assert!(outcome.emotion.as_ref().unwrap().contains("开心"));
+            assert_eq!(outcome.event.as_deref(), Some(DEMO_EVENT_REPORT));
+            assert_eq!(outcome.agent, "本次完成了计数：3 个 Unicode 标量值。");
+            for material in [
+                user,
+                candidates[0],
+                outcome.emotion.as_ref().unwrap(),
+                DEMO_EVENT_REPORT,
+                outcome.agent.as_str(),
+            ] {
+                assert!(outcome.reply.contains(material));
+            }
+            assert_eq!(outcome.reply.matches("A curious guide.").count(), 1);
+            assert_eq!(event_model.calls.get(), 1);
+            let event_input = event_model.input.borrow();
+            assert!(event_input.contains(user));
+            if alternate {
+                assert_eq!(memory_host.llm.calls.get(), 1);
+            } else {
+                assert_eq!(local_host.llm.calls.get(), 1);
+            }
+        }
+    }
+
+    #[test]
+    fn six_base_operation_rejects_the_wrong_technical_identity_before_generation() {
+        let directory = files();
+        let host =
+            MinimalHost::load(directory.path(), "content.json", "six", EchoLlm::default()).unwrap();
+        let event_model = ScriptedEventModel::new(DEMO_EVENT_REPLY);
+        let event = LlmEventAnalyzer::new(&event_model);
+        let result = host.reply_with_bases(
+            "other",
+            HostSixInput {
+                user_text: "我很开心。",
+                memory: MemoryBaseRequest {
+                    materials: &[],
+                    query: "",
+                },
+                delegated: AgentBaseRequest {
+                    task: DEMO_COUNT_TASK,
+                    context: Some(""),
+                },
+                requirements: "",
+            },
+            native_bindings(&KeywordMemoryBase, &KeywordEmotionBase, &event, &host.llm),
+        );
+        assert!(matches!(result, Err(HostError::UnknownRole)));
+        assert_eq!(event_model.calls.get(), 0);
+        assert_eq!(host.llm.calls.get(), 0);
+    }
+
+    #[test]
+    fn real_event_agent_and_prompt_refusals_never_reach_the_reply_model() {
+        for (event_reply, task, requirements, reason) in [
+            (
+                "invalid event protocol",
+                DEMO_COUNT_TASK,
+                "",
+                BaseCallErrorKind::Failed,
+            ),
+            (
+                DEMO_EVENT_REPLY,
+                "perform an unsupported task",
+                "",
+                BaseCallErrorKind::Unsupported,
+            ),
+            (
+                DEMO_EVENT_REPLY,
+                DEMO_COUNT_TASK,
+                "extra unsupported requirement",
+                BaseCallErrorKind::Unsupported,
+            ),
+        ] {
+            let directory = files();
+            let host =
+                MinimalHost::load(directory.path(), "content.json", "six", EchoLlm::default())
+                    .unwrap();
+            let event_model = ScriptedEventModel::new(event_reply);
+            let event = LlmEventAnalyzer::new(&event_model);
+            let result = host.reply_with_bases(
+                "six",
+                HostSixInput {
+                    user_text: "我很开心。",
+                    memory: MemoryBaseRequest {
+                        materials: &[],
+                        query: "",
+                    },
+                    delegated: AgentBaseRequest {
+                        task,
+                        context: Some("aé😀"),
+                    },
+                    requirements,
+                },
+                native_bindings(&KeywordMemoryBase, &KeywordEmotionBase, &event, &host.llm),
+            );
+            assert!(matches!(result, Err(HostError::Capability(kind)) if kind == reason));
+            // Event generation already happened. Fail-fast is not zero work or rollback.
+            assert_eq!(event_model.calls.get(), 1);
+            assert_eq!(host.llm.calls.get(), 0);
+        }
     }
 }

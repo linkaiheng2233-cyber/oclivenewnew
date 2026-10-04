@@ -231,6 +231,10 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 
 [外部 crate 回归](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs)使用同一份最小定义，分别绑定生产关键词 Memory / Emotion 和顺序不同的关键词检索 / 保留材料主体的内存 Emotion。两组都实际消费六槽，并让检索与分析材料进入最终 Prompt / LLM；调用关系不同，人设只准备一次。五项测试另核请求原值、独立调用、正常空值与五类完整失败、逻辑拒绝零调用、本地非 Send 的 Pending 借用；旧消费者八项回归保持。这是可复用六槽接入面的局部证据，不是第二个发行版实接或模型质量保证。
 
+**可运行的原生装配案例**：既有 [`minimal_role_host`](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs) 在原文本 / 自选 Prompt 用法之外，增加 Host 自己组织的六槽操作。本地文件与内存转换内容保留同一最小定义及资产；分别绑定 KeywordMemoryBase / QueryMemoryRetrieval，以及 KeywordEmotionBase / BuiltinUserEmotionAnalyzer 的 Base 入口。后两种 Emotion 类型复用同一分析 core，不宣称两个独立情绪算法。Prompt 选择 BuiltinPromptAssembler 的 Base 视图，Event 选择不依赖丰富人格的 LlmEventAnalyzer，Agent 显式承接其支持的 Unicode 标量值计数。它们的实际检索、分析、报告都进入最终模型输入，未填完整 Role 或产品状态。
+
+这个案例的 Event 协议生成器与正文 LLM 是内存替身，**每条六槽路径 2 次假生成**（分析 1 + 正文 1），不是只调用一次模型；native 示例另保留原三次基础调用，整个演示共 7 次假生成。该 Host 选择无额外 Emotion 背景、将情绪报告作为 Event 背景，并委托纯计算任务；这些是有限操作的私有输入安排，不成为其它 Host 的固定次序 / 任务 / 格式。原六项加新三项案例测试验证实际装配、技术身份拒绝及 Event 格式 / Agent 任务 / Prompt 要求失败；后续失败不会抹掉已发生的分析，未声称回滚或零副作用。案例的旧窄 HostError 只展示原因 kind，共享消费者仍保留完整错误。
+
 **当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，尚未把所选生产 Memory / Emotion / Event / Agent 全部装配到本入口。下一片应接实际绑定与消费，不用四槽空值或“扩展不可用”冒充运行；新增能力调用、任务授权和产品策略须按实际缺口处理。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
 
 ## 1. 当前参考宿主内部划分

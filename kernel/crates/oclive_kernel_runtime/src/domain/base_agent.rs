@@ -3,7 +3,8 @@
 //! [`ScalarCountAgent`] completes **one** finite delegated task: counting the Unicode scalar
 //! values ([`char`]) of the material the caller supplies. It does not use a model, a tool, MCP,
 //! I/O, a database or the legacy [`AgentProvider`](oclive_kernel_contracts::AgentProvider) path,
-//! and it is **not wired into any Host**.
+//! and it has **no production Host binding**. The independent `minimal_role_host` example explicitly
+//! delegates its supported counting task in one six-Base operation.
 //!
 //! # The one supported task text
 //!

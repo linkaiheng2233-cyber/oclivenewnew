@@ -35,8 +35,9 @@
 //!
 //! # Scope
 //!
-//! The type is stateless, holds no client or configuration, and is **not wired into any Host**: no
-//! `slot_runner`, `AppState`, database or plugin path constructs it. Every call runs the shared
+//! The type is stateless, holds no client or configuration, and has **no production Host binding**:
+//! no `slot_runner`, `AppState`, database or plugin path constructs it. The independent
+//! `minimal_role_host` example explicitly selects it for one six-Base operation. Every call runs the shared
 //! helper synchronously and returns a future that is ready immediately; there is no executor,
 //! timer, I/O or cancellation source behind it.
 //!
