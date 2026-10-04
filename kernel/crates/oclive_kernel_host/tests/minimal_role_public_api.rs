@@ -5,7 +5,8 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use oclive_kernel_contracts::{
-    BaseCallFuture, LlmClient, LlmGenerateOpts, LlmGenerateOutcome, PromptBase,
+    AgentBase, BaseCallFuture, EmotionBase, EventBase, LlmBase, LlmClient, LlmGenerateOpts,
+    LlmGenerateOutcome, MemoryBase, PromptBase,
 };
 use oclive_kernel_host::domain::host_profile::HostProfile;
 use oclive_kernel_host::{
@@ -453,4 +454,183 @@ async fn selected_prompt_empty_output_and_model_failure_are_not_rewritten() {
         }
         close_fixture(kernel, temp).await;
     }
+}
+
+#[tokio::test]
+async fn composed_host_model_can_serve_the_shared_six_base_consumer() {
+    use oclive_kernel_runtime::domain::base_agent::ScalarCountAgent;
+    use oclive_kernel_runtime::domain::base_emotion::KeywordEmotionBase;
+    use oclive_kernel_runtime::domain::base_event::LlmEventAnalyzer;
+    use oclive_kernel_runtime::domain::base_memory::KeywordMemoryBase;
+    use oclive_kernel_runtime::domain::minimal_role_consumer::{
+        MinimalRoleBaseBindings, MinimalRoleBaseConsumer,
+    };
+    use oclive_kernel_runtime::domain::prompt_assembler::BuiltinPromptAssembler;
+    use oclive_kernel_types::{
+        AgentBaseRequest, EmotionBaseRequest, EventBaseRequest, LlmBaseRequest, MemoryBaseRequest,
+    };
+
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(
+        &temp,
+        "ANALYSIS\nA quoted speaker expressed happiness.",
+        false,
+    )
+    .await;
+    let role = role();
+    let model = kernel.text_generation_base();
+    let memory = KeywordMemoryBase;
+    let emotion = KeywordEmotionBase;
+    let event = LlmEventAnalyzer::new(&model);
+    let prompt = BuiltinPromptAssembler;
+    let agent = ScalarCountAgent;
+    let consumer = MinimalRoleBaseConsumer::new(
+        role.definition(),
+        MinimalRoleBaseBindings {
+            memory: &memory,
+            emotion: &emotion,
+            event: &event,
+            prompt: &prompt,
+            llm: &model,
+            agent: &agent,
+        },
+    )
+    .unwrap();
+    assert!(
+        llm.calls.lock().unwrap().is_empty(),
+        "binding must not generate"
+    );
+    let candidates = ["She likes coffee.", "He prefers tea."];
+    let selected = consumer
+        .retrieve(MemoryBaseRequest {
+            materials: &candidates,
+            query: "coffee",
+        })
+        .await
+        .unwrap();
+    assert_eq!(selected, ["She likes coffee."]);
+    let material = "她说：我很开心，想聊咖啡。";
+    let feeling = EmotionBase::analyze(
+        &consumer,
+        EmotionBaseRequest {
+            material,
+            context: None,
+        },
+    )
+    .await
+    .unwrap()
+    .expect("literal happiness clue");
+    let analysis = EventBase::analyze(
+        &consumer,
+        EventBaseRequest {
+            material,
+            context: Some(&feeling),
+        },
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    let task = consumer
+        .execute(AgentBaseRequest {
+            task: "请统计材料中 Unicode 标量值的个数",
+            context: Some("aé😀"),
+        })
+        .await
+        .unwrap();
+    assert_eq!(task, "本次完成了计数：3 个 Unicode 标量值。");
+    let materials = [
+        selected[0].as_str(),
+        feeling.as_str(),
+        analysis.as_str(),
+        task.as_str(),
+    ];
+    let input = consumer
+        .assemble(PromptBaseRequest {
+            materials: &materials,
+            requirements: "",
+        })
+        .await
+        .unwrap();
+    let reply = consumer
+        .generate(LlmBaseRequest { input: &input })
+        .await
+        .unwrap();
+    assert_eq!(reply, "ANALYSIS\nA quoted speaker expressed happiness.");
+    {
+        let calls = llm.calls.lock().unwrap();
+        assert_eq!(
+            calls.len(),
+            2,
+            "explicit Event analysis plus final generation"
+        );
+        assert!(calls[0].1.contains(material));
+        assert!(!calls[0].1.contains(&role.definition().persona_prompt));
+        assert_eq!(calls[1].1, input);
+        assert_eq!(
+            calls[1]
+                .1
+                .matches(&role.definition().persona_prompt)
+                .count(),
+            1
+        );
+        for material in materials {
+            assert!(calls[1].1.contains(material));
+        }
+        assert!(!calls[0].0.is_empty());
+        assert_eq!(calls[0].0, calls[1].0);
+    }
+    // No role activation or default rich context was needed by this Rust caller.
+    assert!(kernel.list_roles().await.unwrap().is_empty());
+    drop(model);
+    close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn composed_host_base_keeps_raw_input_and_normal_empty_output() {
+    use oclive_kernel_types::LlmBaseRequest;
+
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(&temp, "", false).await;
+    let model = kernel.text_generation_base();
+    assert!(llm.calls.lock().unwrap().is_empty());
+    for input in ["", "  café 😀\r\n"] {
+        assert_eq!(model.generate(LlmBaseRequest { input }).await.unwrap(), "");
+    }
+    {
+        let calls = llm.calls.lock().unwrap();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[0].1, "");
+        assert_eq!(calls[1].1, "  café 😀\r\n");
+    }
+    drop(model);
+    close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn composed_host_base_projects_failure_without_changing_legacy_error() {
+    use oclive_kernel_types::LlmBaseRequest;
+
+    let temp = tempfile::tempdir().unwrap();
+    let (kernel, llm) = kernel(&temp, "must not become a fallback", true).await;
+    let model = kernel.text_generation_base();
+    let error = model
+        .generate(LlmBaseRequest {
+            input: "prepared input",
+        })
+        .await
+        .unwrap_err();
+    assert_eq!(error.kind, BaseCallErrorKind::Failed);
+    assert_eq!(
+        error.detail.as_deref(),
+        Some("Ollama error: synthetic model failure")
+    );
+    assert_eq!(llm.calls.lock().unwrap().len(), 1);
+    drop(model);
+    assert!(matches!(
+        kernel.process_minimal_message(&role(), &request()).await,
+        Err(MinimalRoleMessageError::Host(AppError::OllamaError(message)))
+            if message == "synthetic model failure"
+    ));
+    assert_eq!(llm.calls.lock().unwrap().len(), 2);
+    close_fixture(kernel, temp).await;
 }

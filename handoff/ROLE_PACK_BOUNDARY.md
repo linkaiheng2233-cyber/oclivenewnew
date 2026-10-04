@@ -235,7 +235,15 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 
 这个案例的 Event 协议生成器与正文 LLM 是内存替身，**每条六槽路径 2 次假生成**（分析 1 + 正文 1），不是只调用一次模型；native 示例另保留原三次基础调用，整个演示共 7 次假生成。该 Host 选择无额外 Emotion 背景、将情绪报告作为 Event 背景，并委托纯计算任务；这些是有限操作的私有输入安排，不成为其它 Host 的固定次序 / 任务 / 格式。原六项加新三项案例测试验证实际装配、技术身份拒绝及 Event 格式 / Agent 任务 / Prompt 要求失败；后续失败不会抹掉已发生的分析，未声称回滚或零副作用。案例的旧窄 HostError 只展示原因 kind，共享消费者仍保留完整错误。
 
-**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，尚未把所选生产 Memory / Emotion / Event / Agent 全部装配到本入口。下一片应接实际绑定与消费，不用四槽空值或“扩展不可用”冒充运行；新增能力调用、任务授权和产品策略须按实际缺口处理。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
+**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，尚未把所选生产 Memory / Emotion / Event / Agent 全部装配到本入口。参考 Rust Host 的真实正文模型可按 §0.15 显式绑定给消费者；其它能力的产品材料来源 / 任务策略仍分别处理，不用四槽空值或“扩展不可用”冒充运行。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
+
+### 0.15 复用参考 Host 已装配的正文模型
+
+可信 Rust 集成方可以调用 [`OcliveKernel::text_generation_base()`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs)，把借用的 `LlmBase` 交给共享文本 / 六槽消费者或自己的独立调用。构造不发请求；poll 时沿参考 Host 当前用户模型设置和已装配客户端的 `generate_with_opts`，options 保持 None。准备好的输入、正常空回复及正文原样保留，不自动添加人设。与原基础消息入口共用 canonical 正文 helper，不另建 Ollama 客户端，因此实际客户端已有的资源 / 授权包装和内部策略仍在；一次适配调用只调该客户端一次，**不保证客户端内部只发一次 provider 请求**。
+
+Base 视图按 typed Host 错误投射：`HighRiskCapabilityNotGranted` / `RemoteServiceUnavailable` 为 Unavailable，其余 Failed，原诊断保留。此边界的 AppError 没有 typed 超时 / 取消来源，不从文本猜 TimedOut / Cancelled；旧基础入口仍直接保留原 Host 错误。没有适配层额外重试、预热、聊天 / 角色落库或全局六阶段；原用户设置同步及其环境更新保持，由 Host 承担，不归小 Kernel。借用能力需要调用方调度本地 future，drop 不证明 provider 已停止。
+
+[参考 Host 公共 API 回归](../kernel/crates/oclive_kernel_host/tests/minimal_role_public_api.rs)实际使用生产 builder 和内存 LlmClient，把同一准备句柄与原生 Memory / Emotion / Event / Prompt / Agent 绑定给共享消费者，再消费 Host 的这个 LLM 视图；检索、分析和显式有限任务结果进入最终输入，人设一次。本测试显式选择 Event 分析和正文共两次假生成，不改变 ChatPro 的默认调用数，也不声称真实模型能满足 Event 协议或正文质量。其它回归核原输入 / 空输入、正常空回复、构造零调用、失败完整诊断与旧入口保留原 AppError；生产 ChatPro 尚未因此接入其它四槽。
 
 ## 1. 当前参考宿主内部划分
 

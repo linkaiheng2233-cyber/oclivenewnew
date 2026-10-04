@@ -166,17 +166,22 @@ async fn process_minimal_message_using_prompt(
                 .await?
         }
     };
-    crate::domain::user_llm_env::apply_user_llm_env(state).await?;
-    let model = state.ollama_model.read().clone();
-    let generated = crate::domain::slot_runner::SlotRunner::generate_llm_single(
-        &state.llm, &model, &prepared, None,
-    )
-    .await?;
+    let reply = generate_minimal_text(state, &prepared).await?;
     Ok(MinimalRoleMessageResponse {
         role_id: role.technical_id().to_owned(),
-        reply: generated.reply,
+        reply,
         product_extensions: MinimalRoleProductExtensionStatus::Unavailable,
     })
+}
+
+/// One existing Host text call, shared by the product and borrowed Base entries.
+/// Keep original Host errors here; only the Base adapter projects their carrier.
+pub(crate) async fn generate_minimal_text(state: &AppState, input: &str) -> Result<String> {
+    crate::domain::user_llm_env::apply_user_llm_env(state).await?;
+    let model = state.ollama_model.read().clone();
+    crate::domain::slot_runner::SlotRunner::generate_llm_single(&state.llm, &model, input, None)
+        .await
+        .map(|generated| generated.reply)
 }
 
 /// # Errors

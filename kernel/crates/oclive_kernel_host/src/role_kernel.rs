@@ -295,6 +295,43 @@ impl OcliveKernel {
         process_minimal_message_with_prompt(&self.state, role, request, prompt).await
     }
 
+    /// Borrow this Host's already composed text client as an LLM Base.
+    ///
+    /// Construction sends nothing. Each polled call uses the current Host model
+    /// settings and the same `generate_with_opts` entry as the minimal text path,
+    /// with no extra options. Prepared input and normally returned text (including
+    /// empty text) pass through unchanged. No persona is implicitly added.
+    ///
+    /// This retains the assembled client's resource and authorisation wrappers;
+    /// it does not build a second Ollama client or change capability selection.
+    /// One call invokes that client once, without adapter retries, probes, preload
+    /// or chat persistence. Existing settings synchronisation (including its
+    /// process environment updates) is retained. The client's own fallback and
+    /// transport policy remains its own:
+    /// this is not a promise of one underlying provider request or text quality.
+    /// The caller owns the operation graph and the borrowed local future's lifetime.
+    /// Dropping the future does not prove that provider work stopped.
+    ///
+    /// Typed authorisation refusals and `RemoteServiceUnavailable` are projected
+    /// to Base Unavailable; other Host errors become Failed with their original
+    /// diagnostic text. Host errors have no typed timeout/cancellation source here,
+    /// so their wording is never used to invent TimedOut or Cancelled. Existing
+    /// product entries still return their original Host error carrier.
+    ///
+    /// ```no_run
+    /// use oclive_kernel_contracts::LlmBase;
+    /// use oclive_kernel_host::OcliveKernel;
+    /// use oclive_kernel_types::{BaseCallError, LlmBaseRequest};
+    ///
+    /// async fn generate(kernel: &OcliveKernel, input: &str) -> Result<String, BaseCallError> {
+    ///     let model = kernel.text_generation_base();
+    ///     model.generate(LlmBaseRequest { input }).await
+    /// }
+    /// ```
+    pub fn text_generation_base(&self) -> impl oclive_kernel_contracts::LlmBase + '_ {
+        crate::domain::chat_engine::minimal_llm::HostTextGenerationBase { state: &self.state }
+    }
+
     /// Read the effective runtime snapshot for a role and optional isolated session.
     ///
     /// # Errors

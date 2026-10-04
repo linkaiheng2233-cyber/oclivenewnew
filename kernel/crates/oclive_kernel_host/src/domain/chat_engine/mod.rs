@@ -8,6 +8,7 @@ pub(crate) mod context;
 pub(crate) mod dispatch;
 pub(crate) mod favor;
 pub mod message_error;
+pub(crate) mod minimal_llm;
 pub(crate) mod minimal_response;
 pub mod plugin_resolve;
 mod presence;

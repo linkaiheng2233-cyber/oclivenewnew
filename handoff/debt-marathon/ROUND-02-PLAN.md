@@ -574,3 +574,11 @@
 **写集 / 复核**：`kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs`；仅修正 `domain/base_memory.rs` / `base_event.rs` / `base_agent.rs` 中“任何 Host 尚未接入”的过时范围措辞；同步 ROLE_PACK_BOUNDARY §0.14、MODULE_MAP 的案例接线、父债第五列、本计划与 DEBT_CHANGELOG。不增公共请求或 trait、依赖、生产 AppState / ChatPro / 默认角色 / 授权 / 存储 / rich lifecycle。新案例回归先编译红，再验两种真实内容来源与六槽装配、技术身份拒绝零生成、分析格式 / Agent 要求失败不达正文模型且已发生的分析不被称为零调用。跑案例九项（旧六 + 新三）、原六槽 / 消费者回归、案例 native、runtime Clippy / fmt 与适用文档 / 分层 / 模块门禁。controller 实施与自查，不称独立审查；局部通过后本地保留，关联冻结点才一次全量链与目标远端。达到实际装配与错误出口即停，不继续穷尽模型 / 跨平台 / 媒体，也不把父债标 Done。
 
 **本片出口 / 批次冻结（2026-10-05）**：九项案例与原消费者 / 六槽共 22 项、native 实际运行、Clippy / fmt 和适用文档 / 债务门禁已通过，见 [DCL-37](DEBT_CHANGELOG.md#dcl-20261004-37--独立-host-接入原生六槽)。这两片相关范围至此稳定，在干净最终 SHA 做一次完整本地链与一次推送，远端必须核同一 SHA；不继续追加公共消费者验证或宣称生产 Host 已完成。下一片的生产绑定保持独立：只接有实际资源 / 材料和已确定语义的能力，不擅自开启丰富 Event / Agent 的额外模型或工具授权。
+
+### D-CLI-BLUEPRINT-05 · 参考 Host 已装配正文模型的 Base 接口（2026-10-05）
+
+**基线 / 原因 / 尺寸**：L 的增量公共接线，起点 `b4d0cc17cfb731a2be0fab1e5b5cf1b30fc18616` 干净且已推送；上批完整链与精确 SHA 远端证据随这次实质改动入账。共享消费者能用六个 Base，但参考 Host 现有最小路径只在内部调用 `AppState.llm`，开发者不能把该已装配客户端绑定给消费者；不应为此另建 Ollama 客户端并绕开实际资源 / 授权包装。本片只开放该真实正文调用的 Base 视图，不迁移记忆来源、产品 Event / Agent、ChatPro 请求或角色状态。
+
+**冻结行为 / 影响链**：`OcliveKernel::text_generation_base()` 借用 Host，构造时零调用；被 poll 时复用原最小文本入口的当前用户模型设置和 `generate_with_opts`（options 仍为 None），原输入不改，一次调用已装配客户端，不承诺其内部只有一次 provider 请求。正常空文本保留。Base 边界按 typed Host 错误投射：授权拒绝 / RemoteServiceUnavailable 为 Unavailable，其余 Failed，诊断原文保留；旧入口仍返回原 AppError，不 round-trip Base 错误。现有 Host 错误没有 typed 超时 / 取消，故不从文本制造 TimedOut / Cancelled。没有角色人设自动注入、额外探测、预热、重试、落库或新模型选择；实际 client 自带策略继续由它负责。生产者是原客户端，契约沿 LlmBase，适配是该薄视图，消费者为核心外公共消费者；状态 / 回退沿旧 Host 入口。Tauri / shared / ChatPro / Theater / 插件 / 角色内容和姊妹仓的 wire 不变，无需关联修改。
+
+**写集 / 有限验收 / 停止**：`host/src/domain/chat_engine/process_message.rs` 抽出唯一正文 helper，新 `minimal_llm.rs` 与 `mod.rs` 只做薄视图，`role_kernel.rs` 增量 facade，原 `tests/minimal_role_public_api.rs` 补真实 builder + 内存客户端回归；文档只动 ROLE_PACK_BOUNDARY、MODULE_MAP 接线归属、父债第五列、本计划与 DEBT_CHANGELOG。先红测，再核同一 PreparedMinimalRole 与实际 Host LLM 接入共享六槽、输入 / 正常空值 / 失败 / 构造零调用、旧入口兼容；Event 分析和正文两次调用只在测试显式选择，产品默认未变。跑相关 Host 集成 / lib、Clippy / fmt、workspace doctest及适用分层 / 模块 / 文档 / 债务 / 编码门禁；controller 直接实施和自查，不称独立审查。窄测后先本地保留，与下一片已确定的生产材料消费关联冻结，只在批次出口一次完整本地链与目标远端；若下一片出现真正的材料 / 任务策略待决则询问，不扩大调查来拖延本片。父债仍 Partial，达到实际客户端复用即停，不启动真实模型 / 服务 / 音频 / 用户库或历史身份。
