@@ -826,7 +826,11 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       role_id?: string
       stream_id?: string
       submitted_at_ms?: number
+      skip_auto_tts?: boolean
     }
+    // A text-only turn must not load profiles or prewarm media resources either.
+    if (p.skip_auto_tts)
+      return
     const roleId = p.role_id?.trim() || roleStore.currentRoleId
     const streamId = p.stream_id?.trim()
     if (streamId) {

@@ -201,6 +201,16 @@ canonical [`process_minimal_local_message`](../kernel/crates/oclive_kernel_host/
 
 这个默认传输绑定 Literal Prompt，只接受空 `requirements`；非空要求在 I/O / 模型调用前按本端点的输入约束返回既有 `INVALID_PARAMETER`，而不把它清空或将这个端点的限制推广到所有 Prompt。原进程内可选 Prompt 仍返回完整 typed Base 错误；本片未建立通用 BaseCallError 的 wire 映射。基础结果仍只含 `role_id`、原样 `reply`、`product_extensions: unavailable`；既有 Host 错误经现有 HTTP / IPC 错误链传递。真正的主聊天落地还需要角色状态与结果消费者接线，历史、幂等恢复、流式和媒体不由这个结果承诺。
 
+### 0.12 主聊天可消费的临时最小状态
+
+shared 的 [`useMinimalRoleChatStore`](../distros/shared/src/stores/minimalRoleChatStore.ts) 提供显式来源绑定、临时气泡和一次基础发送。它供发行版主聊天接线复用，**没有新增另一个会话产品**，当前选角 / composer 尚未调用它。`bindSource` 复制并冻结三个来源字段；这是临时输入绑定，不是文件校验、Host 角色激活或扩展发现。Host 仍在每次调用时按 §0.11 权威检查文件 / 资产与预算；角色文件可能在两次调用间改变，不宣称已锁住内容快照。
+
+最小状态不构造 `RoleInfo`，也不接入旧 chatStore 的 DB / IDB / persist 链。正文和正常空模型输出原样成为 `ChatMessage`；气泡 / 回合标识用 `minimal-local-*` 明确表示客户端本地身份，不当作后端行 ID。保留先前完成气泡只为当前界面展示，下一次请求不携带历史，不表示多轮记忆。重新绑定清空会话；空白输入或无绑定先拒绝，失败移除在途用户气泡并保留原错误，无普通发送 / 恢复 / 重试。返回身份 / unavailable / 正文类型异常时拒绝消费，不能用假产品状态补齐响应。
+
+取消、新发送和重绑定使旧调用失效，旧成功 / 失败不会覆盖新气泡、加载状态或最终事件。取消只停止客户端展示，非流式 IPC 与 Host 生成仍可能继续；本片没有服务端取消协议。提交 / 最终事件复用真实 hostEventBus，并显式 `skip_auto_tts: true`；既有语音提交消费者也尊重该标记，避免加载配置、角色语音档案和预热媒体资源，原未标记的语音行为保持。扩展仍表示 unavailable，不发送 fake emotion / relation / scene 或 stream 字段。
+
+证据是实际 Pinia / mitt 状态消费、IPC 替身与语音消费者的内存验证；不是实际选角 / composer / webview、音频、文件读写或所有发行版验收。下一片再把这份临时状态接入主聊天的选角、输入和扩展不可用展示，不能将该共享入口存在写成 UI 已完成。
+
 ## 1. 当前参考宿主内部划分
 
 | 组件 | 职责 | 面向 |

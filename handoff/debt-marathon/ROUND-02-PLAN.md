@@ -530,3 +530,11 @@
 **闭环 / 写集**：共享 DTO `kernel/crates/oclive_kernel_types/src/models/dto/minimal_role.rs` → Host `service/role/minimal.rs` / canonical `domain/chat_engine/process_message.rs` 及其 re-export → `http_api/chat.rs` / `mod.rs` → desktop `api/chat.rs` / `chat_backend.rs` / `kernel_attach/chat.rs` / `lib.rs` → `distros/shared/src/api/chat.ts`。新增 Host `tests/minimal_role_http.rs` 与 shared `api/minimalRoleChat.test.ts`，desktop 桥的合同检查放在既有 chat 模块测试区；同步本计划、角色边界、模块接线、父债状态格与 DEBT_CHANGELOG。旧完整 Role、发送/恢复/SSE、角色注册、六槽 traits、官方包、依赖与用户数据不改；Local 分支只服务现有测试/非桌面 Host，桌面仍由 HTTP 进程权威执行。
 
 **实施 / 复核 / 停止线**：控制方直接实施和语义自查，不称独立审查。现有 Base future 不要求 Send，在 Host 明确的 blocking worker + 当前 Tokio Handle 执行局部基础调用，不扩大六槽 async 约束。先写真实 Router（不监听端口）与 shared API 窄测，覆盖成功、鉴权拒绝零模型、坏来源/越界/超预算/非空要求零模型、模型失败原码和无丰富状态副作用；桥检查体/目标路由与既有错误映射，不手工加渲染层令牌。通过后核 Host/desktop 定向 Clippy、fmt、公开 API workspace doctest、layering/error-drift/module-compat、typecheck/eslint 与适用文档/债务/编码检查。本片先本地保留；主流程关联小片完成后的预定冻结点只跑一次完整本地与目标远端 CI。达到这些条件停止扩证，不启真实模型、音频、产品进程、监听器或历史身份；若发现新的产品/权限歧义，保留当前片并列明具体问题。
+
+### D-CLI-BLUEPRINT-05 · 主聊天接线前的临时最小会话消费（2026-10-04）
+
+**尺寸 / 基线 / 有限依赖**：M 级前端状态切片，起点 `8c84bdbd5193f207c93012c7df040ebb2353c3e2` 干净、仅本地验证。现有 roleStore 的完整 RoleInfo 与 chatStore 的历史缓存不是最小结果的合同；删除 / 编辑会调度缓存写入，不能把最小结果塞入旧状态再靠默认值隔离。本片先提供主聊天可直接消费的 shared 临时状态，不开放第二个独立会话产品，也不宣称选角界面已完成。
+
+**冻结行为 / 写集**：新增 `distros/shared/src/stores/minimalRoleChatStore.ts` 与同目录 `minimalRoleChatStore.test.ts`，复用现有 ChatMessage 形状及 `sendMinimalMessage`。显式绑定本地来源只登记临时输入，文件校验仍由 Host 在发送时权威执行；不称已加载 / 激活，不写丰富 RoleInfo / Host 插件选角。每次正常发送一次 IPC，正文 / 正常空回复原样保留；核返回技术身份与 unavailable，结果只加本地气泡 ID。取消、重新绑定和较新的发送使旧结果失效，立即移除旧在途气泡；取消只撤销客户端展示，不承诺取消 Host 生成。失败清理在途气泡并原样抛错，无普通发送 / 恢复 / 重试。最终事件一次、skip_auto_tts=true，消息提交 / 最终事件与真实 bus 相连；临时状态不接历史 / IDB / persist 插件或丰富扩展。已有语音 submit 消费者会预热资源，故在 `composables/useVoiceAutoTts.ts` / 同目录测试补显式 skip_auto_tts 的提交早退，保留旧事件行为。同步本计划、ROLE_PACK_BOUNDARY、父债状态格及 DEBT_CHANGELOG，其余源、UI / locale / 角色包 / Kernel / 依赖不动。
+
+**验证 / 复核 / 停止**：用真实 Pinia store、真实 mitt bus，仅 IPC 替身验证在途 / 原文 / 单次结果、来源快照、正常空结果、取消后晚成功 / 晚失败、重绑定与新发送、错误 / 身份错配零最终事件、无丰富发送 / 恢复。定向测试与旧 API / stream / rich send 回归、typecheck / ESLint / module-compat、文档 / 债务结构 / 编码 / diff 检查后自行语义复核并本地保留。无 Rust API 改动，不重跑 workspace doctest / Rust 或完整 CI；待同批 UI 接线后冻结统一验证。不扩查全部角色消费者，不启动模型 / 音频 / IPC 进程 / 用户数据；达到这个复用状态入口即停止这一片。

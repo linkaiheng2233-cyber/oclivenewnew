@@ -122,6 +122,29 @@ describe('voice auto TTS ownership', () => {
     vi.unstubAllGlobals()
   })
 
+  it('does not load or prewarm voice resources for an explicitly text-only submitted turn', async () => {
+    const wrapper = mount(Harness)
+    await Promise.resolve()
+    invalidateVoiceRuntimeConfig()
+    mocks.pluginDisabled = false
+    mocks.getSettings.mockResolvedValue({
+      config: { tts_expansion_enabled: true, auto_tts: true, role_tts_enabled: { 'new-role': true } },
+    })
+    vi.clearAllMocks()
+    try {
+      mocks.handlers.get('message:submit')?.({ role_id: 'new-role', skip_auto_tts: true })
+      await Promise.resolve()
+      expect(mocks.getSettings).not.toHaveBeenCalled()
+      expect(mocks.invokeFriendly).not.toHaveBeenCalled()
+      expect(mocks.directoryInvoke).not.toHaveBeenCalled()
+      expect(mocks.resolveSidecarEndpoint).not.toHaveBeenCalled()
+      expect(mocks.markSettled).not.toHaveBeenCalled()
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
   it('speaks the final authoritative reply once and stays silent until then', async () => {
     vi.stubGlobal('Audio', InMemoryAudio)
     // Raw streamed tokens the bubble may have previewed while the turn was still open.
