@@ -1,12 +1,15 @@
-//! Shared minimal-role material preparation for a Host-selected Prompt Base.
+//! Shared minimal-role preparation and an optional basic text operation.
 //!
 //! The Host supplies the current materials, requirements, and capability. This
-//! consumer prepares the same persona/material sections as the reference minimal
-//! prompt, then makes one call through the existing slot contract. It does not
-//! choose other slots, resolve assets, load a legacy `Role`, or own Host state.
+//! Prompt consumer prepares the same persona/material sections as the reference
+//! minimal prompt. The text consumer passes that selected Prompt's result to a
+//! bound LLM Base. Neither chooses capabilities, resolves assets, loads a legacy
+//! `Role`, owns Host state, or prescribes a six-slot turn order.
 
-use oclive_kernel_contracts::{BaseCallFuture, PromptBase};
-use oclive_kernel_types::{MinimalRoleDefinition, PromptBaseRequest};
+use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
+use oclive_kernel_types::{
+    BaseCallError, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
+};
 use oclive_validation::validate_minimal_role_definition;
 
 const PERSONA_HEADING: &str = "【角色设定】\n";
@@ -50,6 +53,98 @@ impl<'a> MinimalRolePromptConsumer<'a> {
 impl PromptBase for MinimalRolePromptConsumer<'_> {
     fn assemble<'a>(&'a self, request: PromptBaseRequest<'a>) -> BaseCallFuture<'a, String> {
         assemble_minimal_role_materials(self.definition, self.prompt, request)
+    }
+}
+
+/// A failure of one capability call in the optional basic text operation.
+///
+/// The phase identifies which bound capability did not complete normally; the
+/// enclosed error preserves its complete reason and detail. This is not a Host
+/// session/turn terminal state, effect ledger, retry permission or wire error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MinimalRoleTextError {
+    /// Prompt preparation/assembly did not complete; no LLM call was made.
+    Prompt(BaseCallError),
+    /// The LLM call did not complete normally; no effects are inferred.
+    Llm(BaseCallError),
+}
+
+impl std::fmt::Display for MinimalRoleTextError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Prompt(error) => write!(formatter, "minimal role Prompt: {error}"),
+            Self::Llm(error) => write!(formatter, "minimal role LLM: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for MinimalRoleTextError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Prompt(error) | Self::Llm(error) => Some(error),
+        }
+    }
+}
+
+/// A reusable basic text operation outside the small Kernel's responsibilities.
+///
+/// The caller supplies logically valid role content and selects compatible Prompt
+/// and LLM Base instances. This consumer reuses the existing role preparation,
+/// makes one Prompt call and, only on normal completion, one LLM call with the
+/// Prompt's verbatim output. The generated text is returned unchanged.
+///
+/// This explicit operation's causal dependency is not a mandatory six-stage
+/// pipeline or a new slot contract. It performs no other slot calls, asset I/O,
+/// identity/state management, resource binding, persistence, retry or fallback.
+/// Normal empty results remain empty. Local futures may suspend and need not be
+/// `Send`; the caller remains responsible for scheduling and cancellation, whose
+/// effects on an external provider are not inferred here.
+pub struct MinimalRoleTextConsumer<'a> {
+    prompt: MinimalRolePromptConsumer<'a>,
+    llm: &'a dyn LlmBase,
+}
+
+impl<'a> MinimalRoleTextConsumer<'a> {
+    /// Validate minimal logical content and borrow the caller's bound capabilities.
+    ///
+    /// Asset references are checked as content only, not read or rendered. The
+    /// Prompt must accept prepared fragments rather than already carrying this
+    /// role's persona, and its agreement must serve the caller's requirements.
+    ///
+    /// # Errors
+    /// Returns existing logical validation diagnostics without calling either Base.
+    pub fn new(
+        definition: &'a MinimalRoleDefinition,
+        prompt: &'a dyn PromptBase,
+        llm: &'a dyn LlmBase,
+    ) -> Result<Self, Vec<String>> {
+        Ok(Self {
+            prompt: MinimalRolePromptConsumer::new(definition, prompt)?,
+            llm,
+        })
+    }
+
+    /// Prepare this call's role materials and generate using the two bound Bases.
+    ///
+    /// Material/requirement semantics are unchanged from the Prompt consumer. No
+    /// Host-specific empty-user-input rule or completed-result quality assertion
+    /// is introduced at this library boundary.
+    ///
+    /// # Errors
+    /// Returns the failed phase with the provider's full error, without retry.
+    pub async fn generate(
+        &self,
+        request: PromptBaseRequest<'_>,
+    ) -> Result<String, MinimalRoleTextError> {
+        let prepared = self
+            .prompt
+            .assemble(request)
+            .await
+            .map_err(MinimalRoleTextError::Prompt)?;
+        self.llm
+            .generate(LlmBaseRequest { input: &prepared })
+            .await
+            .map_err(MinimalRoleTextError::Llm)
     }
 }
 

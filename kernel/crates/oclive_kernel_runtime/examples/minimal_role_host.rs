@@ -10,7 +10,9 @@ use std::path::Path;
 use std::task::{Context, Poll, Waker};
 
 use oclive_kernel_contracts::{BaseCallFuture, LlmBase, PromptBase};
-use oclive_kernel_runtime::domain::minimal_role_consumer::MinimalRolePromptConsumer;
+use oclive_kernel_runtime::domain::minimal_role_consumer::{
+    MinimalRoleTextConsumer, MinimalRoleTextError,
+};
 use oclive_kernel_runtime::domain::minimal_role_prompt::MinimalRolePrompt;
 use oclive_kernel_types::{
     BaseCallError, BaseCallErrorKind, LlmBaseRequest, MinimalRoleDefinition, PromptBaseRequest,
@@ -227,18 +229,25 @@ impl<L: LlmBase, C: HostContent> MinimalHost<L, C> {
             materials: &materials,
             requirements,
         };
-        let prepared = match selected_prompt {
-            Some(prompt) => {
-                let consumer = MinimalRolePromptConsumer::new(self.content.definition(), prompt)
+        if let Some(prompt) = selected_prompt {
+            let consumer =
+                MinimalRoleTextConsumer::new(self.content.definition(), prompt, &self.llm)
                     .map_err(|_| HostError::InvalidRoleDefinition)?;
-                poll_immediate(consumer.assemble(request))?
-            }
-            None => {
-                let prompt = MinimalRolePrompt::new(self.content.definition())
-                    .map_err(|_| HostError::InvalidRoleDefinition)?;
-                poll_immediate(prompt.assemble(request))?
-            }
-        };
+            // The shared operation retains the full phase/error. This example's
+            // existing narrow HostError deliberately reports only its reason kind.
+            return poll_immediate(Box::pin(async {
+                consumer
+                    .generate(request)
+                    .await
+                    .map_err(|error| match error {
+                        MinimalRoleTextError::Prompt(reason)
+                        | MinimalRoleTextError::Llm(reason) => reason,
+                    })
+            }));
+        }
+        let prompt = MinimalRolePrompt::new(self.content.definition())
+            .map_err(|_| HostError::InvalidRoleDefinition)?;
+        let prepared = poll_immediate(prompt.assemble(request))?;
         poll_immediate(self.llm.generate(LlmBaseRequest { input: &prepared }))
     }
 

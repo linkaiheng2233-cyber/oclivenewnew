@@ -511,3 +511,13 @@
 **实际实施 / 兼容核对**：A 与 B 共用消费者，没有变更六槽 trait、DTO、配置或依赖。Host 的九项外部回归中，新增用例确认同一 Host 在显式选择之后再走默认入口时仍使用原 Literal，选择仅属于当前调用；本地非 Send Prompt 在真实异步让出后读到原材料。B 选择有限 JSON 协议，解码后逐片核内容而非宣称任意 Prompt 都输出同一字节。两片已合并为同一实质提交批次，避免为中间片单独完整验证。编译红、首次 fmt 红及修后结果分别保存于 `.cursor/plans/debt-minimal-role-host-choice-20261004-r0/`；当前 Host lib 635 项、外部九项、示例六项/native、定向 Clippy 与 workspace doctest 47 项已通过。后续适用文档门禁和冻结完整链另记，不将本地结果外推为目标远端已通过。
 
 **2026-10-04 收口 / 下一片准入**：上述实际代码冻结于 `8a642fa004cb62fb9364b66bc2bc33eed4b9552a`；完整本地链 native exit 0，前后同 SHA、干净工作树、临时环境恢复，[正式 CI 37160662341](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37160662341) 对同一 SHA success、17/17。有限共享消费者/Host 接线里程碑已通过，父债仍 Partial。当前只登记这一迟到的远端结果，写集限本计划、DEBT_CHANGELOG 本事件及主台账本债状态格，前四列不变；适用文档检查后本地提交，随下一实质批次推送，不为结果登记重复 Rust/模型/全量 CI。ChatPro 的独立基础会话或主聊天统一接入仍待明确产品范围，本次没有实现传输/UI，也不自动加入历史、恢复和丰富生命周期。
+
+**2026-10-04 后续选择 / 已确认归属**：维护者已选择让最小角色进入发行版主流程，独立基础会话不再是默认施工方向；随后明确“共享运行库承担最小适配，保留小 Kernel 边界”，并补充仅在核心外加一层，方便最小角色内容通用。Host 保留能力/资源绑定、调用与结果接线；不增加完整产品角色的通用必填要求，也不把六槽变为每轮必跑阶段。该选择没有将角色生命周期、授权、状态应用或固定回合调度转入小 Kernel，也不自动承诺历史/恢复。两次确认归入 DEBT_CHANGELOG，不再等待这一归属决策；后续实际写集见下片，父债 Partial 与暂停项保持。
+
+### D-CLI-BLUEPRINT-05 · 核心外共享基础文本消费（2026-10-04）
+
+**尺寸 / 起点 / 实际缺口**：L 的增量公开库调用面，代码基线 `d780bec1`（完整 SHA 由本机输入记录保存）；开场仅上段本控制者的未提交选择登记，无他人变更。维护者已确认主流程接入目标和核心外共享层。现有公共消费者只处理人设与 Prompt；独立 Host 仍自行把已准备输入接入 LLM。补这一实际复用断点，再进入参考发行版的实际接线，不扩查全部产品/六槽实现。
+
+**冻结语义 / 关联闭环 / 写集**：在已有 runtime `domain/minimal_role_consumer.rs` 增加 `MinimalRoleTextConsumer`，借用最小定义及调用方绑定的 `PromptBase`、`LlmBase`，构造复用现有逻辑校验。一次显式 `generate` 复用已有 Prompt 消费者；只有 Prompt 正常完成后才调用 LLM，输入逐字等于 Prompt 输出。两种失败分阶段包裹完整 BaseCallError，正常空输出、要求和借用保持；无 retry/fallback、结果修补、调度器、资源访问、状态/身份/持久化或其它槽调用。此为可选基础文本操作的实际因果，不规定 Host 的六阶段顺序。既有 Prompt 消费者和旧默认接口不变。独立 Host 的显式选择分支改用此操作，默认分支与原窄错误载体保持。代码写集仅该模块、现有外部 `tests/minimal_role_consumer.rs` 和 `examples/minimal_role_host.rs`；契约/types、Host/HTTP/Tauri/UI、依赖、模板和用户数据不动。角色用法在 ROLE_PACK_BOUNDARY，模块权责只在 MODULE_MAP；本计划、DEBT_CHANGELOG 及父债状态格同步，不改债行前四列或 Partial。
+
+**必要验证 / 复核 / 停止**：先让新外部调用在旧源码因符号不存在编译红，再验证完整材料/要求与 Prompt 输出直接到 LLM、一次调用、两阶段各五类完整错误（Prompt 失败模型零调用）、正常空输入/输出不改写、逻辑无效时两能力零调用；通过两个真实 Pending 边界验证本地非 Send 实现与 LLM 输入借用。原四项消费者回归、示例六项/native 与参考 Host 九项作兼容核对。定向 runtime all-targets/all-features Clippy/fmt、workspace doctest和适用分层/模块/文档/债结构/编码门禁；runtime 既有 doctest=false 保持，不声称其代码块已执行。控制方直接实施和语义 diff 自查，不称独立复核。局部通过后与已保留文档提交合成一批，冻结后一次完整本地链并按既有授权推送，新 SHA 远端另核。达到公共基础调用与一个真实消费者接线即停，不制造六个同形包装、固定 Kernel 回合或通用要求语言，也不凭本片宣称 ChatPro 主流程已经完成。
