@@ -1,6 +1,17 @@
 /** app — zh. */
 export default {
   app: {
+    minimalRole: {
+      select: '使用最小角色',
+      active: '最小角色 · 基础文本',
+      assetRoot: '本地资产根（绝对路径）',
+      definitionReference: '逻辑定义文件（相对资产根）',
+      bind: '绑定到主聊天',
+      return: '返回完整角色',
+      stopWaiting: '停止等待',
+      scope: '仅基础文本。关系、场景、立绘、人格、成人、插件工具、语音、历史和角色设置不可用；消息仅保留在当前界面。',
+      validationHint: '绑定不代表已加载；发送时由 Host 校验文件和模型。停止等待仅撤销界面结果，Host 可能继续生成。',
+    },
     locale: {
       label: '界面语言',
       system: '跟随系统',

@@ -4,6 +4,7 @@ import type { ComposerTranslation } from 'vue-i18n'
 import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
+import { useMinimalRoleChatStore } from '@oclive/shared/stores/minimalRoleChatStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
@@ -15,17 +16,25 @@ export function useChatSend(options: {
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
   onTurnRecorded?: (userText: string) => void
+  isContextChanging?: () => boolean
 }) {
   const chatStore = useChatStore()
+  const minimal = useMinimalRoleChatStore()
   const roleStore = useRoleStore()
   const uiStore = useUiStore()
   const debugStore = useDebugStore()
   const { applyResolvedNarrativeScene } = useNarrativeScene()
 
   async function onSend(payload: { content: string }) {
+    if (options.isContextChanging?.())
+      return
     options.clearSceneBarsBeforeSend()
     const userText = payload.content
     try {
+      if (roleStore.minimalRoleActive) {
+        await minimal.sendMessage(userText)
+        return
+      }
       const sceneId = effectiveChatSceneId(
         roleStore.roleInfo.interactionMode,
         uiStore.sceneId,
@@ -62,6 +71,8 @@ export function useChatSend(options: {
   }
 
   async function onAdultAction(payload: { action: 'exit' }) {
+    if (options.isContextChanging?.() || roleStore.minimalRoleActive)
+      return
     options.clearSceneBarsBeforeSend()
     try {
       const sceneId = effectiveChatSceneId(

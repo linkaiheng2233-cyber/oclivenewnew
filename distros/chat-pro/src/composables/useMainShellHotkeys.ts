@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { MainShellSettingsTab } from './useMainShellWindows'
 import { useGlobalHotkeys } from '@oclive/shared/composables/useGlobalHotkeys'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, watch } from 'vue'
 
 export function useMainShellHotkeys(options: {
   simplePluginManagerOpen: Ref<boolean>
@@ -13,6 +13,8 @@ export function useMainShellHotkeys(options: {
   debugVisible: ComputedRef<boolean>
   pluginUiEnabled: ComputedRef<boolean>
   debugUiEnabled: ComputedRef<boolean>
+  settingsUiEnabled: ComputedRef<boolean>
+  voiceInputEnabled: ComputedRef<boolean>
   openPluginManagerPanel: () => void
   openModelManager: () => void
   toggleDebug: () => void
@@ -20,6 +22,18 @@ export function useMainShellHotkeys(options: {
   closeModelManager: () => void
   settingsFocusTab: Ref<MainShellSettingsTab | null>
 }) {
+  let voiceHoldStarted = false
+  function stopVoiceHold(): void {
+    if (!voiceHoldStarted)
+      return
+    voiceHoldStarted = false
+    hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'stop' })
+  }
+  watch(options.voiceInputEnabled, (enabled) => {
+    if (!enabled)
+      stopVoiceHold()
+  }, { flush: 'sync' })
+  onBeforeUnmount(stopVoiceHold)
   const {
     shortcutHelpOpen,
     openShortcutHelp,
@@ -33,6 +47,7 @@ export function useMainShellHotkeys(options: {
     debugVisible: options.debugVisible,
     pluginUiEnabled: options.pluginUiEnabled,
     debugUiEnabled: options.debugUiEnabled,
+    settingsUiEnabled: options.settingsUiEnabled,
     openPluginManagerPanel: options.openPluginManagerPanel,
     openModelManager: options.openModelManager,
     toggleDebug: options.toggleDebug,
@@ -41,9 +56,14 @@ export function useMainShellHotkeys(options: {
     holdActions: [
       {
         actionId: 'voice.holdToTalk',
-        enabled: computed(() => true),
-        onStart: () => hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'start' }),
-        onStop: () => hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'stop' }),
+        enabled: options.voiceInputEnabled,
+        onStart: () => {
+          if (options.voiceInputEnabled.value && !voiceHoldStarted) {
+            voiceHoldStarted = true
+            hostEventBus.emit('com.oclive.voice.asr:hold', { phase: 'start' })
+          }
+        },
+        onStop: stopVoiceHold,
       },
     ],
   })

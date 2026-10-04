@@ -39,7 +39,7 @@ import { remainderAfterSpokenPrefix } from '@oclive/shared/utils/extractFirstSpe
 import { voiceDialogueFromRaw } from '@oclive/shared/utils/voiceDialogueFromRaw'
 import { VoiceSpeakDeduper } from '@oclive/shared/utils/voiceSpeakDeduper'
 import { formatVoiceSpeakFailure, shouldFallbackStreamToRpc } from '@oclive/shared/utils/voiceSpeakErrors'
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 import {
   canAutoSpeakRole,
   directiveCache,
@@ -712,6 +712,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
   }
 
   function onStreamSentence(payload: unknown): void {
+    if (roleStore.minimalRoleActive)
+      return
     const p = payload as StreamSentencePayload
     const sentence = p.sentence?.trim()
     const streamId = p.stream_id?.trim()
@@ -738,6 +740,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     const turnId = p.turn_id?.trim()
     let settlement: 'complete' | 'disabled' | 'error' = 'disabled'
     try {
+      if (roleStore.minimalRoleActive)
+        return
       const payloadRoleId = p.role_id?.trim()
       if (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
         return
@@ -829,7 +833,7 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       skip_auto_tts?: boolean
     }
     // A text-only turn must not load profiles or prewarm media resources either.
-    if (p.skip_auto_tts)
+    if (p.skip_auto_tts || roleStore.minimalRoleActive)
       return
     const roleId = p.role_id?.trim() || roleStore.currentRoleId
     const streamId = p.stream_id?.trim()
@@ -861,6 +865,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     roleVoiceProfileConfiguredCache.clear()
     resetSpeakPipeline()
     resetVoiceExpansionWarmSchedule()
+    if (roleStore.minimalRoleActive)
+      return
     const generation = speakGeneration
     const roleId = roleStore.currentRoleId
     void loadVoiceRuntimeConfig(id => pluginStore.isPluginDisabled(id)).then((cfg) => {
@@ -872,6 +878,8 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
 
   function onRoleSwitched(payload: unknown): void {
     resetSpeakPipeline()
+    if (roleStore.minimalRoleActive)
+      return
     const generation = speakGeneration
     const p = payload as { roleId?: string }
     const roleId = p.roleId?.trim() || roleStore.currentRoleId
@@ -889,13 +897,23 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     hostEventBus.on(VOICE_STREAM_SENTENCE_EVENT, onStreamSentence)
     hostEventBus.on(VOICE_ASR_CONFIG_UPDATED_EVENT, onConfigUpdated)
     hostEventBus.on('role:switched', onRoleSwitched)
+    if (roleStore.minimalRoleActive)
+      return
+    const generation = speakGeneration
     const disabled = (id: string) => pluginStore.isPluginDisabled(id)
     void loadVoiceRuntimeConfig(disabled).then((cfg) => {
-      if (!cfg)
+      if (!cfg || generation !== speakGeneration || roleStore.minimalRoleActive)
         return
-      void prewarmRoleVoice(roleStore.currentRoleId, cfg, speakGeneration)
+      void prewarmRoleVoice(roleStore.currentRoleId, cfg, generation)
     })
   })
+
+  watch(() => roleStore.minimalRoleActive, (active) => {
+    if (active) {
+      resetSpeakPipeline()
+      resetVoiceExpansionWarmSchedule()
+    }
+  }, { flush: 'sync' })
 
   onBeforeUnmount(() => {
     resetSpeakPipeline()

@@ -22,6 +22,7 @@ import { normalizePluginBackends } from '@oclive/shared/api/settings'
 import { rt } from '@oclive/shared/i18n/runtimeT'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { normalizeSlotBackendWire } from '@oclive/shared/lib/slotRegistry'
+import { useMinimalRoleChatStore } from '@oclive/shared/stores/minimalRoleChatStore'
 import {
   normalizeInteractionMode,
   packDefaultFromApi,
@@ -364,6 +365,8 @@ export const useRoleStore = defineStore(
         this.applyRoleInfo(info)
       },
       async refreshRoleInfo() {
+        if (this.minimalRoleActive)
+          return
         const roleId = this.currentRoleId
         const generation = ++roleInfoGeneration
         try {
@@ -491,15 +494,21 @@ export const useRoleStore = defineStore(
       pick: ['currentRoleId'],
     },
     getters: {
+      /** Active main-chat context; the retained rich role is not a minimal role. */
+      minimalRoleActive(): boolean {
+        return useMinimalRoleChatStore().source !== null
+      },
       /** Identity dropdown `:value`: sentinel for default identity option, else resolved relation key */
       relationSelectValue(): string {
+        if (this.minimalRoleActive)
+          return ''
         return this.roleInfo.useManifestDefault
           ? OCLIVE_DEFAULT_RELATION_SENTINEL
           : this.roleInfo.currentUserRelation
       },
       /** Immersive mode: virtual time, schedule, movement bar, etc. */
       interactionImmersive(): boolean {
-        return this.roleInfo.interactionMode === 'immersive'
+        return !this.minimalRoleActive && this.roleInfo.interactionMode === 'immersive'
       },
     },
   },

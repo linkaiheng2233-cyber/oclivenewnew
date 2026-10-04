@@ -73,6 +73,13 @@ export function useUnifiedKeybindings(options: {
 
   const pressedHold = new Set<KeybindingActionId>()
 
+  for (const hold of options.holdActions ?? []) {
+    watch(hold.enabled, (enabled) => {
+      if (!enabled && pressedHold.delete(hold.actionId))
+        hold.onStop()
+    }, { flush: 'sync' })
+  }
+
   function canProcessEvent(e: KeyboardEvent): boolean {
     if (e.repeat)
       return false

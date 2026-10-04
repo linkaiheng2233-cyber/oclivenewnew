@@ -45,7 +45,7 @@ function onIdentityClick() {
         {{ favorabilityText }}
       </span>
     </template>
-    <template v-if="hasCatalog && currentIdentityLabel">
+    <template v-if="!roleStore.minimalRoleActive && hasCatalog && currentIdentityLabel">
       <span class="tool-status-bar__sep" aria-hidden="true">·</span>
       <button
         type="button"

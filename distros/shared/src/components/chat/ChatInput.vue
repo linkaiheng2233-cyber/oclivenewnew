@@ -7,7 +7,7 @@ import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const props = defineProps<{ loading: boolean }>()
+const props = defineProps<{ loading: boolean, textOnly?: boolean, roleName?: string }>()
 
 const emit = defineEmits<{
   send: [payload: { content: string }]
@@ -22,7 +22,7 @@ const activeSceneId = computed(() =>
   effectiveChatSceneId(roleStore.roleInfo.interactionMode, uiStore.sceneId),
 )
 const adultInteractionActive = computed(() =>
-  adultStore.sessionFor(roleStore.currentRoleId, activeSceneId.value).active,
+  !props.textOnly && adultStore.sessionFor(roleStore.currentRoleId, activeSceneId.value).active,
 )
 
 const text = ref('')
@@ -30,7 +30,7 @@ const textAreaEl = ref<HTMLTextAreaElement | null>(null)
 
 const placeholder = computed(() =>
   t('common.chatPlaceholder', {
-    name: roleStore.roleInfo.name?.trim() || t('app.defaultRoleName'),
+    name: props.roleName || roleStore.roleInfo.name?.trim() || t('app.defaultRoleName'),
   }),
 )
 

@@ -23,7 +23,7 @@ export function useRoleSnapshotPoll() {
   let pollGeneration = 0
 
   async function tick() {
-    if (chatStore.isLoading) {
+    if (roleStore.minimalRoleActive || chatStore.isLoading) {
       return
     }
     const roleId = roleStore.currentRoleId
@@ -37,6 +37,7 @@ export function useRoleSnapshotPoll() {
     const generation = ++pollGeneration
     const snap = await fetchRoleSnapshot(roleId, sceneId)
     if (generation !== pollGeneration
+      || roleStore.minimalRoleActive
       || roleStore.currentRoleId !== roleId
       || (roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined) !== sceneId) {
       return

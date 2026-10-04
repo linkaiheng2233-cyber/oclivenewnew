@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   directoryInvoke: vi.fn(),
   markSettled: vi.fn(),
   showToast: vi.fn(),
-  roleStore: { currentRoleId: 'new-role' },
+  roleStore: { currentRoleId: 'new-role', minimalRoleActive: false },
   pluginDisabled: true,
   getSettings: vi.fn(),
   invokeFriendly: vi.fn(),
@@ -112,6 +112,7 @@ describe('voice auto TTS ownership', () => {
     invalidateVoiceRuntimeConfig()
     mocks.handlers.clear()
     mocks.roleStore.currentRoleId = 'new-role'
+    mocks.roleStore.minimalRoleActive = false
     mocks.pluginDisabled = true
     mocks.getSettings.mockResolvedValue({ config: {} })
     mocks.invokeFriendly.mockResolvedValue('')
@@ -139,6 +140,27 @@ describe('voice auto TTS ownership', () => {
       expect(mocks.directoryInvoke).not.toHaveBeenCalled()
       expect(mocks.resolveSidecarEndpoint).not.toHaveBeenCalled()
       expect(mocks.markSettled).not.toHaveBeenCalled()
+    }
+    finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('keeps mounted, config, role-switch and legacy voice events inert in the minimal context', async () => {
+    mocks.roleStore.minimalRoleActive = true
+    mocks.pluginDisabled = false
+    const wrapper = mount(Harness)
+    try {
+      mocks.handlers.get('com.oclive.voice.asr:config-updated')?.({})
+      mocks.handlers.get('role:switched')?.({ roleId: 'new-role' })
+      mocks.handlers.get('message:submit')?.({ role_id: 'new-role' })
+      mocks.handlers.get('com.oclive.voice:stream-sentence')?.({ role_id: 'new-role', sentence: 'obsolete', stream_id: 'old' })
+      await mocks.handlers.get('message:sent')?.({ role_id: 'new-role', reply: 'obsolete' })
+      await Promise.resolve()
+      expect(mocks.getSettings).not.toHaveBeenCalled()
+      expect(mocks.directoryInvoke).not.toHaveBeenCalled()
+      expect(mocks.invokeFriendly).not.toHaveBeenCalled()
+      expect(mocks.resolveSidecarEndpoint).not.toHaveBeenCalled()
     }
     finally {
       wrapper.unmount()

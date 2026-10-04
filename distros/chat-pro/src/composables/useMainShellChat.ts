@@ -5,6 +5,7 @@ import type { useUiStore } from '@oclive/shared/stores/uiStore'
 import type { ComposerTranslation } from 'vue-i18n'
 import { useChatSend } from '@oclive/shared/composables/useChatSend'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { useMinimalRoleChatStore } from '@oclive/shared/stores/minimalRoleChatStore'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 import { computed, ref } from 'vue'
 
@@ -16,8 +17,12 @@ export function useMainShellChat(options: {
   clearSceneBarsBeforeSend: () => void
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
   onTurnRecorded: (userText: string) => void
+  isContextChanging?: () => boolean
 }) {
   const chatStore = useChatStore()
+  const minimalRoleChatStore = useMinimalRoleChatStore()
+  const activeChatKey = computed(() => minimalRoleChatStore.source?.role_id
+    ?? `${options.roleStore.currentRoleId}-${options.uiStore.sceneId}`)
   const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
   const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 
@@ -29,24 +34,32 @@ export function useMainShellChat(options: {
   )
 
   const messages = computed(() =>
-    chatStore.messagesForRoleScene(options.roleStore.currentRoleId, activeSceneId.value),
+    options.roleStore.minimalRoleActive
+      ? minimalRoleChatStore.messages
+      : chatStore.messagesForRoleScene(options.roleStore.currentRoleId, activeSceneId.value),
   )
 
   const chatListLoading = computed(() =>
-    chatStore.isLoading
-    || chatStore.isMessagesLoadingFor(options.roleStore.currentRoleId, activeSceneId.value),
+    options.roleStore.minimalRoleActive
+      ? minimalRoleChatStore.isLoading
+      : chatStore.isLoading
+        || chatStore.isMessagesLoadingFor(options.roleStore.currentRoleId, activeSceneId.value),
   )
 
   const latestRoleplayAside = computed(() => {
+    if (options.roleStore.minimalRoleActive)
+      return ''
     const roleId = options.roleStore.currentRoleId
     return chatStore.lastAssistantAsideFor(roleId, activeSceneId.value)
   })
 
   const sceneHistorySplitIndex = computed(() =>
-    chatStore.sceneHistorySplitForRoleScene(
-      options.roleStore.currentRoleId,
-      activeSceneId.value,
-    ),
+    options.roleStore.minimalRoleActive
+      ? 0
+      : chatStore.sceneHistorySplitForRoleScene(
+          options.roleStore.currentRoleId,
+          activeSceneId.value,
+        ),
   )
 
   const { onSend, onAdultAction } = useChatSend({
@@ -56,10 +69,13 @@ export function useMainShellChat(options: {
     clearSceneBarsBeforeSend: options.clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply: options.offerSceneBarsAfterReply,
     onTurnRecorded: options.onTurnRecorded,
+    isContextChanging: options.isContextChanging,
   })
 
   return {
     chatStore,
+    minimalRoleChatStore,
+    activeChatKey,
     chatListRef,
     chatInputRef,
     messages,

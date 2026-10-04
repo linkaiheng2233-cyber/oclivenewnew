@@ -15,6 +15,7 @@ export interface UseGlobalHotkeysOptions {
   debugVisible: Ref<boolean> | ComputedRef<boolean>
   pluginUiEnabled: Ref<boolean> | ComputedRef<boolean>
   debugUiEnabled?: Ref<boolean> | ComputedRef<boolean>
+  settingsUiEnabled?: Ref<boolean> | ComputedRef<boolean>
   openPluginManagerPanel: () => void
   openModelManager: () => void
   toggleDebug: () => void
@@ -36,6 +37,8 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
   }
 
   function openSettingsView(): void {
+    if (opts.settingsUiEnabled?.value === false)
+      return
     opts.settingsViewOpen.value = true
     opts.topMoreOpen.value = false
   }
@@ -49,8 +52,10 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
       },
       {
         actionId: 'app.openSettings',
-        enabled: computed(() => true),
+        enabled: computed(() => opts.settingsUiEnabled?.value !== false),
         run: () => {
+          if (opts.settingsUiEnabled?.value === false)
+            return
           if (isTheater.value) {
             hostEventBus.emit('theater:settings', { action: 'toggle' })
             return

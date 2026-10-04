@@ -9,8 +9,9 @@ withDefaults(
     modelsActive: boolean
     moreOpen: boolean
     showPluginsButton?: boolean
+    settingsEnabled?: boolean
   }>(),
-  { showPluginsButton: true },
+  { showPluginsButton: true, settingsEnabled: true },
 )
 
 const emit = defineEmits<{
@@ -56,6 +57,7 @@ const { t } = useI18n()
       class="tool-activity-bar__btn"
       :class="{ 'tool-activity-bar__btn--active': settingsActive }"
       :title="t('toolShell.activitySettings')"
+      :disabled="!settingsEnabled"
       :aria-label="t('toolShell.activitySettings')"
       @click="emit('openSettings')"
     >

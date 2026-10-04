@@ -12,6 +12,7 @@ import PresetRolePicker from '@oclive/shared/components/onboarding/PresetRolePic
 import PluginChatHeaderSlots from '@oclive/shared/components/PluginChatHeaderSlots.vue'
 import PluginSidebarSlots from '@oclive/shared/components/PluginSidebarSlots.vue'
 import PluginSlotEmbed from '@oclive/shared/components/PluginSlotEmbed.vue'
+import MinimalRoleSourceControls from '@oclive/shared/components/role/MinimalRoleSourceControls.vue'
 import RoleSelector from '@oclive/shared/components/role/RoleSelector.vue'
 import TopBarSceneModeDialog from '@oclive/shared/components/scene/TopBarSceneModeDialog.vue'
 import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
@@ -48,6 +49,10 @@ const {
   toast,
   showToast,
   roleStore,
+  minimalRoleChatStore,
+  activeChatKey,
+  onBindMinimalSource,
+  onReturnToRichRole,
   chatStore,
   debugStore,
   uiStore,
@@ -129,6 +134,7 @@ function onLeftRailResize(deltaX: number) {
       <header class="top-bar">
         <TopBarMorePanel
           v-model="topMoreOpen"
+          :settings-enabled="!roleStore.minimalRoleActive"
           :relation-options="relationOptions"
           :all-scene-options="allSceneOptions"
           @open-settings="openSettingsView"
@@ -144,6 +150,7 @@ function onLeftRailResize(deltaX: number) {
         >
           <template #leading>
             <RoleSelector
+              v-if="!roleStore.minimalRoleActive"
               variant="topbar"
               :sections="['role']"
               :current-role-id="roleStore.currentRoleId"
@@ -154,12 +161,23 @@ function onLeftRailResize(deltaX: number) {
               @change-role="onSwitchRole"
               @change-relation="onChangeRelation"
             />
+            <MinimalRoleSourceControls
+              :source="minimalRoleChatStore.source"
+              :loading="minimalRoleChatStore.isLoading"
+              :disabled="roleSwitching"
+              @bind="onBindMinimalSource"
+              @return="onReturnToRichRole"
+              @cancel="minimalRoleChatStore.cancelPendingSend"
+            />
             <KernelStatusBar class="top-bar-kernel-status" />
           </template>
         </TopBarMorePanel>
       </header>
 
       <StartupWarningsBanner />
+      <p v-if="roleStore.minimalRoleActive" class="connectivity-banner" role="status">
+        {{ t('app.minimalRole.scope') }}
+      </p>
 
       <div
         v-if="roleStore.interactionImmersive && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
@@ -210,6 +228,7 @@ function onLeftRailResize(deltaX: number) {
         >
           <aside ref="leftPaneRef" class="left-pane">
             <RoleDetailView
+              v-if="!roleStore.minimalRoleActive"
               class="character-block"
               :layout="wideSplitLayout ? 'sidebar' : 'stack'"
               :role-id="roleStore.currentRoleId"
@@ -257,7 +276,7 @@ function onLeftRailResize(deltaX: number) {
               <transition name="fade">
                 <ChatMessageList
                   ref="chatListRef"
-                  :key="`${roleStore.currentRoleId}-${uiStore.sceneId}`"
+                  :key="activeChatKey"
                   :messages="messages"
                   :history-split-index="sceneHistorySplitIndex"
                   :loading="chatListLoading"
@@ -267,11 +286,13 @@ function onLeftRailResize(deltaX: number) {
             </div>
             <section class="input-area">
               <ImmersiveUnlockBanner
+                v-if="!roleStore.minimalRoleActive"
                 :visible="progressive.showImmersiveUnlockBanner"
                 @try-story="progressive.tryStoryMode"
                 @dismiss="progressive.dismissImmersiveHint"
               />
               <ChatPluginToolbarSlots
+                v-if="!roleStore.minimalRoleActive"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
                 :platform-only="!roleStore.interactionImmersive"
               />
@@ -289,10 +310,12 @@ function onLeftRailResize(deltaX: number) {
                 @confirm-post-reply="confirmPostReplyScene"
                 @dismiss-post-reply="dismissPostReplySceneBar"
               />
-              <InteractionModeBar />
+              <InteractionModeBar v-if="!roleStore.minimalRoleActive" />
               <ChatInput
                 ref="chatInputRef"
-                :loading="chatStore.isLoading"
+                :loading="chatListLoading"
+                :text-only="roleStore.minimalRoleActive"
+                :role-name="roleName"
                 @send="onSend"
                 @adult-action="onAdultAction"
               />
@@ -317,6 +340,7 @@ function onLeftRailResize(deltaX: number) {
       />
 
       <PresetRolePicker
+        v-if="!roleStore.minimalRoleActive"
         :visible="presetPickerOpen"
         :roles="roleStore.roles"
         :picking="presetPickerPicking"
@@ -324,6 +348,7 @@ function onLeftRailResize(deltaX: number) {
       />
 
       <ImmersiveModeIntro
+        v-if="!roleStore.minimalRoleActive"
         :visible="progressive.immersiveIntroVisible"
         @dismiss="progressive.dismissImmersiveIntro"
       />

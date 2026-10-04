@@ -1,3 +1,4 @@
+import type { MinimalRoleLocalSource } from '@oclive/shared/api/chat'
 import type { LocalePreference } from '@oclive/shared/i18n'
 import {
   loadRole,
@@ -6,6 +7,7 @@ import {
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useInteractionModeSettings } from '@oclive/shared/composables/useInteractionModeSettings'
 import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
+import { useMinimalRoleSelection } from '@oclive/shared/composables/useMinimalRoleSelection'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
 import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
@@ -72,6 +74,7 @@ export function useMainShell() {
 
   const leftPaneRef = ref<HTMLElement | null>(null)
   const roleSwitching = ref(false)
+  const minimalSelection = useMinimalRoleSelection()
   const presetPickerOpen = ref(false)
   const presetPickerPicking = ref(false)
 
@@ -91,10 +94,12 @@ export function useMainShell() {
   }
 
   const relationOptions = computed(() =>
-    buildRelationDropdownOptions(
-      roleStore.roleInfo.userRelations ?? [],
-      roleStore.roleInfo.defaultRelation,
-    ),
+    roleStore.minimalRoleActive
+      ? []
+      : buildRelationDropdownOptions(
+          roleStore.roleInfo.userRelations ?? [],
+          roleStore.roleInfo.defaultRelation,
+        ),
   )
 
   const connectivityPluginIndexDetail = computed(() => {
@@ -171,6 +176,8 @@ export function useMainShell() {
     debugVisible: computed(() => debugStore.visible),
     pluginUiEnabled: computed(() => roleStore.interactionImmersive),
     debugUiEnabled: computed(() => roleStore.interactionImmersive),
+    settingsUiEnabled: computed(() => !roleStore.minimalRoleActive),
+    voiceInputEnabled: computed(() => !roleStore.minimalRoleActive),
     openPluginManagerPanel,
     openModelManager: () => openModelManager(),
     toggleDebug: () => debugStore.toggle(),
@@ -194,6 +201,8 @@ export function useMainShell() {
   }
 
   function onHostOpenPluginManager(): void {
+    if (!roleStore.interactionImmersive)
+      return
     openSimplePluginManager(true)
   }
 
@@ -202,7 +211,7 @@ export function useMainShell() {
     (mode) => {
       // Default state is pure_chat before refreshRoleInfo; cold start is handled by
       // completeRoleBootstrap.bootstrapChatForRole — do not race-load the wrong bucket.
-      if (!roleStore.roleInfo.version)
+      if (roleStore.minimalRoleActive || !roleStore.roleInfo.version)
         return
       if (mode === 'pure_chat') {
         applyPureChatSceneIsolation()
@@ -218,7 +227,7 @@ export function useMainShell() {
   )
 
   const packLayoutResolved = computed(() => {
-    const l = roleStore.roleInfo.packUiConfig?.layout ?? {
+    const l = (!roleStore.minimalRoleActive && roleStore.roleInfo.packUiConfig?.layout) || {
       sidebar: '',
       chatInput: '',
     }
@@ -228,10 +237,10 @@ export function useMainShell() {
   })
   const sidebarRight = computed(() => packLayoutResolved.value.sidebar === 'right')
   const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top')
-  const roleName = computed(() => roleStore.roleInfo.name || t('app.defaultRoleName'))
-  const emotion = computed(() => roleStore.roleInfo.currentEmotion || 'neutral')
+  const roleName = computed(() => roleStore.minimalRoleActive ? t('app.minimalRole.active') : roleStore.roleInfo.name || t('app.defaultRoleName'))
+  const emotion = computed(() => roleStore.minimalRoleActive ? '' : roleStore.roleInfo.currentEmotion || 'neutral')
   const portraitAssetRelPath = computed(
-    () => roleStore.roleInfo.portraitAssetPath ?? null,
+    () => roleStore.minimalRoleActive ? null : roleStore.roleInfo.portraitAssetPath ?? null,
   )
 
   const statusHeart = computed(() => {
@@ -253,6 +262,8 @@ export function useMainShell() {
   })
 
   async function onInteractionModeChange(ev: Event) {
+    if (roleStore.minimalRoleActive)
+      return
     // Primary in-shell handler for InteractionModeBar (Settings → General is the other user entry).
     const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
     await onInteractionModeSelect(ev)
@@ -274,7 +285,7 @@ export function useMainShell() {
   })
 
   async function onPresetRolePick(roleId: string) {
-    if (presetPickerPicking.value)
+    if (roleStore.minimalRoleActive || presetPickerPicking.value)
       return
     presetPickerPicking.value = true
     try {
@@ -292,6 +303,8 @@ export function useMainShell() {
   }
 
   const {
+    minimalRoleChatStore,
+    activeChatKey,
     chatListRef,
     chatInputRef,
     messages,
@@ -308,14 +321,43 @@ export function useMainShell() {
     clearSceneBarsBeforeSend,
     offerSceneBarsAfterReply,
     onTurnRecorded: () => progressive.recordTurn(),
+    isContextChanging: () => roleSwitching.value,
   })
+
+  async function onBindMinimalSource(source: MinimalRoleLocalSource): Promise<void> {
+    if (roleSwitching.value)
+      return
+    roleSwitching.value = true
+    try {
+      await minimalSelection.bindSource(source)
+      if (!roleStore.minimalRoleActive)
+        return
+      closeAllSidePanels()
+      closePluginSurfaces()
+      resetPureChatSceneUi()
+      presetPickerOpen.value = false
+      topMoreOpen.value = false
+      chatInputRef.value?.focusInput?.()
+    }
+    catch (err) {
+      showToast('error', err instanceof Error ? err.message : String(err))
+    }
+    finally {
+      roleSwitching.value = false
+    }
+  }
+
+  function onReturnToRichRole(): void {
+    if (!roleSwitching.value)
+      minimalSelection.returnToRichRole()
+  }
 
   usePluginEvents({
     showToast,
     onQuickActionTravel: onPluginQuickActionTravel,
     onPureChatMode: resetPureChatSceneUi,
     onVoiceAsrSubmit: ({ text, mode }) => {
-      if (!text?.trim())
+      if (roleStore.minimalRoleActive || !text?.trim())
         return
       if (mode === 'fill') {
         hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
@@ -330,13 +372,15 @@ export function useMainShell() {
   useVoiceAutoTts({ showToast })
 
   async function onSwitchRole(nextRoleId: string) {
-    if (roleSwitching.value || !nextRoleId.trim() || nextRoleId === roleStore.currentRoleId)
+    if (roleSwitching.value || !nextRoleId.trim() || (nextRoleId === roleStore.currentRoleId && !roleStore.minimalRoleActive))
       return
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
     try {
       roleSwitching.value = true
       chatStore.cancelPendingSend()
+      minimalRoleChatStore.cancelPendingSend()
       await roleStore.switchRole(nextRoleId)
+      minimalSelection.returnToRichRole()
       await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
       hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
@@ -359,6 +403,8 @@ export function useMainShell() {
   }
 
   async function onChangeRelation(nextRelation: string) {
+    if (roleStore.minimalRoleActive)
+      return
     const roleId = roleStore.currentRoleId
     try {
       const relationName
@@ -379,7 +425,7 @@ export function useMainShell() {
       else {
         await roleStore.setGlobalUserRelation(nextRelation, sceneId)
       }
-      if (roleStore.currentRoleId !== roleId)
+      if (roleStore.minimalRoleActive || roleStore.currentRoleId !== roleId)
         return
       if (endedAdultInteraction) {
         await chatStore.sendAdultAction(
@@ -397,6 +443,8 @@ export function useMainShell() {
   }
 
   async function onPackImported(roleId: string) {
+    if (roleStore.minimalRoleActive)
+      return
     try {
       roleStore.currentRoleId = roleId
       await loadRole(roleId)
@@ -423,6 +471,8 @@ export function useMainShell() {
   }
 
   async function onReloadPolicy() {
+    if (roleStore.minimalRoleActive)
+      return
     try {
       const msg = await debugStore.reloadPolicy()
       showToast('success', msg)
@@ -433,6 +483,8 @@ export function useMainShell() {
   }
 
   async function onDebugRefresh() {
+    if (roleStore.minimalRoleActive)
+      return
     try {
       await debugStore.loadDebugData()
     }
@@ -471,6 +523,7 @@ export function useMainShell() {
   })
 
   onBeforeUnmount(() => {
+    minimalSelection.returnToRichRole()
     hostEventBus.off('ui:open_model_manager', onHostOpenModelManager)
     hostEventBus.off('ui:open_plugin_manager', onHostOpenPluginManager)
     if (splitLayoutResizeRaf !== 0) {
@@ -510,6 +563,10 @@ export function useMainShell() {
     toast,
     showToast,
     roleStore,
+    minimalRoleChatStore,
+    activeChatKey,
+    onBindMinimalSource,
+    onReturnToRichRole,
     chatStore,
     debugStore,
     uiStore,

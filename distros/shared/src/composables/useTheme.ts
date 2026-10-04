@@ -49,9 +49,9 @@ export function usePackUiTheme(): void {
   watch(
     () => ({
       roleId: roleStore.currentRoleId,
-      theme: roleStore.roleInfo.packUiConfig?.theme,
+      theme: roleStore.minimalRoleActive ? undefined : roleStore.roleInfo.packUiConfig?.theme,
     }),
-    () => applyTheme(roleStore.roleInfo.packUiConfig?.theme ?? {}),
+    ({ theme }) => applyTheme(theme),
     { deep: true, immediate: true },
   )
 

@@ -18,9 +18,11 @@ withDefaults(
     relationOptions: RelationOptionRow[]
     allSceneOptions: Array<{ id: string, label: string }>
     showIdentitySection?: boolean
+    settingsEnabled?: boolean
   }>(),
   {
     showIdentitySection: true,
+    settingsEnabled: true,
   },
 )
 
@@ -120,6 +122,7 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="more-debug-btn more-debug-btn--fill settings-entry-btn settings-entry-btn--primary settings-gear-btn"
+                :disabled="!settingsEnabled"
                 @click="emit('openSettings')"
               >
                 {{ t("app.more.openSettings") }}

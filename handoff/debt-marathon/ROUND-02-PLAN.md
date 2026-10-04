@@ -538,3 +538,17 @@
 **冻结行为 / 写集**：新增 `distros/shared/src/stores/minimalRoleChatStore.ts` 与同目录 `minimalRoleChatStore.test.ts`，复用现有 ChatMessage 形状及 `sendMinimalMessage`。显式绑定本地来源只登记临时输入，文件校验仍由 Host 在发送时权威执行；不称已加载 / 激活，不写丰富 RoleInfo / Host 插件选角。每次正常发送一次 IPC，正文 / 正常空回复原样保留；核返回技术身份与 unavailable，结果只加本地气泡 ID。取消、重新绑定和较新的发送使旧结果失效，立即移除旧在途气泡；取消只撤销客户端展示，不承诺取消 Host 生成。失败清理在途气泡并原样抛错，无普通发送 / 恢复 / 重试。最终事件一次、skip_auto_tts=true，消息提交 / 最终事件与真实 bus 相连；临时状态不接历史 / IDB / persist 插件或丰富扩展。已有语音 submit 消费者会预热资源，故在 `composables/useVoiceAutoTts.ts` / 同目录测试补显式 skip_auto_tts 的提交早退，保留旧事件行为。同步本计划、ROLE_PACK_BOUNDARY、父债状态格及 DEBT_CHANGELOG，其余源、UI / locale / 角色包 / Kernel / 依赖不动。
 
 **验证 / 复核 / 停止**：用真实 Pinia store、真实 mitt bus，仅 IPC 替身验证在途 / 原文 / 单次结果、来源快照、正常空结果、取消后晚成功 / 晚失败、重绑定与新发送、错误 / 身份错配零最终事件、无丰富发送 / 恢复。定向测试与旧 API / stream / rich send 回归、typecheck / ESLint / module-compat、文档 / 债务结构 / 编码 / diff 检查后自行语义复核并本地保留。无 Rust API 改动，不重跑 workspace doctest / Rust 或完整 CI；待同批 UI 接线后冻结统一验证。不扩查全部角色消费者，不启动模型 / 音频 / IPC 进程 / 用户数据；达到这个复用状态入口即停止这一片。
+
+### D-CLI-BLUEPRINT-05 · 两套主聊天界面的最小角色接线（2026-10-04）
+
+**尺寸 / 基线 / 归属**：L 的主流程状态与关联消费，起点 `3958126bdcc9d3bb0c384081f457d0c6c4159143` 干净、前两片仍仅本地验证。沿已确认主流程 / 核心外共享适配 / 增量接口方向，不重问归属，不扩大六槽、小 Kernel 或后端丰富激活。前端独立最小绑定表示当前主聊天上下文；原丰富角色数据保留为可返回的上下文，不把它重标为最小角色，不承诺其后台服务已关闭。
+
+**行为冻结**：Fluent / Tool 的现有选角区提供同一个最小来源入口，调用方指定绝对资产根与相对定义文件，前端为这次临时绑定产生技术 UUID；不规定作者文件名、关系或蓝图，不添加 renderer 文件 / 令牌读取。绑定前取消旧客户端发送与当前成人队列，队列取消失败不进入最小模式；来源字段复制冻结，文件 / 模型可用性仍在第一次发送由 Host 权威检查。复用现有主 composer、ChatMessageList 与共用发送 hook，把基础回复交给 §0.12 的临时状态；切换 / 取消 / 卸载失效旧结果，返回完整角色恢复原丰富路径。丰富立绘 / 关系 / 场景 / 人格 / 成人 / 插件工具 / 语音 / 历史及角色设置在此模式不可用，页面明确提示；模型管理作为 Host 资源入口保留。停用角色快照轮询、插件角色变更 / ASR 提交、语音预热 / 热键等直接关联入口，不能只隐藏按钮却继续向旧角色下判。
+
+**写集 / 闭环**：新增 shared `components/role/MinimalRoleSourceControls.vue`、`composables/useMinimalRoleSelection.ts`、`integration/minimalRoleMainFlow.test.ts`、`composables/minimalRoleScope.test.ts`。修改 shared `stores/minimalRoleChatStore.ts`（来源快照校验共用）/ `roleStore.ts`、`composables/useChatSend.ts` / `useKernelStatus.ts` / `usePluginEvents.ts` / `useGlobalHotkeys.ts` / `useVoiceAutoTts.ts` 及后者既有测试、`components/chat/ChatInput.vue` 与既有测试、`components/TopBarMorePanel.vue`、`i18n/locales/fragments/app.{zh,en}.ts`；ChatPro `composables/useMainShell.ts` / `useMainShellChat.ts` / `useMainShellHotkeys.ts`、`shells/fluent/FluentShell.vue`、`shells/tool/ToolShell.vue` / `ToolActivityBar.vue` / `ToolStatusBar.vue`。同步本计划、ROLE_PACK_BOUNDARY、父债状态格和 DEBT_CHANGELOG。Kernel / Rust / Host、权限 ACL、rich DTO、官方包、依赖、历史证据与其它暂停债务不动。
+
+**验收 / 停止线**：真实 Pinia、mitt、来源表单、composer、主聊天共用 hook / 列表的内存集成覆盖绑定 → 发送 → 权威正文、取消 / 失败 / 返回旧角色与无丰富请求；实际 scope 守卫覆盖快照在途与新调用、角色事件 / ASR、语音配置 / 切换与热键停用。IPC / 音频为替身，不启真实产品、网络、模型、用户 DB。旧前端全套、i18n、两壳编译 / 构建、typecheck / ESLint / module-compat 及适用文档 / 债 / 编码门禁；控制方按真实 diff 自行语义复核，不称独立审查。局部通过后冻结这一关联批次，在同一 SHA 上一次完整本地链，按既有推送授权推送并核目标远端；不每改一个控件跑全量。完成这个基础主流程即停止扩证，不追全平台 / 所有崩溃窗 / 全部插件或媒体验收，不把父债转 Done；出现真正新的产品 / 权限歧义再问维护者。
+
+**实施中关联写集补充**：`shared/composables/useTheme.ts` 的角色主题消费者也必须随最小上下文清除旧角色的内联主题，并在返回后恢复原角色主题，不把旧包品牌投射到最小绑定。按住讲话已经开始时再绑定最小角色，MainShell 热键消费者显式发一次 stop 收尾（仅自身已开始的句柄），避免 disabled 后 keyup 不再命中；这不启动最小角色语音，也不改通用热键协议。
+
+**按键生命周期闭环补充**：`shared/composables/useUnifiedKeybindings.ts` 在能力停用时还须清除自己保存的 pressedHold，并仅为已按住的动作执行 onStop；否则最小模式期间 keyup 被拒后，返回完整角色会继续误认为按键仍按住。同一 scope 测试通过 importActual 挂载真实注册器、派发键盘事件，核停止一次 / 无新启动 / 返回可再次启动；不改绑定存储格式或扩大为通用热键重构。

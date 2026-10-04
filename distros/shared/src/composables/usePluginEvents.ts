@@ -57,6 +57,8 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   }
 
   async function onPluginSetInteractionMode(payload: unknown): Promise<void> {
+    if (roleStore.minimalRoleActive)
+      return
     // Plugin programming entry (`com.oclive.mumu.settings-panel:set_interaction_mode`); not a user IA surface.
     const mode = (payload as { mode?: string } | null)?.mode
     if (mode !== 'immersive' && mode !== 'pure_chat')
@@ -64,7 +66,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
     const roleId = roleStore.currentRoleId
     try {
       const info = await setRoleInteractionMode(roleId, mode)
-      if (roleStore.currentRoleId !== roleId)
+      if (roleStore.minimalRoleActive || roleStore.currentRoleId !== roleId)
         return
       roleStore.applyRoleInfo(info)
       if (mode === 'pure_chat')
@@ -86,6 +88,8 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   }
 
   function onVoiceAsrSubmit(payload: unknown): void {
+    if (roleStore.minimalRoleActive)
+      return
     const p = payload as VoiceAsrSubmitPayload | null
     const text = p?.text?.trim()
     if (!text)
@@ -97,6 +101,8 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   }
 
   async function onPluginResetLayout(): Promise<void> {
+    if (roleStore.minimalRoleActive)
+      return
     try {
       resetLayoutWidths()
       await pluginStore.resetToRolePackDefault()
@@ -115,7 +121,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   }
 
   onMounted(() => {
-    hostEventBus.on(quickActionTravelEvent, opts.onQuickActionTravel)
+    hostEventBus.on(quickActionTravelEvent, onQuickActionTravel)
     hostEventBus.on(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
     hostEventBus.on(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
     hostEventBus.on(settingsCycleThemeEvent, onPluginCycleTheme)
@@ -126,7 +132,7 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
   })
 
   onBeforeUnmount(() => {
-    hostEventBus.off(quickActionTravelEvent, opts.onQuickActionTravel)
+    hostEventBus.off(quickActionTravelEvent, onQuickActionTravel)
     hostEventBus.off(settingsSetRemoteLifeEvent, onPluginSetRemoteLife)
     hostEventBus.off(settingsSetInteractionModeEvent, onPluginSetInteractionMode)
     hostEventBus.off(settingsCycleThemeEvent, onPluginCycleTheme)
@@ -135,6 +141,11 @@ export function usePluginEvents(opts: UsePluginEventsOptions) {
       hostEventBus.off(VOICE_ASR_SUBMIT_EVENT, onVoiceAsrSubmit)
     }
   })
+
+  function onQuickActionTravel(payload: unknown): void {
+    if (!roleStore.minimalRoleActive)
+      opts.onQuickActionTravel(payload)
+  }
 
   return {
     onPluginSetRemoteLife,

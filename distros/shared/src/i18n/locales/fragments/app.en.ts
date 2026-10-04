@@ -1,6 +1,17 @@
 /** app — en. */
 export default {
   app: {
+    minimalRole: {
+      select: 'Use a minimal role',
+      active: 'Minimal role · Basic text',
+      assetRoot: 'Local asset root (absolute path)',
+      definitionReference: 'Logical definition file (relative to the asset root)',
+      bind: 'Bind to main chat',
+      return: 'Return to rich role',
+      stopWaiting: 'Stop waiting',
+      scope: 'Basic text only. Relationships, scenes, portraits, personality, adult interaction, plugin tools, voice, history and role settings are unavailable. Messages remain in this view only.',
+      validationHint: 'Binding does not mean loaded. The Host checks files and the model on send. Stop waiting discards the UI result; the Host may continue generating.',
+    },
     locale: {
       label: 'Language',
       system: 'Match system',

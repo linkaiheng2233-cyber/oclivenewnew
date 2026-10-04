@@ -5,6 +5,16 @@ import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
+export function snapshotMinimalRoleSource(input: MinimalRoleLocalSource): Readonly<MinimalRoleLocalSource> {
+  if (!input.role_id.trim() || !input.asset_root.trim() || !input.definition_reference.trim())
+    throw new Error('minimal source fields must not be blank')
+  return Object.freeze({
+    role_id: input.role_id,
+    asset_root: input.asset_root,
+    definition_reference: input.definition_reference,
+  })
+}
+
 /**
  * Transient state for a distro's main chat to consume. Binding is not Host
  * activation: the Host validates the explicit source on every text call.
@@ -31,14 +41,8 @@ export const useMinimalRoleChatStore = defineStore('minimal-role-chat', () => {
   }
 
   function bindSource(input: MinimalRoleLocalSource): void {
-    if (!input.role_id.trim() || !input.asset_root.trim() || !input.definition_reference.trim())
-      throw new Error('minimal source fields must not be blank')
     // Validate before replacing the old binding; copy to exclude caller mutation.
-    const snapshot = Object.freeze({
-      role_id: input.role_id,
-      asset_root: input.asset_root,
-      definition_reference: input.definition_reference,
-    })
+    const snapshot = snapshotMinimalRoleSource(input)
     cancelPendingSend()
     source.value = snapshot
     messages.value = []

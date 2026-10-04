@@ -199,17 +199,27 @@ CLI 现提供 `pack validate-minimal-local <asset-root> <definition-reference>`�
 
 canonical [`process_minimal_local_message`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) 负责调用准备与 §0.9 的既有基础编排，API 只转发结果。阻塞读文件与局部非 Send Base future 在 Host 的 blocking worker 中执行，借当前 Tokio Handle 获得 I/O；不改变六槽 future 的约束。没有当前 runtime 时返回 Host 错误，不在外部调用面制造 panic。原文只检查全空白，不裁剪人设、有效消息或正常模型输出；不注册丰富角色、不初始化产品状态、不创建聊天行 / 收据，也不自动重试或恢复。
 
-这个默认传输绑定 Literal Prompt，只接受空 `requirements`；非空要求在 I/O / 模型调用前按本端点的输入约束返回既有 `INVALID_PARAMETER`，而不把它清空或将这个端点的限制推广到所有 Prompt。原进程内可选 Prompt 仍返回完整 typed Base 错误；本片未建立通用 BaseCallError 的 wire 映射。基础结果仍只含 `role_id`、原样 `reply`、`product_extensions: unavailable`；既有 Host 错误经现有 HTTP / IPC 错误链传递。真正的主聊天落地还需要角色状态与结果消费者接线，历史、幂等恢复、流式和媒体不由这个结果承诺。
+这个默认传输绑定 Literal Prompt，只接受空 `requirements`；非空要求在 I/O / 模型调用前按本端点的输入约束返回既有 `INVALID_PARAMETER`，而不把它清空或将这个端点的限制推广到所有 Prompt。原进程内可选 Prompt 仍返回完整 typed Base 错误；本片未建立通用 BaseCallError 的 wire 映射。基础结果仍只含 `role_id`、原样 `reply`、`product_extensions: unavailable`；既有 Host 错误经现有 HTTP / IPC 错误链传递。主聊天的状态消费和实际接线见 §0.12 / §0.13；历史、幂等恢复、流式和媒体不由这个结果承诺。
 
 ### 0.12 主聊天可消费的临时最小状态
 
-shared 的 [`useMinimalRoleChatStore`](../distros/shared/src/stores/minimalRoleChatStore.ts) 提供显式来源绑定、临时气泡和一次基础发送。它供发行版主聊天接线复用，**没有新增另一个会话产品**，当前选角 / composer 尚未调用它。`bindSource` 复制并冻结三个来源字段；这是临时输入绑定，不是文件校验、Host 角色激活或扩展发现。Host 仍在每次调用时按 §0.11 权威检查文件 / 资产与预算；角色文件可能在两次调用间改变，不宣称已锁住内容快照。
+shared 的 [`useMinimalRoleChatStore`](../distros/shared/src/stores/minimalRoleChatStore.ts) 提供显式来源绑定、临时气泡和一次基础发送。它供发行版主聊天接线复用，**没有新增另一个会话产品**；ChatPro 现有选角区 / composer 的实际调用见 §0.13。`bindSource` 复制并冻结三个来源字段；这是临时输入绑定，不是文件校验、Host 角色激活或扩展发现。Host 仍在每次调用时按 §0.11 权威检查文件 / 资产与预算；角色文件可能在两次调用间改变，不宣称已锁住内容快照。
 
 最小状态不构造 `RoleInfo`，也不接入旧 chatStore 的 DB / IDB / persist 链。正文和正常空模型输出原样成为 `ChatMessage`；气泡 / 回合标识用 `minimal-local-*` 明确表示客户端本地身份，不当作后端行 ID。保留先前完成气泡只为当前界面展示，下一次请求不携带历史，不表示多轮记忆。重新绑定清空会话；空白输入或无绑定先拒绝，失败移除在途用户气泡并保留原错误，无普通发送 / 恢复 / 重试。返回身份 / unavailable / 正文类型异常时拒绝消费，不能用假产品状态补齐响应。
 
 取消、新发送和重绑定使旧调用失效，旧成功 / 失败不会覆盖新气泡、加载状态或最终事件。取消只停止客户端展示，非流式 IPC 与 Host 生成仍可能继续；本片没有服务端取消协议。提交 / 最终事件复用真实 hostEventBus，并显式 `skip_auto_tts: true`；既有语音提交消费者也尊重该标记，避免加载配置、角色语音档案和预热媒体资源，原未标记的语音行为保持。扩展仍表示 unavailable，不发送 fake emotion / relation / scene 或 stream 字段。
 
-证据是实际 Pinia / mitt 状态消费、IPC 替身与语音消费者的内存验证；不是实际选角 / composer / webview、音频、文件读写或所有发行版验收。下一片再把这份临时状态接入主聊天的选角、输入和扩展不可用展示，不能将该共享入口存在写成 UI 已完成。
+本共享状态的原证据是实际 Pinia / mitt、IPC 替身与语音消费者的内存验证；主流程控件 / 列表联动另见 §0.13。两层都不代表真实 webview、音频、文件读写或所有发行版验收。
+
+### 0.13 ChatPro 两套主界面的基础接线
+
+Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/shared/src/components/role/MinimalRoleSourceControls.vue)。填写转换器准备的**绝对资产根**与**相对定义引用**，绑定后继续用原主聊天输入框与消息列表；每次绑定由前端生成新的技术身份，不要求作者提供展示名 / 关系 / 蓝图，也不规定定义文件名。绑定只保存临时来源，第一次发送才由 Host 检查可读内容和所选模型。界面明确显示基础文本及产品扩展不可用；停止等待仅丢弃客户端气泡 / 最终事件，Host 可能继续生成。可返回原完整角色，不需要将基础结果伪装成丰富 RoleInfo。
+
+[`useMinimalRoleSelection`](../distros/shared/src/composables/useMinimalRoleSelection.ts) 先校验来源字段，再取消旧客户端发送与当前成人队列；取消失败不切换上下文。在过渡期间主发送守卫拒绝新回合；返回 / 卸载 / 更晚选择使等待取消中的绑定失效。原 `currentRoleId` / RoleInfo 保留为可返回的完整角色上下文，`minimalRoleActive` 只表示前端主聊天选择，**不表示丰富 Host 后台服务已停机或最小角色已被丰富激活**。这不是后端角色生命周期迁移。
+
+[`useMainShellChat`](../distros/chat-pro/src/composables/useMainShellChat.ts) 与 shared `useChatSend` 将最小发送 / 消费接到 §0.12 状态；已完成临时气泡都可见，列表历史分割为 0，下次请求仍只带当前正文。关系 / 场景 / 立绘 / 人格 / 成人 / 插件工具 / 语音 / 历史及角色设置不可用；模型管理保留为 Host 资源入口。丰富面板与工具停用，关联快照轮询、插件角色变更 / ASR、语音预热和设置 / 录音热键也检查当前范围。已经按住的录音只结束一次；旧角色包主题清除，返回时恢复，不将其属性展示成最小角色能力。
+
+主流程联动证据来自真实 Pinia / mitt、实际来源表单 / composer / 消息列表及共用 hook，只有 IPC 和浏览器缺失的 ResizeObserver / matchMedia 等环境能力用内存替身。scope 回归另核实际轮询守卫、角色事件与热键消费者，真实按键注册器验证停用后释放按住状态并能再次启用；语音仍为既有内存消费者测试。两套壳通过类型与构建检查；这不算真实桌面 / 联机模型 / 音频、持久化恢复或所有发行版验收。足以落实参考发行版的基础主流程接线，不把未验媒体 / 平台扩成这一片必须穷尽的清单，父债继续 Partial。
 
 ## 1. 当前参考宿主内部划分
 
