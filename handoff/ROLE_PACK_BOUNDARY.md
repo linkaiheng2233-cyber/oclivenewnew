@@ -273,6 +273,14 @@ IPC / HTTP 沿 §0.11 的已鉴权薄转发，`product_extensions: unavailable` 
 
 这片是 **公开 Rust Host 的显式能力绑定**，不是 ChatPro 新 UI 操作、HTTP / IPC 分析端点或主聊天自动阶段；原最小传输与进程内文本调用保持原调用数。公开 API 回归用真实生产 builder 与原已装配内存客户端核构造零调用、原材料 / context、Some / None、格式 / 模型错误不重试，并让共享六槽案例实际绑定该入口。它不构成真实模型质量或全部发行版验收，Agent 仍只在真实委托下参与。小 Kernel、六槽接口、角色作者格式与旧丰富生命周期均保持。
 
+### 0.19 真实 builtin Agent 的显式 Base 借用
+
+持有 [`BuiltinReActAgent`](../kernel/crates/oclive_kernel_host/src/domain/agent.rs) 的 Rust Host 现在可以调用 `task_execution_base(model, role_id, session_namespace)`，把已有真实实例借给 §0.14 的共享最小角色消费者，或直接按 Agent Base 明确委托任务。调用方提供实际模型与当前角色 / 会话技术身份，不加载完整角色、不补关系 / 人格 / 蓝图默认值，也不以身份授予权限。构造零调用；执行复用同一个 Agent 原模型 / parser / 工具 bridge、唯一 ReAct core 和原 trace，不重新装配第二个 Agent。资源授权仍由既有 bridge 决定；这里开放的是具体 builtin，不替任意 Host 选择 rich 配置中的 remote / directory provider。
+
+原具体实现的约定保留：None / 空 context 可执行，任何非空 context（包括空格）在发现工具 / 模型前返回 Unsupported。空任务或无工具如实报告未承接，模型 / discovery 的 typed 错误按原 Base 投射完整返回，不吞空值或自动重试；工具调用失败继续沿原循环记录过程。报告基于本次真实分支，回答生成不等于客观任务达成，不保证外部效果已撤回或可以安全重试，报告文本不是公共机器终态协议。本地 future 的借用与取消边界沿原 Base，不从 drop 推导工具已停止。
+
+外部回归以生产 builtin / 原生产 parser、内存模型及授权桥 seam 实际消费最小定义的明确任务，例如“读取我提供的入口记录，报告已知关闭日期和未知事项”，并核两轮一工具、实际身份、拒绝零工具效果和失败不重试。这不是纯计数任务，也没有把角色人设暗加到 Agent 请求。[公开调用回归](../kernel/crates/oclive_kernel_host/tests/minimal_role_agent_base.rs) 和方法 rustdoc 验证可借用 / 可绑定；没有真实 MCP、网络、模型质量或效果验收。普通最小聊天不自动调用 Agent，旧 `AgentProvider` 产品入口与单一 Agent 选择不变。真实 ChatPro 任务操作、具体工具集合 / 权限策略及所有发行版接线仍按实际需求分片，不把可调用视图当作主界面全六槽执行。
+
 ## 1. 当前参考宿主内部划分
 
 | 组件 | 职责 | 面向 |

@@ -612,3 +612,15 @@
 **写集 / 验证 / 出口**：新增 Host `src/domain/chat_engine/minimal_event.rs`；仅在同目录 `mod.rs` 登记私有适配、`role_kernel.rs` 增量 facade 及 rustdoc、原 `tests/minimal_role_public_api.rs` 加实际调用；runtime `src/domain/base_event.rs` 只更正当前 Host 绑定范围注释。ROLE_PACK_BOUNDARY 新 §0.18、MODULE_MAP 接线引用、父债第五列、此计划与 DEBT_CHANGELOG 同步，不改 types / contracts / 公共请求 / wire / ACL / 依赖 / state / 模型选择 / 六阶段编排。公开 API 先编译红，后核生产 builder 与原已装配内存客户端：显式构造零调用、分析 Some / None 与 None / 空 / 有 context 原值、Unicode / 引述 / 条件原文、协议失败与模型错误保留 / 不重试、共享六槽真实绑定、原 HTTP 单次正文保持。跑 Host lib / HTTP / 公共 API、原 Event 外部 / 六槽 / 消费者、Host / runtime Clippy / fmt、workspace doctest及适用文档 / 分层 / 模块 / 债务门禁；合批冻结最终干净 SHA 后一次完整本地链、一次推送、核该 SHA 正式 CI，不为绿灯回写另造提交。父债 Partial，Agent、真实分析质量、真实音频、所有发行版及 UI 分析操作不扩面；达到合法显式绑定即停。
 
 **局部出口 / 当前停止线**：上述实现与有限回归已完成，实际结果见 [DCL-41](DEBT_CHANGELOG.md#dcl-20261005-41--按需-event-复用参考-host-的真实模型资源)。本片与 Emotion 两片到达关联冻结点：只完成总审、干净提交与一次批次完整链 / 精确 SHA 远端验收，不在等待中追加 Agent、UI 分析或低收益反例。六槽共享消费和参考能力绑定不替代所有发行版的具体材料、任务与资源接线，父债仍 Partial。
+
+**2026-10-05 精确批次收口**：Emotion / Event 已冻结在 `fb26a15c2338c7dc3daecc62ce931b8b4fc0a663`，一次完整本地链 native exit 0（946.442798 秒，环境恢复、HEAD 未变、工作树干净），一次推送后的[正式 CI 37266206907](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37266206907) 对同一 SHA success、17/17 含 ci-gate，零 rerun。本机原始收口为 `.cursor/plans/debt-minimal-role-emotion-material-20261005-r0/55-closeout.json`，忽略目录不是 Git 携带证据。结果随下述实质切片入账，不另造绿灯回写提交。
+
+### D-CLI-BLUEPRINT-05 · 已有真实 Agent 的显式 Base 借用（2026-10-05）
+
+**起点 / 原因 / 尺寸**：上述精确干净基线。L 的公共增量接线，按公开能力与工具边界的重风险深度计划；controller 直接实施与语义 / 权限自查，不称独立审查。L1 已找到真实 `BuiltinReActAgent` 及其经过旧合同回归的私有 `HostAgentBaseView`，无需新增执行器或默认计数任务。外部 Rust Host 已可构造并持有真实 Agent 及资源，但不能借用该报告视图，容易被迫复制旧输入投影 / 报告逻辑。本片只补这个调用断点。
+
+**冻结行为 / 闭环**：在现有 `BuiltinReActAgent` 增量提供 `task_execution_base(model, role_id, session_namespace)`，借用当前实例和调用方实际身份，构造零 discovery / 生成 / 工具调用；执行沿唯一既有 ReAct core 与原 branch-facts 报告，不构造丰富 `AgentInput` / 默认领域状态。资源 / parser / bridge 为该实例既有装配，授权不变、身份不授予权限。保留原 context 范围（None / 空可用，非空 Unsupported 且先于资源调用）、typed 错误投射、最大三轮和报告限制；正常模型回答不保证目标达成、无效应或重试安全。共享最小六槽消费者可显式绑定此视图；不固定调用顺序、不暗加人设或任务。这里开放具体 builtin 的已存在能力，不增 `OcliveKernel` 自动选择 / 重新装配 Agent 工厂，不声称任意 rich / remote / directory provider 都有 Base，也不迁移 ChatPro 普通聊天或旧短路逻辑。
+
+**精确写集 / 有限验收**：Host `src/domain/agent.rs` 添加公开方法及可编译用法、`src/domain/agent_base_binding.rs` 只更新私有实现与公开入口的范围说明、新 `tests/minimal_role_agent_base.rs`；文档为 ROLE_PACK_BOUNDARY 新 §0.19、MODULE_MAP 接线引用、父债第五列、本计划及 DEBT_CHANGELOG。先在旧源码让外部调用编译红，再用真实 builtin / 原生产 parser、内存 LLM 与授权桥 seam 验共享消费者明确委托、实际模型 / trace 身份 / 两轮一工具、非空 context 零资源调用、无工具 / 空任务如实未承接、typed discovery / model 错误保留且不重试。已有 Agent core / fallback 回归、当前 HTTP / public API、runtime 六槽 / 消费者作兼容检查；公开 doctest、Clippy / fmt 与 applicable 分层 / 模块 / 文档 / 债务门禁必跑。达到已有实现外部可用即停止，不重做内部三轮 / 并发 / 全部错误反例或开启真实 MCP / 模型 / 用户数据。局部通过先形成可审查提交，同主题批次出口一次完整本地链与一次目标 SHA 远端；后续产品真实任务操作 / 选择策略若有取舍再询问，不把 Agent 工具并集、CLI 磁盘生成或全发行版验收塞入本片。父债保持 Partial。
+
+**局部出口 / 冻结点**：上述公开借用与真实共享消费已实现，适用结果和本轮格式自纠见 [DCL-42](DEBT_CHANGELOG.md#dcl-20261005-42--已有真实-agent-向外开放-base-借用)。本片到达有限里程碑：总审后干净保留，随后一次完整本地链 / 推送 / 精确 SHA 正式 CI；期间不追加产品任务策略或低收益边缘证明。后续若进入任务 UI、当前 Host configured provider 的选择工厂或扩大工具集合，另核实际需求和权限归属，不把本片借用提升为迁移授权。

@@ -130,6 +130,59 @@ impl BuiltinReActAgent {
         }
     }
 
+    /// Borrow this already assembled Agent for an explicitly delegated Base task.
+    ///
+    /// The caller supplies its actual current model, role and session identity.
+    /// They are passed to the existing core/model/debug trace, not loaded from a
+    /// rich role or interpreted as permission grants. Construction makes no
+    /// resource calls. Execution uses this instance's existing model, parser and
+    /// tool bridge; discovery and tool authorization remain with that bridge.
+    /// No second Agent, legacy domain defaults, automatic task or retry is added.
+    ///
+    /// This builtin view accepts `context: None` or `Some("")`; any nonempty
+    /// context is Unsupported before discovery or generation. Its report describes
+    /// the real bounded ReAct run. A model answer is not proof of objective
+    /// completion, absence/rollback of effects, or safe retry. Report wording is
+    /// this adapter's agreement, not a Base machine-state protocol.
+    ///
+    /// The returned future has the local borrowed Base shape. Dropping it does
+    /// not establish cancellation of a model/tool or rollback of an effect.
+    /// This additive view neither replaces the legacy product entry nor selects
+    /// a configured remote/directory provider on behalf of a Host.
+    ///
+    /// ```no_run
+    /// use oclive_kernel_contracts::AgentBase;
+    /// use oclive_kernel_host::domain::BuiltinReActAgent;
+    /// use oclive_kernel_types::{AgentBaseRequest, BaseCallError};
+    ///
+    /// async fn delegated_task(
+    ///     agent: &BuiltinReActAgent,
+    ///     model: &str,
+    ///     role_id: &str,
+    ///     session_namespace: &str,
+    ///     task: &str,
+    /// ) -> Result<String, BaseCallError> {
+    ///     let base = agent.task_execution_base(model, role_id, session_namespace);
+    ///     base.execute(AgentBaseRequest { task, context: None }).await
+    /// }
+    /// ```
+    #[must_use]
+    pub fn task_execution_base<'a>(
+        &'a self,
+        model: &'a str,
+        role_id: &'a str,
+        session_namespace: &'a str,
+    ) -> impl oclive_kernel_contracts::AgentBase + 'a {
+        super::agent_base_binding::HostAgentBaseView::new(
+            self,
+            super::agent_base_binding::AgentTurnIdentity {
+                model,
+                role_id,
+                session_namespace,
+            },
+        )
+    }
+
     fn push_trace(&self, trace: AgentDebugTrace) {
         const MAX_TRACES: usize = 40;
         let mut w = self.traces.write();

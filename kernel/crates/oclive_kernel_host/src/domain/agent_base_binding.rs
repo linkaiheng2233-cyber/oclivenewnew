@@ -1,5 +1,5 @@
-//! CP-B3-ALL unit A: the Host-private [`AgentBase`] request-binding view over the real builtin
-//! agent.
+//! CP-B3-ALL unit A: the private implementation of the [`AgentBase`] request-binding view over
+//! the real builtin agent, now exposed through [`BuiltinReActAgent::task_execution_base`].
 //!
 //! [`HostAgentBaseView`] borrows the **real** [`BuiltinReActAgent`] and the Host's own per-call
 //! identity (the model of this turn, and the role/session the debug trace belongs to). It has no
@@ -85,9 +85,11 @@
 //!   execution of the shared core, and the report describes that run.
 //! - It does not replace the user reply, add persistence, change `process_message`/
 //!   `minimal_response`, or change the legacy output, including `handled` and an empty reply.
-//! - **No product consumer reads this view today.** The reference Host still binds
+//! - External Rust Hosts may explicitly borrow this view from their already assembled builtin
+//!   Agent and bind it to the shared minimal-role consumer. The reference rich product still binds
 //!   `Arc<dyn AgentProvider>` and reads [`AgentOutput`]; that the builtin agent can serve the Base
-//!   view is an additive capability of the implementation, not a product migration.
+//!   view is an additive capability of the implementation, not a product migration or automatic
+//!   task in ordinary chat. It does not select a remote/directory provider or grant tool permissions.
 //! - The returned future is the borrowed [`BaseCallFuture`] shape: it adds no `Send`, `Sync`,
 //!   `'static` or executor requirement. The Host's own concrete future is `Send` for its own
 //!   reasons, and that is asserted separately rather than inferred from this binding.

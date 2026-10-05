@@ -372,6 +372,8 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 
 **六槽可替换消费（2026-10-04）**：同模块的 `MinimalRoleBaseConsumer` 借用最小定义与 `MinimalRoleBaseBindings` 的六个选定实现，沿原 Base traits 提供六种独立调用。Prompt 复用上述人设准备，其余请求 / 完整结果 / 错误直接交给对应能力，不增加角色格式、隐含上下文包、额外调用、权限或状态。Host 可以更换 Memory / Emotion 并组织不同的实际依赖；材料来源、任务授权、异步调度与结果应用仍归 Host。这个可选六槽装配不要求所有 Host 的每次操作都实例化或调用六槽。实现与有限证据见[角色边界 §0.14](ROLE_PACK_BOUNDARY.md#014-六槽可替换的最小角色消费)；参考 Host 另以 `text_generation_base` 薄接原已装配正文客户端，共用 canonical 文本 helper，不重建 provider 或绕开既有包装，具体行为见[§0.15](ROLE_PACK_BOUNDARY.md#015-复用参考-host-已装配的正文模型)。ChatPro 的当前最小会话以已完成对话材料接实际 Memory Base，当前用户原文另消费 builtin Emotion Base 的完整词表线索，作为参考材料进入原 Prompt / LLM；两项有限策略分别见[角色边界 §0.16](ROLE_PACK_BOUNDARY.md#016-当前最小会话材料的-memory-消费)与[§0.17](ROLE_PACK_BOUNDARY.md#017-当前用户材料的-emotion-线索消费)，不修改 rich 情绪状态。参考 Host 另提供 `event_analysis_base`，显式复用已装配模型进行按需 Event，普通聊天默认不追加；归属与范围见[§0.18](ROLE_PACK_BOUNDARY.md#018-参考-host-的按需-event-base)。这仍不是主界面生产六槽全接线，不以公开 Rust 绑定替代产品的实际材料 / 任务消费。
 
+**真实 Agent 的显式绑定**：外部 Rust Host 持有的既有 `BuiltinReActAgent` 可通过 `task_execution_base` 借用原 Base 视图，沿唯一 ReAct core / parser / 已装配模型与工具授权执行明确委托，再把真实报告交回共享消费者。没有第二个执行器、隐含丰富角色默认值、自动任务或权限迁移；资源和实际身份由 Host 绑定，普通最小聊天不增 Agent 调用。此具体 builtin 的公开能力与未迁移产品面统一见[角色边界 §0.19](ROLE_PACK_BOUNDARY.md#019-真实-builtin-agent-的显式-base-借用)，不把它解释为任意 provider / 主界面的全槽完成。
+
 **独立 Host 的原生六槽接线案例**：既有 `minimal_role_host` 现从两种内容来源消费同一最小定义，并显式选择原生 Memory / Emotion / Event / Prompt / Agent 和内存 LLM；具体选择、有限任务、假生成账与测试范围统一见[角色边界 §0.14](ROLE_PACK_BOUNDARY.md#014-六槽可替换的最小角色消费)。这是一个实际消费者，Host 的材料组织与结果使用在案例内；它不沿用旧丰富 Event 所需的人格 / 情绪 / 历史，不转译产品数值 DTO 或迁移默认 AppState 装配，也不将案例操作提升为 Kernel 回合或共享固定流程。
 
 | 层 | 含义 |
