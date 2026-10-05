@@ -9,7 +9,7 @@
 | 用途 | 路径 / URL |
 |------|------------|
 | 主仓草稿（PR 改这里） | [`data/plugins.json`](../data/plugins.json) |
-| 线上默认（桌面 + CLI） | `https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-distros/chat-pro/plugins/main/plugins.json` |
+| 线上默认（桌面 + CLI） | `https://raw.githubusercontent.com/linkaiheng2233-cyber/awesome-oclive-plugins/main/plugins.json` |
 | 开发镜像 | `https://raw.githubusercontent.com/linkaiheng2233-cyber/oclivenewnew/main/data/plugins.json` |
 
 ## 创作者：如何通过 PR 加入索引
@@ -18,7 +18,7 @@
 2. **自检**：`manifest.json` 的 `id` / `version` 与索引条一致；`node scripts/validate-plugins-index.mjs` 通过（对 monorepo 示例会核对子路径 manifest）。
 3. **改主仓草稿**：在 **oclivenewnew** 向 `data/plugins.json` 提 PR，增加一条 `plugins` 数组元素。
 4. **同步 awesome**：合并后维护者运行  
-   `node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-distros/chat-pro/plugins/plugins.json`  
+   `node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-plugins/plugins.json`\
    并在 [awesome-oclive-plugins](https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins) 提交 `plugins.json`。
 5. **勿重复字段**：每条仅保留 camelCase **`gitSubdir`**，不要同时写 `git_subdir`。
 6. **分享给用户**：提供审核后目录的 **raw `plugins.json` 链接**，或单插件 **仓库 URL**；用户在桌面插件市场 **粘贴 → 加载**。
@@ -66,14 +66,15 @@ Copy-Item D:\oclivenewnew\data\plugins.json $env:USERPROFILE\.oclive\plugin_inde
 
 ## 安装语义
 
-- **`git`**：浅克隆到临时目录，再按 `manifest.id` 移到 `{app_data}/plugins/<id>/`。
-- **`gitSubdir`**：克隆后进入子目录再校验 manifest 并移动（2026-05-20 起，桌面 + CLI 一致）。
+- **`git` / `gitSubdir`**：浅克隆到本次临时目录，选择仓库根或子目录作为 source，检查通过后再移动到插件目录。桌面目录为 `{app_data}/plugins/<id>/`；CLI 使用 `--plugins-dir`（默认 `./plugins`）。
+- **CLI 基础检查**：Git 市场与本地 `plugin install` 共用 JSON 对象 / `plugin_dependencies` 校验及依赖图检查，图根读取本次 source。Git 市场另要求 manifest 的非空字符串 `id` 与索引条目 `id` 精确相等；这些检查失败时保留已有目标。同目录的本地安装保留原文件；Git 根与子目录继续使用移动。
+- **两端校验范围**：桌面运行时按其完整插件清单类型校验；上述 CLI 基础检查不等同完整 Host schema 验证。安装文件也不自动授予权限。基础检查后的文件移动 / 复制失败尚不提供事务回滚保证；签名、可信发布者与 Full 市场范围见[权威债项](TECHNICAL_DEBT_INVENTORY.md)。
 
 ## 维护命令
 
 ```bash
 node scripts/validate-plugins-index.mjs
-node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-distros/chat-pro/plugins/plugins.json
+node scripts/sync-plugins-index-github.mjs --write ../awesome-oclive-plugins/plugins.json
 ```
 
 ## 验收（本地）

@@ -645,6 +645,7 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 实际修补 / 例子**：按[有限计划](ROUND-02-PLAN.md#2026-10-05--冻结后并发接续cli-市场基础安装闭环)补 `V-MARKET-01` 已有基础安装承诺。原 Git 分支直接替换目标，本地依赖图又可能读取旧根；例如新插件缺 manifest 或新声明依赖不存在，旧安装仍会被破坏。现以同一个 crate 私有准备函数复用 JSON 对象 / 依赖 parser 与图遍历，图根来自本次 source；Git 再核非空字符串 manifest.id 与索引精确一致，全部这些拒绝先于目标删除。默认或 canonical 别名 source 就是 target 时保留自身，删除目标错误传播；不更改原显式角色装配与非 Git 分支。
 - **自主选择 / 复核纠偏**：不为 CLI 引入默认 Host 依赖或复制完整清单 parser，身份比对仅兑现已有索引一致承诺，不新增 ID 语法。实施中的复制方案会意外改变 Git 移动语义，controller 在复核前发现后撤回，最终仍为临时克隆根 / 子目录的原 rename；暂态测试不是最终证据。文档支线修正默认 awesome URL、两处同步路径和重复 OPEN 表述，controller 按实际实现区分 CLI 基础检查与桌面完整清单校验。任务 UI、实际工具授权 / 模型选择 / 结果进入记忆仍是 ChatPro 的待决项，不在此片擅自接入。
 - **有限验证 / 独立审查**：实施者在新 TempDir 与本地 file:// Git 夹具上先红测 native 101（12 项中 11 失败），最终 13/13、CLI bin/tests Clippy、两文件 fmt / diff 均 native 0。独立 reviewer 对最终两源码 hash、同一个准备函数、source 根、验证顺序、保留移动与同目录保护复核 PASS，仅读最终日志并区分实施者 native 退出记录，未重复 Cargo；不声称 reviewer 自行跑测。本机原件归于 `.cursor/plans/debt-market-install-20261005-r0/`，controller 合流适用门禁和最终冻结结果随实际更新。未访问线上索引、真实插件进程或用户安装；不扩 IO 回滚、全部重解析点 / 并发安全矩阵、签名或社区发布。父债仍 Partial，已足以行动则停。
+- **合流出口 / 本批冻结**：两个独立工作树的精确写集已经保留并合流，共两份 Rust 源和六份文档；controller 在主树实际复跑 13/13，CLI bin/tests Clippy、两文件 fmt、module-compat、默认 / 六份改文链接、文档登记、docs-only 旧路径、债结构 / 计划、六份编码与批次 diff 均 native 0。审查过的源码 Git blob 与合流一致，磁盘 LF / CRLF 的 hash 区别单独记录，未冒充逐字节一致。controller 的首次编码调用误用位置参数，usage 拒绝 native 1，改用既有 `--file` 后通过，原件保留；D-DEBT-LEDGER-01 只追加本次快照引用，原有历史链接保留。没有因为工具使用错误改产品 / 放宽规则。最终相关批次干净冻结后仅跑一次完整本地链与一次推送 / 精确 SHA 正式 CI，正式结果留原始回执并随下次实质工作入账，不再制造纯绿灯提交。
 
 ### DCL-20261006-44 · 当前最小角色状态凝缩，历史原行保全
 
