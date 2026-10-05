@@ -656,3 +656,21 @@
 **局部结果**：Host lib 637／身份直接回归 6、shared 身份消费者 3、Host all-targets/all-features Clippy、局部 fmt、前端 ESLint/typecheck 与适用分层／模块／文档／债结构／编码／diff native 0；[DCL-45](DEBT_CHANGELOG.md#dcl-20261006-45--发行版默认身份兑现用户确认的优先级)区分夹具错误、真实红测与实现证据。停止于这一规则，不将窄测当目标正式 CI；批次冻结后只运行一次完整本地链并推送。
 
 **完整门禁纠偏 / 当前出口**：上批 `cfcfc734` 正式 CI 已实际 17/17 success，收口回执保留后才准许本片合流。身份原冻结 `ee1b0939` 的完整链在 Dimension 5 旧路径检查 native 1，原因仅为本人新 TempDir 测试局部变量不符合已有夹具写法；限定改 `root` 为 `dir`，不改实际目录或门禁。原失败证据不覆盖，窄测修复后冻结最终 SHA 再跑一次完整链；本批因此有一次真实失败，不再称总计只运行一次。此前 M 实施在最终债务验收升 L，仍不扩调研或推送中间失败提交。
+
+**2026-10-06 实际终态**：身份批次冻结于 `58be11faba622dc87ed29ef677ea444cf2dd6599`；第二次完整链被控制端向嵌套生成项目传播 `CARGO_TARGET_DIR` 的错误环境配置拒绝，未改业务源码。取消该全局覆盖后，CLI monolith 定向 8/8，第三次完整本地链 native 0（1128.6415517 秒），一次推送后的[正式 CI 37353477334](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37353477334) 对同一 SHA 17/17 success、含 ci-gate，零 rerun；总计三次完整本地尝试，两次失败原件保留。本机 `.cursor/plans/debt-user-identity-default-20261006-r0/55-closeout.json` 已核 HEAD / tracking / remote 一致且干净；忽略目录证据不可随 Git 转让。本条默认选择契约 Done，不扩 legacy 全历史迁移；随下述实质切片回填，不制造仅回写绿灯的提交。
+
+### D-SCAFFOLD-RESOURCE-01 · 只读资源候选预览（2026-10-06）
+
+**起点 / 原因 / 尺寸**：上述干净且正式验收的 `58be11faba622dc87ed29ef677ea444cf2dd6599`。父债已有维护者独立实施授权；L1 限于既有 CLI doctor、ResourceAdapterRegistry、HostProfile 和资源纯编译器，已足以开工，不再枚举资源故障矩阵。M 实施，按 Host 共享语义接线审查；批次保留／main 推送出口升 L。controller 实施与只读语义自查，不称独立复核。
+
+**冻结闭环**：Host 捕获的现有 `ResourceCoordinationDiagnostics` JSON → canonical types 反序列化 → 原 ResourceAdapterRegistry 的所有者／descriptor 校验与有限调度 validator → 原 `compile_resource_candidate_plan` → CLI 人类输出或原 `ResourceCandidatePlan` JSON。新增 `doctor resource-plan <diagnostics-file>`，显式要求已有 `diagnostics-host` feature；可用 `--distro-profile` 经原 loader 替换捕获 policy，旧 profile 缺资源节继续用原默认；可显式选择 `--gpu-device-index`，不偷偷套入本机环境覆盖。输入必须为当前诊断版本，错误读取／类型／所有者／重复 adapter ID 非零；blocked/degraded 是成功生成的诊断，不冒充工具失败。
+
+**控制边界**：只读捕获不携带真实控制器，编译时 controller_ids 为空；不能把 descriptor 的 managed 或 selectable 宣称为实际授权。需转换的候选会保留原 controller 缺失原因；无转换候选的原 executable 字段也不构成实时准入。stdout JSON 仅一个原有类型的文档，stderr 明示离线捕获／无控制权；不把候选写回角色包或新造资源磁盘 schema，不启动／探测设备、插件、模型、进程、服务或用户 DB，不改 policy 执行、六槽、Host wire、桌面／共享消费者与默认 CLI 依赖面。
+
+**写集 / 验收 / 止点**：CLI `src/main.rs` / `doctor_cmd.rs` 登记子命令，新 `doctor_resource_plan.rs` 与其定向测试；中英 CLI guide、父债第五列、本计划、DCL，同轮回填上一片身份验收。测试覆盖实际命令解析／JSON 与人类输出、临时文件/profile round-trip、legacy profile、无 GPU、observe-only、冲突计划、需控制器不能伪造权限、坏输入与默认 feature 明确拒绝；读取前后源文件不变，引用旧 scheduling/candidate 结果不作为新结果。跑 CLI 两种 feature 的窄测／Clippy／fmt，Host registry/planner 兼容回归及适用分层／文档／镜像／债／编码／diff 门禁；达到离线 preview 即停止，不新增交互编辑器、自动硬件建议、第三方装配或实机 soak。父债只 Partial，不全关。相关片稳定后冻结干净提交，一次最终完整本地链、一次推送、核目标 SHA 正式 CI；全局不导出 CARGO_TARGET_DIR，保留失败而不覆盖重跑。
+
+**关联文字写集**：资源 RFC 中英各一处将泛称 CLI doctor 精确到旧 `doctor execution-plan`，只链接新离线入口，不复制合同或改变控制政策；COVERAGE 与 DCL 依赖表将已验收身份债移出待决项，主台账前四列仍逐字保留。无需修改 Host／types／contracts／Tauri／shared／发行版／目录插件／官方角色包／姊妹仓；没有新公共 Rust API 或依赖。原 JSON `executable` 语义不改，CLI 不提供运行候选的入口。
+
+**局部出口**：实际 CLI opt-in 7／默认拒绝 1、Host compiler 8／registry 9／旧 CLI 1 项，Clippy／fmt 和适用文档／分层／债结构均通过；零测试假红测、原命令不存在的真红测、初始 fmt 与控制端参数错误各自保留并归因，见 DCL-46。当前只完成局部验证／controller 自查；在本片有限 milestone 总审、提交冻结后运行一次最终全链及正式 CI，不扩配置编辑、资源执行或实机压力测试。
+
+**正式覆盖接线**：现有 CLI job 的 opt-in `diagnostics-host` 步骤只运行库消费者回归，默认全 crate 不会执行新 feature 内的七项；该原步骤增加 `--test doctor_resource_plan`，保留原 `e2e_minimal_role_library`、串行、default 依赖边界、现有 job／矩阵／ci-gate。这是本命令测试进入现有门禁的必要关联写集（`.github/workflows/ci.yml`），不重构 CI；本地按同一条命令验两个集成目标，最终全链负责 Dimension 5／工作流纪律。

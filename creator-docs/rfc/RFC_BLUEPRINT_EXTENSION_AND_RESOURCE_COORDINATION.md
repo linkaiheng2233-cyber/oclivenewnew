@@ -109,7 +109,7 @@ role/
 - Rust/JSON Schema、CLI/doctor、Host 与角色包编写器已支持 v4 外壳、路径安全和未知载荷 round-trip。
 - 宿主已实现目录 Provider 的 Capability Registry、确定性 Provider 选择、权限/依赖/启停检查、required/optional 激活门禁，以及 Tauri/CLI 只读结构化诊断；同一角色包可按 `HostProfile` 得到不同计划。
 - 计划只有在宿主已登记真实消费者时才将 capability 标为 active。首个登记项为 Chat Pro `voice.asr`；任意 manifest `provides` 不能自行扩张内核。
-- `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI doctor 明确保留 `resource_coordination: not_evaluated` 且不生成设备计划。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，把同一份只读 `candidate_plan` 接入 `ExecutionPlan.resource_plan`。
+- `ExecutionPlan` 仍只解析能力与有效六槽，不启动 Provider、不写回角色包；纯编译与 CLI `doctor execution-plan` 明确保留 `resource_coordination: not_evaluated` 且不生成设备计划。桌面 Tauri 诊断会刷新宿主 Resource Coordinator，把同一份只读 `candidate_plan` 接入 `ExecutionPlan.resource_plan`；CLI 离线捕获预览见 [CLI guide](../cli/OCLIVE_CLI_GUIDE.md)，不拥有实时控制器。
 - 宿主已提供 NVIDIA 多设备、系统 RAM 与 CPU 快照，以及原子准入、租约、优先级、压力和资源诊断 v5；`HostProfile` 提供各资源安全余量、租约 TTL、排队/老化、自动抢占和有限调度意图。Resource Adapter Registry 登记控制模式、注册来源、adapter-local 档位、驻留能力、生命周期动作和当前租约，并只读校验调度意图；注册表本身不调度。
 - 首个资源适配闭环覆盖宿主管理的 llama-server 冷启动、只能观测的 Ollama/LLM 前台活动，以及官方 bundled CosyVoice2 的 `voice.warm` / `voice.speak`。租约携带 `profile_id`，已登记适配器的未知档位会被拒绝；云 TTS、用户自建 HTTP TTS 与社区插件不被误认为宿主可控资源。
 - 候选计划编译器会把有效意图、当前档位/租约、最新 GPU/RAM/CPU 容量和控制器可用性编译为确定性的档位选择、建议转换、回滚动作与稳定原因码；输出携带 `compiled_from_revision`，只读查看不会执行任何 lifecycle。

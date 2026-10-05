@@ -351,6 +351,18 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-
 
 该命令因复用宿主角色解析、Capability Registry 与 Plan Compiler 而显式要求 `diagnostics-host` feature；默认 CLI 依赖面保持轻量。输出中的 `ExecutionPlan` 只存在于内存，不写回 `pipeline.ocblueprint`；`resource_coordination: not_evaluated` 且省略 `resource_plan` 表示纯编译没有探测设备。桌面诊断才会刷新 Resource Coordinator 并附上只读候选资源计划。无 Provider 或权限时，必需扩展为 `blocked`，可选扩展为 `degraded`。
 
+**`doctor resource-plan`**（离线资源候选预览）：先保存 Host 现有的 `ResourceCoordinationDiagnostics` JSON，再用同一个 Host 资源编译器评估捕获的档位、租约、容量和有限约束；不连接 Host，也不探测本机硬件。
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json \
+  --distro-profile ./distro.oclive.toml --gpu-device-index 0 --json
+```
+
+输入须为当前资源诊断版本（v5），不是角色包、蓝图、执行请求或任意资源配置。未指定 `--distro-profile` 时使用捕获的 policy；指定后经原 HostProfile loader 读取 `[resource_coordination]`，旧 profile 缺该节使用原默认。GPU 默认取捕获快照中索引最小的设备，显式索引也只查该快照；本机 `OCLIVE_GPU_DEVICE_INDEX`、资源预算环境覆盖不会暗中改变预览。原文件不修改，捕获的旧 scheduling / candidate 结果重新计算。
+
+人类模式列出适配器档位、估计 GPU/RAM/CPU、选择、拟议转换及原原因码；`--json` 的 stdout 只有一个既有 `ResourceCandidatePlan` 文档，stderr 明示离线／无控制权。读取、类型、版本、所有者或重复 adapter ID 错误非零退出；正常生成 `blocked` / `degraded` 诊断仍 exit 0。例如 `resource_scheduling_group_conflict` 表示约束冲突，`resource_plan_insufficient_gpu_headroom` 表示捕获容量不足，`resource_plan_controller_unavailable` 表示预览没有真实控制器。捕获文件不会授予控制权：即便无需转换的候选 `executable=true`，也不构成实时准入或执行许可；任何实际执行仍由 Host 重新核验版本、控制器和物理容量。此入口不提供配置编辑、自动硬件建议或资源执行，新资源磁盘 schema 也未引入。资源合同见[资源 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md#621-有限调度意图)。
+
 ### `test --oocp`（本地 OOCP 闭环）
 
 在 **oclivenewnew 仓库根**执行（需已能 `cargo build -p oclivenewnew-tauri --release`）：

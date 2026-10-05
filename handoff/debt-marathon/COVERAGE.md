@@ -27,7 +27,7 @@
 | 工具链/构建 | K-TOOLS-01、K-VERIFY-01、K-BUILD-06、K-BUILD-07 | 门禁真实调用链、受控缺依赖负例、内存/缓存预算和安全维护范围；未取得等价证据不移除 `-j 1` |
 | 情绪/编码/语音 | K-EMO-01/03/05/06/07、K-ENCODING-01、K-VOICE-09 | 分清算法、标签/来源、持久化与真实硬件验收；不将词表输出或短测当作 Full 质量 |
 | Kernel/Host/可移植性 | K-CORE-BOUNDARY-01、D-CLI-BLUEPRINT-05、K-PROACTIVE-01、K-EVENT-STREAM-01、V-PORTABLE-01、V-EMBED-01 | 从现行 SSOT 选定一个边界；不自动启动物理拆分、Production Stream 或发行版全合规 |
-| 待决语义与实验 | K-UID-DEFAULT-02、K-DUAL-ROLLBACK-02、K-AGENT-MERGE-01 | 产品/架构取舍及确切冻结/解冻条件；不根据“代码已存在”默选方案 |
+| 待决语义与实验 | K-DUAL-ROLLBACK-02、K-AGENT-MERGE-01 | 产品/架构取舍及确切冻结/解冻条件；不根据“代码已存在”默选方案。K-UID-DEFAULT-02 已按维护者裁定收口，见主台账与 DCL-45 |
 | 资源/CI/开发工具 | K-RESOURCE-COORD-01、D-SCAFFOLD-RESOURCE-01、K-CI-IMPACT-01、D-CI-AI-REVIEW-03、D-SCAFFOLD-EVOLUTION-04 | 当前专题计划、测量/数据收集范围与执行权限；通用 CI 绿不替代资源 soak/选择性门禁证明 |
 | 台账/资产 | D-DEBT-LEDGER-01、D-ASSET-FOOTPRINT-01 | 已有 [重复 ID 引用化、七月 Verification、八月工程快照与六月轮次 16–19 迁移、持续结构门禁](waves/WAVE-20260929-DEBT-REFERENCES.md)；其余长快照、全表状态词、自由文本语义冲突及资产取舍仍需具体范围；结构治理不代替产品验收 |
 | 连续性/编写器/LoRA | K-CONTINUITY-01、PE-CONTINUITY-01、V-LORA-FORGE-02、V-LORA-PACK-03、V-LORA-PEFT-04 | 人工观感、跨仓范围或适配契约；不能把运行时局部完成扩成整个创作产品 Done |

@@ -50,6 +50,9 @@ pub enum DoctorSubcommand {
     /// Compile read-only capability registry and execution-plan diagnostics
     #[command(name = "execution-plan")]
     ExecutionPlan(crate::doctor_execution_plan::ExecutionPlanArgs),
+    /// Preview resource intent against captured diagnostics without controlling devices
+    #[command(name = "resource-plan")]
+    ResourcePlan(crate::doctor_resource_plan::ResourcePlanArgs),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,6 +115,7 @@ pub fn run(args: DoctorArgs) -> Result<()> {
                 rt.block_on(crate::doctor_config_resolve::run(cfg))
             }
             DoctorSubcommand::ExecutionPlan(plan) => crate::doctor_execution_plan::run(plan),
+            DoctorSubcommand::ResourcePlan(plan) => crate::doctor_resource_plan::run(plan),
         }?;
         return Ok(());
     }

@@ -86,6 +86,18 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor execution-plan my-
 
 The command explicitly requires `diagnostics-host` because it reuses the host role parser, Capability Registry, and Plan Compiler; the default CLI dependency surface remains lightweight. The `ExecutionPlan` is in memory only. `resource_coordination: not_evaluated` with no `resource_plan` means pure compilation did not probe devices. Desktop diagnostics refresh the Resource Coordinator and attach a read-only candidate resource plan. An unavailable required extension is `blocked`; an unavailable optional extension is `degraded`.
 
+**`doctor resource-plan`** previews resource candidates offline. Save the Host's existing `ResourceCoordinationDiagnostics` JSON, then evaluate its profiles, leases, capacities, and finite constraints using the same Host resource compiler. The command neither connects to a Host nor probes local hardware.
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json \
+  --distro-profile ./distro.oclive.toml --gpu-device-index 0 --json
+```
+
+Input must use the current resource diagnostic version (v5); it is not a role pack, blueprint, execution request, or arbitrary resource configuration. Without `--distro-profile`, the captured policy is used. With it, the original HostProfile loader reads `[resource_coordination]`; legacy profiles without that section retain the original defaults. GPU selection uses the lowest device index in the captured snapshot unless explicitly specified; an explicit index is also looked up only in that snapshot. Local `OCLIVE_GPU_DEVICE_INDEX` and resource budget environment overrides do not silently affect the preview. Input files remain unchanged; captured scheduling and candidate results are recomputed.
+
+Human output lists adapter profiles, GPU/RAM/CPU estimates, selections, proposed transitions, and original reason codes. With `--json`, stdout contains one existing `ResourceCandidatePlan` document; stderr explains the offline, non-authoritative scope. Read, type, version, owner, and duplicate adapter ID errors exit nonzero; successfully generated `blocked` or `degraded` diagnostics exit 0. For example, `resource_scheduling_group_conflict` means conflicting constraints, `resource_plan_insufficient_gpu_headroom` means insufficient captured capacity, and `resource_plan_controller_unavailable` means no real controller is available to this preview. Captured files never grant control: even a no-transition candidate with `executable=true` is not live admission or execution permission. The Host must revalidate revision, controllers, and physical capacity for actual execution. This entry provides neither configuration editing nor automatic hardware advice or resource execution, and introduces no new on-disk resource schema. See the [resource RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md).
+
 ---
 
 ## `pack`: validate and publish role packs
