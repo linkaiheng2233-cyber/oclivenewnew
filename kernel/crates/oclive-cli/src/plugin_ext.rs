@@ -41,6 +41,39 @@ pub struct PluginTestArgs {
     pub json: bool,
 }
 
+pub(crate) struct PreparedPluginInstall {
+    pub(crate) manifest_raw: String,
+    pub(crate) order: Vec<String>,
+}
+
+/// Prepare the existing CLI JSON/dependency checks before changing an install target.
+pub(crate) fn prepare_plugin_install(
+    root_id: &str,
+    source: &Path,
+    plugins_dir: &Path,
+) -> Result<PreparedPluginInstall> {
+    if !source.join("manifest.json").is_file() {
+        bail!("Missing manifest.json: {}", source.display());
+    }
+    let manifest_raw = fs::read_to_string(source.join("manifest.json"))?;
+    let deps = parse_plugin_dependencies(&manifest_raw).map_err(|e| anyhow::anyhow!(e))?;
+
+    let load_deps = |id: &str| -> Result<Vec<String>, String> {
+        if id == root_id {
+            return Ok(deps.clone());
+        }
+        let p = plugins_dir.join(id).join("manifest.json");
+        let raw = fs::read_to_string(&p).map_err(|e| e.to_string())?;
+        parse_plugin_dependencies(&raw)
+    };
+
+    let order = compute_plugin_install_order(root_id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
+    Ok(PreparedPluginInstall {
+        manifest_raw,
+        order,
+    })
+}
+
 pub fn run_install(args: PluginInstallArgs) -> Result<()> {
     let plugins_dir = args.plugins_dir.canonicalize().unwrap_or(args.plugins_dir);
     fs::create_dir_all(&plugins_dir)?;
@@ -48,20 +81,10 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
         .source
         .clone()
         .unwrap_or_else(|| plugins_dir.join(&args.id));
-    if !src.join("manifest.json").is_file() {
-        bail!("Missing manifest.json: {}", src.display());
-    }
-    let manifest_raw = fs::read_to_string(src.join("manifest.json"))?;
-    let deps = parse_plugin_dependencies(&manifest_raw).map_err(|e| anyhow::anyhow!(e))?;
-
-    let load_deps = |id: &str| -> Result<Vec<String>, String> {
-        let p = plugins_dir.join(id).join("manifest.json");
-        let raw = fs::read_to_string(&p).map_err(|e| e.to_string())?;
-        parse_plugin_dependencies(&raw)
-    };
-
-    let order =
-        compute_plugin_install_order(&args.id, load_deps).map_err(|e| anyhow::anyhow!(e))?;
+    let PreparedPluginInstall {
+        manifest_raw,
+        order,
+    } = prepare_plugin_install(&args.id, &src, &plugins_dir)?;
     let order_display = order.join(" → ");
     for id in &order {
         let dst = plugins_dir.join(id);
@@ -84,7 +107,7 @@ pub fn run_install(args: PluginInstallArgs) -> Result<()> {
             println!("✓ Installed {id} → {}", dst.display());
         }
     }
-    if !deps.is_empty() {
+    if order.len() > 1 {
         println!("Dependency tree: {order_display}");
     }
 
@@ -236,10 +259,14 @@ fn list_installed(dir: &Path) -> Result<Vec<(String, String)>> {
 }
 
 fn copy_plugin_tree(from: &Path, to: &Path) -> Result<()> {
+    let from = from.canonicalize().context("resolve plugin source")?;
     if to.exists() {
-        fs::remove_dir_all(to).ok();
+        if from == to.canonicalize().context("resolve plugin target")? {
+            return Ok(());
+        }
+        fs::remove_dir_all(to).context("remove plugin target")?;
     }
-    copy_dir(from, to)
+    copy_dir(&from, to)
 }
 
 fn copy_dir(from: &Path, to: &Path) -> Result<()> {
@@ -301,3 +328,131 @@ fn rpc_call(child: &mut std::process::Child, method: &str, _params: Value) -> Rp
 }
 
 use serde_json::json;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ID: &str = "com.oclive.fixture";
+    const SENTINEL: &[u8] = b"old plugin must survive rejection";
+
+    fn write_manifest(dir: &Path, id: &str, deps: &[&str]) {
+        fs::create_dir_all(dir).unwrap();
+        fs::write(
+            dir.join("manifest.json"),
+            json!({"id": id, "plugin_dependencies": deps}).to_string(),
+        )
+        .unwrap();
+    }
+
+    fn install(source: Option<PathBuf>, plugins: &Path) -> Result<()> {
+        run_install(PluginInstallArgs {
+            id: ID.into(),
+            plugins_dir: plugins.to_path_buf(),
+            source,
+            role: None,
+        })
+    }
+
+    #[test]
+    fn market_install_source_root_is_staged_manifest() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("source");
+        let plugins = temp.path().join("plugins");
+        write_manifest(&source, ID, &[]);
+        fs::write(source.join("payload.txt"), b"new plugin").unwrap();
+        install(Some(source), &plugins).unwrap();
+        assert_eq!(
+            fs::read(plugins.join(ID).join("payload.txt")).unwrap(),
+            b"new plugin"
+        );
+    }
+
+    #[test]
+    fn market_install_source_dependencies_ignore_old_root() {
+        let temp = tempfile::tempdir().unwrap();
+        let source = temp.path().join("source");
+        let plugins = temp.path().join("plugins");
+        write_manifest(&source, ID, &["dependency"]);
+        write_manifest(&plugins.join(ID), ID, &["old-missing"]);
+        write_manifest(&plugins.join("dependency"), "dependency", &[]);
+        fs::write(plugins.join("dependency").join("sentinel.txt"), SENTINEL).unwrap();
+        install(Some(source), &plugins).unwrap();
+        assert_eq!(
+            fs::read(plugins.join("dependency").join("sentinel.txt")).unwrap(),
+            SENTINEL
+        );
+        assert_eq!(
+            parse_plugin_dependencies(
+                &fs::read_to_string(plugins.join(ID).join("manifest.json")).unwrap()
+            )
+            .unwrap(),
+            ["dependency"]
+        );
+    }
+
+    #[test]
+    fn market_install_staged_missing_dependency_and_cycle_preserve_target() {
+        for cycle in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let source = temp.path().join("source");
+            let plugins = temp.path().join("plugins");
+            write_manifest(&source, ID, &["dependency"]);
+            write_manifest(&plugins.join(ID), ID, &[]);
+            fs::write(plugins.join(ID).join("sentinel.txt"), SENTINEL).unwrap();
+            if cycle {
+                write_manifest(&plugins.join("dependency"), "dependency", &[ID]);
+            }
+            let old = fs::read(plugins.join(ID).join("manifest.json")).unwrap();
+            let result = install(Some(source), &plugins);
+            assert_eq!(
+                fs::read(plugins.join(ID).join("sentinel.txt"))
+                    .ok()
+                    .as_deref(),
+                Some(SENTINEL),
+                "old target changed: {result:?}"
+            );
+            assert_eq!(
+                fs::read(plugins.join(ID).join("manifest.json")).unwrap(),
+                old
+            );
+            assert!(result.is_err());
+            if cycle {
+                assert!(result.unwrap_err().to_string().contains("循环"));
+            }
+        }
+    }
+
+    #[test]
+    fn market_install_default_source_preserves_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        let plugins = temp.path().join("plugins");
+        write_manifest(&plugins.join(ID), ID, &[]);
+        fs::write(plugins.join(ID).join("sentinel.txt"), SENTINEL).unwrap();
+        let old = fs::read(plugins.join(ID).join("manifest.json")).unwrap();
+        install(None, &plugins).unwrap();
+        assert_eq!(
+            fs::read(plugins.join(ID).join("sentinel.txt")).unwrap(),
+            SENTINEL
+        );
+        assert_eq!(
+            fs::read(plugins.join(ID).join("manifest.json")).unwrap(),
+            old
+        );
+    }
+
+    #[test]
+    fn market_install_explicit_same_source_alias_preserves_directory() {
+        let temp = tempfile::tempdir().unwrap();
+        let plugins = temp.path().join("plugins");
+        write_manifest(&plugins.join(ID), ID, &[]);
+        fs::write(plugins.join(ID).join("sentinel.txt"), SENTINEL).unwrap();
+        let source = plugins.join(ID).join("..").join(ID);
+        install(Some(source), &plugins).unwrap();
+        assert_eq!(
+            fs::read(plugins.join(ID).join("sentinel.txt")).unwrap(),
+            SENTINEL
+        );
+        assert!(plugins.join(ID).join("manifest.json").is_file());
+    }
+}

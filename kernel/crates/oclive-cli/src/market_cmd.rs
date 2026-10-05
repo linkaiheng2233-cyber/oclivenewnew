@@ -179,12 +179,8 @@ fn git_clone_plugin_repo(git: &str, clone_dir: &Path) -> Result<()> {
 fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
     if let Some(git) = item.git.as_deref().filter(|s| !s.is_empty()) {
         std::fs::create_dir_all(plugins_dir)?;
-        let label = git
-            .split('/')
-            .next_back()
-            .unwrap_or("plugin")
-            .trim_end_matches(".git");
-        let clone_dir = plugins_dir.join(format!(".clone-{label}"));
+        let staging = tempfile::tempdir_in(plugins_dir).context("create plugin staging dir")?;
+        let clone_dir = staging.path().join("repo");
         git_clone_plugin_repo(git, &clone_dir)?;
         let sub = item
             .git_subdir
@@ -197,21 +193,35 @@ fn install_plugin_item(item: &MarketItem, plugins_dir: &Path) -> Result<()> {
                 let rel = rel.replace('\\', "/").trim_matches('/').to_string();
                 let p = clone_dir.join(&rel);
                 if !p.is_dir() {
-                    let _ = std::fs::remove_dir_all(&clone_dir);
                     bail!("gitSubdir not found in clone: {rel}");
                 }
                 p
             }
         };
+        let prepared = crate::plugin_ext::prepare_plugin_install(&item.id, &src, plugins_dir)?;
+        // This is an index identity check, not the Host's full manifest schema validation.
+        let manifest: serde_json::Value =
+            serde_json::from_str(&prepared.manifest_raw).context("parse staged plugin manifest")?;
+        let manifest_id = manifest
+            .get("id")
+            .and_then(serde_json::Value::as_str)
+            .filter(|id| !id.trim().is_empty())
+            .context("staged manifest.id must be a non-empty string")?;
+        if manifest_id != item.id {
+            bail!(
+                "staged manifest.id {manifest_id} does not match market id {}",
+                item.id
+            );
+        }
         let dst = plugins_dir.join(&item.id);
         if dst.exists() {
-            std::fs::remove_dir_all(&dst).ok();
+            std::fs::remove_dir_all(&dst).context("remove plugin target")?;
         }
+        // Retain Git's original move semantics; do not recursively copy repository links.
         if src == clone_dir {
             std::fs::rename(&clone_dir, &dst).context("rename clone to plugin id")?;
         } else {
             std::fs::rename(&src, &dst).context("move gitSubdir into plugin id dir")?;
-            let _ = std::fs::remove_dir_all(&clone_dir);
         }
         println!(
             "✓ Installed plugin {} from Git → {}",
@@ -510,4 +520,181 @@ fn item_detail_text(p: &MarketItem) -> String {
             .unwrap_or_default(),
         p.git.as_ref().map(|g| format!("Git: {g}")).unwrap_or_default(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::fs;
+
+    const ID: &str = "com.oclive.fixture";
+    const SENTINEL: &[u8] = b"old plugin must survive rejection";
+
+    fn git_fixture(
+        manifest: Option<&str>,
+        subdir: Option<&str>,
+    ) -> (tempfile::TempDir, MarketItem, PathBuf) {
+        let temp = tempfile::tempdir().unwrap();
+        let repo = temp.path().join("fixture-repo");
+        let source = subdir.map_or_else(|| repo.clone(), |rel| repo.join(rel));
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("payload.txt"), b"new plugin").unwrap();
+        if let Some(raw) = manifest {
+            fs::write(source.join("manifest.json"), raw).unwrap();
+        }
+        for args in [
+            vec!["init", "--quiet", "--initial-branch=fixture"],
+            vec!["add", "."],
+            vec![
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "commit",
+                "--quiet",
+                "-m",
+                "fixture",
+            ],
+        ] {
+            let output = Command::new("git")
+                .current_dir(&repo)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let normalized = repo.to_string_lossy().replace('\\', "/");
+        let git = if normalized.starts_with('/') {
+            format!("file://{normalized}")
+        } else {
+            format!("file:///{normalized}")
+        };
+        let item = serde_json::from_value(json!({
+            "id": ID, "name": "Fixture", "version": "1.0.0",
+            "git": git, "gitSubdir": subdir,
+        }))
+        .unwrap();
+        let plugins = temp.path().join("plugins");
+        let old = plugins.join(ID);
+        fs::create_dir_all(&old).unwrap();
+        fs::write(old.join("manifest.json"), json!({"id": ID}).to_string()).unwrap();
+        fs::write(old.join("sentinel.txt"), SENTINEL).unwrap();
+        (temp, item, plugins)
+    }
+
+    fn assert_rejected_without_replacement(item: &MarketItem, plugins: &Path) {
+        let old_manifest = fs::read(plugins.join(ID).join("manifest.json")).unwrap();
+        let result = install_plugin_item(item, plugins);
+        assert_eq!(
+            fs::read(plugins.join(ID).join("sentinel.txt"))
+                .ok()
+                .as_deref(),
+            Some(SENTINEL),
+            "old target changed: {result:?}"
+        );
+        assert_eq!(
+            fs::read(plugins.join(ID).join("manifest.json")).unwrap(),
+            old_manifest
+        );
+        assert!(result.is_err(), "invalid staged plugin was accepted");
+        for entry in fs::read_dir(plugins).unwrap() {
+            let name = entry.unwrap().file_name();
+            assert!(
+                name == ID || name == "dependency",
+                "staging directory survived rejection: {name:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn market_install_missing_manifest_preserves_target() {
+        let (_temp, item, plugins) = git_fixture(None, None);
+        assert_rejected_without_replacement(&item, &plugins);
+    }
+
+    #[test]
+    fn market_install_bad_json_preserves_target() {
+        let (_temp, item, plugins) = git_fixture(Some("{broken"), Some("plugins/fixture"));
+        assert_rejected_without_replacement(&item, &plugins);
+    }
+
+    #[test]
+    fn market_install_bad_identity_preserves_target() {
+        for raw in [
+            "{}",
+            "[]",
+            r#"{"id":3}"#,
+            r#"{"id":" "}"#,
+            r#"{"id":"other"}"#,
+        ] {
+            let (_temp, item, plugins) = git_fixture(Some(raw), None);
+            assert_rejected_without_replacement(&item, &plugins);
+        }
+    }
+
+    #[test]
+    fn market_install_invalid_dependencies_preserves_target() {
+        let raw = json!({"id": ID, "plugin_dependencies": 3}).to_string();
+        let (_temp, item, plugins) = git_fixture(Some(&raw), None);
+        assert_rejected_without_replacement(&item, &plugins);
+    }
+
+    #[test]
+    fn market_install_missing_dependency_preserves_target() {
+        let raw = json!({"id": ID, "plugin_dependencies": ["missing"]}).to_string();
+        let (_temp, item, plugins) = git_fixture(Some(&raw), None);
+        assert_rejected_without_replacement(&item, &plugins);
+    }
+
+    #[test]
+    fn market_install_cycle_preserves_target() {
+        let raw = json!({"id": ID, "plugin_dependencies": ["dependency"]}).to_string();
+        let (_temp, item, plugins) = git_fixture(Some(&raw), Some("plugins/fixture"));
+        let dep = plugins.join("dependency");
+        fs::create_dir_all(&dep).unwrap();
+        fs::write(
+            dep.join("manifest.json"),
+            json!({"id": "dependency", "plugin_dependencies": [ID]}).to_string(),
+        )
+        .unwrap();
+        assert_rejected_without_replacement(&item, &plugins);
+    }
+
+    #[test]
+    fn market_install_valid_root_and_subdir() {
+        let raw = json!({"id": ID}).to_string();
+        for sub in [None, Some("plugins/fixture")] {
+            let (_temp, item, plugins) = git_fixture(Some(&raw), sub);
+            install_plugin_item(&item, &plugins).unwrap();
+            assert_eq!(
+                fs::read(plugins.join(ID).join("payload.txt")).unwrap(),
+                b"new plugin"
+            );
+            assert_eq!(
+                fs::read_to_string(plugins.join(ID).join("manifest.json")).unwrap(),
+                raw
+            );
+            assert_eq!(
+                fs::read_dir(&plugins).unwrap().count(),
+                1,
+                "staging directory survived installation"
+            );
+        }
+    }
+
+    #[test]
+    fn market_install_non_git_default_preserves_source() {
+        let (_temp, mut item, plugins) = git_fixture(None, None);
+        item.git = None;
+        install_plugin_item(&item, &plugins).unwrap();
+        assert_eq!(
+            fs::read(plugins.join(ID).join("sentinel.txt")).unwrap(),
+            SENTINEL
+        );
+    }
 }

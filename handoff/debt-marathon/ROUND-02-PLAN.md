@@ -624,3 +624,19 @@
 **精确写集 / 有限验收**：Host `src/domain/agent.rs` 添加公开方法及可编译用法、`src/domain/agent_base_binding.rs` 只更新私有实现与公开入口的范围说明、新 `tests/minimal_role_agent_base.rs`；文档为 ROLE_PACK_BOUNDARY 新 §0.19、MODULE_MAP 接线引用、父债第五列、本计划及 DEBT_CHANGELOG。先在旧源码让外部调用编译红，再用真实 builtin / 原生产 parser、内存 LLM 与授权桥 seam 验共享消费者明确委托、实际模型 / trace 身份 / 两轮一工具、非空 context 零资源调用、无工具 / 空任务如实未承接、typed discovery / model 错误保留且不重试。已有 Agent core / fallback 回归、当前 HTTP / public API、runtime 六槽 / 消费者作兼容检查；公开 doctest、Clippy / fmt 与 applicable 分层 / 模块 / 文档 / 债务门禁必跑。达到已有实现外部可用即停止，不重做内部三轮 / 并发 / 全部错误反例或开启真实 MCP / 模型 / 用户数据。局部通过先形成可审查提交，同主题批次出口一次完整本地链与一次目标 SHA 远端；后续产品真实任务操作 / 选择策略若有取舍再询问，不把 Agent 工具并集、CLI 磁盘生成或全发行版验收塞入本片。父债保持 Partial。
 
 **局部出口 / 冻结点**：上述公开借用与真实共享消费已实现，适用结果和本轮格式自纠见 [DCL-42](DEBT_CHANGELOG.md#dcl-20261005-42--已有真实-agent-向外开放-base-借用)。本片到达有限里程碑：总审后干净保留，随后一次完整本地链 / 推送 / 精确 SHA 正式 CI；期间不追加产品任务策略或低收益边缘证明。后续若进入任务 UI、当前 Host configured provider 的选择工厂或扩大工具集合，另核实际需求和权限归属，不把本片借用提升为迁移授权。
+
+## 2026-10-05 · 冻结后并发接续：CLI 市场基础安装闭环
+
+**基线 / 授权 / 分工**：维护者要求先冻结最小运行里程碑，再分发独立支线并继续偿债。基线 `f849e2a95e3a5035fc70045e87c13ebe2fbb28c7`；主工作树继续精确 SHA 的 CI 收口，接续片在该 SHA 的独立工作树准备，未验收前不改主线身份。三个有限 L1 分支分别复核已实现 Agent、核下一条债务、说明 ChatPro 任务待决项；不递归委派，不重做全仓调查。技术债与公共文档由 controller 单写；实际源码与市场文档的写集不相交。
+
+**具体问题 / 风险**：`V-MARKET-01` 仍 Partial，旧 Minimal 文档任务不重新领取。Git 市场分支目前在读取 manifest 前删除已有目标并移动源码；既有 `plugin_ext::run_install` 已有 JSON 对象 / 依赖检查，但其依赖图根取自目标而非本次 source，同目录复制还会删源。本片 M，安装目标写入按重风险复核；只补已有基础安装承诺，不实施签名、可信发布者、Full 社区或完整 Host 清单校验迁移。
+
+**闭环与冻结行为**：索引条目 → 已克隆本地根 / `gitSubdir` → 原 CLI manifest / 依赖校验 → 目标安装 → 结果 / 临时目录 → 新临时夹具。校验、依赖缺失或环检测失败均先于已有目标变更；本次 source 作为图根的事实来源；默认 source 与 target 是同一目录时不能删除自身。保留现有索引、克隆、非 Git 安装和显式角色装配语义。不假定已有 helper 提供了完整 Host schema / 身份检查；发现需要新增共享校验公共接口、默认 Host 依赖或新身份政策时先回 controller 重规划，不复制第二套完整 parser。
+
+**身份最小补充（controller 已裁定）**：市场 Git 入口以既有 `serde_json::Value` 读取 manifest 非空字符串 `id`，在目标变更前与索引 `item.id` 精确相等；这兑现索引已有身份一致承诺，不新定义清单 schema / ID 语法 / 信任政策。JSON 根和依赖继续交同一个 CLI 安装 helper 校验。缺失、类型错误或不一致均拒绝；这项基础比对不声称等同桌面运行时的完整清单检查，也不以此关闭完整安装安全或发布债。
+
+**写集 / 并发**：实施者仅写 `oclive-cli/src/market_cmd.rs`、`plugin_ext.rs` 和其中直接回归；controller 写本计划、DEBT_CHANGELOG 与父债第五列。另一文档支线仅修 `GITHUB_PLUGIN_INDEX_LINE.md` 的默认 URL / 同步示例、`PRODUCT_LINE_TASK_BUCKETS.md` 的重复状态引用，不提前重写安装协议。最小角色代码与合同、六槽 / Kernel、wire、签名与权限不改；`K-DIST-01` / `V-MARKET-01` 旧自动计划和其它冻结项不解冻。
+
+**有界验证 / 出口**：仅新 TempDir 和必要的本地 Git 夹具，零外网 / 真实插件进程 / 用户插件目录。先保留 missing / bad manifest、source 根和同目录问题的失败，再核有效根 / 子目录、原目标 sentinel、依赖拒绝与既有路径。开发用离线 `cargo test --locked -j 1 -p oclive-cli` 定向过滤、局部 fmt、Clippy / diff；独立 reviewer 核验证先于目标写入、source 身份及临时路径归属。工作树共享既有 Cargo target 时串行执行，不装依赖或删缓存。文档合流后跑适用链接、登记、债结构与编码；批次冻结后才一次完整本地链 / 推送 / 精确 SHA 正式 CI。失败只修具体根因，不绕过测试或扩展完整安装安全矩阵；足够支撑本片行动即停，父债保持 Partial。ChatPro 明确任务、工具面、模型与报告消费尚未选择，不由本片替维护者决定。
+
+**同轮接手文档收敛**：controller 登记这批状态时，只将已触及的 `D-CLI-BLUEPRINT-05` 累积长状态行按 `D-DEBT-LEDGER-01` 既有准则分离：新历史快照逐字保全基线原行，前四个登记单元格保持，现行第五列保留 Partial / 已有能力 / 剩余范围，详细逐次证据链出而不继续累加。新快照为 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md`，不是第二份活跃状态 SSOT。旧归档不改，不改父债结论或领取更多清单调查；核 raw 行相等、前四列相等、唯一状态行及适用文档门禁。当前 Agent 精确 SHA 的完整结果只在真实终态核对后随本次实质片入账，不制造纯绿灯提交。
