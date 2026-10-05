@@ -41,8 +41,8 @@ struct Fixture {
 
 impl Fixture {
     async fn new(per_scene: bool, host_default: Option<&str>) -> Self {
-        let root = tempfile::tempdir().unwrap();
-        let roles = root.path().join("roles");
+        let dir = tempfile::tempdir().unwrap();
+        let roles = dir.path().join("roles");
         let role_dir = roles.join("identity-test");
         let identities = role_dir.join("user_identities");
         std::fs::create_dir_all(&identities).unwrap();
@@ -96,7 +96,7 @@ impl Fixture {
                 .to_string(),
         )
         .unwrap();
-        let profile_path = root.path().join("distro.oclive.toml");
+        let profile_path = dir.path().join("distro.oclive.toml");
         let profile_text = match host_default {
             Some(id) => format!(
                 "distro_id = \"chat-pro\"\n[user_identity]\ndefault_id = {id:?}\nallowed_ids = [\"choice\"]\n"
@@ -108,7 +108,7 @@ impl Fixture {
         assert_eq!(profile.distro_id, "chat-pro");
         assert_eq!(profile.user_identity.default_id.as_deref(), host_default);
         let state = AppStateBuilder::in_memory_test(Arc::new(NoModel), &roles, None)
-            .with_app_data_dir(root.path().join("app-data"))
+            .with_app_data_dir(dir.path().join("app-data"))
             .with_host_profile(profile)
             .build()
             .await
@@ -121,7 +121,7 @@ impl Fixture {
                 .identity_binding,
             role.identity_binding
         );
-        Self { root, state }
+        Self { root: dir, state }
     }
 
     async fn view(&self, scene: Option<&str>) -> UserIdentityStateResponse {

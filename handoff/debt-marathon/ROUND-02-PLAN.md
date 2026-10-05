@@ -654,3 +654,5 @@
 **关联注释补充**：`oclive_kernel_types` 既有 DTO / sentinel 的 rustdoc 也不应继续把有效默认称为 pack-only；只更新 `models/dto/identity.rs` 的字段注释与 `models/dto/chat.rs` 的身份 sentinel 注释，值、字段、类型、serde 和 relation sentinel 均不改，不构成新公共 API。测试夹具显式设置磁盘 identity_binding 并核实际加载值，避免 exporter 默认 per-scene 被误当 global；第一次暂态 5/6 失败来自这一夹具错误，不归因产品。修正夹具后旧源码 native 101（1 过 / 5 败），实现后六项全过，原输出保留。
 
 **局部结果**：Host lib 637／身份直接回归 6、shared 身份消费者 3、Host all-targets/all-features Clippy、局部 fmt、前端 ESLint/typecheck 与适用分层／模块／文档／债结构／编码／diff native 0；[DCL-45](DEBT_CHANGELOG.md#dcl-20261006-45--发行版默认身份兑现用户确认的优先级)区分夹具错误、真实红测与实现证据。停止于这一规则，不将窄测当目标正式 CI；批次冻结后只运行一次完整本地链并推送。
+
+**完整门禁纠偏 / 当前出口**：上批 `cfcfc734` 正式 CI 已实际 17/17 success，收口回执保留后才准许本片合流。身份原冻结 `ee1b0939` 的完整链在 Dimension 5 旧路径检查 native 1，原因仅为本人新 TempDir 测试局部变量不符合已有夹具写法；限定改 `root` 为 `dir`，不改实际目录或门禁。原失败证据不覆盖，窄测修复后冻结最终 SHA 再跑一次完整链；本批因此有一次真实失败，不再称总计只运行一次。此前 M 实施在最终债务验收升 L，仍不扩调研或推送中间失败提交。
