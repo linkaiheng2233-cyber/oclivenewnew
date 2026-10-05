@@ -44,8 +44,10 @@ pub struct GetUserIdentityStateRequest {
 pub struct UserIdentityStateResponse {
     pub role_id: String,
     pub identities: Vec<UserIdentityDto>,
+    /// Effective Host default: a distro id present in the catalog, otherwise its pack default.
     pub default_identity_id: String,
     pub current_identity_id: String,
+    /// Legacy wire name: this binding follows `default_identity_id` rather than an explicit pick.
     pub use_manifest_default: bool,
     pub effective_relation_key: String,
 }

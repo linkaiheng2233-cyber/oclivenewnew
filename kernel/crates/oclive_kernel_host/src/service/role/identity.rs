@@ -1,7 +1,7 @@
 //! User Identity Prompt Template session API (shared by Tauri / HTTP).
 
 use crate::command_error::CommandError;
-use crate::domain::user_identity_loader::resolve_active_user_identity;
+use crate::domain::user_identity_loader::{default_user_identity_id, resolve_active_user_identity};
 use crate::models::dto::{
     GetUserIdentityStateRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
     UserIdentityDto, UserIdentityStateResponse, OCLIVE_DEFAULT_IDENTITY_SENTINEL,
@@ -45,10 +45,9 @@ fn identity_catalog_or_empty(role: &Role) -> Vec<UserIdentityDto> {
         .unwrap_or_default()
 }
 
-fn default_identity_id(role: &Role) -> String {
-    role.user_identity_catalog
-        .as_ref()
-        .map(|c| c.default_identity_id.clone())
+fn default_identity_id(state: &AppState, role: &Role) -> String {
+    default_user_identity_id(state, role)
+        .map(str::to_string)
         .unwrap_or_default()
 }
 
@@ -126,7 +125,7 @@ pub async fn set_user_identity_impl(
             .db_manager
             .set_use_manifest_default_identity(&req.role_id, true)
             .await?;
-        let default_id = default_identity_id(&role);
+        let default_id = default_identity_id(state, &role);
         if !default_id.is_empty() {
             sync_relation_for_identity(state, &role, &req.role_id, default_id.as_str()).await?;
         }
@@ -263,8 +262,9 @@ pub async fn get_user_identity_state_impl(
     } else {
         None
     };
-    let use_manifest_default = if scene_override.is_some() {
-        false
+    // Keep the legacy wire name, but report this binding mode's actual default-following state.
+    let use_manifest_default = if matches!(role.identity_binding, IdentityBinding::PerScene) {
+        scene_override.is_none()
     } else {
         state
             .db_manager
@@ -273,7 +273,7 @@ pub async fn get_user_identity_state_impl(
     };
     let current_identity_id = scene_override.unwrap_or_else(|| {
         if use_manifest_default {
-            default_identity_id(&role)
+            default_identity_id(state, &role)
         } else {
             resolved.identity_id.clone()
         }
@@ -281,7 +281,7 @@ pub async fn get_user_identity_state_impl(
     Ok(UserIdentityStateResponse {
         role_id: req.role_id.clone(),
         identities: identity_catalog_or_empty(&role),
-        default_identity_id: default_identity_id(&role),
+        default_identity_id: default_identity_id(state, &role),
         current_identity_id,
         use_manifest_default,
         effective_relation_key: resolved.relation_key,

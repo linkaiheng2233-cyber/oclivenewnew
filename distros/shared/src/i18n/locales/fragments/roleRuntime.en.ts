@@ -16,7 +16,7 @@ export default {
     backendHintAfter: '(Ctrl+Shift+M)',
     relation: 'Relation',
     userIdentity: 'User identity',
-    identityFollowDefault: 'Follow pack default ({name})',
+    identityFollowDefault: 'Follow default identity ({name})',
     eventImpact: 'Event impact',
     postProcessorOff: 'Post-process: off',
     postProcessorOn: 'Post-process: {backend} · {profile}',

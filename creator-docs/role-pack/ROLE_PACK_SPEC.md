@@ -88,7 +88,7 @@ distros/chat-pro/roles/{role_id}/
 | `maps_to_relation_id` | string | 否 | 映射到 `meta.relations` 键，用于好感初值与关系阶段 |
 | `adult_eligible` | boolean | 否 | 默认 `true`；仅作为旧角色包兼容与创作者提示元数据保留，不参与 Chat Pro 成人功能授权。运行时只认本机成年确认、全局开关与角色开关 |
 
-**兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时正常默认取 catalog 模板；身份显式选择写入 SQLite 角色运行态，不改角色包，也不是六槽 SessionCache 覆盖。发行版 `distro.oclive.toml` 的 `[user_identity].allowed_ids` 可限制选择；`default_id` 当前仅用于一个窄 DB 兼容回退，见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md) 与债务 `K-UID-DEFAULT-02`。
+**兼容层**：无 `user_identities/` 时，宿主仍可使用蓝图 **`meta.relations`** 中各关系的 **`prompt_hint`**（legacy）。有 catalog 时，global / per-scene 的用户显式选择优先；无显式选择时先用 catalog 中存在的发行版 `[user_identity].default_id`，缺失或无效则使用角色 catalog 的合法默认，不伪造身份。恢复默认沿同一规则；身份选择写入 SQLite 角色运行态，不改角色包，也不是六槽 SessionCache 覆盖。`allowed_ids` 继续限制 API 显式选择；配置、状态 DTO 与 UI 默认态详见 [DISTRO_CAPABILITY_PROFILE.md](../kernel/DISTRO_CAPABILITY_PROFILE.md)。
 
 **示例**：`distros/chat-pro/roles/mumu/user_identities/`（含 **父亲/父女** 演示：`father.md` 映射 `father_daughter` 关系；**未**默认开启 `reply_post_processor`）。
 

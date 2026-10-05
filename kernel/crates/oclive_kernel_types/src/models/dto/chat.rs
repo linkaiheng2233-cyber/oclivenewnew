@@ -190,7 +190,7 @@ pub struct SendMessageResponse {
 /// Sentinel submitted for the identity dropdown option "follow creator manifest default identity" (not a manifest key).
 pub const OCLIVE_DEFAULT_RELATION_SENTINEL: &str = "__oclive_default__";
 
-/// Sentinel for User Identity Prompt Template picker "follow pack default" (same value as relation sentinel).
+/// Sentinel for User Identity Prompt Template picker "follow effective identity default" (distro or pack; same value as relation sentinel).
 pub const OCLIVE_DEFAULT_IDENTITY_SENTINEL: &str = "__oclive_default__";
 
 #[cfg(test)]

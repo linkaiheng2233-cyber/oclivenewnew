@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { OCLIVE_DEFAULT_IDENTITY_SENTINEL } from '@oclive/shared/api'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
@@ -83,6 +84,29 @@ const Harness = defineComponent({
   template: '<button type="button" @click="switchIdentity">switch</button>',
 })
 
+const DefaultHarness = defineComponent({
+  setup() {
+    const state = useUserIdentityState()
+    return { ...state, restoreDefault: () => state.setIdentity(OCLIVE_DEFAULT_IDENTITY_SENTINEL) }
+  },
+  template: '<span>{{ currentIdentityLabel }}</span><button type="button" @click="restoreDefault">restore</button>',
+})
+
+function effectiveState(id: string, followingDefault: boolean) {
+  return {
+    role_id: 'role',
+    identities: [
+      { id: 'pack', display_name: 'Pack identity' },
+      { id: 'host', display_name: 'Distro identity' },
+      { id: 'choice', display_name: 'Explicit identity' },
+    ],
+    default_identity_id: 'host',
+    current_identity_id: id,
+    use_manifest_default: followingDefault,
+    effective_relation_key: `relation-${id}`,
+  }
+}
+
 describe('user identity catalog adult lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -120,5 +144,33 @@ describe('user identity catalog adult lifecycle', () => {
     expect(mocks.setSceneIdentity.mock.invocationCallOrder[0]).toBeLessThan(
       mocks.sendAdult.mock.invocationCallOrder[0]!,
     )
+    wrapper.unmount()
+  })
+
+  it('labels the effective distro default instead of the first pack catalog entry', async () => {
+    mocks.getIdentity.mockResolvedValue(effectiveState('host', true))
+    const wrapper = mount(DefaultHarness)
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('Distro identity'))
+    expect(wrapper.vm.identitySelectValue).toBe(OCLIVE_DEFAULT_IDENTITY_SENTINEL)
+    expect(mocks.getIdentity).toHaveBeenCalledWith('role', 'home')
+    expect(mocks.setSceneIdentity).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('keeps the explicit label and restores the effective default through the existing sentinel', async () => {
+    mocks.roleStore.roleInfo.identityBinding = 'global'
+    mocks.getIdentity.mockResolvedValue(effectiveState('choice', false))
+    mocks.setIdentity.mockResolvedValue(effectiveState('host', true))
+    const wrapper = mount(DefaultHarness)
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('Explicit identity'))
+    expect(wrapper.vm.identitySelectValue).toBe('choice')
+    await wrapper.get('button').trigger('click')
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('Distro identity'))
+    expect(mocks.getIdentity).toHaveBeenCalledWith('role', null)
+    expect(mocks.setIdentity).toHaveBeenCalledTimes(1)
+    expect(mocks.setIdentity).toHaveBeenCalledWith('role', OCLIVE_DEFAULT_IDENTITY_SENTINEL)
+    expect(mocks.setSceneIdentity).not.toHaveBeenCalled()
+    expect(wrapper.vm.identitySelectValue).toBe(OCLIVE_DEFAULT_IDENTITY_SENTINEL)
+    wrapper.unmount()
   })
 })

@@ -49,7 +49,19 @@ fn catalog_entry_for_id<'a>(
         .and_then(|c| c.identities.get(identity_id))
 }
 
-/// Priority merge: session identity → catalog default → legacy prompt hint (shared policy across hosts).
+/// The effective default is a real entry in this role's catalog, never a synthetic identity.
+pub(crate) fn default_user_identity_id<'a>(state: &'a AppState, role: &'a Role) -> Option<&'a str> {
+    let catalog = role.user_identity_catalog.as_ref()?;
+    state
+        .host_profile
+        .user_identity
+        .default_id
+        .as_deref()
+        .filter(|id| catalog.identities.contains_key(*id))
+        .or(Some(catalog.default_identity_id.as_str()))
+}
+
+/// Priority merge: explicit session identity → valid distro default → catalog default → legacy hint.
 ///
 /// # Errors
 ///
@@ -60,27 +72,10 @@ pub async fn resolve_active_user_identity(
     role_id: &str,
     scene_id: Option<&str>,
 ) -> Result<ResolvedUserIdentity> {
-    let catalog_default = role
-        .user_identity_catalog
-        .as_ref()
-        .map(|c| c.default_identity_id.as_str());
-
-    let (db_id, use_manifest_default) =
-        effective_identity_state_from_db(state, role, role_id, scene_id).await?;
-    let host_default = if !use_manifest_default && db_id.is_none() {
-        state
-            .host_profile
-            .user_identity
-            .default_id
-            .as_deref()
-            .filter(|s| !s.is_empty())
-    } else {
-        None
-    };
+    let (db_id, _) = effective_identity_state_from_db(state, role, role_id, scene_id).await?;
     let chosen_id = db_id
         .as_deref()
-        .or(host_default)
-        .or(catalog_default)
+        .or_else(|| default_user_identity_id(state, role))
         .map(str::to_string);
 
     if let Some(ref identity_id) = chosen_id {

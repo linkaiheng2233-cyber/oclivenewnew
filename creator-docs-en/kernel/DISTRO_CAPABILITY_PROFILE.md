@@ -171,9 +171,11 @@ The implementation covers NVIDIA, system-RAM, and CPU snapshots; atomic pending 
 | `memory.retrieval` | 8 memories | `light`: 4 |
 | `post_process.chain` | `standard` | `standard` (VS Code keeps quote and leading user-echo cleanup when the role pack enables post-processing; packs that disable it stay disabled) |
 | `visual_presentation.mode` | Pack default | `off` / `image_only` / `stage_full` |
+| `user_identity.default_id` | Unset (catalog default) | Prefer a distro default present in the current role catalog; otherwise use its catalog default |
+| `user_identity.allowed_ids` | Unset (unrestricted) | Restricts explicit API selections |
 | `[theater].director_plugin` | unset | official theater director plugin id |
 
-**Merge (reply post-process)**: `chain=minimal` → effective `builtin.profile=minimal`. **User identity is persistent SQLite role runtime state, not a six-slot SessionCache override**: global resolution is explicit DB id → profile `default_id` only in the compatibility state where manifest-default is disabled but the DB id is absent → catalog default → legacy; per-scene resolution is scene DB id → catalog default → legacy. See debt `K-UID-DEFAULT-02`.
+**Merge (reply post-process)**: `chain=minimal` → effective `builtin.profile=minimal`. **User identity is persistent SQLite role runtime state, not a six-slot SessionCache override**: both global and per-scene resolution use their explicit DB selection → profile `default_id` if it exists in this role's catalog → catalog default → legacy hints when no catalog exists. Missing or invalid distro defaults never create an identity. Restoring the global or scene default uses the same rule; explicit scene selections stay local. `allowed_ids` still restricts explicit API selections, without filtering defaults or granting new selection rights. The state DTO reports the effective default in `default_identity_id`; the retained `use_manifest_default` wire field means this binding follows that default, and the UI says “Follow default identity”.
 
 ---
 

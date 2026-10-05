@@ -642,3 +642,15 @@
 **同轮接手文档收敛**：controller 登记这批状态时，只将已触及的 `D-CLI-BLUEPRINT-05` 累积长状态行按 `D-DEBT-LEDGER-01` 既有准则分离：新历史快照逐字保全基线原行，前四个登记单元格保持，现行第五列保留 Partial / 已有能力 / 剩余范围，详细逐次证据链出而不继续累加。新快照为 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md`，不是第二份活跃状态 SSOT。旧归档不改，不改父债结论或领取更多清单调查；核 raw 行相等、前四列相等、唯一状态行及适用文档门禁。当前 Agent 精确 SHA 的完整结果只在真实终态核对后随本次实质片入账，不制造纯绿灯提交。
 
 **合流与停止线（2026-10-06）**：两支线已实施并分别保留，安装最终方案有限独立复核通过，controller 主树 13/13 与适用 Clippy / fmt / 模块 / 文档 / 债务 / 编码 / diff 全部 native 0，详情与自主纠偏见 [DCL-43–44](DEBT_CHANGELOG.md#dcl-20261006-43--cli-市场在替换旧安装前共用基础检查)。最小角色归档原行相等、三个触及债项前四列相等；父债仍 Partial。源码、文档与接手记录形成同一相关批次的干净冻结，随后一次完整本地链和一次精确 SHA 正式 CI，不把上游 Agent 绿灯借给本批。实现已足够支撑本片，停止扩证；真实市场安全、完整 schema / IO 事务及新的 Agent 产品选择不在本批自动开工。
+
+### K-UID-DEFAULT-02 · 发行版默认身份的实际优先级（2026-10-06）
+
+**基线 / 用户决定 / 风险**：`cfcfc7343063d4eba7364523e59117fe68dc4b1e`，主线干净，市场批次正式 CI 尚在收口；本片另开独立工作树，未取得上批终态前不改主线或推送。维护者已两次明确：用户显式选择优先，无显式选择时采用发行版默认 A；A 不在当前角色 catalog 时退回合法角色默认 B，不伪造 A，显式无效选择仍按原 API 拒绝。本片 M / 重风险（用户身份及关系路由），controller 实施与语义自查；独立 agent 的后续只读规划触及用量限制，不借此声称取得本片独立复核。
+
+**冻结闭环 / 行为**：HostProfile 配置 → 现有角色 catalog + global / per-scene DB 选择 → 同一个 Host 私有默认选择 helper → 回合模板 / relation 映射 → 身份状态 DTO / 恢复默认 → UI 默认态。合法 DB 显式选择仍最高；默认 helper 只选择 catalog 实际存在的 profile.default_id，否则 catalog 默认，再保留原无 catalog 的 legacy 提示。global 初始态、恢复默认和 per-scene 无覆盖均使用这一规则；per-scene 默认标记不被另一 global 选择误读。状态 DTO 的 default_identity_id 与 current_identity_id 反映该规则，恢复 global 默认按原同步方法更新 relation，UI 只改“跟随包默认”为“跟随默认身份”。不新增 schema / DB 字段 / SessionCache 状态，也不删除历史 default flag / sentinel wire 名称；allowed_ids 继续约束 API 显式选择，不扩大选择权限。
+
+**写集 / 有界验收**：Host `domain/user_identity_loader.rs`、`service/role/identity.rs`、新直接回归；既有 HostProfile 配置解析测试作回归而不重写 parser。shared 两语种 roleRuntime 文案及既有 useUserIdentityState 测试；中英文 DISTRO_CAPABILITY_PROFILE / ROLE_PACK_SPEC 的实际默认说明，父债第五列、本计划及 DCL。先用新临时角色目录 / 内存 SQLite / 禁止模型调用的资源 seam 红测正常默认、显式选择 / 恢复、两 scene 隔离及无效 / 未配置 profile 回退；service DTO 与实际模板 / relation 一致，未知显式选择拒绝。用既有 frontend consumer 的默认 ID 回归核 UI，不以 mock 当实机。适用 Host lib / Clippy / fmt、前端窄测 / lint / typecheck、文档镜像 / 链接 / 登记 / 编码 / 债结构 / diff；若改变公共 API 再补对应 doctest，不把私有 helper 当新 Base。达到这条选择规则与直连 API 闭环就停，不扩成人授权策略、其它旧关系回退、全身份 DB 历史迁移或真实用户数据调查；关联批次出口一次完整本地链及目标正式 CI。
+
+**关联注释补充**：`oclive_kernel_types` 既有 DTO / sentinel 的 rustdoc 也不应继续把有效默认称为 pack-only；只更新 `models/dto/identity.rs` 的字段注释与 `models/dto/chat.rs` 的身份 sentinel 注释，值、字段、类型、serde 和 relation sentinel 均不改，不构成新公共 API。测试夹具显式设置磁盘 identity_binding 并核实际加载值，避免 exporter 默认 per-scene 被误当 global；第一次暂态 5/6 失败来自这一夹具错误，不归因产品。修正夹具后旧源码 native 101（1 过 / 5 败），实现后六项全过，原输出保留。
+
+**局部结果**：Host lib 637／身份直接回归 6、shared 身份消费者 3、Host all-targets/all-features Clippy、局部 fmt、前端 ESLint/typecheck 与适用分层／模块／文档／债结构／编码／diff native 0；[DCL-45](DEBT_CHANGELOG.md#dcl-20261006-45--发行版默认身份兑现用户确认的优先级)区分夹具错误、真实红测与实现证据。停止于这一规则，不将窄测当目标正式 CI；批次冻结后只运行一次完整本地链并推送。

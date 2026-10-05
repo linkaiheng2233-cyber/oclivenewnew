@@ -16,7 +16,7 @@ export default {
     backendHintAfter: '（Ctrl+Shift+M）',
     relation: '关系',
     userIdentity: '用户身份',
-    identityFollowDefault: '跟随包默认（{name}）',
+    identityFollowDefault: '跟随默认身份（{name}）',
     eventImpact: '事件影响',
     postProcessorOff: '后处理：未启用',
     postProcessorOn: '后处理：{backend} · {profile}',

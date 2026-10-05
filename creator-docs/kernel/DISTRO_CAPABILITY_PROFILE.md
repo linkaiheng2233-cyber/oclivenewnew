@@ -117,7 +117,7 @@ retrieval = "default"         # default | light
 chain = "standard"            # standard | minimal
 
 [user_identity]
-default_id = "classmate"      # 当前仅用于 manifest 默认已关闭但 DB 显式 id 缺失的兼容回退
+default_id = "classmate"      # 无显式身份选择时使用；必须命中当前角色 catalog，否则回退角色默认
 allowed_ids = ["classmate"]   # optional whitelist for set_user_identity API
 
 [interaction]
@@ -256,7 +256,7 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 | `memory.retrieval` | 默认 8 条相关记忆 | `light`：4 条（`HostProfile.memory_retrieval`） |
 | `post_process.chain` | `standard` | `standard`（VS Code 也保留角色包启用的去引号、去用户原话回声清理；未启用后处理的角色包仍保持关闭） |
 | `visual_presentation.mode` | 未设（跟随角色包 `visual_presentation.enabled`） | `off` \| `image_only` \| `stage_full`（已接线；Theater 可用 `stage_full`） |
-| `user_identity.default_id` | 未设 | 当前仅在 manifest 默认已关闭但 DB 显式 id 缺失时作兼容回退；正常默认仍取角色 catalog |
+| `user_identity.default_id` | 未设（取角色 catalog 默认） | 无显式选择时优先采用 catalog 中存在的发行版默认；无效值回退角色默认 |
 | `user_identity.allowed_ids` | 未设（不限制） | API 层拒绝列表外 id |
 | `state_expression.favor_*` | 未设 | 按好感分档追加一句语气调节到 Prompt「角色当前状态」 |
 | `[theater].director_plugin` | 未设（builtin prompt 模板） | Theater：`com.oclive.theater_director_official`；可被 env `OCLIVE_THEATER_DIRECTOR_PLUGIN` 覆盖 |
@@ -268,7 +268,7 @@ director_plugin = "com.oclive.theater_director_official"
 
 **合并规则（Theater Scene Director）**：仅当 profile 或 env 声明 `director_plugin` 且 `{app_data}/plugins` 中存在对应 manifest（`provides: theater_director`）时使用 directory RPC `theater.build_prompt`；否则 **builtin**（`scene_director.rs` / `patch_scene.rs`）。RPC 失败不 500，fallback builtin。
 
-**当前解析（User Identity）**：身份选择持久化在 SQLite `role_runtime` / `role_scene_identity`，不是六槽 SessionCache。global 路径为 DB 显式 id → 仅在“manifest 默认关闭但 DB id 缺失”时取 `HostProfile.user_identity.default_id` → catalog 默认 → legacy；per-scene 路径为 scene DB id → catalog 默认 → legacy。`allowed_ids` 始终约束 API 显式选择。`default_id` 的配置名/原设计与当前窄回退行为之差见 `K-UID-DEFAULT-02`。
+**当前解析（User Identity）**：身份选择持久化在 SQLite `role_runtime` / `role_scene_identity`，不是六槽 SessionCache。global 与 per-scene 均为各自 DB 显式 id → 当前角色 catalog 中存在的 `HostProfile.user_identity.default_id` → catalog 默认 → 无 catalog 时保留 legacy 提示。发行版默认缺失或无效时不伪造身份；global 恢复默认、per-scene 无覆盖及恢复默认均使用同一选择规则，scene 之间不共享显式选择。`allowed_ids` 继续约束 API 显式选择，不过滤默认态或授予新的选择权限。状态 DTO 的 `default_identity_id` 为有效发行版／角色默认；保留的 `use_manifest_default` wire 字段表示当前绑定跟随该默认，UI 文案为“跟随默认身份”。
 
 **合并规则（Reply Post-Processor）**：`post_process.chain=minimal` 时 effective `builtin.profile=minimal`；remote/directory 仍可按角色包配置解析，失败降级 builtin → raw。
 

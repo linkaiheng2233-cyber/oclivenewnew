@@ -33,6 +33,8 @@ See the [Chinese ROLE_PACK_SPEC.md](../../creator-docs/role-pack/ROLE_PACK_SPEC.
 
 `oclive-cli pack validate-minimal-local <asset-root> <definition-reference>` checks a caller-selected minimal role JSON file and bounded local asset snapshots without requiring a reference-host blueprint. It does not decode media or activate a role; see [the minimal role boundary](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备).
 
+**Reference-host User Identity defaults:** with a `user_identities/` catalog, explicit global or scene selections win. Without an explicit selection, use the distro `[user_identity].default_id` only if that identity exists in the role catalog, otherwise the valid catalog default. Restoring the default uses the same rule and does not create synthetic identities. Selections persist in SQLite role runtime state, not in the pack or six-slot SessionCache; `allowed_ids` continues to restrict explicit API selections. Packs without a catalog retain legacy relation hints. See [DISTRO_CAPABILITY_PROFILE](../kernel/DISTRO_CAPABILITY_PROFILE.md#33-prompt--memory--post_process-mapping).
+
 ### Optional scene narrative continuity
 
 `scenes/{scene_id}/scene.json` may contain a `continuity` object. It is separate from core, mutable, and ephemeral personality data, and old packs without it keep legacy behavior.

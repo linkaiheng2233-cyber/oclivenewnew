@@ -651,3 +651,11 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 
 - **原因 / 例子**：`D-DEBT-LEDGER-01` 的既有规则用于本轮实际触及的 `D-CLI-BLUEPRINT-05`，避免每次接手先读数千字的重复验收串。将冻结基线原行完整保全到[2026-10-05 历史快照](../archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md)，现行第五列只留 Partial、已有六槽 / 真实 Host 绑定、Event 按需 / Agent 委托及剩余产品边界，逐次证据链向既有 SSOT 与 DCL。
 - **边界 / 检查**：前四单元格不改；旧快照不改、历史正文逐字保留、新快照不是第二个活跃状态来源，父债不转 Done。仅处理这一已触及长行，不重数全仓未偿还项或穷尽自由文本冲突；准确登记 raw 行包含、原前四列相等及适用文档门禁。源码修补与机械文档支线均按各自有限复核方式收口，controller 统一验收后再保留本批。
+
+### DCL-20261006-45 · 发行版默认身份兑现用户确认的优先级
+
+- **原因 / 用户决定 / 例子**：按[有限计划](ROUND-02-PLAN.md#k-uid-default-02--发行版默认身份的实际优先级2026-10-06)处理已登记的代码／文档差异，不重新扩大支撑调查。维护者明确：合法显式选择优先；未选择时取发行版默认 A；A 不在当前角色 catalog 时回退合法角色默认 B。例如 profile 指定同学、角色包默认朋友时，初始与恢复默认应使用同学模板；当前包没有同学则保留朋友模板，不能变成缺身份的旧关系提示。
+- **实现 / 关联闭环**：Host resolver 与身份 service 共用一个 crate 私有默认 helper，global / per-scene / 恢复默认及 DTO 使用同一规则。per-scene 跟随默认标记只取该 scene 覆盖是否存在，不被另一 global 显式状态影响；旧 wire 字段名、sentinel、DB 字段和显式选择 allowed_ids 约束保留。shared 消费者原本已读 DTO 的有效 default_identity_id，只补回归与“跟随默认身份”两语种文案；中英文角色规范／profile 同步实际优先级，已有 DTO 的 rustdoc 修正 pack-only 措辞，公共类型与值不变。没有小 Kernel、六槽 SessionCache、API shape、角色包格式、成人授权或 DB 迁移变化。
+- **有限取证 / 自主纠偏**：新 TempDir、真实角色 loader／service／模板 resolver、内存 SQLite 与禁止模型调用的 seam。最初 fixture 未显式覆写 exporter 默认的 per-scene，暂态 5/6 被 controller 查明为夹具错误而非产品关系同步缺陷；修正并断言实际加载模式后，在原源码重新红测 native 101（1 过 / 5 败），最终实现六项全过。旧输出保留，不把第一次夹具结果当正确 global 证据。后续 applicable 原始日志保存在本机 `.cursor/plans/debt-user-identity-default-20261006-r0/`，忽略目录不是 Git 携带证据。controller 实施与语义自查，不称取得独立 agent 审核。
+- **停止线 / 状态**：`K-UID-DEFAULT-02` 当前 Partial，待实际本地相关门禁与批次最终 SHA 正式 CI 再收口，不预写完整／远端通过。达到默认规则、直连 API／实际模板和消费者闭环即停；不重查全部身份历史迁移、legacy relation-only 接口、真实用户 DB、模型／音频或全部发行版。上一批仍冻结在 `cfcfc7343063d4eba7364523e59117fe68dc4b1e` 等正式终态，本片独立工作树开发，不覆盖或借用旧结果。
+- **局部出口 / 自查**：六项直接身份测试、Host lib 637（含已有 HostProfile 配置解析）、shared 身份消费者 3 项（新增 2、原成人切换次序 1）全部通过；Host all-targets / all-features Clippy、五文件 fmt、前端 ESLint / typecheck、分层 / module-compat、两语种镜像、七份改文链接、文档登记、编码／中文及债结构／计划、diff 均 native exit 0。工作树复用主树既有 node_modules 的精确 Junction，无安装；Vitest 日志 root 与 alias 指向该工作树自己的 shared 实现。台账前四列逐字未改，controller 对实际 source / tests / docs 复核，公共 shape、关系 sentinel 和授权分支未变；日志保留初始 fmt 与 fixture 失败。当前已足以支持该实现，停止扩证；干净批次最终 SHA 再取得一次完整本地链及正式 CI。
