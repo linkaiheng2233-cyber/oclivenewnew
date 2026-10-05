@@ -332,6 +332,39 @@ impl OcliveKernel {
         crate::domain::chat_engine::minimal_llm::HostTextGenerationBase { state: &self.state }
     }
 
+    /// Borrow an explicitly requested Event Base over this Host's composed model.
+    ///
+    /// Construction calls nothing. Polling `analyze` delegates the original material
+    /// and optional context to the existing `LlmEventAnalyzer`, which makes one
+    /// [`Self::text_generation_base`] client call under its published analysis
+    /// agreement. The selected model must be suitable for that agreement: exposing
+    /// this view is not evidence of real analysis quality or protocol compliance.
+    /// Ordinary minimal and rich chat do not automatically invoke this capability.
+    ///
+    /// Normal analysis text, normal absence and complete Base failures retain the
+    /// analyzer's meanings; a malformed reply fails without repair or retry. This
+    /// neither publishes an event nor applies role state, and it does not add persona,
+    /// upstream slot calls or permissions. Existing model settings, resource wrappers
+    /// and Host-error projection are shared with the text Base, including the client's
+    /// own transport policy. The caller owns scheduling and result use; dropping the
+    /// borrowed local future does not prove remote execution or effects stopped.
+    ///
+    /// ```no_run
+    /// use oclive_kernel_contracts::EventBase;
+    /// use oclive_kernel_host::OcliveKernel;
+    /// use oclive_kernel_types::{BaseCallError, EventBaseRequest};
+    ///
+    /// async fn analyze(kernel: &OcliveKernel, material: &str)
+    ///     -> Result<Option<String>, BaseCallError>
+    /// {
+    ///     let event = kernel.event_analysis_base();
+    ///     event.analyze(EventBaseRequest { material, context: None }).await
+    /// }
+    /// ```
+    pub fn event_analysis_base(&self) -> impl oclive_kernel_contracts::EventBase + '_ {
+        crate::domain::chat_engine::minimal_event::HostEventAnalysisBase { state: &self.state }
+    }
+
     /// Read the effective runtime snapshot for a role and optional isolated session.
     ///
     /// # Errors

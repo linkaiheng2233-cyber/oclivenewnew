@@ -4,8 +4,10 @@
 //! [`LlmEventAnalyzer`] turns this call's explicit `material` and optional `context` into one
 //! generation request, then projects the generator's reply through a **private response syntax**
 //! into `Ok(Some(analysis))`, `Ok(None)` or a failure. It does not use the legacy numeric event
-//! path and does not require the Prompt, Memory or Emotion slot. It has **no production Host binding**;
-//! the independent `minimal_role_host` example explicitly selects it with a declared in-memory generator.
+//! path and does not require the Prompt, Memory or Emotion slot. The independent `minimal_role_host`
+//! example explicitly selects it with a declared in-memory generator. The reference Host additionally
+//! exposes a borrowed, on-demand `event_analysis_base` over its composed text client; ordinary chat
+//! does not automatically call that view or consume its report.
 //!
 //! # What this implementation depends on
 //!

@@ -460,7 +460,6 @@ async fn selected_prompt_empty_output_and_model_failure_are_not_rewritten() {
 async fn composed_host_model_can_serve_the_shared_six_base_consumer() {
     use oclive_kernel_runtime::domain::base_agent::ScalarCountAgent;
     use oclive_kernel_runtime::domain::base_emotion::KeywordEmotionBase;
-    use oclive_kernel_runtime::domain::base_event::LlmEventAnalyzer;
     use oclive_kernel_runtime::domain::base_memory::KeywordMemoryBase;
     use oclive_kernel_runtime::domain::minimal_role_consumer::{
         MinimalRoleBaseBindings, MinimalRoleBaseConsumer,
@@ -481,7 +480,7 @@ async fn composed_host_model_can_serve_the_shared_six_base_consumer() {
     let model = kernel.text_generation_base();
     let memory = KeywordMemoryBase;
     let emotion = KeywordEmotionBase;
-    let event = LlmEventAnalyzer::new(&model);
+    let event = kernel.event_analysis_base();
     let prompt = BuiltinPromptAssembler;
     let agent = ScalarCountAgent;
     let consumer = MinimalRoleBaseConsumer::new(
@@ -581,6 +580,7 @@ async fn composed_host_model_can_serve_the_shared_six_base_consumer() {
     }
     // No role activation or default rich context was needed by this Rust caller.
     assert!(kernel.list_roles().await.unwrap().is_empty());
+    drop(event);
     drop(model);
     close_fixture(kernel, temp).await;
 }
@@ -633,4 +633,83 @@ async fn composed_host_base_projects_failure_without_changing_legacy_error() {
     ));
     assert_eq!(llm.calls.lock().unwrap().len(), 2);
     close_fixture(kernel, temp).await;
+}
+
+#[tokio::test]
+async fn composed_host_event_keeps_material_context_and_normal_analysis_results() {
+    use oclive_kernel_contracts::EventBase;
+    use oclive_kernel_types::EventBaseRequest;
+
+    for (reply, expected) in [
+        (
+            "ANALYSIS\r\n  A conditional plan, not a verified deletion.\r\n",
+            Some("  A conditional plan, not a verified deletion.\r\n"),
+        ),
+        ("NO_ANALYSIS", None),
+    ] {
+        let temp = tempfile::tempdir().unwrap();
+        let (kernel, llm) = kernel(&temp, reply, false).await;
+        let event = kernel.event_analysis_base();
+        assert!(llm.calls.lock().unwrap().is_empty());
+        let material = String::from("如果她说“删除文件”，并不表示文件已经删除。😀\r\n");
+        for context in [None, Some(""), Some("只分析材料中的条件，不执行动作。\r\n")]
+        {
+            let result = event
+                .analyze(EventBaseRequest {
+                    material: &material,
+                    context,
+                })
+                .await
+                .unwrap();
+            assert_eq!(result.as_deref(), expected);
+            let calls = llm.calls.lock().unwrap();
+            let (_, input) = calls.last().unwrap();
+            // The existing analyzer puts one JSON payload on its final line.
+            let payload: serde_json::Value =
+                serde_json::from_str(input.rsplit_once('\n').unwrap().1).unwrap();
+            assert_eq!(payload["material"], material);
+            assert_eq!(payload["context"], serde_json::json!(context));
+            assert_eq!(payload.as_object().unwrap().len(), 2);
+            assert!(!input.contains(&definition().persona_prompt));
+        }
+        assert_eq!(llm.calls.lock().unwrap().len(), 3);
+        assert!(kernel.list_roles().await.unwrap().is_empty());
+        drop(event);
+        close_fixture(kernel, temp).await;
+    }
+}
+
+#[tokio::test]
+async fn composed_host_event_does_not_hide_model_or_analysis_format_failure() {
+    use oclive_kernel_contracts::EventBase;
+    use oclive_kernel_types::EventBaseRequest;
+
+    for (reply, fail) in [
+        ("must not become a fallback", true),
+        ("ordinary reply", false),
+    ] {
+        let temp = tempfile::tempdir().unwrap();
+        let (kernel, llm) = kernel(&temp, reply, fail).await;
+        let event = kernel.event_analysis_base();
+        let error = event
+            .analyze(EventBaseRequest {
+                material: "if a file were deleted",
+                context: None,
+            })
+            .await
+            .unwrap_err();
+        assert_eq!(error.kind, BaseCallErrorKind::Failed);
+        if fail {
+            assert_eq!(
+                error.detail.as_deref(),
+                Some("Ollama error: synthetic model failure")
+            );
+        } else {
+            assert!(error.detail.unwrap().contains("response syntax"));
+        }
+        assert_eq!(llm.calls.lock().unwrap().len(), 1);
+        assert!(kernel.list_roles().await.unwrap().is_empty());
+        drop(event);
+        close_fixture(kernel, temp).await;
+    }
 }

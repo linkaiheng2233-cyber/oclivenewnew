@@ -602,3 +602,13 @@
 **精确写集 / 有限验证**：Host `src/domain/chat_engine/process_message.rs` 与 `tests/minimal_role_http.rs`；runtime `src/domain/base_emotion.rs` 只修正当前产品消费范围注释，原分析算法 / 词表 / 七维端口不改。文档只动 ROLE_PACK_BOUNDARY、MODULE_MAP 的接线引用、父债第五列、本计划、DEBT_CHANGELOG。先以实际鉴权 HTTP 路由新增红测，核完整报告进入真实模型输入、引述与否定原文保持、历史材料不作为当前情绪、无匹配后不残留上一回合线索、原响应 / 单次正文 / 零 rich 激活及模型失败保留；实际模型用内存记录器。跑 Host HTTP / 公共 API / lib、既有 Emotion 外部回归、Host+runtime Clippy / fmt、workspace doctest及 applicable 分层 / 模块 / 文档 / 债务门禁；这片不改前端与桥类型，既有主流程调用继续消费原响应，按 G17 核读无需修改。适用局部门禁后本地保留；只有关联里程碑稳定才一次完整链与一次目标远端，不每个测试都推送。达到真实材料消费即停，不扩查情绪准确率、全发行版或媒体。Event 若需要额外模型预算、Agent 若缺合法任务，先单列待决，不填假操作。
 
 **局部出口 / 维护者选择**：本片相关能力链与兼容回归通过，见 [DCL-40](DEBT_CHANGELOG.md#dcl-20261005-40--当前用户材料的-emotion-base-线索消费)。维护者已选 Event 按需调用、普通聊天默认不追加分析；下一片只提供参考 Host 已装配模型的显式 Event Base 入口，调用方自选材料 / context 并承担单次额外分析，不将其加入本地最小聊天或新增 UI 策略。Agent 不以默认计数任务填充主流程。
+
+### D-CLI-BLUEPRINT-05 · 参考 Host 的按需 Event Base 入口（2026-10-05）
+
+**确认 / 基线 / 尺寸**：维护者选择 Event 按需调用、普通最小聊天默认不追加分析模型调用。Emotion 片已在 `9fcb4bdd9256b9603b836143124cf6693d2b70dd` 干净本地保留，尚未推送；本片与它合批。L 的增量公开 Host 接线，按公共 API 重风险深度审阅，controller 实施 / 专项自查，不称独立审查。无需再次从六槽概念或旧 rich Event 重新调查。
+
+**行为 / 闭环**：新增 `OcliveKernel::event_analysis_base()` 返回借用 Event Base，构造时零调用；只有调用方明确 poll analyze 才将当前请求的 material / context 原值交给已有 LlmEventAnalyzer，分析生成器复用 HostTextGenerationBase 的已装配客户端 / 用户设置 / typed 错误投射。一次 analyze 只发起一次该客户端调用，无 adapter 重试、预热或第二模型；客户端内部策略仍归其自身。原独立分析器的协议、正常 Some / None 与失败完整保留，格式失败不能吞成 None 或自动用普通回复冒充分析。没有自动注入角色人设 / Memory / Emotion，没有要求 caller 必须持有完整角色；现有共享六槽消费者可显式绑定此视图并把结果用于其选择的后续操作。材料与报告不发布事件、不改变数值 / 关系状态，不授予 Agent 或工具权限。此入口是参考 Host 的有限协议选择，不证明任意真实模型适合分析；不是 ChatPro UI / IPC 的新增分析操作。原普通最小 HTTP / IPC 与进程内文本方法均不调用此工厂或分析。
+
+**写集 / 验证 / 出口**：新增 Host `src/domain/chat_engine/minimal_event.rs`；仅在同目录 `mod.rs` 登记私有适配、`role_kernel.rs` 增量 facade 及 rustdoc、原 `tests/minimal_role_public_api.rs` 加实际调用；runtime `src/domain/base_event.rs` 只更正当前 Host 绑定范围注释。ROLE_PACK_BOUNDARY 新 §0.18、MODULE_MAP 接线引用、父债第五列、此计划与 DEBT_CHANGELOG 同步，不改 types / contracts / 公共请求 / wire / ACL / 依赖 / state / 模型选择 / 六阶段编排。公开 API 先编译红，后核生产 builder 与原已装配内存客户端：显式构造零调用、分析 Some / None 与 None / 空 / 有 context 原值、Unicode / 引述 / 条件原文、协议失败与模型错误保留 / 不重试、共享六槽真实绑定、原 HTTP 单次正文保持。跑 Host lib / HTTP / 公共 API、原 Event 外部 / 六槽 / 消费者、Host / runtime Clippy / fmt、workspace doctest及适用文档 / 分层 / 模块 / 债务门禁；合批冻结最终干净 SHA 后一次完整本地链、一次推送、核该 SHA 正式 CI，不为绿灯回写另造提交。父债 Partial，Agent、真实分析质量、真实音频、所有发行版及 UI 分析操作不扩面；达到合法显式绑定即停。
+
+**局部出口 / 当前停止线**：上述实现与有限回归已完成，实际结果见 [DCL-41](DEBT_CHANGELOG.md#dcl-20261005-41--按需-event-复用参考-host-的真实模型资源)。本片与 Emotion 两片到达关联冻结点：只完成总审、干净提交与一次批次完整链 / 精确 SHA 远端验收，不在等待中追加 Agent、UI 分析或低收益反例。六槽共享消费和参考能力绑定不替代所有发行版的具体材料、任务与资源接线，父债仍 Partial。

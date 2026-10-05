@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-05。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14，参考 Host 正文 Base 绑定、当前会话 Memory 与当前输入 Emotion 见 §0.15–0.17。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-05。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14，参考 Host 正文 Base 绑定、当前会话 Memory、当前输入 Emotion 与按需 Event 见 §0.15–0.18。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -264,6 +264,14 @@ IPC / HTTP 沿 §0.11 的已鉴权薄转发，`product_extensions: unavailable` 
 正常 None 不插占位报告或默认中性，并在其它材料相同的情况下保持原 Prompt 字节；本次报告不缓存、不跨回合残留。固定实现的真实 lexicon 加载 / 校验错误保留完整诊断为既有 Host failure，并在正文调用前停止，不吞成 None 或发起额外重试；这不是通用 Base 到 HTTP 的错误映射。分析不调用模型，正文仍只调用一次已装配客户端；原进程内基础文本 / 自选 Prompt 入口没有被自动加上这项 Host 策略，旧 rich 七维端口与生命周期保持。
 
 既有 `/chat/minimal` 与 `send_minimal_message` 的请求、鉴权、响应和临时状态接线均无需修改。实际鉴权 HTTP 回归核完整报告进入记录模型、主体 / 否定限制原样保留、历史情绪词不被作为本次分析、后续无匹配不残留、单次正文、正常响应与原模型失败；没有真实模型、音频、桌面进程或分析准确率验收。当前参考最小主路径已消费 Memory / Emotion / Prompt / LLM，Event 与 Agent 仍按合法材料 / 任务单独推进，不以不存在的调用、空结果或扩展 unavailable 填满六槽。
+
+### 0.18 参考 Host 的按需 Event Base
+
+维护者选择 **Event 按需调用，普通聊天默认不追加分析模型调用**。参考 Rust Host 提供 `OcliveKernel::event_analysis_base()`，将已有 LlmEventAnalyzer 与 §0.15 的真实已装配正文客户端绑定为借用能力；调用方可把它交给 §0.14 的共享消费者，或直接按 Event Base 调用。构造不加载 / 调用模型；只有明确 poll analyze 才进行一次客户端调用，material 与 None / 空 / 有内容的 context 原值沿既有 JSON 协议传递。这里不添加 persona 或强制 upstream Emotion、Memory，实际资源 / settings / 授权包装沿旧正文客户端，不另建 provider；客户端自身策略不因此变为“底层必定一次请求”。
+
+原分析器的正常报告、正常无适用分析与完整错误原样返回；格式失败不改成 None、普通角色回复或“事件未发生”，不增加修复生成 / 重试。模型错误继续使用 §0.15 的 typed 投射及诊断，不解析自由文本猜取消或超时。报告不发布事件、不应用旧数值状态、不授予工具权限，调用方负责结果消费与本地 future 生命周期。所选真实模型是否能满足分析协议与语义仍须按实际用途验证，不能因支持正文生成就宣称适合分析。
+
+这片是 **公开 Rust Host 的显式能力绑定**，不是 ChatPro 新 UI 操作、HTTP / IPC 分析端点或主聊天自动阶段；原最小传输与进程内文本调用保持原调用数。公开 API 回归用真实生产 builder 与原已装配内存客户端核构造零调用、原材料 / context、Some / None、格式 / 模型错误不重试，并让共享六槽案例实际绑定该入口。它不构成真实模型质量或全部发行版验收，Agent 仍只在真实委托下参与。小 Kernel、六槽接口、角色作者格式与旧丰富生命周期均保持。
 
 ## 1. 当前参考宿主内部划分
 
