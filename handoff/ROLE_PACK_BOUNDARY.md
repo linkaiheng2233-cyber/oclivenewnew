@@ -1,7 +1,7 @@
 # 角色包与蓝图 · 职责边界（SSOT）
 
 **读者**：创作者、宿主集成方、Cursor / Agent。  
-**状态**：2026-10-05。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14，参考 Host 正文 Base 绑定与当前会话 Memory 见 §0.15–0.16。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
+**状态**：2026-10-05。最小角色内容边界已确认；共享逻辑 DTO / 无 I/O 校验（§0.2）、可选本地资产有界读取（§0.3）、可选静态 PNG 校验（§0.4）及调用方指定 JSON 文件的加载准备（§0.5）已实现，CLI 现可显式调用该准备入口；builtin Prompt 的私有角色适配见 §0.6，最小逻辑定义到独立 Prompt Base 的增量适配见 §0.7，两种来源的独立最小 Host 案例见 §0.8，参考 Rust Host 的基础文本入口见 §0.9，共享准备与可选择 Prompt 的消费者见 §0.10，基础 HTTP / 桌面 IPC 适配见 §0.11，ChatPro 的临时状态 / 基础主界面接线见 §0.12–0.13，六槽可替换的共享消费入口见 §0.14，参考 Host 正文 Base 绑定、当前会话 Memory 与当前输入 Emotion 见 §0.15–0.17。跨发行版保留逻辑契约，不要求统一磁盘封装或生成器；旧丰富接口仍耦合完整 `Role`，基础文本接线不等于发行版生产装配已消费全部六槽。Stable v4 扩展外壳是**参考宿主蓝图版本**，不是 kernel canonical role-pack schema；v2 保持兼容，**v3 双核**见 [RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)（Opt-in Beta，默认关）。
 
 | 文档 | 用途 |
 |------|------|
@@ -235,7 +235,7 @@ Fluent / Tool 的主选角区共用 [`MinimalRoleSourceControls`](../distros/sha
 
 这个案例的 Event 协议生成器与正文 LLM 是内存替身，**每条六槽路径 2 次假生成**（分析 1 + 正文 1），不是只调用一次模型；native 示例另保留原三次基础调用，整个演示共 7 次假生成。该 Host 选择无额外 Emotion 背景、将情绪报告作为 Event 背景，并委托纯计算任务；这些是有限操作的私有输入安排，不成为其它 Host 的固定次序 / 任务 / 格式。原六项加新三项案例测试验证实际装配、技术身份拒绝及 Event 格式 / Agent 任务 / Prompt 要求失败；后续失败不会抹掉已发生的分析，未声称回滚或零副作用。案例的旧窄 HostError 只展示原因 kind，共享消费者仍保留完整错误。
 
-**当前止点**：生产参考 Host / ChatPro 目前仍通过 §0.9–0.13 的基础文本路径，当前会话 Memory 的生产消费见 §0.16；Emotion / Event / Agent 的产品材料来源 / 任务策略仍分别处理。参考 Rust Host 的真实正文模型可按 §0.15 显式绑定给消费者，不用四槽空值或“扩展不可用”冒充运行。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
+**当前止点**：生产参考 Host / ChatPro 通过 §0.9–0.13 的基础文本路径，当前会话 Memory 与当前输入 Emotion 的消费分别见 §0.16–0.17；Event / Agent 的产品材料来源 / 任务策略仍分别处理。参考 Rust Host 的真实正文模型可按 §0.15 显式绑定给消费者，不用未调用槽的空值或“扩展不可用”冒充运行。保留小 Kernel、原六槽接口、旧丰富生命周期与可返回上下文；本片不把 D-CLI-BLUEPRINT-05 改为 Done，也不扩大为全部发行版 / 媒体 / 崩溃窗口调查。
 
 ### 0.15 复用参考 Host 已装配的正文模型
 
@@ -251,9 +251,19 @@ Base 视图按 typed Host 错误投射：`HighRiskCapabilityNotGranted` / `Remot
 
 参考 Host 以新增 `MinimalRoleLocalConversationRequest` 承载可选 `conversation: [{ user_message, reply }]`，缺省为空且序列化空值省略；明确 null 或未知字段拒绝。旧 `MinimalRoleLocalMessageRequest` 保留原两个字段及 Rust struct literal 用法，旧本地入口仍可调用，通过 `From` 转成空候选的新封装；HTTP 与原 IPC 命令接收增量封装，旧 wire 载荷仍有效。它是调用者提供的引用文本，不是存储、身份、权限、收据或服务端落库证明，也不是最小角色作者的新字段。最多最近八个完整对话对、原正文合计 UTF-8 64 KiB；前端取预算内连续的最近后缀，保留原字节和发言人，不切断文字或跳过过大最新对拼接旧材料。Host 独立检查预算，超限先于资产读取 / 模型调用返回 INVALID_PARAMETER。当前用户消息与人设仍走原输入 / 资产规则，不被计作“已完成会话”。
 
-Host 在 canonical 本地入口显式绑定已有 `QueryMemoryRetrieval` 的 Memory Base，以本轮用户原文查询候选。每个候选保留 prior user / assistant 的引用标签；选中整对原文进入共享 Prompt 人设 / 材料准备，然后使用 §0.15 的同一正文 helper。此检索是既有有限词项规则，不承诺语义召回、持久记忆或防注入；正常无命中直接沿原基础 Prompt，旧无字段载荷也保留原 Prompt 字节，不读取 rich MemoryRepository。正文仍一次客户端调用，不额外启用 Emotion / Event / Agent 或模型分析。
+Host 在 canonical 本地入口显式绑定已有 `QueryMemoryRetrieval` 的 Memory Base，以本轮用户原文查询候选。每个候选保留 prior user / assistant 的引用标签；选中整对原文进入共享 Prompt 人设 / 材料准备，然后使用 §0.15 的同一正文 helper。此检索是既有有限词项规则，不承诺语义召回、持久记忆或防注入；未叠加 §0.17 线索时，正常无命中和旧无字段载荷保留原 Prompt 字节，不读取 rich MemoryRepository。Memory 消费本身不触发其它槽或额外模型分析，正文仍一次客户端调用；当前输入的独立 Emotion 消费见下节。
 
-IPC / HTTP 沿 §0.11 的已鉴权薄转发，`product_extensions: unavailable` 仍说明丰富产品扩展，不代表已调用的 Memory Base 不可用。旧客户端可省略字段；新会话字段需配套的新 Host，旧 Host 若拒绝则保留错误，不能删除材料、换 rich 发送或重试来假装兼容。实际 HTTP 回归核配对文本、主体 / 否定保持、未命中、旧载荷、预算及零 rich 行；真实 store / 主列表 / IPC 对象回归核第二轮、取消失败、切换、快照与最近后缀。模型和 IPC 为内存替身，没有真实模型质量、桌面进程或持久恢复验收。参考生产路径目前接通 Memory / Prompt / LLM；其余槽继续按合法材料 / 任务分别处理，不把这个切片称为全六槽迁移。
+IPC / HTTP 沿 §0.11 的已鉴权薄转发，`product_extensions: unavailable` 仍说明丰富产品扩展，不代表已调用的 Memory Base 不可用。旧客户端可省略字段；新会话字段需配套的新 Host，旧 Host 若拒绝则保留错误，不能删除材料、换 rich 发送或重试来假装兼容。实际 HTTP 回归核配对文本、主体 / 否定保持、未命中、旧载荷、预算及零 rich 行；真实 store / 主列表 / IPC 对象回归核第二轮、取消失败、切换、快照与最近后缀。模型和 IPC 为内存替身，没有真实模型质量、桌面进程或持久恢复验收。Memory 这一片的有限接线为 Memory / Prompt / LLM，后续当前 Emotion 见 §0.17；不把单个切片称为全六槽迁移。
+
+### 0.17 当前用户材料的 Emotion 线索消费
+
+参考 Host 的 canonical 本地最小入口另显式选择 `BuiltinUserEmotionAnalyzer` 的 Emotion Base，以本次 `user_message` 原文和 `context=None` 做一次既有词表分析。它不分析角色人设、Memory 选中的前轮材料、旧 rich 状态或隐含场景；选择该具体实现是这个入口的有限 Host 策略，不改变六槽最低合同，也不声称消费了 rich 配置中的其它 Emotion provider。无需给角色包补关系、七维人格或分析模型字段。
+
+正常报告原样进入共享 Prompt 的“当前输入的词表线索（参考分析，非状态）”分区，包含原实现全部限制：词表匹配不是任何人的已确认状态；否定标记只是规则触发；主体、引述归属和条件是否成立尚未判定。例如“她说我不开心”保留原引述与否定，不写成当前用户或角色难过。历史引用与当前分析分开，当前用户原文和人设各保留一次。这里不把线索转成七维数值、语气标签、关系或状态，不授予事件发布 / 工具权限；材料分区也不保证真实模型正确理解或抵抗注入。
+
+正常 None 不插占位报告或默认中性，并在其它材料相同的情况下保持原 Prompt 字节；本次报告不缓存、不跨回合残留。固定实现的真实 lexicon 加载 / 校验错误保留完整诊断为既有 Host failure，并在正文调用前停止，不吞成 None 或发起额外重试；这不是通用 Base 到 HTTP 的错误映射。分析不调用模型，正文仍只调用一次已装配客户端；原进程内基础文本 / 自选 Prompt 入口没有被自动加上这项 Host 策略，旧 rich 七维端口与生命周期保持。
+
+既有 `/chat/minimal` 与 `send_minimal_message` 的请求、鉴权、响应和临时状态接线均无需修改。实际鉴权 HTTP 回归核完整报告进入记录模型、主体 / 否定限制原样保留、历史情绪词不被作为本次分析、后续无匹配不残留、单次正文、正常响应与原模型失败；没有真实模型、音频、桌面进程或分析准确率验收。当前参考最小主路径已消费 Memory / Emotion / Prompt / LLM，Event 与 Agent 仍按合法材料 / 任务单独推进，不以不存在的调用、空结果或扩展 unavailable 填满六槽。
 
 ## 1. 当前参考宿主内部划分
 

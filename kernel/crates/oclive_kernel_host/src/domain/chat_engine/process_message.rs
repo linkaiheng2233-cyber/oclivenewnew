@@ -56,6 +56,8 @@ pub async fn process_minimal_local_message(
 
 /// The same transport operation with explicit current-binding quoted candidates.
 /// Budget checks precede source loading. No persisted or rich memory is opened.
+/// The fixed builtin Emotion Base analyses only the current user material; its
+/// complete lexicon-clue report is reference material, never a person state.
 ///
 /// # Errors
 /// Returns the original Host input/loading/model errors under the same fixed
@@ -89,9 +91,10 @@ pub async fn process_minimal_local_conversation(
         let role =
             crate::service::role::minimal::PreparedMinimalRole::from_local_source(&request.source)?;
         runtime.block_on(async {
-            use oclive_kernel_contracts::MemoryBase;
+            use oclive_kernel_contracts::{EmotionBase, MemoryBase};
             use oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval;
-            use oclive_kernel_types::MemoryBaseRequest;
+            use oclive_kernel_runtime::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+            use oclive_kernel_types::{EmotionBaseRequest, MemoryBaseRequest};
 
             let candidates: Vec<String> = request
                 .conversation
@@ -115,12 +118,26 @@ pub async fn process_minimal_local_conversation(
                     // any unexpected diagnostic without inventing a wire mapping.
                     crate::error::AppError::Unknown(format!("bound minimal Memory failed: {error}"))
                 })?;
+            let emotion_report = EmotionBase::analyze(
+                &BuiltinUserEmotionAnalyzer,
+                EmotionBaseRequest {
+                    material: &request.message.user_message,
+                    context: None,
+                },
+            )
+            .await
+            .map_err(|error| {
+                // The fixed agreement needs no additional context. Keep a real
+                // lexicon-loading failure visible rather than inventing None.
+                crate::error::AppError::Unknown(format!("bound minimal Emotion failed: {error}"))
+            })?;
             match process_minimal_message_using_prompt(
                 &state,
                 &role,
                 &request.message,
                 None,
                 &selected,
+                emotion_report.as_deref(),
             )
             .await
             {
@@ -161,7 +178,7 @@ pub async fn process_minimal_message(
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
 > {
-    process_minimal_message_using_prompt(state, role, request, None, &[]).await
+    process_minimal_message_using_prompt(state, role, request, None, &[], None).await
 }
 
 /// The same minimal text path with a Host-selected, unconfigured Prompt Base.
@@ -179,7 +196,7 @@ pub async fn process_minimal_message_with_prompt(
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
 > {
-    process_minimal_message_using_prompt(state, role, request, Some(prompt), &[]).await
+    process_minimal_message_using_prompt(state, role, request, Some(prompt), &[], None).await
 }
 
 async fn process_minimal_message_using_prompt(
@@ -188,6 +205,7 @@ async fn process_minimal_message_using_prompt(
     request: &oclive_kernel_types::models::dto::MinimalRoleMessageRequest,
     selected_prompt: Option<&dyn oclive_kernel_contracts::PromptBase>,
     conversation_materials: &[String],
+    emotion_report: Option<&str>,
 ) -> std::result::Result<
     oclive_kernel_types::models::dto::MinimalRoleMessageResponse,
     crate::domain::chat_engine::message_error::MinimalRoleMessageError,
@@ -212,6 +230,12 @@ async fn process_minimal_message_using_prompt(
             materials.push(material.as_str());
             materials.push("\n");
         }
+    }
+    if let Some(report) = emotion_report {
+        materials.push("\n\n【当前输入的词表线索（参考分析，非状态）】\n");
+        materials.push(report);
+    }
+    if !conversation_materials.is_empty() || emotion_report.is_some() {
         materials.push("\n【当前用户输入】\n");
     }
     materials.extend(["User: ", request.user_message.as_str()]);

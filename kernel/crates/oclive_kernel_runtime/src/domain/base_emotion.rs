@@ -21,9 +21,10 @@
 //!   analyses, and there is no cache, no "latest result" and no call that returns both views;
 //! - the seven-dimension result is **not** converted into this report and this report is **not**
 //!   reverse-engineered into scores;
-//! - the reference Host still binds `Arc<dyn UserEmotionAnalyzer>` and reads the seven-dimension
-//!   result, so **no product consumer reads this report today**. That the builtin type can serve the
-//!   Base view is an additive capability of the implementation, not a product migration.
+//! - the reference Host's rich path still binds `Arc<dyn UserEmotionAnalyzer>` and reads the
+//!   seven-dimension result. Its additive local minimal-role transport separately selects the
+//!   builtin Base view for current user material and passes the complete report to Prompt as
+//!   reference analysis. That finite consumer does not migrate rich state or configured backends.
 //!
 //! See the example at the end of this documentation for both entry points on one real instance.
 //!
@@ -98,9 +99,11 @@
 //! allowed to wait — finishing on the first poll is a fact about this computation, not a promise that
 //! every [`EmotionBase`] implementation must make.
 //!
-//! [`KeywordEmotionBase`] is **not wired into any Host** (nothing registers it with `AppState`,
-//! `slot_runner`, the plugin paths or the ChatPro pipeline). The registered type is
-//! [`BuiltinUserEmotionAnalyzer`], and the product consumes only its seven-dimension port.
+//! [`KeywordEmotionBase`] is explicitly used by the independent `minimal_role_host` example,
+//! but is not registered in the reference `AppState`, `slot_runner` or plugin paths.
+//! The registered type is [`BuiltinUserEmotionAnalyzer`];
+//! the rich path consumes its seven-dimension port, while the local minimal-role transport
+//! explicitly selects its Base view. Other implementations keep their own published agreements.
 //!
 //! # Example
 //!
@@ -322,12 +325,11 @@ impl EmotionBase for KeywordEmotionBase {
 /// shared analysis implementation, while each trait call is still its own analysis (there is no
 /// cache and no single call that returns both views).
 ///
-/// What this does **not** change: the reference Host keeps binding
-/// `Arc<dyn UserEmotionAnalyzer>` and reading the seven-dimension result, so nothing in the product
-/// reads this report, and the seven-dimension values — including the compatible `neutral` fallback
-/// for material with no usable hit — are untouched. Compatibility of the old numeric entry is the
-/// point; this report is not converted into scores and the scores are not reverse-engineered into a
-/// report.
+/// The reference Host's rich path keeps binding `Arc<dyn UserEmotionAnalyzer>` and reading the
+/// seven-dimension result; those values, including the compatible `neutral` fallback for material
+/// with no usable hit, are untouched. Its additive local minimal-role transport consumes the
+/// complete Base report only as Prompt reference material, with no state application. This report
+/// is not converted into scores and the scores are not reverse-engineered into a report.
 ///
 /// The `context` branches, the report's wording and limits, and the two failure sources are the ones
 /// documented on this module and shared with [`KeywordEmotionBase`]; the rejection `detail` is that

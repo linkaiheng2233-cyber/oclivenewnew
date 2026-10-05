@@ -236,9 +236,9 @@ async fn minimum_transport_enforces_local_budgets_and_missing_assets_without_a_r
 #[tokio::test]
 async fn minimum_transport_keeps_model_errors_and_never_retries_or_activates_a_rich_role() {
     let fixture = Fixture::new(true).await;
-    let (status, wire) = fixture
-        .post(serde_json::to_value(fixture.request()).unwrap(), true)
-        .await;
+    let mut request = serde_json::to_value(fixture.request()).unwrap();
+    request["message"]["user_message"] = json!("我不开心");
+    let (status, wire) = fixture.post(request, true).await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     assert_eq!(wire["error"]["code"], "LLM_ERROR");
     assert!(wire["error"]["message"]
@@ -246,6 +246,7 @@ async fn minimum_transport_keeps_model_errors_and_never_retries_or_activates_a_r
         .unwrap()
         .contains("synthetic transport model failure"));
     assert_eq!(fixture.llm.prompts.lock().unwrap().len(), 1);
+    assert!(fixture.llm.prompts.lock().unwrap()[0].contains("词表线索"));
     fixture.assert_no_rich_activation().await;
     fixture.close().await;
 }
@@ -345,6 +346,81 @@ async fn minimum_conversation_budget_is_rejected_before_loading_or_generation() 
     ]);
     assert_eq!(fixture.post(request, true).await.0, StatusCode::OK);
     assert_eq!(fixture.llm.prompts.lock().unwrap().len(), 1);
+    fixture.assert_no_rich_activation().await;
+    fixture.close().await;
+}
+
+#[tokio::test]
+async fn minimum_transport_consumes_current_emotion_clues_without_claiming_a_person_state() {
+    use oclive_kernel_contracts::EmotionBase;
+    use oclive_kernel_runtime::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
+    use oclive_kernel_types::EmotionBaseRequest;
+
+    let fixture = Fixture::new(false).await;
+    let mut request = serde_json::to_value(fixture.request()).unwrap();
+    let current = "她说“我不开心”，如果搬家也许会难过。\r\n";
+    request["message"]["user_message"] = json!(current);
+    let report = EmotionBase::analyze(
+        &BuiltinUserEmotionAnalyzer,
+        EmotionBaseRequest {
+            material: current,
+            context: None,
+        },
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert!(report.contains("is_negated=true"));
+    assert!(report.contains("未判定主体、引述归属或条件是否成立"));
+    let (status, wire) = fixture.post(request, true).await;
+    assert_eq!(status, StatusCode::OK, "{wire}");
+    assert_eq!(wire["reply"], "  authoritative text\r\n");
+    assert_eq!(wire["product_extensions"], "unavailable");
+    assert_eq!(wire.as_object().unwrap().len(), 3);
+    {
+        let prompts = fixture.llm.prompts.lock().unwrap();
+        assert_eq!(
+            prompts.len(),
+            1,
+            "analysis must not cause an extra model call"
+        );
+        assert!(prompts[0].contains("【当前输入的词表线索（参考分析，非状态）】"));
+        assert!(
+            prompts[0].contains(&report),
+            "the complete limits must survive"
+        );
+        assert_eq!(prompts[0].matches(current).count(), 1);
+        assert_eq!(prompts[0].matches("  authored persona\r\n").count(), 1);
+    }
+    fixture.assert_no_rich_activation().await;
+    fixture.close().await;
+}
+
+#[tokio::test]
+async fn minimum_transport_does_not_analyze_prior_emotion_or_retain_previous_clues() {
+    let fixture = Fixture::new(false).await;
+    let mut request = serde_json::to_value(fixture.request()).unwrap();
+    request["message"]["user_message"] = json!("我不开心");
+    assert_eq!(fixture.post(request.clone(), true).await.0, StatusCode::OK);
+    request["message"]["user_message"] = json!("coffee");
+    request["conversation"] = json!([
+        {"user_message":"coffee 她说自己很开心", "reply":"这是她的引述。"}
+    ]);
+    assert_eq!(fixture.post(request.clone(), true).await.0, StatusCode::OK);
+    request["message"]["user_message"] = json!("unmatched-subject");
+    assert_eq!(fixture.post(request, true).await.0, StatusCode::OK);
+    {
+        let prompts = fixture.llm.prompts.lock().unwrap();
+        assert_eq!(prompts.len(), 3);
+        assert!(prompts[0].contains("词表线索"));
+        assert!(prompts[1].contains("Quoted prior user:\ncoffee 她说自己很开心"));
+        assert!(prompts[1].contains("Quoted prior assistant:\n这是她的引述。"));
+        assert!(!prompts[1].contains("词表线索"));
+        assert_eq!(
+            prompts[2],
+            "【角色设定】\n  authored persona\r\n\n\n【输入材料】\nUser: unmatched-subject"
+        );
+    }
     fixture.assert_no_rich_activation().await;
     fixture.close().await;
 }

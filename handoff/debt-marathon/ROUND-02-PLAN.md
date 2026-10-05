@@ -592,3 +592,13 @@
 **有界材料政策**：这是参考 Host 的请求预算，不是最小角色作者格式。最多最近 8 个完整对话对、合计原 user/reply UTF-8 64 KiB；前端取能在这个字节预算内连续容纳的最近后缀（不裁文字、不绕过过大的最新对来拼更早材料），Host 独立拒绝越界载荷，先于本地文件加载 / 模型调用。正常空回复仍构成已完成对。资产 / 人设原预算保持。上下文由已鉴权调用者提供，标记为引用材料不保证模型防注入，不能推导存储真实性。
 
 **写集 / 验收 / 停止**：types `models/dto/minimal_role.rs`、host `domain/chat_engine/process_message.rs` / `mod.rs`、`http_api/chat.rs` 与原 `tests/minimal_role_http.rs`；shared `api/chat.ts` / `api/minimalRoleChat.test.ts`、`stores/minimalRoleChatStore.ts` 及测试、`integration/minimalRoleMainFlow.test.ts` 按真实请求断言需要改，app.zh/en 范围提示同步当前会话与持久历史的区别。兼容复核发现直接给旧 public DTO 加 Vec 会破坏 Rust struct literal，因此保留旧 DTO / 本地入口，新增 conversation 封装与转换；Tauri `api/chat.rs` / `api/chat_backend.rs` / `kernel_attach/chat.rs` 和 Host 原路由仅改类型接线，原命令、路由和鉴权不变，旧 backend / HTTP 方法保留。现有桥内纯测试核旧 literal、空候选 wire 等价和引用文本；不改 ACL 或历史 B6 证据。文档只同步角色边界、MODULE_MAP 引用、父债第五列、本计划与变动事件。先在旧源码 red，再验材料选择 / 原主体与否定 / 无命中 / 旧请求、预算越界先拒绝、当前会话第二轮 / 新绑定 / 取消失败 / 晚结果 / 快照及最近后缀；用真实 store 与实际 HTTP router，模型 / IPC 为内存替身。适用 Rust / 桌面纯合同 / 前端、doctest、Clippy / fmt / typecheck / lint / 模块 / 文档门禁后自查、本地提交；与上一片合批冻结时一次完整链和目标远端。达到 Memory 原材料消费即停，持久化、其它槽默认策略、媒体、模型质量和全发行版不扩查。
+
+### D-CLI-BLUEPRINT-05 · 当前输入的 Emotion Base 线索消费（2026-10-05）
+
+**基线 / 原因 / 责任**：起点 `c83e501259ab5793d19b27767ab27d97d2b5f77d` 干净，上一批实际正文客户端与临时会话 Memory 已全量收口，精确结果随本片实质变更入账。共享六槽消费者已有 Emotion 调用面，但参考最小主流程尚未消费分析。只沿 canonical 本地最小入口显式选择已有 BuiltinUserEmotionAnalyzer 的 Emotion Base；这是参考 Host 的有限选择，不是要求所有发行版使用词表、替换 rich 配置或在所有回合调用 Emotion。按 L 关联批次和材料语义的重风险深度留计划；controller 实施与专项自查，不称独立审查。
+
+**冻结行为 / 闭环**：当前请求原文 → 已有无模型词表 Base（context=None）→ 完整线索报告 → 明确标记为参考分析的 Prompt 材料 → 原正文客户端。仅分析当前用户材料，不分析人设、检索出的历史或旧 rich 状态；不剥离报告的主体 / 引述 / 条件未判定、否定启发式等限制，不生成七维或情绪状态。正常 None 不加占位或中性标签，并保持该情况下原 Prompt 字节；线索存在时与当前会话引用分区，当前原文与人设仍保留一次。一次分析不增加模型调用；旧直接进程内基础 / 自选 Prompt 接口保留原行为，HTTP / IPC 原 wire、鉴权、响应、临时会话与可返回完整角色上下文不改。固定实现的真实加载失败保留诊断并停止正文，不吞成 None、回退或重试，不定义通用 Base 到 wire 的错误协议。
+
+**精确写集 / 有限验证**：Host `src/domain/chat_engine/process_message.rs` 与 `tests/minimal_role_http.rs`；runtime `src/domain/base_emotion.rs` 只修正当前产品消费范围注释，原分析算法 / 词表 / 七维端口不改。文档只动 ROLE_PACK_BOUNDARY、MODULE_MAP 的接线引用、父债第五列、本计划、DEBT_CHANGELOG。先以实际鉴权 HTTP 路由新增红测，核完整报告进入真实模型输入、引述与否定原文保持、历史材料不作为当前情绪、无匹配后不残留上一回合线索、原响应 / 单次正文 / 零 rich 激活及模型失败保留；实际模型用内存记录器。跑 Host HTTP / 公共 API / lib、既有 Emotion 外部回归、Host+runtime Clippy / fmt、workspace doctest及 applicable 分层 / 模块 / 文档 / 债务门禁；这片不改前端与桥类型，既有主流程调用继续消费原响应，按 G17 核读无需修改。适用局部门禁后本地保留；只有关联里程碑稳定才一次完整链与一次目标远端，不每个测试都推送。达到真实材料消费即停，不扩查情绪准确率、全发行版或媒体。Event 若需要额外模型预算、Agent 若缺合法任务，先单列待决，不填假操作。
+
+**局部出口 / 维护者选择**：本片相关能力链与兼容回归通过，见 [DCL-40](DEBT_CHANGELOG.md#dcl-20261005-40--当前用户材料的-emotion-base-线索消费)。维护者已选 Event 按需调用、普通聊天默认不追加分析；下一片只提供参考 Host 已装配模型的显式 Event Base 入口，调用方自选材料 / context 并承担单次额外分析，不将其加入本地最小聊天或新增 UI 策略。Agent 不以默认计数任务填充主流程。
