@@ -674,3 +674,13 @@
 **局部出口**：实际 CLI opt-in 7／默认拒绝 1、Host compiler 8／registry 9／旧 CLI 1 项，Clippy／fmt 和适用文档／分层／债结构均通过；零测试假红测、原命令不存在的真红测、初始 fmt 与控制端参数错误各自保留并归因，见 DCL-46。当前只完成局部验证／controller 自查；在本片有限 milestone 总审、提交冻结后运行一次最终全链及正式 CI，不扩配置编辑、资源执行或实机压力测试。
 
 **正式覆盖接线**：现有 CLI job 的 opt-in `diagnostics-host` 步骤只运行库消费者回归，默认全 crate 不会执行新 feature 内的七项；该原步骤增加 `--test doctor_resource_plan`，保留原 `e2e_minimal_role_library`、串行、default 依赖边界、现有 job／矩阵／ci-gate。这是本命令测试进入现有门禁的必要关联写集（`.github/workflows/ci.yml`），不重构 CI；本地按同一条命令验两个集成目标，最终全链负责 Dimension 5／工作流纪律。
+
+### D-SCAFFOLD-RESOURCE-01 · 非交互资源策略草稿（2026-10-06）
+
+**基线 / 原因 / 风险**：`9edfe719d71e32edf27bd6a482a0e56a3c52b403`，开工前主树干净。该片完整本地链 native 0，正式 CI 首轮 Linux runner 收到 shutdown signal／lost communication，五个取消 job 未取得 hosted runner；CLI job 成功。保留原日志后仅补跑一次 failed jobs，不放宽门禁；补跑未终态前不称已验收，也不推下一批取消它。当前缺口是开发者只能手工改 profile，本片先兑现非交互编辑／round-trip，M 实施、最终 main 里程碑升 L，controller 实施与语义自查，不称独立复核。
+
+**冻结闭环 / 写入边界**：新增 `config resource-policy`，必须显式给出发行版 profile、只含原 `[resource_coordination]` 节的 TOML patch、现有诊断 capture 和新输出路径。通用 TOML 值只负责编辑结构；合并后仍由原 Host loader 及已有 preview 的 registry／有限意图 validator／候选编译器验证，不造第二套 typed schema 或 parser。只覆盖 patch 中给出的资源键；`commands` 给出时整体替换，空数组显式清除，缺省键与所有非资源节／未知扩展的 TOML 值保持。序列化可能重排键、丢失注释，所以只生成新草稿，禁止原地修改或覆盖已有输出。先在输出父目录准备临时文件并验证，再以 `persist_noclobber` 发布；所有拒绝不得留下最终草稿或损坏已有文件。
+
+**有限验收 / 停止线**：以新 TempDir 的实际 CLI 子进程证明 legacy profile 增补、现有策略局部修改、原 loader clamp、commands 清除、非资源值保留、草稿再经 `doctor resource-plan` round-trip；坏类型／枚举、跨节 patch、非法或冲突 intent、坏 capture、已有输出、默认 feature 明确拒绝均非零。observe-only／无 GPU／无 controller 的有效但降级配置可以生成，打印原原因码，不把候选当执行许可。原 profile／patch／capture 字节保持，零真实资源／Host 启动／设备／模型／用户库。达到这些正负例即停，不进入交互向导、自动硬件建议、实时控制、通用原地编辑器或资源父债的全部矩阵；重复确定性失败回 controller，架构／权限新取舍才问维护者。
+
+**精确写集 / CI 节奏**：CLI `src/main.rs`、`config_cmd.rs`、`doctor_resource_plan.rs` 与新 `config_resource_policy.rs`；原 preview 测试共享 capture fixture、新 `tests/config_resource_policy.rs` 及 `tests/support/resource_capture.rs`。中英 CLI guide、本计划、DCL、父债第五列；现有 `.github/workflows/ci.yml` opt-in 步骤增加新集成目标，既有 job／默认构建不改。先红测／窄测、两 feature Clippy／fmt、默认 CLI 回归和适用分层／文档／债结构／编码／diff；同一相关片冻结后一次完整本地链、一次推送、精确 SHA 正式 CI。Host／types／contracts／runtime／Tauri／shared／发行版与角色包源码、依赖和资源执行语义无需改；上片正式结果只随本次实质提交回填，父债仍 Partial。

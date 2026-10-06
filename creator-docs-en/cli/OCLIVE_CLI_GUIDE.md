@@ -100,6 +100,35 @@ Human output lists adapter profiles, GPU/RAM/CPU estimates, selections, proposed
 
 ---
 
+## `config resource-policy`: generate an offline resource-policy draft
+
+This noninteractive entry requires `diagnostics-host`. It uses the original distro TOML format and Host validation to generate one new profile; it does not change `~/.oclive/config.toml`, the source distro file, or running configuration.
+
+```toml
+# resource-policy.toml: only this section, without other distro settings
+[resource_coordination]
+strategy = "custom"
+gpu_safety_reserve_mib = 1024
+[[resource_coordination.commands]]
+kind = "residency"
+adapter_id = "builtin.test" # Must actually be registered in the supplied capture.
+mode = "resident"
+```
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- config resource-policy \
+  --distro-profile ./distro.oclive.toml --policy-file ./resource-policy.toml \
+  --diagnostics-file ./resource-diagnostics.json --output ./distro-draft.oclive.toml
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json \
+  --distro-profile ./distro-draft.oclive.toml --json
+```
+
+The patch replaces only supplied resource keys and retains omitted keys. `commands` replaces the whole array; `commands = []` clears it explicitly, while the resulting strategy must remain valid. Other settings and unknown extensions retain their TOML values; the original Host loader still determines whether unknown keys have any effect. Serialization does not preserve comments or formatting and may reorder keys; source bytes remain unchanged. The output parent must already exist and the output file must not exist. In-place changes are prohibited. A temporary file in that directory passes the original loader, registry, and finite-intent validation before publication; refusals leave no final draft and never overwrite an existing file.
+
+Invalid types/enums, cross-section patches, bad captures, unregistered adapters, and conflicting intents exit nonzero. Original Host numeric clamps still apply; output reports the effective strategy and GPU reserve, without rewriting raw values in the draft. Valid but degraded observe-only, absent GPU/controller, or insufficient-capacity candidates may be drafted, with original reason codes on stderr. Generation is not live admission and never activates or executes resources. `--gpu-device-index` refers only to the capture; environment overrides do not silently affect evaluation. Interactive guidance, automatic hardware advice, and execution remain unavailable. This bounded tool belongs to [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md), without closing its resource parent debt.
+
+---
+
 ## `pack`: validate and publish role packs
 
 From repo root:

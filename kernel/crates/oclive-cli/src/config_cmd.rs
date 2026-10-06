@@ -1,4 +1,4 @@
-//! `oclive config` — global and project-level configuration.
+//! `oclive config` — global/project settings and explicit offline distro drafts.
 
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
@@ -22,6 +22,8 @@ pub enum ConfigCommands {
     Unset(ConfigUnsetArgs),
     /// Interactive config wizard (imports unset OCLIVE_* from the environment)
     Init(ConfigInitArgs),
+    /// Generate a new offline distro resource-policy draft (diagnostics-host required).
+    ResourcePolicy(crate::config_resource_policy::ResourcePolicyArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -75,6 +77,7 @@ pub fn run(cli: ConfigCli) -> Result<()> {
         ConfigCommands::List(a) => run_list(a),
         ConfigCommands::Unset(a) => run_unset(a),
         ConfigCommands::Init(a) => run_init(a),
+        ConfigCommands::ResourcePolicy(a) => crate::config_resource_policy::run(a),
     }
 }
 

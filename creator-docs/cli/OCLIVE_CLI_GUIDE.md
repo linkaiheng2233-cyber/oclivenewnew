@@ -363,6 +363,33 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./re
 
 人类模式列出适配器档位、估计 GPU/RAM/CPU、选择、拟议转换及原原因码；`--json` 的 stdout 只有一个既有 `ResourceCandidatePlan` 文档，stderr 明示离线／无控制权。读取、类型、版本、所有者或重复 adapter ID 错误非零退出；正常生成 `blocked` / `degraded` 诊断仍 exit 0。例如 `resource_scheduling_group_conflict` 表示约束冲突，`resource_plan_insufficient_gpu_headroom` 表示捕获容量不足，`resource_plan_controller_unavailable` 表示预览没有真实控制器。捕获文件不会授予控制权：即便无需转换的候选 `executable=true`，也不构成实时准入或执行许可；任何实际执行仍由 Host 重新核验版本、控制器和物理容量。此入口不提供配置编辑、自动硬件建议或资源执行，新资源磁盘 schema 也未引入。资源合同见[资源 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md#621-有限调度意图)。
 
+### `config resource-policy`：生成离线资源策略草稿
+
+此非交互入口显式要求 `diagnostics-host`，使用原发行版 TOML 格式与 Host 校验，只生成一个新 profile；不修改 `~/.oclive/config.toml`、原发行版文件或运行中的配置。
+
+```toml
+# resource-policy.toml：只允许这一节，不携带其他发行版配置
+[resource_coordination]
+strategy = "custom"
+gpu_safety_reserve_mib = 1024
+[[resource_coordination.commands]]
+kind = "residency"
+adapter_id = "builtin.test" # 必须在所给诊断捕获中真实登记
+mode = "resident"
+```
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- config resource-policy \
+  --distro-profile ./distro.oclive.toml --policy-file ./resource-policy.toml \
+  --diagnostics-file ./resource-diagnostics.json --output ./distro-draft.oclive.toml
+cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./resource-diagnostics.json \
+  --distro-profile ./distro-draft.oclive.toml --json
+```
+
+patch 只覆盖显式提供的资源键，缺省键保留；`commands` 整组替换，`commands = []` 显式清除（同时须保持 strategy 合法）。其他配置与未知扩展的 TOML 值保留，未知键是否生效仍由原 Host loader 决定。草稿序列化不保留注释和排版，键可能重排；原文件逐字不变。输出父目录须已存在，输出文件必须不存在，不能原地修改；在同目录临时文件完成原 loader／registry／有限意图验证后才发布，任何拒绝不留下最终草稿，也不覆盖已有文件。
+
+坏类型／枚举、跨节 patch、坏 capture、未登记 adapter 或冲突意图非零退出。原 Host 的数值 clamp 仍生效，输出会显示有效策略与 GPU 保留量；草稿不改写输入的原始数值。有效但降级的 observe-only、无 GPU／无控制器或容量不足候选允许生成，stderr 列出原原因码；生成不是实时准入，不自动激活或执行。`--gpu-device-index` 只查捕获，环境覆盖不暗中改评估。交互向导、自动硬件建议和资源执行仍未提供；此有限工具属于 [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md)，不能关闭资源父债。
+
 ### `test --oocp`（本地 OOCP 闭环）
 
 在 **oclivenewnew 仓库根**执行（需已能 `cargo build -p oclivenewnew-tauri --release`）：

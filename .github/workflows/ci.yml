@@ -299,7 +299,7 @@ jobs:
         run: cargo test --locked -p oclive-cli -- --test-threads=1
       - name: test Host consumer and offline resource diagnostics
         # Host integration is opt-in; keep the default CLI dependency graph lightweight.
-        run: cargo test --locked -p oclive-cli --features diagnostics-host --test e2e_minimal_role_library --test doctor_resource_plan -- --test-threads=1
+        run: cargo test --locked -p oclive-cli --features diagnostics-host --test e2e_minimal_role_library --test doctor_resource_plan --test config_resource_policy -- --test-threads=1
 
   # ARM64 Linux cross-compile smoke (no tests on target; catches arch-specific breakages)
   rust-arm64-cross:

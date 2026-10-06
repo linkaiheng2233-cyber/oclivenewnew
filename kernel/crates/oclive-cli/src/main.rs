@@ -26,6 +26,7 @@ mod completions_cmd;
 mod compose_cmd;
 mod config;
 mod config_cmd;
+mod config_resource_policy;
 mod dashboard_cmd;
 mod debug_cmd;
 mod dev_cmd;

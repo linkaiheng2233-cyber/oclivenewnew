@@ -23,7 +23,7 @@ pub struct ResourcePlanArgs {
 }
 
 #[cfg(feature = "diagnostics-host")]
-fn preview(
+pub(crate) fn preview(
     args: &ResourcePlanArgs,
 ) -> Result<(
     oclive_kernel_types::ResourceCoordinationDiagnostics,
@@ -79,7 +79,7 @@ fn preview(
             .map_err(anyhow::Error::msg)?;
     }
     // Revalidate the effective intent. Captured scheduling/candidate results may be stale.
-    let scheduling = registry.scheduling_diagnostics(&capture.policy.scheduling);
+    capture.scheduling = registry.scheduling_diagnostics(&capture.policy.scheduling);
     let plan = compile_resource_candidate_plan(&CompileResourceCandidatePlanInput {
         state_revision: capture.state_revision,
         policy: &capture.policy,
@@ -87,7 +87,7 @@ fn preview(
         gpu_device_index: args.gpu_device_index,
         adapters: &capture.adapters,
         leases: &capture.leases,
-        scheduling: &scheduling,
+        scheduling: &capture.scheduling,
         // Descriptors and capture files cannot establish a live single-writer controller.
         controller_ids: &BTreeSet::new(),
     });

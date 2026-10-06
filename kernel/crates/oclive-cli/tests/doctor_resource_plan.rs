@@ -2,6 +2,10 @@
 
 use std::process::Command;
 
+#[cfg(feature = "diagnostics-host")]
+#[path = "support/resource_capture.rs"]
+mod resource_capture;
+
 #[cfg(not(feature = "diagnostics-host"))]
 #[test]
 fn default_build_explains_the_opt_in_without_reading_input() {
@@ -17,10 +21,7 @@ fn default_build_explains_the_opt_in_without_reading_input() {
 #[cfg(feature = "diagnostics-host")]
 mod with_host {
     use super::*;
-    use oclive_kernel_types::{
-        ResourceCandidatePlan, ResourceCandidatePlanState, ResourceCoordinatorPolicy,
-        RESOURCE_COORDINATION_SCHEMA_VERSION,
-    };
+    use oclive_kernel_types::{ResourceCandidatePlan, ResourceCandidatePlanState};
     use serde_json::{json, Value};
     use std::fs;
     use tempfile::{tempdir, TempDir};
@@ -32,43 +33,9 @@ mod with_host {
 
     impl Fixture {
         fn new() -> Self {
-            let mut policy = serde_json::to_value(ResourceCoordinatorPolicy::default()).unwrap();
-            policy["scheduling"] = json!({
-                "strategy": "custom",
-                "commands": [{"kind": "residency", "adapter_id": "builtin.test", "mode": "resident"}]
-            });
             Self {
                 dir: tempdir().unwrap(),
-                capture: json!({
-                    "schema_version": RESOURCE_COORDINATION_SCHEMA_VERSION,
-                    "state_revision": 42,
-                    "state": "ready", "pressure": "normal", "policy": policy,
-                    "snapshot": {
-                        "captured_at_ms": 123, "source": "fixture", "available": true,
-                        "gpu_devices": [{"device_index": 0, "name": "fixture GPU", "total_mib": 8192,
-                            "free_mib": 6144, "used_mib": 2048}],
-                        "system_memory": {"total_mib": 16384, "available_mib": 12288, "used_mib": 4096},
-                        "cpu": {"logical_cores": 8, "physical_cores": 4}
-                    },
-                    "adapters": [{
-                        "registration_source": "builtin", "registration_source_id": "host",
-                        "runtime_state": "inactive",
-                        "descriptor": {
-                            "adapter_id": "builtin.test", "kind": "runtime", "domain": "llm",
-                            "control_mode": "managed", "provider_id": "fixture",
-                            "profiles": [{"profile_id": "gpu", "quality_rank": 100,
-                                "execution_target": "gpu", "estimated_reservation_mib": 2048,
-                                "requires_restart": true, "coordinator_selectable": true}],
-                            "lifecycle_operations": ["observe", "start", "unload"],
-                            "residency_modes": ["resident", "on_demand", "unloaded"]
-                        }
-                    }],
-                    "leases": [],
-                    // Captured evaluations are deliberately stale; the CLI must recompile.
-                    "scheduling": {"state": "ready", "intent": {"strategy": "compatibility_first"}},
-                    "candidate_plan": {"plan_id": "stale", "compiled_from_revision": 0,
-                        "state": "ready", "executable": true}
-                }),
+                capture: resource_capture::captured_resources(),
             }
         }
 
