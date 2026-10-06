@@ -119,6 +119,19 @@
 
 本片原 npm 10 以 `npm ci --ignore-scripts --no-audit --no-fund` 消费成功，完整 `npm ls --all` exit 0。实际 production audit **0**，full **4 low / 0 moderate / 0 high / 0 critical**；仅消除该 moderate，ESLint Markdown→KaTeX low 链仍留。当前片为局部预备，后续合批完整门禁和目标 SHA 正式 CI 尚未执行，不拿前片的正式绿替代本片。详见 [DCL-50](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-50--selector-parser-单叶补丁预备片)。
 
+### 2026-10-07 shell-quote 临时兼容例外
+
+前批 `67baa952bb7e1ff0ba987609d6fe729ca327f24d` 已完整本地 native 0，但[正式 CI 37505631986](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37505631986) 的 full audit 命中新登记的 [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv)，最终 cancelled，正式验收不成立。该时点 production 0、full **4 low / 2 critical**；shell-quote 与 concurrently 两个 critical 包计数来自同一公告，不是两条独立漏洞。这两个锁节点在此前已验基线中也相同，不能把新审计结果归因 selector parser 或 ChaCha20 补丁。
+
+| 临时例外 | 范围、验证与撤销条件 |
+|---|---|
+| `overrides.concurrently.shell-quote = "1.11.0"` | 维护者明确批准；只覆盖 `concurrently 9.2.4 → shell-quote`，保留原四条 override。上游当前 9.2.4 / 10.0.5 仍精确依赖 1.9.0，故仅升级父包不能消除该命中；不升级 concurrently 主版本。锁仅该节点的 version/resolved/integrity 改动 |
+| 本地兼容证据 | 原 npm 10 `npm ci --ignore-scripts --no-audit --no-fund` 与 `npm ls --all` exit 0；concurrently 真实良性双子进程成功 exit 0、子进程失败 7 时 CLI exit 1；生产参数展开和代表性 quote/parse 保持。四种行分隔符在 comment 后的内存字符串由旧版允许改为 TypeError 拒绝，未在 shell 执行攻击字符串 |
+| 当前滚动扫描 | production **0**、full **4 low / 0 moderate / 0 high / 0 critical**，两条 `--audit-level=high` native 0；ESLint Markdown→KaTeX low 继续跟踪。这是当前锁与扫描时点，不是产品零风险承诺 |
+| 责任与撤销 | 项目依赖维护者负责跟进：上游支持线采用安全 shell-quote 后，更新 concurrently 及其依赖链、删除本条 override，再核锁、npm ci/peer/audit 与构建/退出码回归。不能仅因上游有新发行就移除；不自动更新其它例外 |
+
+适用前端门禁和本批冻结后的完整本地链、精确 SHA 正式 CI 另按实际出口登记；当前父债保持 Partial，不借前批绿灯或 audit 0 判 Done。原因、批准与原始回执坐标见 [DCL-53](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-53--shell-quote-临时兼容补丁与撤销条件)。
+
 ### 历史已验证时点（2026-08-21）
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。

@@ -100,6 +100,19 @@ The actual chain is `@antfu/eslint-config → eslint-plugin-vue → postcss-sele
 
 Original npm 10 consumed it with `npm ci --ignore-scripts --no-audit --no-fund`, and full `npm ls --all` exited 0. Production audit reports **0**; the full graph reports **4 low / 0 moderate / 0 high / 0 critical**. This removes only that moderate entry; the ESLint Markdown→KaTeX low chain remains. This slice is local preparation: subsequent batch-wide checks and exact-SHA formal CI have not run, and the previous slice's formal green is not substituted. See [DCL-50](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-50--selector-parser-单叶补丁预备片).
 
+### 2026-10-07 temporary shell-quote compatibility exception
+
+The preceding `67baa952bb7e1ff0ba987609d6fe729ca327f24d` batch passed the full local chain with native exit 0, but the full audit in [formal CI 37505631986](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37505631986) hit newly recorded [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv). The run ultimately concluded cancelled; formal acceptance was not achieved. That snapshot was production 0 and full **4 low / 2 critical**. The two critical package counts, shell-quote and concurrently, derive from one advisory, not two independent vulnerabilities. Both lock nodes were unchanged from the preceding accepted baseline; the new audit result was not introduced by the selector-parser or ChaCha20 patches.
+
+| Temporary exception | Scope, validation, and removal condition |
+|---|---|
+| `overrides.concurrently.shell-quote = "1.11.0"` | Explicitly approved by the maintainer; only `concurrently 9.2.4 → shell-quote` is overridden, preserving the other four overrides. Upstream 9.2.4 / 10.0.5 still pin 1.9.0, so updating the parent alone does not remove the finding. No concurrently major upgrade; only this lock node's version/resolved/integrity change |
+| Local compatibility evidence | Original npm 10 `npm ci --ignore-scripts --no-audit --no-fund` and `npm ls --all` exit 0. Real benign concurrently children both succeed with CLI exit 0; a child exit 7 produces CLI exit 1. Production argument expansion and representative quote/parse behavior remain. Four line terminators following a comment token, tested only in memory, change from old-version acceptance to TypeError rejection; no attack string is executed in a shell |
+| Current audit snapshot | Production **0**, full **4 low / 0 moderate / 0 high / 0 critical**; both `--audit-level=high` commands exit 0. ESLint Markdown→KaTeX low findings remain tracked. This is evidence for the current lock and scan time, not a product-wide zero-risk guarantee |
+| Owner and removal | The project dependency maintainer updates concurrently and its chain once the supported upstream line adopts safe shell-quote, removes this override, and checks the lock, npm ci/peers/audit, build behavior, and exit propagation. A new upstream release alone is insufficient to remove it; other exceptions are not updated automatically |
+
+Applicable frontend checks, the full local chain on the frozen batch, and exact-SHA formal CI are recorded at their actual exits. The parent debt remains Partial; neither a preceding green run nor an audit count of 0 is treated as Done. Approval, cause, and original receipt locations: [DCL-53](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-53--shell-quote-临时兼容补丁与撤销条件).
+
 ### Previously verified observation (2026-08-21)
 
 The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
