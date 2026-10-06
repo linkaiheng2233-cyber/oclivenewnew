@@ -694,3 +694,13 @@
 **门禁 / 出口 / 限制**：先保存原始 audit 非零与完整 JSON；锁差量核无无关包刷新、source 版本匹配、原树可达性。生产与 full audit 按 high 硬门禁，保留未修 low/moderate 的实际数字，不宣称零漏洞；npm ls、三 workspace 原测试、lint、typecheck、build 与文档镜像／链接／债结构／编码／diff。controller 实施与语义自查，不称独立 agent 审核。相关源码稳定后本地冻结，一次完整本地链及一次修复推送，精确 SHA 正式 CI；旧 run 不盲重跑，不以旧绿证明新 SHA。无 Kernel／Host／角色包／IPC／权限改动，无真实模型、TTS、用户 DB、外部业务流量；联网仅 npm 官方包元数据／依赖下载与 GitHub 证据。已有签名／TLS 架构暂缓不解除。
 
 **工具失败后的有界重规划**：本机 npm 10.9.8 在两条不同锁更新命令均抛 Arborist `loadPeerSet` 的 `edgesOut` null，尚未写锁；保留两次原输出后不重复同工具盲试。仅此次锁生成使用 npm 官方 11.21.0（满足已安装 Node 22.23.2），通过临时 npm exec，不改变全局 npm、CI Node/npm 或仓库工具链契约；仍必须由原 npm 10 的 `npm ci` 消费所得锁及核 peer。若继续同根因失败或锁出现无关大范围刷新，停止本升级，不能改为 legacy-peer-deps／force／override。
+
+### D-SCAFFOLD-RESOURCE-01 · 有限交互策略编辑（2026-10-06）
+
+**起点 / 编排**：`3eb1ca7cafabedd739075c6a506fa9ecfcb95425`，在独立工作树进行本片开发，主树保持该供应链修复的完整链冻结状态；不改主树受测字节、不启子 Agent、不推中间提交取消在途 CI。M 实施、最终 main milestone 升 L，controller 实施与语义自查，明确不是独立复核。L1 已找到六种原 `ResourceSchedulingCommand`、四种 strategy、原新草稿 publisher；足够施工，不扩硬件故障矩阵。
+
+**闭环 / 冻结语义**：既有 `config resource-policy` 增 `--interactive`，与 `--policy-file` 严格互斥。终端行输入 → canonical 四策略／六类有限约束与保留量 → 同一 TOML 结构合并 → 同一原 loader／registry／compiler → 展示有效意图／候选，明确 yes 后同一 create-new 发布。适配器与档位只列已核 capture 的事实，blank 保留原键，`-` 明确清除 primary 或 commands，替换命令使用 canonical enum 序列化，原 validator 仍唯一负责合法性与冲突。按行输入也可由 stdin 脚本化测试，不增加另一份交互业务实现；q／EOF／未确认／非法选择或意图都非零且无最终草稿，所有源文件保持。
+
+**精确写集 / 验收 / 止点**：CLI `src/main.rs`、`config_resource_policy.rs`、新私有 `resource_policy_wizard.rs`、原 `tests/config_resource_policy.rs`；中英 CLI guide、父债第五列、本计划、DCL。原 CI 已覆盖该目标，无需改 workflow、Host/types/runtime/contracts/发行版源码、依赖或公开 Rust API。实际 CLI stdin 正例覆盖留原值／新策略／六类约束／clamp／clear／再经原 preview，负例覆盖取消／EOF／非法菜单／未登记与冲突／互斥／坏 capture／已有输出；保留原非交互八项、preview 七项、库消费者及 default feature 拒绝。适用 CLI 两 feature Clippy／fmt、分层及文档门禁；主树合流后冻结最终相关批次一次完整链／推送／精确 SHA CI，不拿工作树窄测当 main 验收。达到有限交互即停，不另造硬件建议策略、任意命令执行、磁盘 schema、控制权限、原地编辑或全部资源父债证明；需新产品／架构决策先登记留给维护者。
+
+**运行安排调整**：供应链正式 CI 恢复执行后，先冻结此独立工作树的干净提交、在同一 SHA 跑一次完整本地链；不为等待远端改主树。工作树用原 npm 消费与主树逐字相同的锁；完整链直接沿用该工作树仓库配置解析出的外部 Cargo 产物目录，局部命令的显式 target-dir 不向后继全局传播。拟复用主树缓存的准备步骤发现该目录已经由生成项目测试建成普通目录，按保护规则拒绝覆盖（native 1、零目录改写）；因此不创建 Junction，也不移动／删除缓存或改配置。完整链没有其它本地 Cargo 写入，仍不导出全局 CARGO_TARGET_DIR。局部／完整证据分别明确 cwd，之后主树同 SHA fast-forward 且无漂移时可沿用本次完整结果，不再为合流重复全链；供应链批次正式终态明确前不推下一批取消它。

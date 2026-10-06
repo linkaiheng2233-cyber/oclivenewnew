@@ -10,8 +10,15 @@ pub struct ResourcePolicyArgs {
     #[arg(long)]
     pub distro_profile: PathBuf,
     /// TOML containing only [resource_coordination]; supplied keys replace existing keys.
+    #[arg(
+        long,
+        required_unless_present = "interactive",
+        conflicts_with = "interactive"
+    )]
+    pub policy_file: Option<PathBuf>,
+    /// Ask for finite resource constraints, preview them, then confirm a new draft.
     #[arg(long)]
-    pub policy_file: PathBuf,
+    pub interactive: bool,
     /// Captured ResourceCoordinationDiagnostics used to validate finite adapter constraints.
     #[arg(long)]
     pub diagnostics_file: PathBuf,
@@ -39,19 +46,37 @@ fn write_draft(args: ResourcePolicyArgs) -> Result<()> {
         &std::fs::read_to_string(&args.distro_profile).context("read source distro profile")?,
     )
     .context("read editable distro TOML values")?;
-    let patch: toml::Value = toml::from_str(
-        &std::fs::read_to_string(&args.policy_file).context("read resource policy patch")?,
-    )
-    .context("read resource policy TOML values")?;
-    let patch = patch
-        .as_table()
-        .context("policy patch must be a TOML table")?;
-    if patch.len() != 1 || !patch.contains_key("resource_coordination") {
-        bail!("policy patch must contain only [resource_coordination]");
-    }
-    let resources = patch["resource_coordination"]
-        .as_table()
-        .context("[resource_coordination] must be a table")?;
+    let (resources, clear_primary) = if args.interactive {
+        let (capture, _) =
+            crate::doctor_resource_plan::preview(&crate::doctor_resource_plan::ResourcePlanArgs {
+                diagnostics_file: args.diagnostics_file.clone(),
+                distro_profile: Some(args.distro_profile.clone()),
+                gpu_device_index: args.gpu_device_index,
+                json: false,
+            })?;
+        crate::resource_policy_wizard::collect(&capture)?
+    } else {
+        let path = args
+            .policy_file
+            .as_ref()
+            .context("resource policy file required")?;
+        let patch: toml::Value =
+            toml::from_str(&std::fs::read_to_string(path).context("read resource policy patch")?)
+                .context("read resource policy TOML values")?;
+        let patch = patch
+            .as_table()
+            .context("policy patch must be a TOML table")?;
+        if patch.len() != 1 || !patch.contains_key("resource_coordination") {
+            bail!("policy patch must contain only [resource_coordination]");
+        }
+        (
+            patch["resource_coordination"]
+                .as_table()
+                .context("[resource_coordination] must be a table")?
+                .clone(),
+            false,
+        )
+    };
     let target = document
         .as_table_mut()
         .context("distro profile must be a TOML table")?
@@ -60,8 +85,11 @@ fn write_draft(args: ResourcePolicyArgs) -> Result<()> {
         .as_table_mut()
         .context("source [resource_coordination] must be a table")?;
     // This is structural editing, not a second typed policy parser. Arrays replace in full.
+    if clear_primary {
+        target.remove("primary_adapter_id");
+    }
     for (key, value) in resources {
-        target.insert(key.clone(), value.clone());
+        target.insert(key, value);
     }
     let text = toml::to_string_pretty(&document).context("serialize distro draft")?;
     let parent = args
@@ -89,6 +117,9 @@ fn write_draft(args: ResourcePolicyArgs) -> Result<()> {
             "resource policy intent blocked: {}",
             capture.scheduling.reason_codes.join(", ")
         );
+    }
+    if args.interactive {
+        crate::resource_policy_wizard::confirm(&capture, &candidate)?;
     }
     draft
         .persist_noclobber(&args.output)

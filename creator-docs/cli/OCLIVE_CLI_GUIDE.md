@@ -365,7 +365,7 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./re
 
 ### `config resource-policy`：生成离线资源策略草稿
 
-此非交互入口显式要求 `diagnostics-host`，使用原发行版 TOML 格式与 Host 校验，只生成一个新 profile；不修改 `~/.oclive/config.toml`、原发行版文件或运行中的配置。
+此入口显式要求 `diagnostics-host`，使用原发行版 TOML 格式与 Host 校验，只生成一个新 profile；不修改 `~/.oclive/config.toml`、原发行版文件或运行中的配置。默认通过 patch 文件非交互编辑，也可显式选择下面的有限交互模式。
 
 ```toml
 # resource-policy.toml：只允许这一节，不携带其他发行版配置
@@ -388,7 +388,17 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./re
 
 patch 只覆盖显式提供的资源键，缺省键保留；`commands` 整组替换，`commands = []` 显式清除（同时须保持 strategy 合法）。其他配置与未知扩展的 TOML 值保留，未知键是否生效仍由原 Host loader 决定。草稿序列化不保留注释和排版，键可能重排；原文件逐字不变。输出父目录须已存在，输出文件必须不存在，不能原地修改；在同目录临时文件完成原 loader／registry／有限意图验证后才发布，任何拒绝不留下最终草稿，也不覆盖已有文件。
 
-坏类型／枚举、跨节 patch、坏 capture、未登记 adapter 或冲突意图非零退出。原 Host 的数值 clamp 仍生效，输出会显示有效策略与 GPU 保留量；草稿不改写输入的原始数值。有效但降级的 observe-only、无 GPU／无控制器或容量不足候选允许生成，stderr 列出原原因码；生成不是实时准入，不自动激活或执行。`--gpu-device-index` 只查捕获，环境覆盖不暗中改评估。交互向导、自动硬件建议和资源执行仍未提供；此有限工具属于 [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md)，不能关闭资源父债。
+坏类型／枚举、跨节 patch、坏 capture、未登记 adapter 或冲突意图非零退出。原 Host 的数值 clamp 仍生效，输出会显示有效策略与 GPU 保留量；草稿不改写输入的原始数值。有效但降级的 observe-only、无 GPU／无控制器或容量不足候选允许生成，stderr 列出原原因码；生成不是实时准入，不自动激活或执行。`--gpu-device-index` 只查捕获，环境覆盖不暗中改评估。此有限工具属于 [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md)，不能关闭资源父债。
+
+**有限交互模式**（与 `--policy-file` 互斥）：
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- config resource-policy \
+  --interactive --distro-profile ./distro.oclive.toml \
+  --diagnostics-file ./resource-diagnostics.json --output ./distro-interactive-draft.toml
+```
+
+逐行选择四种原策略、primary、命令和 GPU/RAM/CPU 保留量；空行保留原键，primary 或 commands 的 `-` 明确清除，commands 的 `+` 整组替换。命令菜单提供 require、resident/on-demand、coexist、exclusive、yield-then-run、fallback，生成既有六类 canonical 约束；多 ID 用逗号分隔，fallback 档位按输入顺序。页面列出经过原 registry 核验的捕获适配器与档位，仍由同一个 Host validator 决定能否成立。有效配置经过原 loader 的 clamp 和候选编译后，显示有效意图／三类保留量／候选及原原因码；只有输入 `yes` 才发布新草稿。`q`、EOF、未确认、非法菜单或 blocked 意图均非零，不留最终文件；stdin 可用于脚本驱动同一条路径。向导不会更改 TTL、抢占等未提问字段，不自动推荐硬件策略、扩大控制权或执行资源。
 
 ### `test --oocp`（本地 OOCP 闭环）
 

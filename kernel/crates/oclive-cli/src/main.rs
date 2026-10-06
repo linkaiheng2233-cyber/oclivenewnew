@@ -73,6 +73,8 @@ mod publish_cmd;
 mod registry;
 mod registry_cmd;
 mod registry_remote;
+#[cfg(feature = "diagnostics-host")]
+mod resource_policy_wizard;
 mod role_pack;
 mod scaffold_cmd;
 mod template_catalog;

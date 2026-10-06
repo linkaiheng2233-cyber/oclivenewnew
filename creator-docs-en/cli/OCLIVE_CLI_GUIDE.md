@@ -102,7 +102,7 @@ Human output lists adapter profiles, GPU/RAM/CPU estimates, selections, proposed
 
 ## `config resource-policy`: generate an offline resource-policy draft
 
-This noninteractive entry requires `diagnostics-host`. It uses the original distro TOML format and Host validation to generate one new profile; it does not change `~/.oclive/config.toml`, the source distro file, or running configuration.
+This entry requires `diagnostics-host`. It uses the original distro TOML format and Host validation to generate one new profile; it does not change `~/.oclive/config.toml`, the source distro file, or running configuration. Patch files provide the default noninteractive mode; bounded interactive mode is an explicit alternative below.
 
 ```toml
 # resource-policy.toml: only this section, without other distro settings
@@ -125,7 +125,17 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./re
 
 The patch replaces only supplied resource keys and retains omitted keys. `commands` replaces the whole array; `commands = []` clears it explicitly, while the resulting strategy must remain valid. Other settings and unknown extensions retain their TOML values; the original Host loader still determines whether unknown keys have any effect. Serialization does not preserve comments or formatting and may reorder keys; source bytes remain unchanged. The output parent must already exist and the output file must not exist. In-place changes are prohibited. A temporary file in that directory passes the original loader, registry, and finite-intent validation before publication; refusals leave no final draft and never overwrite an existing file.
 
-Invalid types/enums, cross-section patches, bad captures, unregistered adapters, and conflicting intents exit nonzero. Original Host numeric clamps still apply; output reports the effective strategy and GPU reserve, without rewriting raw values in the draft. Valid but degraded observe-only, absent GPU/controller, or insufficient-capacity candidates may be drafted, with original reason codes on stderr. Generation is not live admission and never activates or executes resources. `--gpu-device-index` refers only to the capture; environment overrides do not silently affect evaluation. Interactive guidance, automatic hardware advice, and execution remain unavailable. This bounded tool belongs to [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md), without closing its resource parent debt.
+Invalid types/enums, cross-section patches, bad captures, unregistered adapters, and conflicting intents exit nonzero. Original Host numeric clamps still apply; output reports the effective strategy and GPU reserve, without rewriting raw values in the draft. Valid but degraded observe-only, absent GPU/controller, or insufficient-capacity candidates may be drafted, with original reason codes on stderr. Generation is not live admission and never activates or executes resources. `--gpu-device-index` refers only to the capture; environment overrides do not silently affect evaluation. This bounded tool belongs to [D-SCAFFOLD-RESOURCE-01](../../handoff/TECHNICAL_DEBT_INVENTORY.md), without closing its resource parent debt.
+
+**Bounded interactive mode** (mutually exclusive with `--policy-file`):
+
+```bash
+cargo run -p oclive-cli --features diagnostics-host -- config resource-policy \
+  --interactive --distro-profile ./distro.oclive.toml \
+  --diagnostics-file ./resource-diagnostics.json --output ./distro-interactive-draft.toml
+```
+
+Line prompts select the four original strategies, a primary adapter, commands, and GPU/RAM/CPU reserves. Blank preserves the existing key; `-` explicitly clears primary/commands, while `+` replaces the entire command list. The menu offers require, resident/on-demand, coexist, exclusive, yield-then-run, and fallback, serialized as the existing six canonical constraints. Separate multiple IDs with commas; fallback profile order follows input order. Captured adapters and profiles are listed only after original registry validation; the same Host validator decides whether the intent is valid. After original loader clamps and candidate compilation, the wizard displays effective intent, all three reserves, candidate state, and original reason codes. Only `yes` publishes a new draft. `q`, EOF, missing confirmation, invalid menu input, or blocked intent exits nonzero without a final file. Scripts can drive the same stdin path. Unprompted fields such as TTL/preemption remain unchanged; the wizard neither recommends hardware policy nor grants control or executes resources.
 
 ---
 

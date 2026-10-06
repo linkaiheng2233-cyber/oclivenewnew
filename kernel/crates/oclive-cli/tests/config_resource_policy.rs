@@ -31,6 +31,31 @@ fn default_build_rejects_before_reading_or_writing_files() {
 #[path = "support/resource_capture.rs"]
 mod resource_capture;
 
+#[cfg(not(feature = "diagnostics-host"))]
+#[test]
+fn default_build_rejects_interactive_before_reading_files() {
+    let dir = tempfile::tempdir().unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_oclive-cli"))
+        .current_dir(dir.path())
+        .args([
+            "config",
+            "resource-policy",
+            "--interactive",
+            "--distro-profile",
+            "missing.toml",
+            "--diagnostics-file",
+            "missing.json",
+            "--output",
+            "draft.toml",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("diagnostics-host"));
+    assert!(output.stdout.is_empty());
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+}
+
 #[cfg(feature = "diagnostics-host")]
 mod with_host {
     use super::*;
@@ -118,6 +143,286 @@ mod with_host {
             );
             assert!(!self.output_path().exists());
         }
+
+        fn interactive(&self, answers: &str, extra: &[&str]) -> Output {
+            use std::{io::Write, process::Stdio};
+            let source = self.dir.path().join("source.toml");
+            let capture = self.dir.path().join("capture.json");
+            let bytes = serde_json::to_vec(&self.capture).unwrap();
+            fs::write(&source, &self.source).unwrap();
+            fs::write(&capture, &bytes).unwrap();
+            let mut child = Command::new(env!("CARGO_BIN_EXE_oclive-cli"))
+                .current_dir(self.dir.path())
+                .args([
+                    "config",
+                    "resource-policy",
+                    "--interactive",
+                    "--distro-profile",
+                ])
+                .arg(&source)
+                .arg("--diagnostics-file")
+                .arg(&capture)
+                .arg("--output")
+                .arg(self.output_path())
+                .args(extra)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .unwrap();
+            // Early CLI/capture rejection may close stdin before reading the supplied answers.
+            let _ = child.stdin.take().unwrap().write_all(answers.as_bytes());
+            let output = child.wait_with_output().unwrap();
+            assert_eq!(fs::read(source).unwrap(), self.source.as_bytes());
+            assert_eq!(fs::read(capture).unwrap(), bytes);
+            assert_eq!(
+                fs::read_dir(self.dir.path()).unwrap().count(),
+                if self.output_path().exists() { 3 } else { 2 },
+                "no wizard temporary file left behind"
+            );
+            output
+        }
+    }
+
+    #[test]
+    fn interactive_keeps_values_until_explicit_confirmation() {
+        let mut fixture = Fixture::new();
+        fixture.source.push_str("[resource_coordination]\nstrategy='latency_first'\ngpu_safety_reserve_mib=777\nfuture_hint='kept'\n");
+        let output = fixture.interactive("\n\n\n\n\n\nyes\n", &[]);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let text = String::from_utf8_lossy(&output.stdout);
+        assert!(text.contains("builtin.test"));
+        assert!(text.contains("gpu"));
+        assert!(text.contains("not live admission"));
+        let profile = load_host_profile_file(&fixture.output_path()).unwrap();
+        assert_eq!(profile.resource_coordination.gpu_safety_reserve_mib, 777);
+        assert_eq!(
+            profile.resource_coordination.scheduling.strategy,
+            ResourceSchedulingStrategy::LatencyFirst
+        );
+        let mut document: toml::Value =
+            toml::from_str(&fs::read_to_string(fixture.output_path()).unwrap()).unwrap();
+        assert_eq!(
+            document["resource_coordination"]["future_hint"].as_str(),
+            Some("kept")
+        );
+        document
+            .as_table_mut()
+            .unwrap()
+            .remove("resource_coordination");
+        let mut original: toml::Value = toml::from_str(&fixture.source).unwrap();
+        original
+            .as_table_mut()
+            .unwrap()
+            .remove("resource_coordination");
+        assert_eq!(document, original);
+    }
+
+    #[test]
+    fn interactive_serializes_all_six_canonical_commands() {
+        let mut fixture = Fixture::new();
+        for id in ["builtin.second", "builtin.third"] {
+            let mut second = fixture.capture["adapters"][0].clone();
+            second["descriptor"]["adapter_id"] = json!(id);
+            fixture.capture["adapters"]
+                .as_array_mut()
+                .unwrap()
+                .push(second);
+        }
+        let answers = [
+            "4",
+            "",
+            "+",
+            "1",
+            "builtin.test",
+            "2",
+            "builtin.test",
+            "4",
+            "builtin.test,builtin.second",
+            "5",
+            "builtin.test,builtin.third",
+            "6",
+            "builtin.test",
+            "builtin.second",
+            "7",
+            "builtin.test",
+            "gpu",
+            "0",
+            "999999",
+            "1000",
+            "1",
+            "yes",
+            "",
+        ]
+        .join("\n");
+        let output = fixture.interactive(&answers, &[]);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let profile = load_host_profile_file(&fixture.output_path()).unwrap();
+        assert_eq!(
+            profile.resource_coordination.scheduling.strategy,
+            ResourceSchedulingStrategy::Custom
+        );
+        assert_eq!(profile.resource_coordination.scheduling.commands.len(), 6);
+        assert_eq!(profile.resource_coordination.gpu_safety_reserve_mib, 65536);
+        assert_eq!(
+            profile
+                .resource_coordination
+                .system_memory_safety_reserve_mib,
+            1000
+        );
+        assert_eq!(profile.resource_coordination.cpu_safety_reserve_threads, 1);
+        let document: toml::Value =
+            toml::from_str(&fs::read_to_string(fixture.output_path()).unwrap()).unwrap();
+        let commands = document["resource_coordination"]["commands"]
+            .as_array()
+            .unwrap();
+        assert_eq!(
+            commands
+                .iter()
+                .map(|c| c["kind"].as_str().unwrap())
+                .collect::<Vec<_>>(),
+            [
+                "require",
+                "residency",
+                "coexist",
+                "exclusive",
+                "yield_then_run",
+                "fallback"
+            ]
+        );
+        let preview = Command::new(env!("CARGO_BIN_EXE_oclive-cli"))
+            .args(["doctor", "resource-plan"])
+            .arg(fixture.dir.path().join("capture.json"))
+            .arg("--distro-profile")
+            .arg(fixture.output_path())
+            .arg("--json")
+            .output()
+            .unwrap();
+        assert!(preview.status.success());
+        let plan: ResourceCandidatePlan = serde_json::from_slice(&preview.stdout).unwrap();
+        assert_eq!(plan.compiled_from_revision, 42);
+        assert!(!plan.executable);
+    }
+
+    #[test]
+    fn interactive_clears_explicitly_and_supports_on_demand() {
+        for (answers, command_count) in [
+            ("1\n-\n-\n\n\n\nyes\n", 0),
+            ("3\n-\n+\n3\nbuiltin.test\n0\n\n\n\nyes\n", 1),
+        ] {
+            let mut fixture = Fixture::new();
+            fixture.source.push_str("[resource_coordination]\nstrategy='custom'\nprimary_adapter_id='builtin.test'\ncommands=[{kind='residency',adapter_id='builtin.test',mode='resident'}]\n");
+            let output = fixture.interactive(answers, &[]);
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let profile = load_host_profile_file(&fixture.output_path()).unwrap();
+            assert_eq!(
+                profile.resource_coordination.scheduling.primary_adapter_id,
+                None
+            );
+            assert_eq!(
+                profile.resource_coordination.scheduling.commands.len(),
+                command_count
+            );
+            if command_count == 1 {
+                assert!(fs::read_to_string(fixture.output_path())
+                    .unwrap()
+                    .contains("on_demand"));
+            }
+        }
+    }
+
+    #[test]
+    fn interactive_selects_a_canonical_primary_strategy() {
+        let fixture = Fixture::new();
+        let answers = ["2", "builtin.test", "", "", "", "", "yes", ""].join("\n");
+        let output = fixture.interactive(&answers, &[]);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let profile = load_host_profile_file(&fixture.output_path()).unwrap();
+        assert_eq!(
+            profile.resource_coordination.scheduling.strategy,
+            ResourceSchedulingStrategy::PrimaryFirst
+        );
+        assert_eq!(
+            profile
+                .resource_coordination
+                .scheduling
+                .primary_adapter_id
+                .as_deref(),
+            Some("builtin.test")
+        );
+    }
+
+    #[test]
+    fn interactive_cancel_eof_and_bad_choices_never_publish() {
+        for answers in ["q\n", "", "9\n", "\n\n\n\n\n\nno\n", "\n\n\nbad-number\n"] {
+            let fixture = Fixture::new();
+            let output = fixture.interactive(answers, &[]);
+            assert!(!output.status.success());
+            assert!(!fixture.output_path().exists());
+        }
+        let mut fixture = Fixture::new();
+        fixture.capture["schema_version"] = json!(0);
+        let output = fixture.interactive("", &[]);
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("schema_version"));
+        assert!(output.stdout.is_empty());
+    }
+
+    #[test]
+    fn interactive_uses_original_validator_before_confirmation() {
+        let fixture = Fixture::new();
+        let output = fixture.interactive("4\n\n+\n1\nbuiltin.unknown\n0\n\n\n\nyes\n", &[]);
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr)
+            .contains("resource_scheduling_adapter_unregistered"));
+        assert!(!fixture.output_path().exists());
+        let mut fixture = Fixture::new();
+        let mut second = fixture.capture["adapters"][0].clone();
+        second["descriptor"]["adapter_id"] = json!("builtin.second");
+        fixture.capture["adapters"]
+            .as_array_mut()
+            .unwrap()
+            .push(second);
+        let output = fixture.interactive("4\n\n+\n4\nbuiltin.test,builtin.second\n5\nbuiltin.test,builtin.second\n0\n\n\n\nyes\n", &[]);
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("resource_scheduling_group_conflict")
+        );
+        assert!(!fixture.output_path().exists());
+    }
+
+    #[test]
+    fn interactive_rejects_patch_file_and_existing_output_before_prompting() {
+        let fixture = Fixture::new();
+        let output = fixture.interactive("", &["--policy-file", "missing.toml"]);
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stderr).contains("cannot be used"));
+        assert!(!fixture.output_path().exists());
+        let fixture = Fixture::new();
+        fs::write(fixture.output_path(), b"existing sentinel").unwrap();
+        let output = fixture.interactive("", &[]);
+        assert!(!output.status.success());
+        assert!(output.stdout.is_empty());
+        assert_eq!(
+            fs::read(fixture.output_path()).unwrap(),
+            b"existing sentinel"
+        );
     }
 
     #[test]
