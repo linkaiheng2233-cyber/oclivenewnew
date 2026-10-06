@@ -90,6 +90,14 @@ The production audit in [CI 37424944008](https://github.com/linkaiheng2233-cyber
 
 Original npm 10.9.8 lock generation hit an Arborist `edgesOut` null error. Official npm 11.21.0 was used temporarily to generate the lock; original npm 10 `npm ci` and `npm ls --all` then exited 0. The global toolchain and CI configuration remain unchanged. Local production JSON audit reports **0**; the full graph reports **4 low / 1 moderate / 0 high / 0 critical**, with both `--audit-level=high` gates exiting 0. ESLint Markdown→KaTeX and postcss-selector-parser remain tracked; this is not a zero-vulnerability claim for the full graph. Results are specific to this lock and scan time. Validation and final evidence are recorded in [DCL-48](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-48--新披露-npm-风险与测试链修复).
 
+**Exact formal result added later:** `3eb1ca7cafabedd739075c6a506fa9ecfcb95425` completed [37427668306](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37427668306) with success, 17/17 successful jobs including ci-gate, and native 0 full-local validation. The preceding 4 low / 1 moderate observation belongs to that frozen lock; later patch numbers do not rewrite it.
+
+### 2026-10-06 single selector-parser patch (local preparation, no main acceptance)
+
+The actual chain is `@antfu/eslint-config → eslint-plugin-vue → postcss-selector-parser 7.1.5`. [GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) names **7.1.6** as fixed; the [upstream release](https://github.com/postcss/postcss-selector-parser/releases/tag/7.1.6) addresses quadratic flat-selector parsing. An isolated worktree updates only this lock node's version/resolved/integrity. Existing ranges, package declarations, peers, and toolchains stay unchanged, without overrides or the low findings' major/downgrade suggestion. A lock finding is not evidence of a product exploit path.
+
+Original npm 10 consumed it with `npm ci --ignore-scripts --no-audit --no-fund`, and full `npm ls --all` exited 0. Production audit reports **0**; the full graph reports **4 low / 0 moderate / 0 high / 0 critical**. This removes only that moderate entry; the ESLint Markdown→KaTeX low chain remains. This slice is local preparation: subsequent batch-wide checks and exact-SHA formal CI have not run, and the previous slice's formal green is not substituted. See [DCL-50](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-50--selector-parser-单叶补丁预备片).
+
 ### Previously verified observation (2026-08-21)
 
 The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.

@@ -109,6 +109,14 @@
 
 原 npm 10.9.8 锁生成遇 Arborist `edgesOut` null；只临时使用官方 npm 11.21.0 生成锁，随后原 npm 10 `npm ci`、`npm ls --all` 均 exit 0。未改变全局工具链或 CI 配置。当前本地生产 JSON 扫描 **0**；完整图 **4 low / 1 moderate / 0 high / 0 critical**，两条 `--audit-level=high` 门禁均 exit 0。残余分别为 ESLint Markdown→KaTeX 链与 postcss-selector-parser，不能称完整图零漏洞；扫描结果仅对应本轮锁与时点。验证、失败和正式出口见 [DCL-48](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-48--新披露-npm-风险与测试链修复)。
 
+**精确正式出口补记**：上述 `3eb1ca7cafabedd739075c6a506fa9ecfcb95425` 已在 [37427668306](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37427668306) 实际 success、17/17 jobs success 含 ci-gate；完整本地链 native 0。前段 4 low / 1 moderate 是该冻结锁的扫描，不改写成后续补丁数字。
+
+### 2026-10-06 selector parser 单叶补丁（本地预备，未 main 验收）
+
+实际链为 `@antfu/eslint-config → eslint-plugin-vue → postcss-selector-parser 7.1.5`；[GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) 指定修复版 **7.1.6**，[上游发行](https://github.com/postcss/postcss-selector-parser/releases/tag/7.1.6)修复平坦选择器的二次复杂度。独立工作树只更新锁中该节点的 version/resolved/integrity，原合法范围、package 声明、peer 与工具链保持，不添加 override、不跟随 low 项的跨主版/降级建议；不把锁命中当产品攻击路径实证。
+
+本片原 npm 10 以 `npm ci --ignore-scripts --no-audit --no-fund` 消费成功，完整 `npm ls --all` exit 0。实际 production audit **0**，full **4 low / 0 moderate / 0 high / 0 critical**；仅消除该 moderate，ESLint Markdown→KaTeX low 链仍留。当前片为局部预备，后续合批完整门禁和目标 SHA 正式 CI 尚未执行，不拿前片的正式绿替代本片。详见 [DCL-50](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-50--selector-parser-单叶补丁预备片)。
+
 ### 历史已验证时点（2026-08-21）
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。

@@ -704,3 +704,13 @@
 **精确写集 / 验收 / 止点**：CLI `src/main.rs`、`config_resource_policy.rs`、新私有 `resource_policy_wizard.rs`、原 `tests/config_resource_policy.rs`；中英 CLI guide、父债第五列、本计划、DCL。原 CI 已覆盖该目标，无需改 workflow、Host/types/runtime/contracts/发行版源码、依赖或公开 Rust API。实际 CLI stdin 正例覆盖留原值／新策略／六类约束／clamp／clear／再经原 preview，负例覆盖取消／EOF／非法菜单／未登记与冲突／互斥／坏 capture／已有输出；保留原非交互八项、preview 七项、库消费者及 default feature 拒绝。适用 CLI 两 feature Clippy／fmt、分层及文档门禁；主树合流后冻结最终相关批次一次完整链／推送／精确 SHA CI，不拿工作树窄测当 main 验收。达到有限交互即停，不另造硬件建议策略、任意命令执行、磁盘 schema、控制权限、原地编辑或全部资源父债证明；需新产品／架构决策先登记留给维护者。
 
 **运行安排调整**：供应链正式 CI 恢复执行后，先冻结此独立工作树的干净提交、在同一 SHA 跑一次完整本地链；不为等待远端改主树。工作树用原 npm 消费与主树逐字相同的锁；完整链直接沿用该工作树仓库配置解析出的外部 Cargo 产物目录，局部命令的显式 target-dir 不向后继全局传播。拟复用主树缓存的准备步骤发现该目录已经由生成项目测试建成普通目录，按保护规则拒绝覆盖（native 1、零目录改写）；因此不创建 Junction，也不移动／删除缓存或改配置。完整链没有其它本地 Cargo 写入，仍不导出全局 CARGO_TARGET_DIR。局部／完整证据分别明确 cwd，之后主树同 SHA fast-forward 且无漂移时可沿用本次完整结果，不再为合流重复全链；供应链批次正式终态明确前不推下一批取消它。
+
+### K-SUPPLY-12 · 单一 selector parser 补丁预备片（2026-10-06）
+
+**起点 / 原因 / 预算**：干净 `10af367d1ac348b11cb8f6c25620196fcb63f70a` 已完成资源向导完整本地链并推送，目标 CI `37434691111` 尚在运行；独立工作树保留该受测源。上一供应链片 `3eb1ca7c` 的正式 `37427668306` 已实际 17/17 success。L1 已核剩余 moderate 唯一是 `@antfu/eslint-config → eslint-plugin-vue → postcss-selector-parser 7.1.5`；[上游公告](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) 与 [7.1.6 发行](https://github.com/postcss/postcss-selector-parser/releases/tag/7.1.6)给出同系列修复。仅做这一个补丁，不追全库可达性、攻击样本或 KaTeX low 到零，不按 audit fix 的 low 建议降级 ESLint 配置。M 局部预备、controller 实施和自查，无独立 reviewer。
+
+**闭环 / 精确写集**：原合法间接依赖范围 → npm 定向 lock update → 原 npm ci / peer → audit 与真实 Vue lint / typecheck / build / shared unit → 记录后续合批坐标。仅根 `package-lock.json`、中英 `security/KNOWN_VULNERABILITIES.md`、台账 K-SUPPLY-12 第五列、本计划、DCL；无 package 声明、override、产品源码、断言、工具链、CI 或权限改动。锁结构差量必须恰为一个 parser 节点（版本/来源/integrity）；若刷新其它节点，停止并保全，不能手改锁或放宽 peer。前批已记录 npm 10 的锁生成确定性 Arborist 缺陷，沿用临时官方 npm 11.21.0 生成，仍用原 npm 10 消费。Node/npm 全局保持。
+
+**验证 / 停止 / CI 节奏**：审计原始 4 low / 1 moderate 留作起点；本片预期 production 0、full 4 low / 0 moderate / 0 high / 0 critical，不能称 full 0。原完整 npm ls、Vue lint、typecheck、production build、shared unit 和 applicable 文档门禁，锁/public 声明独立 diff 检查；生成 bridge 如仅换行变化先保全并核相同 Git blob。通过后干净本地提交，仅记 Locally verified，不标父债 Done、不立即 main/push/全量 CI。后续相关实质片合批达到里程碑才一次完整本地链/精确 SHA 正式 CI，减少单叶补丁重复全 CI；不复用前一 SHA 的绿作为本片验收。主树现有 CI 期间零漂移，无真实模型/TTS/用户库/旧 CP-INT 身份；已有签名/TLS 等暂停不解冻。
+
+**前片终态已取得后的事实回填**：向导 `37434691111` 已实际 success、17/17 含 ci-gate，主树/tracking/远端仍为干净 `10af367d`；watch 的 EOF 原件保留，不重跑 workflow。此实质片在同一台账文件的资源工具第五列、DCL 和安全滚动观察中回填前片精确终态，保持全部债务前四列与父债 Partial；这不是扩大产品行为或为绿灯单开提交。适用门禁依据本片六文件实际 diff，未触及 Rust/public API，不再跑未受影响的 workspace 全链。
