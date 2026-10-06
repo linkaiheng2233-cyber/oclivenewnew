@@ -76,7 +76,21 @@ See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md]
 
 ---
 
-## npm dependency status (2026-08-21)
+## npm dependency status (rolling observations)
+
+### 2026-10-06 advisory fixes (locally verified; target-SHA CI pending)
+
+The production audit in [CI 37424944008](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37424944008) on `8cd7d5d1` reported three high entries. A local full scan also reported critical development-test dependencies. This is not attributed to resource-policy code, and an earlier zero scan cannot establish current absence of risk.
+
+| Advisory / dependency | Current fix / scope |
+|---|---|
+| [GHSA-g2v6-rqmx-r4w6](https://github.com/advisories/GHSA-g2v6-rqmx-r4w6) · Vue SSR attribute-name validation | Vue/compiler/renderer aligned to **3.5.43** on the existing 3.5 patch line; the advisory's fixed minimum is 3.5.42. A lockfile finding is not proof of a reachable SSR exploit in this product |
+| [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) · source-map-js | **1.2.2**, a patch permitted by its existing transitive range, without overrides |
+| [GHSA-5gmw-xhrv-c9v3](https://github.com/advisories/GHSA-5gmw-xhrv-c9v3) / [GHSA-85c8-ppgw-ccpr](https://github.com/advisories/GHSA-85c8-ppgw-ccpr) · Tinypool | Vitest 3.2.7's 1.x chain has no compatible fix. The root and all three workspaces pin **Vitest 4.1.11**; this tree removes tinypool and fixes the known mocker finding. No Vitest 5 migration, peer bypass, or audit relaxation |
+
+Original npm 10.9.8 lock generation hit an Arborist `edgesOut` null error. Official npm 11.21.0 was used temporarily to generate the lock; original npm 10 `npm ci` and `npm ls --all` then exited 0. The global toolchain and CI configuration remain unchanged. Local production JSON audit reports **0**; the full graph reports **4 low / 1 moderate / 0 high / 0 critical**, with both `--audit-level=high` gates exiting 0. ESLint Markdown→KaTeX and postcss-selector-parser remain tracked; this is not a zero-vulnerability claim for the full graph. Results are specific to this lock and scan time. Validation and final evidence are recorded in [DCL-48](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-48--新披露-npm-风险与测试链修复).
+
+### Previously verified observation (2026-08-21)
 
 The required CI `npm-audit` job runs `npm audit --omit=dev --audit-level=high`; remote run [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) reported **0 production vulnerabilities**.
 

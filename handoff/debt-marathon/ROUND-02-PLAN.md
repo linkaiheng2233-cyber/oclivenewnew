@@ -684,3 +684,13 @@
 **有限验收 / 停止线**：以新 TempDir 的实际 CLI 子进程证明 legacy profile 增补、现有策略局部修改、原 loader clamp、commands 清除、非资源值保留、草稿再经 `doctor resource-plan` round-trip；坏类型／枚举、跨节 patch、非法或冲突 intent、坏 capture、已有输出、默认 feature 明确拒绝均非零。observe-only／无 GPU／无 controller 的有效但降级配置可以生成，打印原原因码，不把候选当执行许可。原 profile／patch／capture 字节保持，零真实资源／Host 启动／设备／模型／用户库。达到这些正负例即停，不进入交互向导、自动硬件建议、实时控制、通用原地编辑器或资源父债的全部矩阵；重复确定性失败回 controller，架构／权限新取舍才问维护者。
 
 **精确写集 / CI 节奏**：CLI `src/main.rs`、`config_cmd.rs`、`doctor_resource_plan.rs` 与新 `config_resource_policy.rs`；原 preview 测试共享 capture fixture、新 `tests/config_resource_policy.rs` 及 `tests/support/resource_capture.rs`。中英 CLI guide、本计划、DCL、父债第五列；现有 `.github/workflows/ci.yml` opt-in 步骤增加新集成目标，既有 job／默认构建不改。先红测／窄测、两 feature Clippy／fmt、默认 CLI 回归和适用分层／文档／债结构／编码／diff；同一相关片冻结后一次完整本地链、一次推送、精确 SHA 正式 CI。Host／types／contracts／runtime／Tauri／shared／发行版与角色包源码、依赖和资源执行语义无需改；上片正式结果只随本次实质提交回填，父债仍 Partial。
+
+### K-SUPPLY-12 · 2026-10-06 新公告与测试链修复
+
+**起点 / 有限调查**：干净 `8cd7d5d1da36e9393cb67acc98ae12e107560875`。正式 CI `37424944008` 的 npm-audit 原始 job 日志明确为生产图三项 high（Vue/server-renderer 与 source-map-js），不是 runner 中断；本机完整 JSON 扫描另有 tinypool/Vitest critical。仅核公告修复版本、实际声明与锁定依赖、三个现有 Vitest 消费者；达到这些施工事实即停，不开展全库攻击面证明。旧资源草稿的本地完整链仍有效，但其正式验收不可标绿。
+
+**闭环 / 写集**：上游补丁 → 根及三个 workspace 的合法版本声明 → npm 锁定树 → 生产／完整 audit 与 peer → 原有 shared/ChatPro/Theater 测试、lint/typecheck/build → 正式门禁。精确写集为根 `package.json` / `package-lock.json`、`distros/{shared,chat-pro,theater}/package.json`、中英 `security/KNOWN_VULNERABILITIES.md`、台账 K-SUPPLY-12 与资源工具父债第五列、本计划和 DCL。Vue/compiler 保持同一 3.5 补丁线；source-map-js 只刷新原声明允许的补丁；Vitest 3 的 tinypool 1.x 没有可用兼容修复，本片选最小已修复的 Vitest 4.1.11，并核本仓 Node 22 / Vite 6 契约，不跳到 5、不强制 override 或降低审计等级。若需要广泛改写测试／产品代码，停止该升级并向维护者列明取舍；有限配置兼容另先列精确写集再改。
+
+**门禁 / 出口 / 限制**：先保存原始 audit 非零与完整 JSON；锁差量核无无关包刷新、source 版本匹配、原树可达性。生产与 full audit 按 high 硬门禁，保留未修 low/moderate 的实际数字，不宣称零漏洞；npm ls、三 workspace 原测试、lint、typecheck、build 与文档镜像／链接／债结构／编码／diff。controller 实施与语义自查，不称独立 agent 审核。相关源码稳定后本地冻结，一次完整本地链及一次修复推送，精确 SHA 正式 CI；旧 run 不盲重跑，不以旧绿证明新 SHA。无 Kernel／Host／角色包／IPC／权限改动，无真实模型、TTS、用户 DB、外部业务流量；联网仅 npm 官方包元数据／依赖下载与 GitHub 证据。已有签名／TLS 架构暂缓不解除。
+
+**工具失败后的有界重规划**：本机 npm 10.9.8 在两条不同锁更新命令均抛 Arborist `loadPeerSet` 的 `edgesOut` null，尚未写锁；保留两次原输出后不重复同工具盲试。仅此次锁生成使用 npm 官方 11.21.0（满足已安装 Node 22.23.2），通过临时 npm exec，不改变全局 npm、CI Node/npm 或仓库工具链契约；仍必须由原 npm 10 的 `npm ci` 消费所得锁及核 peer。若继续同根因失败或锁出现无关大范围刷新，停止本升级，不能改为 legacy-peer-deps／force／override。

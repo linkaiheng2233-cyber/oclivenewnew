@@ -95,7 +95,21 @@
 
 ---
 
-## npm 供应链（2026-08-21）
+## npm 供应链（滚动时点）
+
+### 2026-10-06 新公告修复（本地验证，待目标 SHA CI）
+
+`8cd7d5d1` 的正式 CI [37424944008](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37424944008) 在生产扫描命中三项 high；本机完整扫描另有开发测试链 critical。该失败不归因资源策略源码，也不能把此前扫描的 0 当作当前无风险证据。
+
+| 公告 / 依赖 | 当前修复 / 边界 |
+|---|---|
+| [GHSA-g2v6-rqmx-r4w6](https://github.com/advisories/GHSA-g2v6-rqmx-r4w6) · Vue SSR 属性名校验 | Vue / compiler / renderer 统一 **3.5.43**，仍在原 3.5 补丁线；公告修复下限 3.5.42。锁命中不等于已证明本产品存在可达 SSR 攻击路径 |
+| [GHSA-68fv-2mgg-jv7q](https://github.com/advisories/GHSA-68fv-2mgg-jv7q) · source-map-js | **1.2.2**，原传递范围允许的补丁；未添加 override |
+| [GHSA-5gmw-xhrv-c9v3](https://github.com/advisories/GHSA-5gmw-xhrv-c9v3) / [GHSA-85c8-ppgw-ccpr](https://github.com/advisories/GHSA-85c8-ppgw-ccpr) · Tinypool | 原 Vitest 3.2.7 的 1.x 链无兼容修复；三个 workspace 与根统一固定 **Vitest 4.1.11**，该依赖图不再含 tinypool，也修复其 mocker 已知命中。不升级 Vitest 5，不放宽 peer 或审计 |
+
+原 npm 10.9.8 锁生成遇 Arborist `edgesOut` null；只临时使用官方 npm 11.21.0 生成锁，随后原 npm 10 `npm ci`、`npm ls --all` 均 exit 0。未改变全局工具链或 CI 配置。当前本地生产 JSON 扫描 **0**；完整图 **4 low / 1 moderate / 0 high / 0 critical**，两条 `--audit-level=high` 门禁均 exit 0。残余分别为 ESLint Markdown→KaTeX 链与 postcss-selector-parser，不能称完整图零漏洞；扫描结果仅对应本轮锁与时点。验证、失败和正式出口见 [DCL-48](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261006-48--新披露-npm-风险与测试链修复)。
+
+### 历史已验证时点（2026-08-21）
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。
 
