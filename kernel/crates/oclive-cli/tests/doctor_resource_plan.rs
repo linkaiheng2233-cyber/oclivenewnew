@@ -104,7 +104,29 @@ mod with_host {
         assert!(text.contains("gpu"));
         assert!(text.contains("2048"));
         assert!(text.contains("resource_plan_controller_unavailable"));
+        assert!(text.contains("No live controller is available for a proposed transition"));
         assert!(text.contains("42"));
+    }
+
+    #[test]
+    fn capacity_explanations_preserve_the_canonical_json_plan() {
+        let mut fixture = Fixture::new();
+        fixture.capture["snapshot"]["gpu_devices"][0]["free_mib"] = json!(1);
+        let before = fixture.plan(&["--json"]);
+        assert_eq!(before.state, ResourceCandidatePlanState::Blocked);
+        assert!(!before.executable);
+        let output = fixture.run(&[]);
+        assert!(output.status.success());
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.contains("reason: resource_plan_insufficient_gpu_headroom"));
+        assert!(
+            text.contains("Captured GPU headroom is below the proposed demand plus safety reserve")
+        );
+        let after = fixture.plan(&["--json"]);
+        assert_eq!(
+            serde_json::to_value(&before).unwrap(),
+            serde_json::to_value(&after).unwrap()
+        );
     }
 
     #[test]

@@ -206,6 +206,7 @@ pub(crate) fn confirm(
         .iter()
         .chain(&plan.reason_codes)
     {
+        let reason = crate::doctor_resource_plan::format_resource_reason(reason);
         writeln!(output, "  reason: {reason}")?;
     }
     if ask(

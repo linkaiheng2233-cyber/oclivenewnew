@@ -361,7 +361,7 @@ cargo run -p oclive-cli --features diagnostics-host -- doctor resource-plan ./re
 
 输入须为当前资源诊断版本（v5），不是角色包、蓝图、执行请求或任意资源配置。未指定 `--distro-profile` 时使用捕获的 policy；指定后经原 HostProfile loader 读取 `[resource_coordination]`，旧 profile 缺该节使用原默认。GPU 默认取捕获快照中索引最小的设备，显式索引也只查该快照；本机 `OCLIVE_GPU_DEVICE_INDEX`、资源预算环境覆盖不会暗中改变预览。原文件不修改，捕获的旧 scheduling / candidate 结果重新计算。
 
-人类模式列出适配器档位、估计 GPU/RAM/CPU、选择、拟议转换及原原因码；`--json` 的 stdout 只有一个既有 `ResourceCandidatePlan` 文档，stderr 明示离线／无控制权。读取、类型、版本、所有者或重复 adapter ID 错误非零退出；正常生成 `blocked` / `degraded` 诊断仍 exit 0。例如 `resource_scheduling_group_conflict` 表示约束冲突，`resource_plan_insufficient_gpu_headroom` 表示捕获容量不足，`resource_plan_controller_unavailable` 表示预览没有真实控制器。捕获文件不会授予控制权：即便无需转换的候选 `executable=true`，也不构成实时准入或执行许可；任何实际执行仍由 Host 重新核验版本、控制器和物理容量。此入口不提供配置编辑、自动硬件建议或资源执行，新资源磁盘 schema 也未引入。资源合同见[资源 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md#621-有限调度意图)。
+人类模式列出适配器档位、估计 GPU/RAM/CPU、选择、拟议转换及原原因码；常见容量、可用性和约束码后附简短英文说明。doctor 人类输出、草稿诊断／拒绝和交互确认共用同一私有展示函数；未知未来码仍原样显示并标注暂无内置说明。说明不参与验证、计划选择或发布，也不增加 JSON 字段。`--json` 的 stdout 只有一个既有 `ResourceCandidatePlan` 文档，stderr 明示离线／无控制权。读取、类型、版本、所有者或重复 adapter ID 错误非零退出；正常生成 `blocked` / `degraded` 诊断仍 exit 0。例如 `resource_scheduling_group_conflict` 表示约束冲突，`resource_plan_insufficient_gpu_headroom` 表示捕获容量不足，`resource_plan_controller_unavailable` 表示预览没有真实控制器。捕获文件不会授予控制权：即便无需转换的候选 `executable=true`，也不构成实时准入或执行许可；任何实际执行仍由 Host 重新核验版本、控制器和物理容量。此入口不提供配置编辑、自动硬件建议或资源执行，新资源磁盘 schema 也未引入。资源合同见[资源 RFC](../rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md#621-有限调度意图)。
 
 ### `config resource-policy`：生成离线资源策略草稿
 

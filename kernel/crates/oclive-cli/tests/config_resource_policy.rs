@@ -404,6 +404,8 @@ mod with_host {
         assert!(
             String::from_utf8_lossy(&output.stderr).contains("resource_scheduling_group_conflict")
         );
+        assert!(String::from_utf8_lossy(&output.stderr)
+            .contains("At least two adapters are required to both coexist and be exclusive"));
         assert!(!fixture.output_path().exists());
     }
 
@@ -558,6 +560,22 @@ mod with_host {
         let text = String::from_utf8_lossy(&output.stderr);
         assert!(text.contains("resource_"));
         assert!(text.contains("no live controllers"));
+    }
+
+    #[test]
+    fn draft_and_confirmation_explain_the_same_missing_controller() {
+        let patch = "[resource_coordination]\ncommands = [{kind='residency', adapter_id='builtin.test', mode='resident'}]\n";
+        let fixture = Fixture::new();
+        let output = fixture.succeeds(patch);
+        let expected = "resource_plan_controller_unavailable — No live controller is available for a proposed transition";
+        assert!(String::from_utf8_lossy(&output.stderr).contains(expected));
+
+        let mut fixture = Fixture::new();
+        fixture.source.push_str(patch);
+        let output = fixture.interactive("\n\n\n\n\n\nno\n", &[]);
+        assert!(!output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains(expected));
+        assert!(!fixture.output_path().exists());
     }
 
     #[test]

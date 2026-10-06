@@ -130,7 +130,7 @@
 | 当前滚动扫描 | production **0**、full **4 low / 0 moderate / 0 high / 0 critical**，两条 `--audit-level=high` native 0；ESLint Markdown→KaTeX low 继续跟踪。这是当前锁与扫描时点，不是产品零风险承诺 |
 | 责任与撤销 | 项目依赖维护者负责跟进：上游支持线采用安全 shell-quote 后，更新 concurrently 及其依赖链、删除本条 override，再核锁、npm ci/peer/audit 与构建/退出码回归。不能仅因上游有新发行就移除；不自动更新其它例外 |
 
-适用前端门禁和本批冻结后的完整本地链、精确 SHA 正式 CI 另按实际出口登记；当前父债保持 Partial，不借前批绿灯或 audit 0 判 Done。原因、批准与原始回执坐标见 [DCL-53](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-53--shell-quote-临时兼容补丁与撤销条件)。
+该补丁已冻结于 `1e81033d6c8efcff8bb9f502c642560e57335cf1`：一次完整本地链 native 0（1491.7835099 秒），[正式 CI 37513747676](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37513747676) attempt 1、17/17 success，含 ci-gate，未 rerun。父债保持 Partial，等待上游撤销条件与 KaTeX low 的各自收敛；不借 audit 0 判 Done。原因、批准与原始回执坐标见 [DCL-53](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-53--shell-quote-临时兼容补丁与撤销条件)，本次随资源原因说明实质合流回填，见 [DCL-54](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-54--资源原因说明合流与已验基线确认)。
 
 ### 历史已验证时点（2026-08-21）
 

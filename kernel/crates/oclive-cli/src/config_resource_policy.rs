@@ -115,7 +115,13 @@ fn write_draft(args: ResourcePolicyArgs) -> Result<()> {
     if capture.scheduling.state == ResourceSchedulingIntentState::Blocked {
         bail!(
             "resource policy intent blocked: {}",
-            capture.scheduling.reason_codes.join(", ")
+            capture
+                .scheduling
+                .reason_codes
+                .iter()
+                .map(|code| crate::doctor_resource_plan::format_resource_reason(code))
+                .collect::<Vec<_>>()
+                .join(", ")
         );
     }
     if args.interactive {
@@ -131,6 +137,7 @@ fn write_draft(args: ResourcePolicyArgs) -> Result<()> {
         .iter()
         .chain(&candidate.reason_codes)
     {
+        let reason = crate::doctor_resource_plan::format_resource_reason(reason);
         eprintln!("  reason: {reason}");
     }
     println!("Wrote new distro draft: {}", args.output.display());

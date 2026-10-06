@@ -723,6 +723,14 @@
 
 **验收 / CI 节奏 / 副作用**：新旧 audit JSON 分存、上游元数据、完整锁结构与清单前四列校验；适用文档镜像/链接/登记/债结构/编码/diff。已有 selector parser 的窄测证据保留，不重跑同断言凑数；二片提交冻结后在同一工作树一次 `npm run check:ci-local`，必要 Tauri bundle 按既有流程先准备，子进程使用现有 portable Python、不导出全局 Cargo target。完整链通过后一次 fast-forward/push，读取目标 SHA 正式 CI，不创建 green-only 提交。主线保持原已验基线直到完整链通过，父债保持 Partial；低风险 KaTeX 上游范围不兼容、签名、TLS、大版本和资源建议规则仍暂缓。联网仅官方 registry/advisory 与 GitHub，零真实模型/TTS/用户库/旧场景重放。证据目录 `.cursor/plans/debt-chacha20-patch-20261007-r0/`，失败与成功分存、不覆盖旧记录。
 
+### D-SCAFFOLD-RESOURCE-01 · 原因码的人类说明预备片（2026-10-07）
+
+**起点 / 缺口 / 路由**：独立工作树从冻结供应链 `67baa952bb7e1ff0ba987609d6fe729ca327f24d` 接续，原工作树正在完整门禁、主线仍保留 `10af367d`，不改变任一受测字节或取消该批验证。L1 已核 `doctor_resource_plan` stdout 与 `config_resource_policy` stderr 只打印 Host 原原因码；本片兑现父债已有“原因码解释”，不新增硬件策略。M、轻语义展示；controller 实施和自查，independent=false。
+
+**闭环 / 冻结语义 / 写集**：Host compiler/registry 原 reason_codes → CLI 同一个私有 formatter → doctor 人类 stdout / draft 诊断与拒绝 stderr / wizard 确认前 stdout → 原集成测试。仅 `oclive-cli/src/doctor_resource_plan.rs`、`src/config_resource_policy.rs`、`src/resource_policy_wizard.rs`、原 `tests/{doctor_resource_plan,config_resource_policy}.rs`、中英 CLI guide、主台账 D-SCAFFOLD-RESOURCE-01 第五列、本计划与 DCL。已知常见容量/可用性/约束码附简短英文说明，保留原码；未知未来码原样保留且标注暂无内置说明。说明不参与解析、验证、计划选择、排序或发布。`--json` 仍只输出既有原 DTO；全部退出码、profile/capture 不变、无控制权或准入保证，无新公开 API/依赖/Host schema/CI。
+
+**有限测试 / 节奏 / 停止**：先增强真实 CLI 集成红测：degraded 的控制器说明、blocked 的容量说明、draft 诊断共用说明；同一 fixture 的人类调用前后 canonical JSON 逐字段相等。未知码仅测私有展示，不建第二套 resolver。测试先运行后实现，测试过程不与前批 Cargo 全链并发争锁；实际 CLI doctor 及 policy/preview consumers、default feature 拒绝、两 feature Clippy/fmt与适用文档/分层/债结构/编码/diff。前批门禁期间只准备隔离源码；窄测后干净本地预备提交，不立即每片完整 CI。达到展示闭环即停，不追全部资源异常或重新定义原因码，不进入自动硬件建议、实时采样、执行或发行版产品 UI；需新产品决策先跳过并汇报。零真实 Host/设备/模型/TTS/用户库，未复用旧场景身份；后续相关批次里程碑另冻结完整及正式 CI。
+
 ### K-SUPPLY-12 · shell-quote 临时兼容例外（2026-10-07）
 
 **基线 / 已知首因 / 授权**：干净主线与远端 `67baa952bb7e1ff0ba987609d6fe729ca327f24d`。前批完整本地链 native 0，但[正式 CI 37505631986](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37505631986) 的 npm-audit 因新公告 [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv) 拒绝，最终取消剩余运行，正式验收不成立。`concurrently 9.2.4 → shell-quote 1.9.0` 两节点与前个已验基线相同，不能归因此前 parser/Cargo 补丁引入；官方安全版本为 1.11.0，上游当前 9.2.4 与 10.0.5 均仍精确依赖 1.9.0。维护者已明确确认只记录并实施这条临时兼容补丁，待上游安全更新后更新父依赖链、撤销例外；不再重复请求确认。
@@ -730,3 +738,11 @@
 **写集 / 闭环 / 风险**：恰为根 `package.json` / `package-lock.json`、中英 `security/KNOWN_VULNERABILITIES.md`、台账 K-SUPPLY-12 第五列、本计划和 DCL（DCL-53）。仅增加 `overrides.concurrently.shell-quote = "1.11.0"`，保留原四条 override；官方 npm 11.21.0 临时生成锁，原 npm 10 消费，预期锁仅一个 shell-quote 节点的 version/resolved/integrity 变化。声明 → 锁 → 原 npm ci/peer/audit → concurrently 实际良性子进程及退出码 → 原 build/前端消费者 → 收口记录；不改产品源码、公共 API、CI 阈值、父主版本、TLS 或权限。安全触发重风险规划，工程收口 L；controller 实施和专项语义自查，independent=false。发现额外依赖刷新先保全并重规划，不能手改锁、force 或放宽 peer。
 
 **有限验收 / 副作用 / 撤销**：前后 production/full JSON audit 分存，修后 high 门禁应 native 0；`npm ci --ignore-scripts --no-audit --no-fund`、`npm ls --all`、concurrently 良性成功/失败退出、shell-quote 内存检查四种换行分隔符拒绝（不在 shell 执行攻击字符串），真实 lint/typecheck/shared unit/build 和适用镜像/链接/登记/旧路径/债结构/编码/diff。达到修复及兼容判断即停止扩证，不穷尽可达攻击面或清除无关 KaTeX low。源码冻结后仅一次完整本地链，成功后 FF/push 一次及新 SHA 正式 CI；旧 failed/cancelled run 不 rerun。联网限官方 registry/advisory 和 GitHub，零真实模型/TTS/用户库/旧身份回放。原件保存到 `.cursor/plans/debt-shell-quote-patch-20261007-r0/`，旧工作树/账本不改。由依赖维护者在上游支持线采用安全 shell-quote 后更新 concurrently 及其依赖链，移除本条 override，核锁/peer/audit 与实际构建退出；不能仅因上游发布新版本就自动撤销。尚未取得目标 CI 前父债保持 Partial。
+
+### D-SCAFFOLD-RESOURCE-01 · 原因说明合流（2026-10-07）
+
+**已验基线 / 合流原因**：维护者授权持续收敛；前片 `1e81033d6c8efcff8bb9f502c642560e57335cf1` 完整本地 native 0（1491.7835099 秒）、[37513747676](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37513747676) attempt 1、17/17 success 含 ci-gate，main/tracking/远端干净一致，原 closeout 原件保留。新的隔离工作树把已局部验证的 `e1e12da6d76f59cc1f3989ab675a67db2b4d6e90` 原因展示接到该安全锁基线；不在原冻结分支 rebase 或覆写证据。只读核对到五份源/测试相同、原 Host 生成语义和权限不变即停，M 展示合流，L main 出口，controller 自查、independent=false。
+
+**写集 / 整体不变量**：原十路径与中英 KNOWN_VULNERABILITIES 的前片终态回填，共十二路径；五份 CLI 源码/测试保留预备片原实现，canonical JSON、loader/validator/compiler、发布、退出码、公开 API、依赖、权限和 CI 不变。台账只改资源工具和 npm 父债第五列，其余行及前四列保持；DCL-52/53 保留历史、追加 [DCL-54](DEBT_CHANGELOG.md#dcl-20261007-54--资源原因说明合流与已验基线确认)。新预备片和 main 在仅两个 append-only 文档发生冲突时原始冲突文件及 native 1 保全，再合并双方新增段落，不把冲突误写成产品测试失败。
+
+**有限验证 / 停止 / 节奏**：新 cwd 串行运行 CLI policy/doctor diagnostics-host 24 项、未知码 1、default 拒绝 3、default/all-features Clippy/fmt，结构核对与分层、中英镜像、默认/改文链接、登记、旧路径、债结构、编码、diff。源码与文档冻结后准备隔离 Tauri bundle，完整本地链通过才 FF/push，一次目标 SHA 正式 CI；不以 e1 的窄测或 1e 的 CI 代替本片终态。说明闭环验够即停，不增加硬件建议或实时 controller，不追全部资源组合。父债仍 Partial。回执在 `.cursor/plans/debt-resource-reasons-closeout-20261007-r0/`，忽略目录不随 Git 转让；旧全链与场景身份不重跑。

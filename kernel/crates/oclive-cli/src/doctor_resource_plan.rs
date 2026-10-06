@@ -23,6 +23,64 @@ pub struct ResourcePlanArgs {
 }
 
 #[cfg(feature = "diagnostics-host")]
+pub(crate) fn format_resource_reason(code: &str) -> String {
+    let explanation = match code {
+        "resource_plan_controller_unavailable" => {
+            "No live controller is available for a proposed transition"
+        }
+        "resource_plan_insufficient_gpu_headroom" => {
+            "Captured GPU headroom is below the proposed demand plus safety reserve"
+        }
+        "resource_plan_insufficient_system_memory_headroom" => {
+            "Captured RAM headroom is below the proposed demand plus safety reserve"
+        }
+        "resource_plan_insufficient_cpu_thread_headroom" => {
+            "Captured CPU thread headroom is below the proposed demand plus safety reserve"
+        }
+        "resource_plan_gpu_capacity_unknown" => {
+            "A selected GPU or hybrid profile has no GPU reservation estimate"
+        }
+        "resource_plan_capacity_unknown" => {
+            "A proposed start or resume lacks a usable capacity estimate"
+        }
+        "resource_plan_gpu_capacity_unverified" => {
+            "The capture has no verified GPU capacity snapshot"
+        }
+        "resource_plan_gpu_device_unavailable" => {
+            "The selected GPU device is absent from the captured snapshot"
+        }
+        "resource_plan_system_memory_capacity_unverified" => {
+            "The capture has no system memory snapshot"
+        }
+        "resource_plan_cpu_capacity_unverified" => "The capture has no CPU capacity snapshot",
+        "resource_plan_no_selectable_profile" => {
+            "A referenced adapter has no coordinator-selectable profile"
+        }
+        "resource_plan_start_unavailable" => {
+            "A required nonresident adapter has no proposed start or resume operation"
+        }
+        "resource_plan_rollback_unavailable" => "A proposed transition has no rollback operation",
+        "resource_custom_schedule_empty" => {
+            "The custom strategy requires at least one scheduling command"
+        }
+        "resource_primary_adapter_required" => {
+            "The primary-first strategy requires a primary adapter ID"
+        }
+        "resource_scheduling_group_conflict" => {
+            "At least two adapters are required to both coexist and be exclusive"
+        }
+        "resource_scheduling_residency_conflict" => {
+            "An adapter has conflicting residency preferences"
+        }
+        "resource_scheduling_control_unavailable" => {
+            "Exclusive scheduling requires control that an adapter does not advertise"
+        }
+        _ => "No built-in explanation is available",
+    };
+    format!("{code} — {explanation}")
+}
+
+#[cfg(feature = "diagnostics-host")]
 pub(crate) fn preview(
     args: &ResourcePlanArgs,
 ) -> Result<(
@@ -144,6 +202,7 @@ pub fn run(args: ResourcePlanArgs) -> Result<()> {
                 );
             }
             for reason in &plan.reason_codes {
+                let reason = format_resource_reason(reason);
                 println!("  reason: {reason}");
             }
         }
@@ -154,6 +213,18 @@ pub fn run(args: ResourcePlanArgs) -> Result<()> {
         let _ = args;
         anyhow::bail!(
             "`doctor resource-plan` requires building oclive-cli with feature `diagnostics-host`"
+        );
+    }
+}
+
+#[cfg(all(test, feature = "diagnostics-host"))]
+mod resource_reason_tests {
+    #[test]
+    fn unknown_reason_stays_intact_without_inventing_a_meaning() {
+        let code = "resource_future_reason_v17";
+        assert_eq!(
+            super::format_resource_reason(code),
+            format!("{code} — No built-in explanation is available")
         );
     }
 }
