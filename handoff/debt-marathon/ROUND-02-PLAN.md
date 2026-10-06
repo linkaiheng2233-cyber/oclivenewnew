@@ -714,3 +714,11 @@
 **验证 / 停止 / CI 节奏**：审计原始 4 low / 1 moderate 留作起点；本片预期 production 0、full 4 low / 0 moderate / 0 high / 0 critical，不能称 full 0。原完整 npm ls、Vue lint、typecheck、production build、shared unit 和 applicable 文档门禁，锁/public 声明独立 diff 检查；生成 bridge 如仅换行变化先保全并核相同 Git blob。通过后干净本地提交，仅记 Locally verified，不标父债 Done、不立即 main/push/全量 CI。后续相关实质片合批达到里程碑才一次完整本地链/精确 SHA 正式 CI，减少单叶补丁重复全 CI；不复用前一 SHA 的绿作为本片验收。主树现有 CI 期间零漂移，无真实模型/TTS/用户库/旧 CP-INT 身份；已有签名/TLS 等暂停不解冻。
 
 **前片终态已取得后的事实回填**：向导 `37434691111` 已实际 success、17/17 含 ci-gate，主树/tracking/远端仍为干净 `10af367d`；watch 的 EOF 原件保留，不重跑 workflow。此实质片在同一台账文件的资源工具第五列、DCL 和安全滚动观察中回填前片精确终态，保持全部债务前四列与父债 Partial；这不是扩大产品行为或为绿灯单开提交。适用门禁依据本片六文件实际 diff，未触及 Rust/public API，不再跑未受影响的 workspace 全链。
+
+### 供应链维护 · 撤回的 ChaCha20 补丁与 K-SUPPLY-12 合批（2026-10-07）
+
+**起点 / 原因 / 限度**：主树与远端为干净 `10af367d1ac348b11cb8f6c25620196fcb63f70a`；本工作树干净预备提交 `fa579137f67a9d9e4cfaae90e9054a69d2b05809` 已保存单节点 selector parser 补丁。本轮只处理锁中 `chacha20 0.10.1` 的已登记 yanked 警告；Cargo 警告归中英安全 SSOT，不把 npm 父债 K-SUPPLY-12 或已完成的 event-listener 专项 K-SUPPLY-11 改写成 Rust 通用债；[上游变更记录](https://github.com/RustCrypto/stream-ciphers/blob/master/chacha20/CHANGELOG.md)及 crates.io 元数据给出未撤回的同线 `0.10.2`（MSRV 同为 1.85，修复 SSE2 后端误用 SSE4.1 指令）。调查到版本、原依赖约束和锁差量足够施工即停，不证明本产品实际曾触发 CPU 故障。当前 workspace/all-features/target-all 反向树未打印该依赖，不外推所有外部构建都不可达。
+
+**写集 / 闭环 / 风险**：仅 `Cargo.lock`、中英 `security/KNOWN_VULNERABILITIES.md`、主台账 K-SUPPLY-12 第五列、本计划和 DCL。上游兼容补丁 → 原锁解析 → cargo audit → 既有本地完整链 → 精确 SHA 正式 CI；不改任何 manifest、override、源码、断言、feature、TLS/reqwest 版本、CI 或权限。M 局部实施，批次收口升 L；controller 实施和语义自查，独立复核=false。先保留原 audit JSON，再用 `cargo update -p chacha20@0.10.1 --precise 0.10.2`；预期唯一 package 的 version/checksum 两字段变化、依赖数组不变。超出该差量或需要新接口时停止，不以手改锁或全依赖刷新规避。
+
+**验收 / CI 节奏 / 副作用**：新旧 audit JSON 分存、上游元数据、完整锁结构与清单前四列校验；适用文档镜像/链接/登记/债结构/编码/diff。已有 selector parser 的窄测证据保留，不重跑同断言凑数；二片提交冻结后在同一工作树一次 `npm run check:ci-local`，必要 Tauri bundle 按既有流程先准备，子进程使用现有 portable Python、不导出全局 Cargo target。完整链通过后一次 fast-forward/push，读取目标 SHA 正式 CI，不创建 green-only 提交。主线保持原已验基线直到完整链通过，父债保持 Partial；低风险 KaTeX 上游范围不兼容、签名、TLS、大版本和资源建议规则仍暂缓。联网仅官方 registry/advisory 与 GitHub，零真实模型/TTS/用户库/旧场景重放。证据目录 `.cursor/plans/debt-chacha20-patch-20261007-r0/`，失败与成功分存、不覆盖旧记录。

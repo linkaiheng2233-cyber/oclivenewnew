@@ -12,14 +12,16 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-09-27** (local `cargo audit --no-fetch --stale`; 1,269 advisories loaded, 698 dependency entries scanned) |
+| **Last scan date** | **2026-10-07** (local `cargo audit --no-fetch --stale --json`; the DB was fetched earlier in this batch: 1,290 advisories, 698 dependency entries scanned) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **7** (`glib` · five `unic-*` entries · yanked `chacha20` 0.10.1; existing ignore policy unchanged) |
+| **Warning-level count** | **6** (`glib` · five `unic-*` entries; the `chacha20` yanked warning is removed, with the ignore policy unchanged) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
-This lockfile change only updates `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
+The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
+
+The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` to **0.10.2**, changing only version / checksum and preserving dependency edges and all manifests. The [upstream changelog](https://github.com/RustCrypto/stream-ciphers/blob/master/chacha20/CHANGELOG.md) describes the SSE4.1 intrinsic fix in the SSE2 backend. The post-update audit exits 0 with 0 vulnerabilities, 6 warnings, and empty stderr. The pre-update fetch/audit exits 0 but includes registry yanked-query timeouts; its original output is retained, and exit 0 does not prove every registry query completed. crates.io metadata separately confirms the new version is not yanked. This slice is batched with the selector-parser preparation; full-local and exact-SHA formal CI remain pending, with no relaxed ignore policy or npm parent-debt closure. Scope and original receipts: [DCL-51](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-51--兼容-chacha20-补丁与供应链合批).
 
 ---
 
@@ -68,7 +70,7 @@ This lockfile change only updates `rustls` from 0.23.43 to 0.23.45 (version and 
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
-| yanked | `chacha20` 0.10.1 | **Observed, not changed** | Reported by the 2026-09-05 audit; this version was already locked before the optional PNG edge. Only the risk record is synchronized; unrelated dependency upgrades are outside this role-media slice |
+| yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.104** | 2026-08-21 lockfile verification |
 

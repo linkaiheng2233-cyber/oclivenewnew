@@ -12,14 +12,16 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-09-27**（本地 `cargo audit --no-fetch --stale`；advisory-db 1269 条，扫描 698 个依赖条目） |
+| **最近扫描日期** | **2026-10-07**（本地 `cargo audit --no-fetch --stale --json`；此前同轮已 fetch advisory-db，共 1290 条，扫描 698 个依赖条目） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **7**（`glib` · 5 个 `unic-*` · `chacha20` 0.10.1 yanked；本轮不改变既有 ignore 策略） |
+| **警告级命中数** | **6**（`glib` · 5 个 `unic-*`；`chacha20` yanked 已消除，既有 ignore 策略不变） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
-本次锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
+2026-09-27 锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；该轮没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
+
+2026-10-07 的独立维护片仅将已撤回的 `chacha20 0.10.1` 更新到 **0.10.2**，锁差量仅 version / checksum，依赖边及全部 manifest 保持；[上游变更记录](https://github.com/RustCrypto/stream-ciphers/blob/master/chacha20/CHANGELOG.md)说明修复 SSE2 后端误用 SSE4.1 指令。后置 audit native 0、漏洞级 0、警告 6，stderr 为空；前置 fetch/audit native 0 但部分 registry yanked 查询超时，原输出保留，不能凭其退出码声称所有 registry 查询完成。新版本未撤回另由 crates.io 元数据核对。此片与 selector parser 预备片合批，完整链及精确 SHA 正式 CI 待验，未放宽 ignore 或据此关闭 npm 父债。范围及原件见 [DCL-51](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-51--兼容-chacha20-补丁与供应链合批)。
 
 ---
 
@@ -70,7 +72,7 @@
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
-| yanked | `chacha20` 0.10.1 | **已观察，未处理** | 2026-09-05 当前 audit 命中；该版本在本轮之前已锁定，不是新增 PNG 依赖。仅同步风险记录，不在角色媒体切片中升级无关依赖 |
+| yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.104** | 2026-08-21 锁文件复核 |
 
