@@ -790,3 +790,11 @@
 **精确写集 / 预期**：中英 SUPPLY_CHAIN §4 两行与该节当前状态引用提示；主台账 D-DEBT-LEDGER-01 仅第五列追加本次局部进展，以及 §2 原“下一工程动作”短段区分八月历史验收与当前未决；本计划与 DEBT_CHANGELOG 追加事件，共五份既有 Markdown。现状行短述当前边界并链接原权威状态 / Wave，八月 SHA 与 CI 已在本文件历史表保留，不删除历史，不复制新扫描数或制造新状态表。其余债状态、旧证据、源码/测试/依赖不动，controller 自查 independent=false。
 
 **验收 / 里程碑**：文档链接、旧路径、登记、镜像、债结构、编码、diff；精确五路径与历史保留核对。保存本地文档 checkpoint 后，双核冻结 + CLI 步骤整理 + 本片构成一个有限维护里程碑，执行一次 `check:ci-local`、冻结目标 SHA、一次合流推送并观察正式 CI；不在三个开发片之间重复全量，不追加只回写绿灯的提交。K-SUPPLY-10 / K-SUPPLY-12 / K-PLUGIN-SEC-01 / D-DEBT-LEDGER-01 不由本片或全量绿灯改为 Done；若前置或语义矛盾需要扩大写集，先停在具体原因。
+
+### K-EMO-01 · 既有英文词表的直接情绪词补充（2026-10-08）
+
+**基线 / 问题 / 止点**：`bb229033230f53b7740873d6a421c7bbeba83680` 已完成一次完整本地链 native 0 和 [正式 CI 37644388741](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37644388741) attempt 1 / 17 jobs success；main 干净。本片由 controller 按既有台账选择 K-EMO-01：中文词表 K-EMO-02 已有验收，英文现有 35 个 `space_boundary` 词，但 `delighted` 等直接情绪词仍无匹配。D1 核到现有词表、共用分析入口、两种消费者与原回归即施工，不扩大到真实模型质量研究。M / 常规，controller 实施与自查，independent=false。
+
+**写集 / 预期 / 闭环**：仅修改 `kernel/crates/oclive_kernel_runtime/src/domain/lexicon/lexicon_zh_cn.json`、原外部消费者测试 `kernel/crates/oclive_kernel_runtime/tests/base_emotion.rs`、本计划、主台账 K-EMO-01 行及 DEBT_CHANGELOG，共五路径。追加独立作者词批 `en-direct-20261008`：每个非 neutral 维度两个直接词，共十二词；沿用现有英文 weight=2、`space_boundary`、一次首命中和否定标记规则，旧词逐项及顺序不变，JSON schema/语言键不变。没有导入 VADER/AFINN 数据或其极性评分，没有新 parser、枚举、状态、Prompt 策略或公开接口。生产链为嵌入词表 → 原 `analyze_material` → 七维结果与完整 Base 线索 → 原 Host 消费，主 LLM 保留角色侧权威；Host/Tauri/UI/插件与角色包接线无需改。
+
+**验证 / CI 节奏 / 未覆盖**：先加真实公开消费回归，确认旧数据拒绝所需正例，再补词表。正例覆盖十二词、大小写和标点；负例验证 ASCII 标识符边界、直接否定及 Base 仍报告否定线索；原中文/英文回归保持。完成 runtime 定向、库与原外部 Base 测试、Clippy/fmt、分层及适用文档/编码/债结构/diff；公共签名不变，不新增 doctest 要求。开发片先形成本地 checkpoint，相关批次收口才做一次完整本地链、冻结与目标 SHA 正式 CI，不用父 SHA 绿灯代替新提交。反讽、主体/引述、跨词否定、语义权重校准、多轮与真实模型质量仍未覆盖，K-EMO-07 不由本片关闭；若需要改变这些语义或引入模型/外部数据，先登记并跳过，不续预算穷尽。

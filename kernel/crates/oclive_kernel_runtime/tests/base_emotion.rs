@@ -19,9 +19,10 @@
 
 use std::task::{Context, Poll, Waker};
 
-use oclive_kernel_contracts::EmotionBase;
+use oclive_kernel_contracts::{EmotionBase, UserEmotionAnalyzer};
 use oclive_kernel_runtime::domain::base_emotion::KeywordEmotionBase;
 use oclive_kernel_runtime::domain::emotion_analyzer::EmotionAnalyzer;
+use oclive_kernel_runtime::domain::user_emotion_analyzer::BuiltinUserEmotionAnalyzer;
 use oclive_kernel_types::{BaseCallErrorKind, Emotion, EmotionBaseRequest, EmotionResult};
 
 type Outcome = Result<Option<String>, BaseCallErrorKind>;
@@ -259,4 +260,87 @@ fn b2_c4_public_path_treats_material_instructions_as_data() {
         call(slot, &material, Some(&context)),
         Err(BaseCallErrorKind::Unsupported)
     );
+}
+
+// K-EMO-01: authored direct-emotion words, using the existing English seed policy.
+// These expectations test both public consumer views, not model comprehension or person state.
+const EN_DIRECT_WORDS: [(&str, &str, usize); 12] = [
+    ("delighted", "joy", 0),
+    ("grateful", "joy", 0),
+    ("heartbroken", "sadness", 1),
+    ("miserable", "sadness", 1),
+    ("furious", "anger", 2),
+    ("irritated", "anger", 2),
+    ("terrified", "fear", 3),
+    ("frightened", "fear", 3),
+    ("astonished", "surprise", 4),
+    ("amazed", "surprise", 4),
+    ("disgusted", "disgust", 5),
+    ("repulsed", "disgust", 5),
+];
+
+fn emotion_scores(result: &EmotionResult) -> [f64; 7] {
+    [
+        result.joy,
+        result.sadness,
+        result.anger,
+        result.fear,
+        result.surprise,
+        result.disgust,
+        result.neutral,
+    ]
+}
+
+#[test]
+fn english_direct_words_reach_both_registered_consumer_views() {
+    let analyzer = BuiltinUserEmotionAnalyzer;
+    for (word, category, index) in EN_DIRECT_WORDS {
+        let material = format!("I feel {}!", word.to_uppercase());
+        let result = UserEmotionAnalyzer::analyze(&analyzer, &material).unwrap();
+        let mut expected = [0.0; 7];
+        expected[index] = 1.0;
+        assert_eq!(emotion_scores(&result), expected, "{material}");
+
+        let report = report_for(&analyzer, &material);
+        assert!(report.contains(&format!("`{word}`")), "{report}");
+        assert!(
+            report.contains(&format!("词表候选类别：{category}")),
+            "{report}"
+        );
+        assert!(report.contains("is_negated=false"), "{report}");
+        assert!(report.contains("不是任何人的已确认情绪状态"), "{report}");
+    }
+}
+
+#[test]
+fn english_direct_word_negation_keeps_the_clue_without_affective_scores() {
+    let analyzer = BuiltinUserEmotionAnalyzer;
+    for (word, _, _) in EN_DIRECT_WORDS {
+        let material = format!("not {word}");
+        let result = UserEmotionAnalyzer::analyze(&analyzer, &material).unwrap();
+        assert_eq!(
+            emotion_scores(&result),
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+            "{material}"
+        );
+        let report = report_for(&analyzer, &material);
+        assert!(report.contains(&format!("`{word}`")), "{report}");
+        assert!(report.contains("is_negated=true"), "{report}");
+    }
+}
+
+#[test]
+fn english_direct_words_do_not_match_inside_ascii_identifiers() {
+    let analyzer = BuiltinUserEmotionAnalyzer;
+    for (word, _, _) in EN_DIRECT_WORDS {
+        for material in [format!("x{word}x"), format!("{word}_value")] {
+            assert_eq!(call(&analyzer, &material, None), Ok(None), "{material}");
+            let result = UserEmotionAnalyzer::analyze(&analyzer, &material).unwrap();
+            assert_eq!(
+                emotion_scores(&result),
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+                "{material}"
+            );
+        }
+    }
 }

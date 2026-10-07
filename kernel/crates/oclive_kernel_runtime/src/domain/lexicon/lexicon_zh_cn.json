@@ -112,6 +112,19 @@
     { "word": "哦", "labels": ["neutral"], "weight": 1, "match_mode": "substring", "source_batch": "seed" },
     { "word": "好的", "labels": ["neutral"], "weight": 1, "match_mode": "substring", "source_batch": "seed" },
     { "word": "好吧", "labels": ["neutral"], "weight": 1, "match_mode": "substring", "source_batch": "seed" },
-    { "word": "行吧", "labels": ["neutral"], "weight": 1, "match_mode": "substring", "source_batch": "seed" }
+    { "word": "行吧", "labels": ["neutral"], "weight": 1, "match_mode": "substring", "source_batch": "seed" },
+
+    { "word": "delighted", "labels": ["joy"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "grateful", "labels": ["joy"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "heartbroken", "labels": ["sadness"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "miserable", "labels": ["sadness"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "furious", "labels": ["anger"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "irritated", "labels": ["anger"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "terrified", "labels": ["fear"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "frightened", "labels": ["fear"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "astonished", "labels": ["surprise"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "amazed", "labels": ["surprise"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "disgusted", "labels": ["disgust"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" },
+    { "word": "repulsed", "labels": ["disgust"], "weight": 2, "match_mode": "space_boundary", "source_batch": "en-direct-20261008" }
   ]
 }

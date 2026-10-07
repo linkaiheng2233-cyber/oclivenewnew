@@ -773,3 +773,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **范围 / 历史保留**：按[五路径有限计划](ROUND-02-PLAN.md#d-debt-ledger-01--供应链指南的两处过期现状对账2026-10-07)，中英指南两行改为当前范围短述和权威链接；原八月 SHA / CI 与修订历史保留并标作历史，台账 §2 前瞻短段区分历史与现状。D-DEBT-LEDGER-01 仅第五列追加局部进展，其余权威状态不改；不维护第二份当前状态或复制扫描总数，不从结构门禁推断产品事实。
 - **责任 / 验证 / CI 节奏**：controller 实施与直接自查，independent=false；适用文档门禁和精确写集 / 历史保留核对后保存本地 checkpoint。与 `3865f5c8` 双核冻结、`5729fe76` CLI 私有步骤整理合成一次有限维护里程碑，随后只跑一次完整本地链与目标 SHA 正式 CI；正式未取得前不称新的 main / remote 已验。双核 Frozen / Deferred，其余父债 Partial / OPEN 与已批准签名暂缓、真实音频 / 数据 / 硬件等前提不变。
 - **文档已测出口**：五份改文链接、docs-only 旧路径、登记、镜像、147 权威行 / 12 auto plans 结构、编码与 diff 均 native 0；结构计数不是偿债完成数。历史段、其余现状行和产品源码保持。已有明确反例与正确责任入口，达到可接手即停，不通过新增证明性测试或重跑历史场景来扩大本次结论。
+
+### DCL-20261008-60 · 英文直接情绪词沿既有规则补充
+
+- **原因 / 前置 / 例子**：维护者授权持续偿债，架构取舍先登记跳过。旧自动队列无 runnable，不重开已关闭或冻结 Stage；controller 从主台账选择 K-EMO-01，K-EMO-02 的中文前置已有验收。原英文词表仅 35 个词，真实 `BuiltinUserEmotionAnalyzer` 对 `I feel DELIGHTED!` 返回 neutral 分数，Base 无线索。本片只补十二个直接词，不把有界词汇缺口变成情绪研究项目。基线 `bb229033230f53b7740873d6a421c7bbeba83680` 已完成一次完整本地 native 0（1770.019088 秒）及 [正式 CI 37644388741](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37644388741) attempt 1 / 17/17 success，前片原始失败/观察记录保全。
+- **实施 / 权责 / 范围**：按[有限计划](ROUND-02-PLAN.md#k-emo-01--既有英文词表的直接情绪词补充2026-10-08)修改原 JSON 与公开消费回归，再同步本事件和唯一 K-EMO-01 行，共五路径；controller 实施及自查，independent=false。新增批 `en-direct-20261008` 是独立作者词条，每个非 neutral 维度两词，英文权重仍 2；旧 104 条及顺序保持，原边界/否定/归一化/首命中规则与 schema 不变。无外部词库导入或新评分算法，主 LLM 仍负责角色侧权威，Host、UI、Tauri、插件/角色包和双核实现无需改。
+- **真实验证 / 状态**：先增加三项外部公开消费者回归；旧数据 native 101（1 passed / 2 failed），首因分别是 `DELIGHTED` 无 joy 线索与 `not delighted` 无可报告词条，原件保留。追加词条后原目标完整 10/10、新三项通过；runtime lib 273/273、runtime all-targets Clippy `-D warnings`、fmt 和分层 native 0。正例用大写与标点，负例覆盖 ASCII 标识符和直接否定；Base 的否定线索仍存在，七维不贡献情绪分数。文档/编码/债结构及最终写集核验后保存本地 checkpoint；K-EMO-01 从 OPEN 记为 Partial，目标 SHA 正式验收待批次出口，不先写 Done。
+- **止点 / 原件 / 暂缓**：证据足以施工和判断这十二词后停止扩词或补组合；复杂主体/引述、非相邻否定、反讽、自然度与多轮/真实模型质量仍属各自范围，K-EMO-07 不变。签名、reqwest TLS、双核解冻、Agent 并集、Production Stream 等架构决策跳过，硬件/人工/跨仓项不借本片变绿。日志在本机隔离工作树 `.cursor/plans/debt-english-lexicon-20261008-r0/`，不随 Git 自动转让；开发窄测与本地 checkpoint 后仅在有限批次收口时做一次完整/正式验收，不为小片反复触发全量 CI。
