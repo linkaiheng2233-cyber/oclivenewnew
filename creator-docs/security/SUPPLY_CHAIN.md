@@ -86,7 +86,7 @@ sha256sum oclive-kernel-server
 3. **功能周期**：复查 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md) 局限是否需收窄。
 4. **`npm-audit`**：主 CI 同时执行生产依赖与完整开发图高危硬门禁；两者必须分别保持成功，不能用生产 0 代替完整依赖图证据。
 5. **插件安装**：在签名默认开启前，不把第三方插件视为可信代码；`process:spawn`、MCP、网络等高风险能力仍必须经过授权表和用户授予。发行版禁 inline Vue 只是止血，不能替代签名与独立 origin。
-6. **Actions 固定引用**：只接受原上游完整 40 位 commit SHA，同一行保留原版本注释；`dtolnay/rust-toolchain` 使用 master 历史提交并显式传 `toolchain: stable`。固定 Action 不等于锁定编译器、runner、镜像或全部传递下载。工作流由 `.github/dependabot.yml` 的周更组提出兼容升级，主版本另定、PR 仍须审查与 CI；`oclive-cli/src/ci_cmd.rs` 的 Rust 模板不在该 bot 的扫描范围，每次相关升级须同步核对模板及其生成器测试。仓库工作流与 CLI 两类生成模板的 Rust Action 引用另有同一 SHA 的测试合同；这不等于已自动维护全部引用。[GitHub 安全说明](https://docs.github.com/en/actions/reference/security/secure-use) · [自动更新 Actions](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/auto-update-actions) · [Rust Action 上游约束](https://github.com/dtolnay/rust-toolchain)
+6. **Actions 固定引用**：只接受原上游完整 40 位 commit SHA，同一行保留原版本注释；`dtolnay/rust-toolchain` 使用 master 历史提交并显式传 `toolchain: stable`。固定 Action 不等于锁定编译器、runner、镜像或全部传递下载。工作流由 `.github/dependabot.yml` 的周更组提出兼容升级，主版本另定、PR 仍须审查与 CI；`oclive-cli/src/ci_cmd.rs` 的 Rust 模板不在该 bot 的扫描范围，每次相关升级须同步核对模板及其生成器测试。CLI 的五个 Rust job 消费位置共用一个私有 `RUST_TOOLCHAIN_STEP`，SHA、版本注释与 stable 输入一起维护；生成 YAML 中仍逐 job 保留原完整步骤。仓库工作流与 CLI 两类生成模板的 Rust Action 引用另有同一 SHA 的测试合同；这不等于已自动维护全部引用。[GitHub 安全说明](https://docs.github.com/en/actions/reference/security/secure-use) · [自动更新 Actions](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/auto-update-actions) · [Rust Action 上游约束](https://github.com/dtolnay/rust-toolchain)
 
 ---
 

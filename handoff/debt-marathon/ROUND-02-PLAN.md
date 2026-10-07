@@ -774,3 +774,11 @@
 **精确写集 / 接手入口**：复用 [DUAL-CORE-FREEZE](long-plans/DUAL-CORE-FREEZE.md)，写明默认 Stable 路径、已知 NULL 补偿缺口、解冻前提及有限首片；更新原 [双核交接](../DUAL_CORE_CURSOR_HANDOFF.md)、中英 developer guide 的短提示、主台账相关状态、DEBT_CHANGELOG 的当前依赖行并追加本次事件。共七份既有 Markdown；不新建状态台账，不改 RFC 的已实现历史、队列 skip 行、源码、配置、feature、依赖或测试。随本次实质冻结记录回填 Remote Memory 已取得的完整本地与目标 SHA 正式 CI 终态，历史 DCL-56 / 原计划保持。
 
 **验收 / 限度 / 后续**：默认及改文链接、docs-only 旧路径、文档登记、中英镜像、债结构、编码和 diff 检查；额外核精确七路径、台账既有五列的前四列、DCL 历史正文、源码/config 零差量及 skip 保持。本片不跑双核场景、不补证明、不分配 run ID、不为冻结文档重复全量 CI；本地干净 checkpoint 随后续实质批次合流。达到冻结范围与接手规则清楚即停，继续有施工前提的其他债务；Beta 解冻或扩大实验能力须由维护者另行决定。
+
+### K-SUPPLY-10 · CLI Rust Action 步骤的单点维护（2026-10-07）
+
+**基线 / 原因 / 归属**：main / tracking / 实际远端干净一致 `90b9cf4d3f9a9a17744323d1177f138c90c686ea`，既有完整本地与目标 SHA CI 已验；干净本地冻结 `3865f5c859ae21d61af1124f478a706c1e67096a` 在其上仅加七份双核维护文档，未 main / push。新工作树从该冻结提交接续，双核保持 Frozen / Deferred。CLI 的同一 Rust Action 步骤在 audit/deny、build、可选 bench/OOCP 重复五处，现有同步合同会拒绝遗漏，却不能减少手动修改点。本片为 M 私有模板整理，controller 实施/自查，independent=false；只查这一生产者与生成消费链，D1 已足够施工，不扩大 CI 架构设计。
+
+**闭环 / 精确写集**：`kernel/crates/oclive-cli/src/ci_cmd.rs` 内一个私有完整 YAML step → 既有 `render_ci_yaml` → library / kernel 两类生成 workflow → `ci init` / `ci check` 与原同步正负合同。复用既有渲染和测试，只把相同步骤插入五个原位置；原 SHA、注释、stable、缩进、换行、jobs、命令、权限与失败策略的生成字节必须完全相同。文档限现有 Actions Wave、中英 SUPPLY_CHAIN §5 第 6 项、主台账 K-SUPPLY-10 第五列、本计划及 DEBT_CHANGELOG，共七个修改路径；不新建第二份 pin 配置、升级 Action、改实际 `.github`、公开 API、Cargo/lock、信任根或六槽。其它消费者无接口变化，明确无需改。
+
+**验证 / 止点 / CI 节奏**：整理前真实 CLI 生成两类隔离项目并保存字节，原 `ci_cmd::tests` 通过；整理后复跑相同测试、实际 init/check，生成字节逐项相等，并把其中一份隔离 workflow 的 pin 改坏，真实 `ci check` 必须非零。CLI crate 全测串行、default/all-features Clippy、fmt、适用分层与文档/债结构/编码/diff；不为这个保持行为的开发片单独推远端矩阵。只在相关批次结束时一次完整本地链和精确 SHA 正式 CI；未取得前仅 Locally verified，K-SUPPLY-10 仍 Partial。若生成行为、安全语义或依赖需改则停在具体问题，不能靠松断言收口；零真实模型/音频/用户 DB/历史业务身份，只在本片忽略目录写合成项目，Cargo 串行且不继承 CARGO_TARGET_DIR。

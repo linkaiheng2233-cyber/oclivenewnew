@@ -73,3 +73,13 @@ Dependabot 扫描 workflow，不扫描 Rust 模板字面量；模板内原 v4/v2
 ### 目标 SHA 远端结论（随下一实质对账入账）
 
 实际更新提交 `053ebdadf990c9c278bfc601c1e9b1640258c962` 的 [CI 36823868603](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36823868603) 已 completed/success，17/17 jobs 含 `ci-gate` 全绿；本轮再次只读核对 headSha 一致。上节待证描述是提交前快照，本段追加最终结果，不扩展独立 nightly/release 或未来升级维护范围，K-SUPPLY-10 仍 Partial。
+
+## 2026-10-07 · CLI Rust Action 步骤单点维护
+
+**问题 / 基线 / 止点**：同一 Rust Action 的 SHA、版本注释与 stable 输入在 CLI 生产模板重复五处；原同步合同能发现漏改，本片进一步减少手动修改位置。起点为已验 `90b9cf4d` 上的干净本地双核冻结 `3865f5c8`，main / 实际远端仍在前者；按 [ROUND-02 有限计划](../ROUND-02-PLAN.md#k-supply-10--cli-rust-action-步骤的单点维护2026-10-07) 接续，controller 实施与自查、independent=false。D1 明确模板→两类生成器→init/check→原正负测试即停止，不调查全部 Action 更新、传递依赖或 CI 重设计。
+
+生产 `ci_cmd.rs` 将一个私有 `RUST_TOOLCHAIN_STEP` 在原五处插入；既有 SHA、stable、注释、每个 job 的步骤顺序与所有生成内容保持。没有新增公共 API / pin 文件、升级 Action、修改 `.github`、权限/事件/runner/重试/失败策略、Cargo/lock 或运行时。Kernel/Tauri/shared/发行版/插件/角色包/姊妹仓不调用这个私有模板 API，无需同步接口。仓库 workflow 仍由 bot 提案维护，CLI 常量仍要人工配对；父债 Partial，没有自动升级或全范围 Done 的结论。
+
+**能识别行为漂移的实际证据**：整理前原 `ci_cmd::tests` 5/5；整理后同一测试正文 5/5，涵盖 pin 格式、显式 stable、仓库/模板一致和原漂移负控。真实 CLI 分别在四个合成项目运行前后 `ci init`，两类 YAML 的 bytes+SHA256 完全一致：library **2086 B / `1BD4323AC6C5A372EC39F07280A8944924756A86CC7E6E149A8E3B0380040580`**，kernel **3559 B / `7B6902F1A6594C514242E0DA71AF64926EAC7771E35A16BE7483148B786B01EA`**。整理后真实 `ci check` 均 exit 0；另一独立合成项目把 Rust Action pin 改坏，真实 `ci check` exit 1，继续拒绝漂移。fixture、原始 stdout/stderr/native receipt 在本片 `.cursor/plans/debt-actions-template-step-20261007-r0/`，忽略目录不随 Git 携带。
+
+CLI 全测外层与嵌套 Cargo 均使用离线子进程、串行执行，实际 **20 套 / 150 passed、native 0（74.8868692 秒）**。之后控制端 wrapper 的缺失环境恢复检查报错，工具返回 1；它发生在 Cargo 已完成、原 native 0 回执写入之后，不把这次 wrapper 当全流程通过。缺失变量改用 `Remove-Item Env:CARGO_NET_OFFLINE`，存在态恢复原值；仅本片工具进程内正负状态复核通过，用户/父进程环境未写入。不重跑已成功的 CLI 测试，也不改产品或测试断言掩盖控制端失败。其余适用 Clippy/fmt/文档/结构门禁与最终冻结回执分别登记，不用旧 SHA CI 代替本轮结果。

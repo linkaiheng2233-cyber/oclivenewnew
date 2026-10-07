@@ -108,17 +108,21 @@ fn detect_project_kind(root: &Path) -> Result<ProjectCiKind> {
     }
 }
 
+// Keep the pin and explicit stable input together for all generated Rust jobs.
+const RUST_TOOLCHAIN_STEP: &str = r#"      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
+        with:
+          toolchain: stable"#;
+
 fn render_ci_yaml(kind: ProjectCiKind) -> String {
     let oocp_job = if kind == ProjectCiKind::KernelServer {
-        r#"
+        format!(
+            r#"
   bench-regression:
     runs-on: ubuntu-latest
     needs: [build-test]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
-        with:
-          toolchain: stable
+{RUST_TOOLCHAIN_STEP}
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: bench regression gate
         run: |
@@ -136,24 +140,22 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
-        with:
-          toolchain: stable
+{RUST_TOOLCHAIN_STEP}
       - name: OOCP test suite (enable when kernel linked to oclivenewnew)
         run: echo "skipped — link --kernel-source in scaffold to enable"
 "#
+        )
     } else {
-        ""
+        String::new()
     };
 
-    let audit_job = r#"
+    let audit_job = format!(
+        r#"
   cargo-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
-        with:
-          toolchain: stable
+{RUST_TOOLCHAIN_STEP}
       - name: rustup update
         run: rustup update stable
       - name: Install cargo-audit
@@ -165,15 +167,14 @@ fn render_ci_yaml(kind: ProjectCiKind) -> String {
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
-        with:
-          toolchain: stable
+{RUST_TOOLCHAIN_STEP}
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
         with:
           command: check
           arguments: licenses bans
 
-"#;
+"#
+    );
 
     let extra_steps = if kind == ProjectCiKind::KernelServer {
         r#"
@@ -211,9 +212,7 @@ jobs:
     runs-on: ${{{{ matrix.os }}}}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
-        with:
-          toolchain: stable
+{RUST_TOOLCHAIN_STEP}
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: cargo fmt
         run: cargo fmt --all -- --check
