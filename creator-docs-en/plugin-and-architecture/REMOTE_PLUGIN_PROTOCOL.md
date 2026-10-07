@@ -126,10 +126,10 @@ This describes the existing Minimal implementation for **K-RESILIENCE-01**. Full
 | Fallback gate | `remote_fallback_policy.rs` · `remote_fallback_load` | The existing runtime flag controls permission to fall back. |
 | Shared call failure handling | `remote_plugin/adapter.rs` · `call_with_builtin_fallback` / `call_with_async_builtin_fallback` | Successful calls go to decode. Failed calls use builtin only when allowed; grant denial returns unchanged. Decode failure does not automatically invoke builtin. |
 | Prompt entry consolidation | `remote_plugin/prompt_http.rs` | Both HTTP/RPC entries use the blocking helper. Local serialization and bad-shape decisions retain their own rules and read the same flag through module-scoped `fallback_allowed`. |
-| Remaining candidate | `remote_plugin/memory_http.rs` | Its local gate and empty/error rules remain unchanged pending a separate bounded slice. |
+| Memory gate consolidation | `remote_plugin/memory_http.rs` | Its empty/error branch reads the same runtime flag through module-scoped `fallback_allowed`. The existing `call_plugin_soft`, ordering, tail filling and empty/error rules remain method-specific. |
 | Host-side retry | None | This work adds no automatic retry. |
 
-New Remote HTTP entries must use the existing adapter helper rather than duplicate the flag read. The production-path characterization tests in [`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) compare valid/empty hints, bad shapes, live flag changes, denied grants and request counts before and after consolidation.
+New Remote HTTP entries must use the existing adapter helper rather than duplicate the flag read. The production-path characterization tests in [`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) compare Prompt hint shapes, Memory ordering/tail filling/empty input, live flag changes, denied grants and request counts before and after consolidation. Empty `ordered_ids` still fills from a nonempty Memory input; an actually empty input follows the original empty/error gate. This work does not implement Full ResilienceLayer or add retries or new timeouts.
 
 ---
 
@@ -384,7 +384,7 @@ See
 
 ## 6. Versioning
 
-- **v1** in this repo is authoritative; prefer **ignoring unknown keys** on both sides when evolving. Today the host deserializes fixed structs — **unknown shapes fall back to builtin**.  
+- **v1** in this repo is authoritative; prefer **ignoring unknown keys** on both sides when evolving. Unknown shapes follow each method's decoding rules; a decoding failure does not universally imply builtin fallback.
 - Non‑HTTP child sidecars are out of scope for the current HTTP client (see historical notes).
 
 ---

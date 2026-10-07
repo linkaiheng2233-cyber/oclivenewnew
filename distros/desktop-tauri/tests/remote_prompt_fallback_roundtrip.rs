@@ -1,16 +1,17 @@
-//! Characterize the existing Remote Prompt fallback boundaries against an isolated HTTP sidecar.
+//! Characterize existing Remote Prompt and Memory fallback boundaries against an isolated sidecar.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
 use axum::{extract::Json, http::StatusCode, response::IntoResponse, routing::post, Router};
-use oclive_kernel_contracts::PromptAssembler;
-use oclive_kernel_host::domain::BuiltinPromptAssembler;
+use oclive_kernel_contracts::{MemoryRetrieval, PromptAssembler};
+use oclive_kernel_host::domain::{BuiltinMemoryRetrieval, BuiltinPromptAssembler};
 use oclive_kernel_host::infrastructure::high_risk_grants::HighRiskGrantStore;
 use oclive_kernel_host::infrastructure::remote_plugin::{
-    RemotePluginHttpConfig, RemotePromptAssemblerHttp,
+    RemoteMemoryRetrievalHttp, RemotePluginHttpConfig, RemotePromptAssemblerHttp,
 };
 use oclive_kernel_types::{
-    AppError, EventType, MemoryConfig, PersonalityVector, PromptInput, Role,
+    AppError, EventType, Memory, MemoryConfig, MemoryRetrievalInput, PersonalityVector,
+    PromptInput, Role,
 };
 use oclive_validation::NETWORK_GRANT_REMOTE_PLUGIN;
 use serde_json::{json, Value};
@@ -61,22 +62,67 @@ impl PromptSidecar {
         allowed: Arc<AtomicBool>,
         grant: bool,
     ) -> RemotePromptAssemblerHttp {
+        let (config, grants) = self.connection(directory, grant);
+        RemotePromptAssemblerHttp::new(
+            Arc::new(reqwest::Client::new()),
+            config,
+            allowed,
+            grants,
+            Some(NETWORK_GRANT_REMOTE_PLUGIN.into()),
+        )
+    }
+
+    fn memory_client(
+        &self,
+        directory: &TempDir,
+        allowed: Arc<AtomicBool>,
+        grant: bool,
+    ) -> RemoteMemoryRetrievalHttp {
+        let (config, grants) = self.connection(directory, grant);
+        RemoteMemoryRetrievalHttp::new(
+            Arc::new(reqwest::Client::new()),
+            config,
+            allowed,
+            grants,
+            Some(NETWORK_GRANT_REMOTE_PLUGIN.into()),
+        )
+    }
+
+    fn connection(
+        &self,
+        directory: &TempDir,
+        grant: bool,
+    ) -> (RemotePluginHttpConfig, Arc<HighRiskGrantStore>) {
         assert!(std::env::var("OCLIVE_SKIP_HIGH_RISK_GRANTS").is_err());
         let grants = HighRiskGrantStore::load(directory.path().to_path_buf(), true);
         if grant {
             grants.grant_network(NETWORK_GRANT_REMOTE_PLUGIN).unwrap();
         }
-        RemotePromptAssemblerHttp::new(
-            Arc::new(reqwest::Client::new()),
+        (
             RemotePluginHttpConfig {
                 endpoint: self.url.clone(),
                 timeout: Duration::from_secs(2),
                 bearer_token: None,
             },
-            allowed,
             grants,
-            Some(NETWORK_GRANT_REMOTE_PLUGIN.into()),
         )
+    }
+
+    fn assert_memory_requests(&self, expected: usize, memories: &[Memory], limit: usize) {
+        let requests = self.requests.lock().unwrap();
+        assert_eq!(requests.len(), expected, "one request per call; no retry");
+        for request in requests.iter() {
+            assert_eq!(request["method"], "memory.rank");
+            assert_eq!(
+                request["params"],
+                json!({
+                    "memories": memories,
+                    "user_query": "synthetic query",
+                    "scene_id": "scene",
+                    "limit": limit,
+                })
+            );
+        }
     }
 
     fn assert_requests(&self, expected: usize, method: &str, role: &Role) {
@@ -120,6 +166,140 @@ fn role_with_builtin_hint() -> Role {
         memory_config: Some(memory),
         ..Role::default()
     }
+}
+
+fn memories_for_ranking() -> Vec<Memory> {
+    [("a", 1.0), ("b", 10.0), ("c", 2.0)]
+        .into_iter()
+        .map(|(id, importance)| Memory {
+            id: id.into(),
+            role_id: "synthetic-role".into(),
+            content: format!("memory-{id}"),
+            importance,
+            weight: 1.0,
+            created_at: chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap(),
+            scene_id: None,
+            mention_count: 1,
+            accessed_at: None,
+        })
+        .collect()
+}
+
+fn memory_input(memories: &[Memory], limit: usize) -> MemoryRetrievalInput<'_> {
+    MemoryRetrievalInput {
+        memories,
+        user_query: "synthetic query",
+        scene_id: Some("scene"),
+        limit,
+    }
+}
+
+fn assert_memory_unavailable(error: AppError, endpoint: &str) {
+    match error {
+        AppError::RemoteServiceUnavailable(message) => assert_eq!(
+            message,
+            format!("memory.rank remote failed or empty endpoint={endpoint}")
+        ),
+        other => panic!("unexpected error: {other}"),
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_success_preserves_order_tail_and_limit_even_without_fallback() {
+    let memories = memories_for_ranking();
+    for (result, expected) in [
+        (json!({"ordered_ids": ["unknown", "c", "a"]}), ["c", "a"]),
+        (json!({"ordered_ids": []}), ["a", "b"]),
+    ] {
+        let sidecar = PromptSidecar::start(StatusCode::OK, result).await;
+        let directory = tempfile::tempdir().unwrap();
+        let client = sidecar.memory_client(&directory, Arc::new(AtomicBool::new(false)), true);
+        let ranked = client.rank_memories(memory_input(&memories, 2)).unwrap();
+        assert_eq!(
+            ranked.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+            expected
+        );
+        let expected_memories: Vec<_> = expected
+            .iter()
+            .map(|id| memories.iter().find(|m| m.id == *id).unwrap().clone())
+            .collect();
+        assert_eq!(
+            serde_json::to_value(&ranked).unwrap(),
+            serde_json::to_value(&expected_memories).unwrap()
+        );
+        sidecar.assert_memory_requests(1, &memories, 2);
+        sidecar.close().await;
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_soft_failure_and_bad_shape_obey_live_gate_without_retry() {
+    let memories = memories_for_ranking();
+    for (status, result) in [
+        (StatusCode::SERVICE_UNAVAILABLE, json!({})),
+        (StatusCode::OK, json!({"ordered_ids": "not-an-array"})),
+    ] {
+        let sidecar = PromptSidecar::start(status, result).await;
+        let directory = tempfile::tempdir().unwrap();
+        let allowed = Arc::new(AtomicBool::new(true));
+        let client = sidecar.memory_client(&directory, allowed.clone(), true);
+        assert_eq!(
+            serde_json::to_value(client.rank_memories(memory_input(&memories, 2)).unwrap())
+                .unwrap(),
+            serde_json::to_value(
+                BuiltinMemoryRetrieval
+                    .rank_memories(memory_input(&memories, 2))
+                    .unwrap()
+            )
+            .unwrap()
+        );
+        allowed.store(false, Ordering::Relaxed);
+        assert_memory_unavailable(
+            client
+                .rank_memories(memory_input(&memories, 2))
+                .unwrap_err(),
+            &sidecar.url,
+        );
+        sidecar.assert_memory_requests(2, &memories, 2);
+        sidecar.close().await;
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_empty_input_keeps_its_method_specific_fallback_rule() {
+    let sidecar = PromptSidecar::start(StatusCode::OK, json!({"ordered_ids": []})).await;
+    let directory = tempfile::tempdir().unwrap();
+    let allowed = Arc::new(AtomicBool::new(true));
+    let client = sidecar.memory_client(&directory, allowed.clone(), true);
+    assert!(client
+        .rank_memories(memory_input(&[], 2))
+        .unwrap()
+        .is_empty());
+    allowed.store(false, Ordering::Relaxed);
+    assert_memory_unavailable(
+        client.rank_memories(memory_input(&[], 2)).unwrap_err(),
+        &sidecar.url,
+    );
+    sidecar.assert_memory_requests(2, &[], 2);
+    sidecar.close().await;
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn memory_permission_denial_never_sends_or_falls_back() {
+    let sidecar = PromptSidecar::start(StatusCode::OK, json!({"ordered_ids": ["a"]})).await;
+    let directory = tempfile::tempdir().unwrap();
+    let allowed = Arc::new(AtomicBool::new(true));
+    let client = sidecar.memory_client(&directory, allowed.clone(), false);
+    let memories = memories_for_ranking();
+    for fallback in [true, false] {
+        allowed.store(fallback, Ordering::Relaxed);
+        assert!(matches!(
+            client.rank_memories(memory_input(&memories, 2)),
+            Err(AppError::HighRiskCapabilityNotGranted { .. })
+        ));
+    }
+    sidecar.assert_memory_requests(0, &memories, 2);
+    sidecar.close().await;
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -163,11 +163,11 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 | **Canonical fallback** | `remote_plugin/adapter.rs` · `RemotePluginAdapterBlocking::call_with_builtin_fallback`（及 async 孪生 `RemotePluginAdapterAsync::call_with_async_builtin_fallback`） | HTTP/RPC 成功交给 decode；调用失败且闸门开则 `builtin`，否则 `RemoteServiceUnavailable`；高风险授权拒绝原样返回，不回退。decode 自身失败不自动再走 builtin |
 | **Host-side retry** | **无** | 宿主当前不对 Remote 调用做自动重试；Minimal **不**发明重试层 |
 | **Prompt 既有入口合流** | `remote_plugin/prompt_http.rs` | `build_prompt` 与 `top_topic_hint` 的 HTTP/RPC 失败共用 blocking adapter；序列化/坏形状分支仍由方法自己决定，通过 adapter 的模块内 `fallback_allowed` 读取原开关，不新增策略 |
-| **待分片整理** | `remote_plugin/memory_http.rs` | 仍有本地开关读取与 empty/error 语义；本批保持行为，不强行套入 Prompt 的结果规则，**非**新代码范本 |
+| **Memory 既有闸门合流** | `remote_plugin/memory_http.rs` | empty/error 分支通过 adapter 的模块内 `fallback_allowed` 读取原开关；保留既有 `call_plugin_soft`、排序补尾、空结果及错误规则，不强行套入 Prompt 的结果策略 |
 
 **新代码约定**：新增 Remote HTTP 调用路径 **必须**经 `RemotePluginAdapterBlocking::call_with_builtin_fallback`（或 async 孪生），**禁止**在业务文件内重复内联 `remote_fallback_load`。目录根见上文 `remote_plugin/`。
 
-**有限行为对照**：[`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) 直接调用生产 Prompt 实现，检查有效/空 hint、坏形状、运行时开关、授权拒绝及请求次数；同一组测试用于整理前后对照。此为既有入口收束，不实现 Full ResilienceLayer，不增加 Host 自动重试或改变超时配置。
+**有限行为对照**：[`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) 直接调用生产 Prompt/Memory 实现，检查 hint 形状、Memory 远端顺序/补尾/真实空输入、运行时开关、授权拒绝及请求次数；同一组测试用于整理前后对照。Memory 的空 `ordered_ids` 在记忆输入非空时仍补原输入，不等同空结果；真实空输入按原 empty/error 分支处理。此为既有入口收束，不实现 Full ResilienceLayer，不增加 Host 自动重试或改变超时配置。
 
 ---
 

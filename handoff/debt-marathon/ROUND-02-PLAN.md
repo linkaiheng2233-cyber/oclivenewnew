@@ -756,3 +756,13 @@
 **冻结行为 / 有限证据**：有效对象/raw string（含空字符串）返回原 hint；成功但无字符串的形状返回 None，即使开关打开也不触发 builtin。HTTP/RPC 失败按原开关回退；高风险授权拒绝不发请求、不回退。`build_prompt` 坏形状与本地序列化分支保留原错误、日志与闸门，decode 失败不由公共 helper 自动重解释。四项表征测试先在未改生产源码上通过，再在两片后分别以相同断言通过；确切请求数量约束无新增 retry。适用既有 Remote 测试、Clippy/fmt、分层/镜像/链接/登记/旧路径/编码/债结构/diff；新 worktree 的 bundle 与 frontendDist 构建前置失败独立保留，不当作产品断言失败。
 
 **节奏 / 止线 / 副作用**：每片仅本地窄测与提交；相关两片及文档冻结成一批后，只跑一次完整本地链，成功才 FF/push 一次并验目标 SHA 正式 CI。本地充分即停止扩异常组合，不能借旧 SHA 的绿灯。Memory 有不同的 empty/error 规则，本批不改，只保留后续单片候选；不扩为全路径统一策略、retry/熔断/框架，也不重启签名/TLS/EventStream/Agent/硬件建议等未授权范围。测试只 loopback、临时合成角色/独立 grant store；零真实模型/TTS/用户库/旧 CP-INT 身份，Cargo 串行，子进程不继承 CARGO_TARGET_DIR。中英文收窄“失败必然回退”的过度描述，不反向要求代码承担更宽承诺。原始回执在 `.cursor/plans/debt-remote-prompt-consolidation-20261007-r0/`，ignored 证据不随 Git 自动携带。
+
+### K-RESILIENCE-01 · Remote Memory 闸门的有限收束（2026-10-07）
+
+**起点 / 问题 / 预算**：干净 `f4ee767bb92c6e7d0ccb6b6770ee41e1d463373a`；上一 Prompt 批完整本地 native 0（2348.8380943 秒）与正式 [37579810413](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37579810413) attempt 1、17/17 success 已取得。Memory 已使用共同 HTTP 传输，但再次持有 adapter 中同一个运行时开关引用；本片复用已有模块内 getter，减少重复读取入口。M 实施与 controller 自查，independent=false；仅查主调用链与 empty/error、权限两个相关边界，足够施工即停。不扩所有超时、并发切换、取消和故障组合。
+
+**闭环 / 保持语义**：生产 Memory trait → `rank_remote` → 原 `call_plugin_soft` 与 HighRisk grant → 原 `ordered_ids` 解码/补尾/limit → 原非空返回或 empty/error 闸门 → builtin/原错误。只替换开关读取所有者；保留 soft RPC、读开关时机、错误全文、日志、请求体、超时和单次请求，`build_context`/`search_memories` 与其他槽不变。成功 `ordered_ids: []` 在输入非空时仍补原记忆，不等同空结果；输入为空且不允许回退时仍报错。不能强行采用 Prompt 的结果策略。
+
+**精确写集 / 顺序**：`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/memory_http.rs`、既有 `distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs`（复用同一侧车增加 Memory 表征，保留旧四项 Prompt 断言）、中英 `REMOTE_PLUGIN_PROTOCOL.md`、主台账 K-RESILIENCE-01 第五列、本计划、DCL。先完成同一生产路径表征并在未改 Memory 源码通过，再改字段与读取、复跑相同断言与既有 Remote 回归。协议登记 Memory getter 与原 empty/error 规则；顺带修正英文 §6 尚残留的“unknown shapes 必回退”旧句，避免比代码承诺更宽。
+
+**验收 / CI 节奏 / 停止**：生产表征覆盖远端顺序、空 ID 数组、HTTP 503/坏形状的 live 开关、真实空输入与授权拒绝零请求，准确核请求体/次数；定向两项 Clippy、fmt、分层与适用镜像/链接/登记/旧路径/编码/债结构/diff。开发片只窄测、本地提交；本次不为单一 getter 改动立即再推全量矩阵。后续形成有限 Remote 批冻结点再一次完整链与精确 SHA 正式 CI，当前只可 Locally verified，父债仍 Partial、Full OPEN。权限/公开 API/结果策略需变更则停在相关项；零真实模型/TTS/用户 DB/旧 run ID，仅独立 TempDir grant 与 loopback 侧车。上一批终态随这次实质改动回填，不新建纯绿灯提交。

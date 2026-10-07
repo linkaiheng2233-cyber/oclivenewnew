@@ -6,7 +6,6 @@ use crate::domain::memory_retrieval::{MemoryRetrieval, MemoryRetrievalInput};
 use crate::domain::BuiltinMemoryRetrieval;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::models::{Memory, MemoryContext};
@@ -20,7 +19,6 @@ const METHOD_MEMORY_RANK: &str = "memory.rank";
 pub struct RemoteMemoryRetrievalHttp {
     adapter: RemotePluginAdapterBlocking,
     fallback: BuiltinMemoryRetrieval,
-    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemoteMemoryRetrievalHttp {
@@ -32,17 +30,15 @@ impl RemoteMemoryRetrievalHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let fb = remote_fallback_allowed.clone();
         Self {
             adapter: RemotePluginAdapterBlocking::new(
                 http_client,
                 cfg,
-                fb.clone(),
+                remote_fallback_allowed,
                 high_risk_grants,
                 network_grant_id,
             ),
             fallback: BuiltinMemoryRetrieval,
-            remote_fallback_allowed: fb,
         }
     }
 
@@ -112,7 +108,7 @@ impl MemoryRetrieval for RemoteMemoryRetrievalHttp {
         match self.rank_remote(&input)? {
             Some(v) if !v.is_empty() => Ok(v),
             _ => {
-                if remote_fallback_load(&self.remote_fallback_allowed) {
+                if self.adapter.fallback_allowed() {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "memory.rank remote failed or empty endpoint={} fallback=builtin",
