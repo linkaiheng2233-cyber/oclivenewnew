@@ -1,5 +1,7 @@
 # 双核双态开发者指南
 
+> **维护冻结（2026-10-07）**：v3 双核 Beta 默认关闭，暂停继续维护与自动扩证；已有 opt-in 实现和本文历史用法保留，不构成 Stable 保证。NULL 补偿缺口未解决；冻结边界、后续方向与解冻条件见 [DUAL-CORE-FREEZE](../../handoff/debt-marathon/long-plans/DUAL-CORE-FREEZE.md)。
+
 ## 概述
 
 **双核双态**在运行时提供两条路径：

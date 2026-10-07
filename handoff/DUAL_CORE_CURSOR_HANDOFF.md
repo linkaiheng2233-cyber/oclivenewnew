@@ -1,5 +1,7 @@
 # 给 Cursor：双核双态设计总结 · 对齐进度
 
+**维护冻结（2026-10-07）**：维护者决定暂停双核 Beta 的继续开发与自动扩证；默认关闭，已有实现与显式 opt-in 入口保留。K-DUAL-ROLLBACK-02 的 NULL 补偿缺口未解决，不标 Done。冻结范围、后续方向及解冻准入只见 [DUAL-CORE-FREEZE](debt-marathon/long-plans/DUAL-CORE-FREEZE.md)；下列阶段表是已实现历史，不代表当前维护任务已重新开放。
+
 **状态**：**P2–P5 已实现**（2026-05）— `DualPipelineRunner`、宿主门控、`init --dual-core`、OOCP S13、Monolith 模板已落地；**默认仍关闭**，不开双核零 diff。  
 **权威 RFC**：[creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](../creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)  
 **历史术语对照**：[DUAL_CORE_ALIGNMENT.md](archive/DUAL_CORE_ALIGNMENT.md)

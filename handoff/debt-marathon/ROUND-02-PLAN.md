@@ -766,3 +766,11 @@
 **精确写集 / 顺序**：`kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/memory_http.rs`、既有 `distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs`（复用同一侧车增加 Memory 表征，保留旧四项 Prompt 断言）、中英 `REMOTE_PLUGIN_PROTOCOL.md`、主台账 K-RESILIENCE-01 第五列、本计划、DCL。先完成同一生产路径表征并在未改 Memory 源码通过，再改字段与读取、复跑相同断言与既有 Remote 回归。协议登记 Memory getter 与原 empty/error 规则；顺带修正英文 §6 尚残留的“unknown shapes 必回退”旧句，避免比代码承诺更宽。
 
 **验收 / CI 节奏 / 停止**：生产表征覆盖远端顺序、空 ID 数组、HTTP 503/坏形状的 live 开关、真实空输入与授权拒绝零请求，准确核请求体/次数；定向两项 Clippy、fmt、分层与适用镜像/链接/登记/旧路径/编码/债结构/diff。开发片只窄测、本地提交；本次不为单一 getter 改动立即再推全量矩阵。后续形成有限 Remote 批冻结点再一次完整链与精确 SHA 正式 CI，当前只可 Locally verified，父债仍 Partial、Full OPEN。权限/公开 API/结果策略需变更则停在相关项；零真实模型/TTS/用户 DB/旧 run ID，仅独立 TempDir grant 与 loopback 侧车。上一批终态随这次实质改动回填，不新建纯绿灯提交。
+
+### DUAL-CORE-FREEZE · 暂停 Beta 维护并保留解冻方向（2026-10-07）
+
+**决定 / 基线 / 归属**：维护者明确选择“只冻结，指明方向和记录文档，继续其他债务”。从干净、已验的 `90b9cf4d3f9a9a17744323d1177f138c90c686ea` 建独立工作树；本片为 M 文档与台账整理，由 controller 实施和自查，independent=false。冻结暂停 v3 双核 Beta / expert_routing 的继续维护与默认开启，不删除已有 opt-in 实现、不变更运行时语义；K-DUAL-ROLLBACK-02 保留未解决事实，状态为 Frozen / Deferred，不是 Done。
+
+**精确写集 / 接手入口**：复用 [DUAL-CORE-FREEZE](long-plans/DUAL-CORE-FREEZE.md)，写明默认 Stable 路径、已知 NULL 补偿缺口、解冻前提及有限首片；更新原 [双核交接](../DUAL_CORE_CURSOR_HANDOFF.md)、中英 developer guide 的短提示、主台账相关状态、DEBT_CHANGELOG 的当前依赖行并追加本次事件。共七份既有 Markdown；不新建状态台账，不改 RFC 的已实现历史、队列 skip 行、源码、配置、feature、依赖或测试。随本次实质冻结记录回填 Remote Memory 已取得的完整本地与目标 SHA 正式 CI 终态，历史 DCL-56 / 原计划保持。
+
+**验收 / 限度 / 后续**：默认及改文链接、docs-only 旧路径、文档登记、中英镜像、债结构、编码和 diff 检查；额外核精确七路径、台账既有五列的前四列、DCL 历史正文、源码/config 零差量及 skip 保持。本片不跑双核场景、不补证明、不分配 run ID、不为冻结文档重复全量 CI；本地干净 checkpoint 随后续实质批次合流。达到冻结范围与接手规则清楚即停，继续有施工前提的其他债务；Beta 解冻或扩大实验能力须由维护者另行决定。

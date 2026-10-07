@@ -2,6 +2,8 @@
 
 [中文](../../creator-docs/dual-core/DEVELOPER_GUIDE.md)
 
+> **Maintenance freeze (2026-10-07):** The v3 dual-core Beta remains off by default; further maintenance and automatic expansion of verification are paused. Existing opt-in implementation and historical usage below are retained, without a Stable guarantee. The NULL compensation gap remains unresolved; see [DUAL-CORE-FREEZE](../../handoff/debt-marathon/long-plans/DUAL-CORE-FREEZE.md) for scope, future directions and conditions for resuming maintenance.
+
 ## Overview
 
 **Dual-core dual-mode** provides two runtime paths:
