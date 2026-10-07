@@ -56,7 +56,13 @@ impl RemotePluginAdapterBlocking {
         }
     }
 
-    /// On remote `call_plugin` success, `decode`; on failure with fallback allowed, `builtin`; else `RemoteServiceUnavailable`.
+    /// Read the same runtime gate for method-specific local fallback decisions.
+    #[must_use]
+    pub(super) fn fallback_allowed(&self) -> bool {
+        remote_fallback_load(&self.remote_fallback_allowed)
+    }
+
+    /// Decode successful calls; fall back on allowed call failures, never on grant denial.
     pub fn call_with_builtin_fallback<T>(
         &self,
         method: &str,
@@ -70,7 +76,7 @@ impl RemotePluginAdapterBlocking {
                 if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
                     return Err(e);
                 }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
+                if self.fallback_allowed() {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "{method} remote failed endpoint={} err={}; fallback=builtin",

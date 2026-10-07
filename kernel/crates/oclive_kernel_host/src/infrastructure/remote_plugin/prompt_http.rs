@@ -6,7 +6,6 @@ use crate::domain::prompt_builder::PromptInput;
 use crate::domain::BuiltinPromptAssembler;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_fallback_policy::remote_fallback_load;
 use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::models::{PersonalitySource, Role};
@@ -20,7 +19,6 @@ const METHOD_PROMPT_TOPIC_HINT: &str = "prompt.top_topic_hint";
 pub struct RemotePromptAssemblerHttp {
     adapter: RemotePluginAdapterBlocking,
     fallback: BuiltinPromptAssembler,
-    remote_fallback_allowed: Arc<AtomicBool>,
 }
 
 impl RemotePromptAssemblerHttp {
@@ -32,17 +30,15 @@ impl RemotePromptAssemblerHttp {
         high_risk_grants: Arc<HighRiskGrantStore>,
         network_grant_id: Option<String>,
     ) -> Self {
-        let fb = remote_fallback_allowed.clone();
         Self {
             adapter: RemotePluginAdapterBlocking::new(
                 http_client,
                 cfg,
-                fb.clone(),
+                remote_fallback_allowed,
                 high_risk_grants,
                 network_grant_id,
             ),
             fallback: BuiltinPromptAssembler,
-            remote_fallback_allowed: fb,
         }
     }
 }
@@ -52,7 +48,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
         let params = match serde_json::to_value(PromptInputSnapshot::from_input(input)) {
             Ok(v) => v,
             Err(e) => {
-                if remote_fallback_load(&self.remote_fallback_allowed) {
+                if self.adapter.fallback_allowed() {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "prompt snapshot serialize failed: {}; builtin",
@@ -73,7 +69,7 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
                 if let Some(s) = v.as_str() {
                     return Ok(s.to_string());
                 }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
+                if self.adapter.fallback_allowed() {
                     tracing::warn!(
                         target: "oclive_plugin",
                         "prompt.build_prompt: bad shape; builtin"
