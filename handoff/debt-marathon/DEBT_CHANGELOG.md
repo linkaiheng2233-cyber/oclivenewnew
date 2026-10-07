@@ -766,3 +766,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **闭环 / 范围 / 验证**：精确七路径见[有限计划](ROUND-02-PLAN.md#k-supply-10--cli-rust-action-步骤的单点维护2026-10-07)；生产生成器、真实 init/check、原同步正负合同到中英维护指南闭环。原测试正文未改，整理前后 5/5；两类真实 YAML bytes/hash 一致，正常 check 0、独立坏 pin check 1。CLI 全套 20 套 / 150 passed、native 0；完整结果及控制端偏差见[原 Actions Wave 本节](waves/WAVE-20260929-ACTIONS-PINS.md#2026-10-07--cli-rust-action-步骤单点维护)，不复制测试矩阵。实际 `.github`、Action SHA、权限、策略、依赖、公开 API、默认功能和运行时均未改；无真实模型/音频/用户 DB/旧业务身份，仅当前忽略目录内合成项目。
 - **执行 / 责任 / 结论**：M 私有整理；controller 实施与只读语义自查，independent=false。applicable CLI Clippy/fmt、分层、文档/镜像/编码/登记/债结构/diff 与精确范围核对须通过才建干净本地提交；本片不单独推远端全量矩阵，相关冻结批次结束后一次完整/正式出口。K-SUPPLY-10 保持 Partial、维护仍人工，不能由单点常量称全部维护自动化；旧 Wave、台账其它行和已冻结双核材料保留，父债第五列只登记真实局部进展。
 - **已测出口**：default / all-features CLI all-targets Clippy、fmt、原分层门禁，默认及六份改文链接、旧路径、登记、中英镜像、147 行台账 / 12 auto plans 结构、编码与 diff 均 native 0。原五个同步测试正文逐字保持；两份真实生成字节比较是本次保持行为的停止线，不再为此增加组合测试。CLI native 0 / wrapper 恢复检查 1 分列保留，存在/缺失态控制端复核已通过；失败不归因产品、无测试重跑或规则放宽。
+
+### DCL-20261007-59 · 供应链指南现状引用化与有限维护里程碑
+
+- **原因 / 例子 / 依据**：阅读实际修改的供应链指南时发现两处当前摘要与唯一台账冲突：K-SUPPLY-12 仍称八月全部 audit 0 / Done，而现在有已批准的临时 override 与待撤销条件；插件 HTML 隔离仍被描述为旧共享 origin，而当前已用 opaque iframe + broker，Stage 4 签名架构仍暂缓。只核对应权威行、原安全记录、Stage 3 Wave 与现有 `directoryShellBootstrap.ts` / `pluginFrameBridge.ts` 及 package override，足够确认文案过期即施工；没有全表扫描、audit 新测、实机扩跑或架构变更。
+- **范围 / 历史保留**：按[五路径有限计划](ROUND-02-PLAN.md#d-debt-ledger-01--供应链指南的两处过期现状对账2026-10-07)，中英指南两行改为当前范围短述和权威链接；原八月 SHA / CI 与修订历史保留并标作历史，台账 §2 前瞻短段区分历史与现状。D-DEBT-LEDGER-01 仅第五列追加局部进展，其余权威状态不改；不维护第二份当前状态或复制扫描总数，不从结构门禁推断产品事实。
+- **责任 / 验证 / CI 节奏**：controller 实施与直接自查，independent=false；适用文档门禁和精确写集 / 历史保留核对后保存本地 checkpoint。与 `3865f5c8` 双核冻结、`5729fe76` CLI 私有步骤整理合成一次有限维护里程碑，随后只跑一次完整本地链与目标 SHA 正式 CI；正式未取得前不称新的 main / remote 已验。双核 Frozen / Deferred，其余父债 Partial / OPEN 与已批准签名暂缓、真实音频 / 数据 / 硬件等前提不变。
+- **文档已测出口**：五份改文链接、docs-only 旧路径、登记、镜像、147 权威行 / 12 auto plans 结构、编码与 diff 均 native 0；结构计数不是偿债完成数。历史段、其余现状行和产品源码保持。已有明确反例与正确责任入口，达到可接手即停，不通过新增证明性测试或重跑历史场景来扩大本次结论。

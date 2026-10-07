@@ -62,6 +62,8 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 
 ## 4. In progress / backlog (tech-debt IDs)
 
+This table is a handover summary. Each unique row in the [debt inventory](../../handoff/TECHNICAL_DEBT_INVENTORY.md) owns the current status, remaining scope and closure conditions. Historical SHAs and CI runs prove only their original acceptance scope, not the current dependency graph or every plugin capability.
+
 | ID | Item | Priority | Status |
 |----|------|----------|--------|
 | **K-SUPPLY-02** | Attach `SHA256SUMS` to GitHub Release | P1 | Workflow in repo; first Release asset = maintainer |
@@ -71,8 +73,8 @@ Local dev: `npm run bundle-kernel:tauri` writes `distros/desktop-tauri/resources
 | **K-SUPPLY-09** | Plugin signature strict mode is opt-in | P1 | **OPEN** — sidecar SHA-256 is checked only with explicit `OCLIVE_PLUGIN_SIGNATURE_STRICT=1`; source-review prompts are not signature proof, and official/market signing plus revocation remain pending |
 | **K-SUPPLY-10** | Pin GitHub Actions to full commit SHAs | P2 | **Partial** — repository workflows and CLI templates pin original-upstream SHAs; workflow Dependabot maintenance is configured. Template synchronization, actual update PRs and target CI acceptance remain separate; see [Actions Wave](../../handoff/debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md) |
 | **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — lockfile uses 5.4.2, both SQLx and zbus/Tauri resolve to it, warnings fell from 9 to 8, and remote Dimension 5 passed |
-| **K-SUPPLY-12** | npm development-tool vulnerabilities and peer-contract drift | **P1** | **Done · remote verified** — full and production audits are clean, the ESLint/Unicorn peer tree is valid, the WebDriver XML parser is fixed, and the legacy Vue 2/PostCSS SFC loader is removed. Remote CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) passed npm audit plus Linux/Windows frontend gates at frozen implementation `728219e7` |
-| **K-PLUGIN-SEC-01** | Per-plugin origin and native isolation E2E | P1 | **Partial** — inline Vue is blocked in releases; HTML fallbacks still share `ocliveplugin.localhost`, so this is not a complete sandbox |
+| **K-SUPPLY-12** | npm development-tool vulnerabilities and peer-contract drift | **P1** | See the [unique inventory row](../../handoff/TECHNICAL_DEBT_INVENTORY.md) for current scope: the temporary compatibility override awaits upstream removal and low-severity items remain; this is not an all-zero audit claim. Removal ownership is in the [rolling security record](../../creator-docs/security/KNOWN_VULNERABILITIES.md#2026-10-07-shell-quote-临时兼容例外). Audit and frontend success at `728219e7` / [30714475985](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) is retained as August history, not the current verdict |
+| **K-PLUGIN-SEC-01** | Per-plugin origin and native isolation E2E | P1 | See the [unique inventory row](../../handoff/TECHNICAL_DEBT_INVENTORY.md) and [Stage 3 Wave](../../handoff/debt-marathon/waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md): opaque iframe sandboxes and the parent broker have limited Stage 0–3 evidence; the former shared-origin HTML description is obsolete. Trusted signing and identity binding at Stage 4 are deferred, so Full remains incomplete |
 | **K-SECRET-01** | Revoke historical API credential and decide history handling | **P0** | **Done (2026-07-17)** — the working tree uses a secret reference; the maintainer confirms N1N destroyed the old credential provider-side, and history is retained by decision |
 | **K-SUPPLY-06** | Bit-identical reproducible builds | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |

@@ -782,3 +782,11 @@
 **闭环 / 精确写集**：`kernel/crates/oclive-cli/src/ci_cmd.rs` 内一个私有完整 YAML step → 既有 `render_ci_yaml` → library / kernel 两类生成 workflow → `ci init` / `ci check` 与原同步正负合同。复用既有渲染和测试，只把相同步骤插入五个原位置；原 SHA、注释、stable、缩进、换行、jobs、命令、权限与失败策略的生成字节必须完全相同。文档限现有 Actions Wave、中英 SUPPLY_CHAIN §5 第 6 项、主台账 K-SUPPLY-10 第五列、本计划及 DEBT_CHANGELOG，共七个修改路径；不新建第二份 pin 配置、升级 Action、改实际 `.github`、公开 API、Cargo/lock、信任根或六槽。其它消费者无接口变化，明确无需改。
 
 **验证 / 止点 / CI 节奏**：整理前真实 CLI 生成两类隔离项目并保存字节，原 `ci_cmd::tests` 通过；整理后复跑相同测试、实际 init/check，生成字节逐项相等，并把其中一份隔离 workflow 的 pin 改坏，真实 `ci check` 必须非零。CLI crate 全测串行、default/all-features Clippy、fmt、适用分层与文档/债结构/编码/diff；不为这个保持行为的开发片单独推远端矩阵。只在相关批次结束时一次完整本地链和精确 SHA 正式 CI；未取得前仅 Locally verified，K-SUPPLY-10 仍 Partial。若生成行为、安全语义或依赖需改则停在具体问题，不能靠松断言收口；零真实模型/音频/用户 DB/历史业务身份，只在本片忽略目录写合成项目，Cargo 串行且不继承 CARGO_TARGET_DIR。
+
+### D-DEBT-LEDGER-01 · 供应链指南的两处过期现状对账（2026-10-07）
+
+**基线 / 已知反例 / 限度**：从干净本地 `5729fe76a5cebe3fc649ee792d8903b3f8615f9a` 接续；发现中英 SUPPLY_CHAIN 的现状表仍将 K-SUPPLY-12 写成八月全部 audit 为 0 / Done，并将 K-PLUGIN-SEC-01 写成 HTML 仍共享旧 origin，与当前唯一台账的 Partial / 临时 override 待撤销、opaque sandbox + broker Stage 0–3 限定验证矛盾。D1 只核对应权威行、既有 Wave / 安全记录和实际实现入口，足够对账即停止；不扫描全表，不补跑实机、audit 或旧业务场景，不重新裁决签名架构。
+
+**精确写集 / 预期**：中英 SUPPLY_CHAIN §4 两行与该节当前状态引用提示；主台账 D-DEBT-LEDGER-01 仅第五列追加本次局部进展，以及 §2 原“下一工程动作”短段区分八月历史验收与当前未决；本计划与 DEBT_CHANGELOG 追加事件，共五份既有 Markdown。现状行短述当前边界并链接原权威状态 / Wave，八月 SHA 与 CI 已在本文件历史表保留，不删除历史，不复制新扫描数或制造新状态表。其余债状态、旧证据、源码/测试/依赖不动，controller 自查 independent=false。
+
+**验收 / 里程碑**：文档链接、旧路径、登记、镜像、债结构、编码、diff；精确五路径与历史保留核对。保存本地文档 checkpoint 后，双核冻结 + CLI 步骤整理 + 本片构成一个有限维护里程碑，执行一次 `check:ci-local`、冻结目标 SHA、一次合流推送并观察正式 CI；不在三个开发片之间重复全量，不追加只回写绿灯的提交。K-SUPPLY-10 / K-SUPPLY-12 / K-PLUGIN-SEC-01 / D-DEBT-LEDGER-01 不由本片或全量绿灯改为 Done；若前置或语义矛盾需要扩大写集，先停在具体原因。

@@ -62,6 +62,8 @@ sha256sum oclive-kernel-server
 
 ## 4. 进行中 / 待办（见技术债 ID）
 
+此表只作接手摘要；当前状态、残留范围与关闭条件以[技术债主台账](../../handoff/TECHNICAL_DEBT_INVENTORY.md)的唯一权威行为准。旧 SHA / CI 只证明当时的验收面，不代表当前依赖图或全部插件能力。
+
 | ID | 项 | 优先级 | 状态 |
 |----|-----|--------|------|
 | **K-SUPPLY-02** | GitHub Release 挂 `SHA256SUMS` asset | P1 | workflow 已入库；**首次 Release 挂 asset = 维护者** |
@@ -71,8 +73,8 @@ sha256sum oclive-kernel-server
 | **K-SUPPLY-09** | 插件签名严格模式默认关闭 | P1 | **OPEN** — 当前只有显式 `OCLIVE_PLUGIN_SIGNATURE_STRICT=1` 才校验 sidecar SHA-256；源码审查提示不是签名证明，官方/市场默认签名与撤销流程仍待落地 |
 | **K-SUPPLY-10** | GitHub Actions 固定完整 commit SHA | P2 | **Partial** — 仓库工作流和 CLI 生成模板已固定原上游 SHA；仓库 Dependabot 维护已配置，模板同步、实际更新 PR 与目标 CI 验收分列见 [Actions Wave](../../handoff/debt-marathon/waves/WAVE-20260929-ACTIONS-PINS.md) |
 | **K-SUPPLY-11** | `event-listener` 5.4.1 unsound warning | P1 | **Done · remote verified** — 锁文件已升级 5.4.2，SQLx 与 zbus/Tauri 均解析到修复版；`cargo audit` 警告 9→8，远端 Dimension 5 通过 |
-| **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | **Done · remote verified** — 完整与生产 `npm audit` 均为 0，ESLint/Unicorn peer 树合法；WebDriver XML 解析器已修复，旧 Vue 2/PostCSS SFC loader 已移除。冻结实现 `728219e7` 的远端 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 中 npm audit 与 Linux/Windows 前端门禁全部成功 |
-| **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | **Partial** — 发行版已禁 inline Vue；HTML fallback 仍共享 `ocliveplugin.localhost`，不能宣称完整沙箱 |
+| **K-SUPPLY-12** | npm 开发工具链漏洞与 peer 契约漂移 | **P1** | 当前范围见[唯一台账](../../handoff/TECHNICAL_DEBT_INVENTORY.md)：临时兼容 override 仍待上游撤销、low 项另有残留，不能称全部 audit 为 0；撤销责任见[滚动安全记录](KNOWN_VULNERABILITIES.md#2026-10-07-shell-quote-临时兼容例外)。`728219e7` / [30714475985](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) 的 audit 与前端门禁成功是八月历史验收，保留但不决定现状 |
+| **K-PLUGIN-SEC-01** | 每插件独立 origin / 原生隔离 E2E | P1 | 当前范围见[唯一台账](../../handoff/TECHNICAL_DEBT_INVENTORY.md)与 [Stage 3 Wave](../../handoff/debt-marathon/waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)：opaque iframe sandbox + parent broker 已有 Stage 0–3 限定证据，旧“HTML 仍共享 origin”描述已过期；可信签名 / 身份绑定 Stage 4 暂缓，不能宣称 Full 完成 |
 | **K-SECRET-01** | 历史 API 密钥撤销与历史处置 | **P0** | **Done（2026-07-17）** — 工作树已改 secrets 引用；维护者确认旧密钥已由 N1N 提供商彻底销毁，Git 历史按决定保留 |
 | **K-SUPPLY-06** | 位级可重复构建 | — | Deferred |
 | **K-SUPPLY-07** | SBOM | — | Deferred |
