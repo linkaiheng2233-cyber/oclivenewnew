@@ -1,6 +1,6 @@
 # Remote 插件协议（宿主 ↔ HTTP 侧车）— 完整说明
 
-**实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车；**网络错误、HTTP 非 2xx、JSON-RPC `error`、或 result 无法反序列化**时，宿主**回退内置实现**并写日志（`target: oclive_plugin`），对话一般仍可继续。
+**实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车。**网络错误、HTTP 非 2xx、JSON-RPC `error`**按调用失败处理；是否回退内置由运行时闸门与各方法规则决定，不能据此承诺所有失败均可继续。高风险授权拒绝不回退；成功 `result` 的解码或形状处理保留各方法语义，见下方代码锚点及 §4。
 
 ### 测试覆盖（2026-07-14）
 
@@ -70,7 +70,7 @@
 }
 ```
 
-宿主在收到 `error` 时按**失败**处理并回退内置。
+宿主在收到 `error` 时按**失败**处理，再按运行时闸门与各方法规则决定回退或返回错误。
 
 #### 推荐错误码约定（产品化）
 
@@ -90,7 +90,7 @@
 
 ### 1.5 HTTP 状态码
 
-建议侧车在 JSON 可解析时返回 **HTTP 200**，错误细节放在 JSON-RPC `error` 中。若返回 **4xx/5xx**，宿主将按失败处理并回退内置。
+建议侧车在 JSON 可解析时返回 **HTTP 200**，错误细节放在 JSON-RPC `error` 中。若返回 **4xx/5xx**，宿主将按调用失败处理；回退仍受运行时闸门与各方法规则约束。
 
 ---
 
@@ -148,7 +148,7 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 | 主题 | 说明 |
 |------|------|
 | **协议版本** | 请求头 **`x-oclive-remote-protocol: oclive-remote-jsonrpc-v1`** 标识本文档约定的 JSON-RPC 形状；侧车可据此拒绝不兼容宿主（若将来 bump 版本，须同步文档与头值）。 |
-| **超时与错误码** | 见上文 **1.1 超时**、**1.4 JSON-RPC 错误**；宿主侧对超时与 HTTP 非 2xx 按失败处理并**回退内置**，避免远程不可用导致对话崩溃。 |
+| **超时与错误码** | 见上文 **1.1 超时**、**1.4 JSON-RPC 错误**；超时与 HTTP 非 2xx 是调用失败，回退受闸门和方法规则约束，不是无条件可用性保证。 |
 | **HTTP 侧车（当前）** | 宿主仅向用户配置的 **URL** 发起 **POST**；**不**随角色包自动下载或执行任意本地可执行文件。Token 经环境变量注入，**勿**把密钥写入角色包或提交到仓库。 |
 | **未来：子进程 / 可执行插件** | 若以后支持启动本地侧车 exe，须在**单独文档**中定义：路径声明位置、首次运行**用户确认**、沙箱与签名策略；未落地前以本 HTTP 模型为准。 |
 
@@ -160,11 +160,14 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 |------|----------|------|
 | **Timeout SSOT** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/config.rs`（`RemotePluginHttpConfig.timeout`）→ `remote_plugin/jsonrpc.rs`（`.timeout(request_timeout)`） | env 钳制后的超时写入配置，再注入 HTTP 请求 |
 | **Fallback 闸门** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_fallback_policy.rs` · `remote_fallback_load` | 运行时是否允许失败后回退内置 |
-| **Canonical fallback** | `remote_plugin/adapter.rs` · `RemotePluginAdapterBlocking::call_with_builtin_fallback`（及 async 孪生 `RemotePluginAdapterAsync::call_with_async_builtin_fallback`） | 成功 decode；失败且闸门开则 `builtin`，否则 `RemoteServiceUnavailable` |
+| **Canonical fallback** | `remote_plugin/adapter.rs` · `RemotePluginAdapterBlocking::call_with_builtin_fallback`（及 async 孪生 `RemotePluginAdapterAsync::call_with_async_builtin_fallback`） | HTTP/RPC 成功交给 decode；调用失败且闸门开则 `builtin`，否则 `RemoteServiceUnavailable`；高风险授权拒绝原样返回，不回退。decode 自身失败不自动再走 builtin |
 | **Host-side retry** | **无** | 宿主当前不对 Remote 调用做自动重试；Minimal **不**发明重试层 |
-| **离群（非 canonical）** | `remote_plugin/prompt_http.rs`、`memory_http.rs` | 仍内联 `remote_fallback_load`；接线候选，**非**新代码范本 |
+| **Prompt 既有入口合流** | `remote_plugin/prompt_http.rs` | `build_prompt` 与 `top_topic_hint` 的 HTTP/RPC 失败共用 blocking adapter；序列化/坏形状分支仍由方法自己决定，通过 adapter 的模块内 `fallback_allowed` 读取原开关，不新增策略 |
+| **待分片整理** | `remote_plugin/memory_http.rs` | 仍有本地开关读取与 empty/error 语义；本批保持行为，不强行套入 Prompt 的结果规则，**非**新代码范本 |
 
 **新代码约定**：新增 Remote HTTP 调用路径 **必须**经 `RemotePluginAdapterBlocking::call_with_builtin_fallback`（或 async 孪生），**禁止**在业务文件内重复内联 `remote_fallback_load`。目录根见上文 `remote_plugin/`。
+
+**有限行为对照**：[`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) 直接调用生产 Prompt 实现，检查有效/空 hint、坏形状、运行时开关、授权拒绝及请求次数；同一组测试用于整理前后对照。此为既有入口收束，不实现 Full ResilienceLayer，不增加 Host 自动重试或改变超时配置。
 
 ---
 
@@ -182,7 +185,7 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 "event_type": { "Ignore": null }
 ```
 
-**错误示例**（将导致反序列化失败并回退内置）：
+**错误示例**（将导致反序列化失败；回退或返回错误仍按各方法规则处理）：
 
 ```json
 "event_type": "Ignore"
@@ -374,6 +377,8 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 - **对象**：含 `"prompt": "<主对话 prompt 字符串>"`  
 - **或** `result` **本身为字符串**：宿主视为整段 prompt  
 
+成功响应的坏形状与本地 snapshot 序列化失败仍采用原回退闸门：允许时构建 builtin prompt；关闭时保留对应错误。它们是 `build_prompt` 的规则，不由共享 HTTP 失败分支重新解释。
+
 ---
 
 ### 4.5 `prompt.top_topic_hint`
@@ -389,6 +394,8 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 
 - 对象含 `"hint": "..."` 或 `"hint": null`  
 - **或** `result` **本身为字符串**  
+
+空字符串仍是有效 hint；`null` 或无法取到字符串的成功结果返回 `None`，即使回退开关打开也不改成 builtin hint。HTTP/RPC 调用失败时才按原开关尝试 builtin；授权拒绝或开关关闭时返回 `None`。每次调用保持单次请求，无 Host 自动重试。
 
 ---
 
@@ -469,7 +476,7 @@ Agent 槽 remote/directory 专用；**host-orchestrated MCP**（侧车返回 `to
 
 ## 6. 版本与兼容
 
-- 文档与实现以仓库 **v1** 为准；若将来增加字段，建议侧车忽略未知 `params` 键、宿主忽略未知 `result` 键（当前宿主按固定结构反序列化，**未知形状会回退内置**）。  
+- 文档与实现以仓库 **v1** 为准；若将来增加字段，建议侧车忽略未知 `params` 键、宿主忽略未知 `result` 键。未知形状按各方法解码规则处理，不能把“无法解码”统一理解为必然回退内置。
 - 子进程侧车（非 HTTP）仍可作为实现方式之一，但**当前宿主仅实现 HTTP 客户端**；进程模式见历史草案中的安全说明。
 
 ---

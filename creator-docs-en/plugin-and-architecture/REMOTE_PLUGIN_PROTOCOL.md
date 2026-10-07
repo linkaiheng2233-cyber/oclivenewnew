@@ -1,6 +1,6 @@
 # Remote plugin protocol (host ↔ HTTP sidecar) — full reference
 
-**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`. Current packs declare remote instances in blueprint `slot_registry`; the host folds the six stable types into an effective `PluginBackends` view. When the effective subsystem is `remote` and env URLs are set, requests go to the sidecar; on **network errors, non‑2xx HTTP, JSON‑RPC `error`, or result deserialization failure**, the host **falls back to built‑in implementations** and logs (`target: oclive_plugin`) — chat usually continues.
+**Implementation status**: the host implements an **HTTP POST + JSON‑RPC 2.0** client under `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/`. Current packs declare remote instances in blueprint `slot_registry`; the host folds the six stable types into an effective `PluginBackends` view. When the effective subsystem is `remote` and env URLs are set, requests go to the sidecar. **Network errors, non‑2xx HTTP and JSON‑RPC `error`** are call failures; fallback depends on the runtime gate and each method's rules. A denied high-risk grant never falls back. Successful result decoding retains each method's semantics; these rules do not guarantee that every failure allows chat to continue.
 
 [中文](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
 
@@ -68,7 +68,7 @@ One JSON object per HTTP body:
 }
 ```
 
-Any `error` object is treated as failure → built‑in fallback.
+Any `error` object is treated as a call failure; the runtime gate and method rules determine fallback or the returned error.
 
 #### Recommended error codes (product)
 
@@ -88,7 +88,7 @@ The host logs `error.code` / `error.message` / `error.data` as‑is; sidecars sh
 
 ### 1.5 HTTP status
 
-Prefer **HTTP 200** with machine‑readable errors in JSON‑RPC `error`. **4xx/5xx** is treated like transport failure → fallback.
+Prefer **HTTP 200** with machine‑readable errors in JSON‑RPC `error`. **4xx/5xx** is a call failure; fallback remains subject to the runtime gate and method rules.
 
 ---
 
@@ -112,9 +112,24 @@ If the URL for a subsystem is missing, the host uses **built‑in placeholders**
 | Topic | Notes |
 |-------|--------|
 | **Protocol version** | Header **`x-oclive-remote-protocol: oclive-remote-jsonrpc-v1`** labels this JSON‑RPC shape; sidecars may reject unknown hosts. |
-| **Timeouts & codes** | See §1.1 / §1.4; timeouts and non‑2xx → **fallback**, so remote outages do not crash chat. |
+| **Timeouts & codes** | See §1.1 / §1.4; timeouts and non‑2xx are call failures. Fallback is conditional, not an unconditional availability guarantee. |
 | **HTTP sidecar (today)** | Host only **POSTs** to user‑configured URLs; **no** auto‑download of arbitrary binaries from packs. Put secrets in **env**, not in committed packs. |
 | **Future: local exe sidecars** | If added, document separately: path declaration, first‑run **user consent**, sandboxing, signing — until then, this HTTP model is authoritative. |
+
+### Host resilience code anchors (Minimal)
+
+This describes the existing Minimal implementation for **K-RESILIENCE-01**. Full ResilienceLayer remains open; this consolidation does not define a new layer.
+
+| Topic | Code anchor | Current rule |
+|-------|-------------|--------------|
+| Timeout | `remote_plugin/config.rs` → `remote_plugin/jsonrpc.rs` | The configured request timeout is unchanged. |
+| Fallback gate | `remote_fallback_policy.rs` · `remote_fallback_load` | The existing runtime flag controls permission to fall back. |
+| Shared call failure handling | `remote_plugin/adapter.rs` · `call_with_builtin_fallback` / `call_with_async_builtin_fallback` | Successful calls go to decode. Failed calls use builtin only when allowed; grant denial returns unchanged. Decode failure does not automatically invoke builtin. |
+| Prompt entry consolidation | `remote_plugin/prompt_http.rs` | Both HTTP/RPC entries use the blocking helper. Local serialization and bad-shape decisions retain their own rules and read the same flag through module-scoped `fallback_allowed`. |
+| Remaining candidate | `remote_plugin/memory_http.rs` | Its local gate and empty/error rules remain unchanged pending a separate bounded slice. |
+| Host-side retry | None | This work adds no automatic retry. |
+
+New Remote HTTP entries must use the existing adapter helper rather than duplicate the flag read. The production-path characterization tests in [`remote_prompt_fallback_roundtrip.rs`](../../distros/desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs) compare valid/empty hints, bad shapes, live flag changes, denied grants and request counts before and after consolidation.
 
 ---
 
@@ -292,10 +307,14 @@ Both **`event.estimate`** and **`prompt.build_prompt`** include top‑level **`p
 - object with `"prompt": "<string>"`, **or**  
 - **`result` itself a string** → whole prompt
 
+Bad shapes in successful responses and local snapshot serialization failures retain the existing gate: builtin prompt when allowed, the corresponding error when disabled. These are `build_prompt` rules, separate from shared HTTP failure handling.
+
 ### 4.5 `prompt.top_topic_hint`
 
 **params**: `role`, `scene_id`  
 **result**: `{ "hint": "..." }` / `null`, or raw string.
+
+An empty string remains a valid hint. A successful result without a string hint returns `None`, even when fallback is enabled. Only HTTP/RPC call failure invokes builtin according to the gate; denied grants or disabled fallback return `None`. Each call keeps one request and no Host automatic retry.
 
 ### 4.6 `llm.generate` / `llm.generate_tag` / `llm.generate_stream`
 

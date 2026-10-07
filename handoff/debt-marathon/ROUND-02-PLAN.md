@@ -746,3 +746,13 @@
 **写集 / 整体不变量**：原十路径与中英 KNOWN_VULNERABILITIES 的前片终态回填，共十二路径；五份 CLI 源码/测试保留预备片原实现，canonical JSON、loader/validator/compiler、发布、退出码、公开 API、依赖、权限和 CI 不变。台账只改资源工具和 npm 父债第五列，其余行及前四列保持；DCL-52/53 保留历史、追加 [DCL-54](DEBT_CHANGELOG.md#dcl-20261007-54--资源原因说明合流与已验基线确认)。新预备片和 main 在仅两个 append-only 文档发生冲突时原始冲突文件及 native 1 保全，再合并双方新增段落，不把冲突误写成产品测试失败。
 
 **有限验证 / 停止 / 节奏**：新 cwd 串行运行 CLI policy/doctor diagnostics-host 24 项、未知码 1、default 拒绝 3、default/all-features Clippy/fmt，结构核对与分层、中英镜像、默认/改文链接、登记、旧路径、债结构、编码、diff。源码与文档冻结后准备隔离 Tauri bundle，完整本地链通过才 FF/push，一次目标 SHA 正式 CI；不以 e1 的窄测或 1e 的 CI 代替本片终态。说明闭环验够即停，不增加硬件建议或实时 controller，不追全部资源组合。父债仍 Partial。回执在 `.cursor/plans/debt-resource-reasons-closeout-20261007-r0/`，忽略目录不随 Git 转让；旧全链与场景身份不重跑。
+
+### K-RESILIENCE-01 · Remote Prompt 既有入口增量收束（2026-10-07）
+
+**基线 / 授权 / 原因**：main/tracking/实际远端均为干净的 `a679937943b8c079c686f5714ec3aeaa35f08def`；资源原因说明片完整本地 native 0（1310.5125887 秒）及[37526132398](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37526132398) attempt 1、17/17 success 含 ci-gate，原回执保留，随本次实质修改回填台账。维护者选择“增量统一既有 Remote 入口，保持行为”，要求整理收束而非全盘定死。旧 Minimal long-plan 的 Closed 状态和历史 Stage 原样保留；本片按新授权走常规流水线，M 有限整理、L 最终 main 出口，controller 实施与自查，independent=false。父债仍 Partial，Full ResilienceLayer 未定义、未实现。
+
+**闭环 / 两片 / 写集**：生产 PromptAssembler → 原 method/role/scene_id → 原 Remote HTTP/JSON-RPC/授权/超时 → 既有 blocking adapter → Remote/builtin/None → 直接生产消费测试。第一片将 `top_topic_hint` 的手写失败回退改用 `call_with_builtin_fallback`；第二片移除 Prompt 冗余开关引用，本地序列化/形状检查经 adapter 的模块内读取方法使用原闸门。只改 `remote_plugin/{adapter,prompt_http}.rs`、新增 `desktop-tauri/tests/remote_prompt_fallback_roundtrip.rs`、中英 REMOTE_PLUGIN_PROTOCOL、本计划/DCL、主台账两行第五列。不改公开 API/DTO、依赖、持久化、六槽或小 Kernel、调用者、权限、超时和 Host-side 无 retry 的现状。
+
+**冻结行为 / 有限证据**：有效对象/raw string（含空字符串）返回原 hint；成功但无字符串的形状返回 None，即使开关打开也不触发 builtin。HTTP/RPC 失败按原开关回退；高风险授权拒绝不发请求、不回退。`build_prompt` 坏形状与本地序列化分支保留原错误、日志与闸门，decode 失败不由公共 helper 自动重解释。四项表征测试先在未改生产源码上通过，再在两片后分别以相同断言通过；确切请求数量约束无新增 retry。适用既有 Remote 测试、Clippy/fmt、分层/镜像/链接/登记/旧路径/编码/债结构/diff；新 worktree 的 bundle 与 frontendDist 构建前置失败独立保留，不当作产品断言失败。
+
+**节奏 / 止线 / 副作用**：每片仅本地窄测与提交；相关两片及文档冻结成一批后，只跑一次完整本地链，成功才 FF/push 一次并验目标 SHA 正式 CI。本地充分即停止扩异常组合，不能借旧 SHA 的绿灯。Memory 有不同的 empty/error 规则，本批不改，只保留后续单片候选；不扩为全路径统一策略、retry/熔断/框架，也不重启签名/TLS/EventStream/Agent/硬件建议等未授权范围。测试只 loopback、临时合成角色/独立 grant store；零真实模型/TTS/用户库/旧 CP-INT 身份，Cargo 串行，子进程不继承 CARGO_TARGET_DIR。中英文收窄“失败必然回退”的过度描述，不反向要求代码承担更宽承诺。原始回执在 `.cursor/plans/debt-remote-prompt-consolidation-20261007-r0/`，ignored 证据不随 Git 自动携带。
