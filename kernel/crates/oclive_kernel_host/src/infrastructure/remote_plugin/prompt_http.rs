@@ -95,33 +95,20 @@ impl PromptAssembler for RemotePromptAssemblerHttp {
             "role": role,
             "scene_id": scene_id,
         });
-        match self
-            .adapter
-            .http
-            .call_plugin(METHOD_PROMPT_TOPIC_HINT, params)
-        {
-            Ok(v) => v
-                .get("hint")
-                .and_then(|x| x.as_str())
-                .map(String::from)
-                .or_else(|| v.as_str().map(String::from)),
-            Err(e) => {
-                if matches!(e, AppError::HighRiskCapabilityNotGranted { .. }) {
-                    return None;
-                }
-                if remote_fallback_load(&self.remote_fallback_allowed) {
-                    tracing::warn!(
-                        target: "oclive_plugin",
-                        "prompt.top_topic_hint remote failed endpoint={} err={}; fallback=builtin",
-                        self.adapter.http.endpoint(),
-                        e
-                    );
-                    self.fallback.top_topic_hint(role, scene_id)
-                } else {
-                    None
-                }
-            }
-        }
+        self.adapter
+            .call_with_builtin_fallback(
+                METHOD_PROMPT_TOPIC_HINT,
+                params,
+                |v| {
+                    Ok(v.get("hint")
+                        .and_then(|x| x.as_str())
+                        .map(String::from)
+                        .or_else(|| v.as_str().map(String::from)))
+                },
+                || Ok(self.fallback.top_topic_hint(role, scene_id)),
+            )
+            .ok()
+            .flatten()
     }
 }
 
