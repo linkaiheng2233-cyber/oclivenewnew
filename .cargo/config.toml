@@ -3,6 +3,6 @@
 # - 用户安装的软件仍只含发布包，不包含本目录
 #
 # 产物路径：与仓库同级目录 ../oclive-dev-artifacts/oclivenewnew-cargo-target/
-# 若你曾在本仓库内编过译，可手动删除旧的 src-tauri/target 以释放空间（配置生效后不再使用）。
+# 缓存新旧或路径变化不是删除许可；维护前按 CONTRIBUTING 与 K-BUILD-07 核消费者、冻结引用和重建预算。
 [build]
 target-dir = "../oclive-dev-artifacts/oclivenewnew-cargo-target"

@@ -155,7 +155,8 @@ Summary:
 ## Do not commit
 
 - Secrets, tokens, personal paths; keep `.env` out of git (see `.gitignore`).
-- You may delete a legacy **`distros/desktop-tauri/target/`** folder; release bundles live under the **external `target-dir`** `release/bundle/`.
+- Do not commit build artifacts. Age, location, or untracked status does not grant deletion permission. Check frozen evidence, explicit consumers, preservation and rebuild budgets under the [K-BUILD-07 retention rules](handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28) first; release bundles live under the **external `target-dir`** `release/bundle/`.
+- Use `npm run inspect:build-cache -- --root <verified-cache-path>` for a bounded read-only metadata report. It counts logical bytes by path without reading artifact contents or cleaning anything. The optional explicit logical ceiling and exit codes are in the [inspector notes](handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#只读缓存体检入口2026-10-08); physical and reclaimable sizes remain unknown.
 
 ## Discussion & roadmap
 

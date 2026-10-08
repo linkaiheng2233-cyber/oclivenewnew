@@ -274,3 +274,21 @@ head34 的 `/frozen_host_binary` 登记日常 `target/debug/oclive-kernel-server
 `s0-inputs.json` **12092 B / `F59EC9CF023841D026D766D7FE4D6DEE80EFE306ADE58213AFAE71203B8B5E25`**；独立派生 `s3-independent-summary.json` **20629 B / `E3F6724046F482B593E5733202A6FE4088CD74ABEB2342864E898690531304F3`** 含原件身份，不替代原生 stdio/exit。四份 case report 分别为 **4374 / 4434 / 1451 / 1454 B**；原始及 helper 仍在忽略目录，无法携带时保持 `needs-evidence-access`。
 
 **收口与下一决策**：本目标两份固定产物通过本机 DbgHelp 的精确 PDB、所选函数及源码行消费；[符号枚举](https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/nf-dbghelp-symenumsymbols)和[行定位](https://learn.microsoft.com/en-us/windows/win32/api/dbghelp/nf-dbghelp-symgetlinefromaddr64)是本次调用范围。`TypeInfo/GlobalSymbols` 元数据标志没有被外推成类型/局部变量实际读取；未设置断点、观察调用栈/运行中局部变量或运行 CDB/LLDB，不声称完整调试器兼容。K-BUILD-06/07、默认 MSVC/profile/`-j 1` 与队列不变；全矩阵 OOM及实际缓存维护仍未关闭。若评估采用，先限定一个实际构建入口并确定保留/调试取舍；安装工具或默认切换另行准入，不为了已有正例重复编译/业务场景。
+
+## 只读缓存体检入口（2026-10-08）
+
+接续本地 `5c6050204c299bd4cdcd93d6b70d3bd9c755bd37`，main / 实际远端仍为已验 `6f11a54f`。一次性采集器的历史原件保留；现补正式维护入口 [`inspect-build-cache.mjs`](../../../scripts/inspect-build-cache.mjs)，只消费显式指定目录的元数据，不把缓存用途研究扩成删除策略。controller 实施与语义自查，independent=false；本节是该有限工具的使用与执行事实，K-BUILD-07 仍 OPEN。
+
+```text
+npm run inspect:build-cache -- --root <已核实的缓存路径>
+npm run inspect:build-cache -- --root <已核实的缓存路径> --max-entries 200000 --max-seconds 30 --max-logical-bytes 300000000000
+npm run test:build-cache
+```
+
+`--root` 必需，无默认扫描或配置猜测；禁止文件系统根、链接根及含识别的 symlink / Junction 祖先的路径。默认预算 200000 项 / 30 秒，包含文件、目录和跳过项；时间是元数据操作之间与最终判据前的点检查，不能打断正在阻塞的系统调用。遇到条目 / 时间止点或元数据错误，报告 `complete=false`、原 stop_reason、`alert=null`，exit 2；完整且超过**显式**逻辑字节上限 exit 1，完整且未超过或未配置上限 exit 0。上例的 300000000000 只是调用者显式示例，不是项目容量策略。CLI stdout 是一份 JSON，没有 `--delete`、输出文件或自动清理选项。
+
+`path_logical_bytes` 以十进制字符串表示，按普通文件**路径**相加；`hardlinked_file_paths` 只统计 metadata.nlink>1 的路径，不去重，也不证明所有对象别名已找到。`physical_bytes` / `reclaimable_bytes` 始终 null，retention_assessed / atomic_snapshot 始终 false。目录遍历排除 Node 识别的 symlink / Junction，另列跳过的特殊项；不声称所有 Windows reparse 类型或并发目录替换都已受原子隔离。只读名称、类型、大小和链接数，不读取产物正文，不更改、删除或运行产物；目录旧或未被跟踪也不授权清理。CONTRIBUTING 中英与 `.cargo/config.toml` 原清理提示已按同一保留规则收窄，实际 Cargo 参数保持。
+
+**真实合同**：新增目标未实现时 native 1（模块缺失，未执行内部用例）；实现后原十项 native 0，补两个必要的元数据失败 / 最终时间窗口负例后 **12/12、native 0**。真实 TempDir 验证空/嵌套/硬链接按路径计、根外 Junction 排除、链接根/祖先拒绝；真实 Node CLI 验证零 / 一 / 二三种退出码、阈值相等边界、预算不完整拒绿、坏 / 缺失 / 重复 / 删除参数拒绝及源内容 / mtime 保持。时间与访问失败注入跑同一生产控制流，不冒充硬件故障。Dimension 5 仅新增这一合成合同步骤，绝不在 CI 枚举 runner 缓存；Node/npm 依赖、Cargo lock、构建并发、profile/linker、Kernel/Host/产品 API均不改。
+
+**一次本机有界调用**：显式原主树配置所指 cache，30 秒 / 200000 项，native **0**，工具扫描 **9286.278900000001 ms**，`complete=true`、errors=[]；**140678** 项（含 **9048** 目录，根也计目录）、**131631** 普通文件路径，**50551** 路径 nlink>1，按路径逻辑字节 **276565317337**，识别的 symlink / Junction 跳过 **0**。这不是物理占用、可回收量、唯一对象数或原子冻结快照，也不与九月不同条件统计计算增量；没有删除缓存或读取文件正文。原 stdio/native 回执在本工作树 `.cursor/plans/debt-cache-health-20261008-r0/`，不随 Git 自动转让。达到工具可用性判断即停，完整用途 / 冷重建 / 删除集合 / 维护频率仍未验。

@@ -64,6 +64,8 @@
     "event:onebot-recovery-policy-probe:self-test": "node --test scripts/runtime-event-onebot-recovery-policy-probe.test.mjs",
     "ci:compare-evidence:test": "node scripts/collect-ci-compare-evidence.mjs --self-test",
     "check:debt-marathon": "node scripts/check-debt-marathon.mjs",
+    "inspect:build-cache": "node scripts/inspect-build-cache.mjs",
+    "test:build-cache": "node --test scripts/inspect-build-cache.test.mjs",
     "test:toolchain": "node --test scripts/lib/gate-toolchain.test.mjs scripts/check-toolchain.test.mjs",
     "check:toolchain": "node scripts/check-toolchain.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",

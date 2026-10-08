@@ -200,7 +200,8 @@ cargo test -p oclive-cli --test kernel_ensure_plan_snapshot
 ## 不要提交
 
 - 密钥、Token、个人路径；勿将 `.env` 提交入库（见 `.gitignore`）。
-- 若本地仍有历史目录 **`distros/desktop-tauri/target/`**，可删除；发行 bundle 以外置 **`target-dir`** 下的 **`release/bundle/`** 为准。
+- 构建产物不要提交；目录旧、新或未跟踪都不是删除许可。维护前先核冻结证据、显式消费者、保全与重建预算，按 [K-BUILD-07 的保留规则](handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28) 处理；发行 bundle 以外置 **`target-dir`** 下的 **`release/bundle/`** 为准。
+- 可先运行 `npm run inspect:build-cache -- --root <已核实的缓存路径>` 获取有预算的只读元数据报告；这只统计按路径的逻辑字节，不读产物正文或自动清理。可选显式逻辑字节上限和退出码见[工具说明](handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#只读缓存体检入口2026-10-08)，物理占用与可回收量仍未知。
 
 ## 讨论与路线图
 

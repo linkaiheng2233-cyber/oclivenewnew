@@ -98,6 +98,10 @@ runStep('debt marathon contracts', () => {
   sh('node', ['scripts/check-debt-marathon.mjs']);
 });
 
+runStep('read-only build-cache inspector contracts (synthetic fixtures only)', () => {
+  sh(process.execPath, ['--test', 'scripts/inspect-build-cache.test.mjs']);
+});
+
 runStep('module quality contracts', () => {
   sh('node', ['scripts/module-quality-harness.mjs', '--self-test']);
   sh('node', ['scripts/module-quality-runner.mjs', '--self-test']);
