@@ -1,10 +1,11 @@
 //! JSON-RPC: `reply_post_process.process` (role pack `reply_post_processor.backend = remote`).
 
 use crate::domain::builtin_reply_post_processor::BuiltinReplyPostProcessor;
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
+use crate::infrastructure::remote_plugin::adapter::{
+    decode_serde_value, RemotePluginAdapterBlocking,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use oclive_kernel_contracts::reply_post_processor::{
@@ -65,8 +66,8 @@ impl ReplyPostProcessor for RemoteReplyPostProcessorHttp {
             METHOD_REPLY_POST_PROCESS,
             params,
             |v| {
-                let out: RemotePostProcessResult = serde_json::from_value(v)
-                    .map_err(|e| serde_to_ollama("reply_post_process.process decode", e))?;
+                let out: RemotePostProcessResult =
+                    decode_serde_value(v, "reply_post_process.process decode")?;
                 Ok(PostProcessOutput {
                     display_reply: out.display_reply,
                     diagnostic: out.diagnostic,

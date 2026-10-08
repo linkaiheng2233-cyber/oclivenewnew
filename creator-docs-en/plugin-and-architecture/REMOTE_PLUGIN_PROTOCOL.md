@@ -118,13 +118,14 @@ If the URL for a subsystem is missing, the host uses **built‑in placeholders**
 
 ### Host resilience code anchors (Minimal)
 
-This describes the existing Minimal implementation for **K-RESILIENCE-01**. Full ResilienceLayer remains open; this consolidation does not define a new layer.
+This describes the existing Minimal implementation for **K-RESILIENCE-01**. Full's frozen scope and reassessment conditions are maintained in [architecture decision §8](../../creator-docs/architecture-en/DESIGN_DECISIONS.md#full-resilience-deferred); this consolidation does not define a new layer.
 
 | Topic | Code anchor | Current rule |
 |-------|-------------|--------------|
 | Timeout | `remote_plugin/config.rs` → `remote_plugin/jsonrpc.rs` | The configured request timeout is unchanged. |
 | Fallback gate | `remote_fallback_policy.rs` · `remote_fallback_load` | The existing runtime flag controls permission to fall back. |
 | Shared call failure handling | `remote_plugin/adapter.rs` · `call_with_builtin_fallback` / `call_with_async_builtin_fallback` | Successful calls go to decode. Failed calls use builtin only when allowed; grant denial returns unchanged. Decode failure does not automatically invoke builtin. |
+| Typed result decode | `remote_plugin/adapter.rs` · `decode_serde_value` | Emotion, Event, Agent, complex emotion, Remote/Directory reply post-processing and the Directory theater entry share JSON decoding and error wrapping. Each keeps its result type, error context, output validation and method-specific fallback rules. |
 | Prompt entry consolidation | `remote_plugin/prompt_http.rs` | Both HTTP/RPC entries use the blocking helper. Local serialization and bad-shape decisions retain their own rules and read the same flag through module-scoped `fallback_allowed`. |
 | Memory gate consolidation | `remote_plugin/memory_http.rs` | Its empty/error branch reads the same runtime flag through module-scoped `fallback_allowed`. The existing `call_plugin_soft`, ordering, tail filling and empty/error rules remain method-specific. |
 | Host-side retry | None | This work adds no automatic retry. |

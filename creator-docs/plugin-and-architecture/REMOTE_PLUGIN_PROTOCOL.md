@@ -154,13 +154,14 @@ OCLIVE_LLM_BACKEND=remote（或包内 llm=remote）
 
 ### 宿主弹性代码锚点（Minimal）
 
-本小节为 **Minimal** 清单与新代码入口约定（债 **K-RESILIENCE-01**）。**Full ResilienceLayer** 仍属台账 OPEN，不在本文展开、亦不发明统一大层。
+本小节为 **Minimal** 清单与新代码入口约定（债 **K-RESILIENCE-01**）；Full 的冻结范围与复评条件见[架构决策 §8](../architecture/DESIGN_DECISIONS.md#full-resilience-deferred)，不在本文展开、亦不发明统一大层。
 
 | 主题 | 代码锚点 | 说明 |
 |------|----------|------|
 | **Timeout SSOT** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/config.rs`（`RemotePluginHttpConfig.timeout`）→ `remote_plugin/jsonrpc.rs`（`.timeout(request_timeout)`） | env 钳制后的超时写入配置，再注入 HTTP 请求 |
 | **Fallback 闸门** | `kernel/crates/oclive_kernel_host/src/infrastructure/remote_fallback_policy.rs` · `remote_fallback_load` | 运行时是否允许失败后回退内置 |
 | **Canonical fallback** | `remote_plugin/adapter.rs` · `RemotePluginAdapterBlocking::call_with_builtin_fallback`（及 async 孪生 `RemotePluginAdapterAsync::call_with_async_builtin_fallback`） | HTTP/RPC 成功交给 decode；调用失败且闸门开则 `builtin`，否则 `RemoteServiceUnavailable`；高风险授权拒绝原样返回，不回退。decode 自身失败不自动再走 builtin |
+| **Typed result decode** | `remote_plugin/adapter.rs` · `decode_serde_value` | 既有 Emotion / Event / Agent、复杂情感及 Remote/Directory 回复后处理、Directory 剧场入口共用相同 JSON 解码与错误包装；各调用点保留自己的类型、错误 context 和输出校验，不统一方法特有的回退规则 |
 | **Host-side retry** | **无** | 宿主当前不对 Remote 调用做自动重试；Minimal **不**发明重试层 |
 | **Prompt 既有入口合流** | `remote_plugin/prompt_http.rs` | `build_prompt` 与 `top_topic_hint` 的 HTTP/RPC 失败共用 blocking adapter；序列化/坏形状分支仍由方法自己决定，通过 adapter 的模块内 `fallback_allowed` 读取原开关，不新增策略 |
 | **Memory 既有闸门合流** | `remote_plugin/memory_http.rs` | empty/error 分支通过 adapter 的模块内 `fallback_allowed` 读取原开关；保留既有 `call_plugin_soft`、排序补尾、空结果及错误规则，不强行套入 Prompt 的结果策略 |

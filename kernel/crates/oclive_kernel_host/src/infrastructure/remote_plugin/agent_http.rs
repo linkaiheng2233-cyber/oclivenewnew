@@ -1,9 +1,8 @@
 //! JSON-RPC：`agent.process` — see AGENT_REMOTE_PROTOCOL.md
 
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::error::{AppError, Result};
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterAsync;
+use crate::infrastructure::remote_plugin::adapter::{decode_serde_value, RemotePluginAdapterAsync};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use async_trait::async_trait;
 use oclive_kernel_contracts::AgentProvider;
@@ -71,7 +70,7 @@ impl AgentRpcProvider {
             .http
             .call_plugin(METHOD_AGENT_PROCESS, params)
             .await?;
-        serde_json::from_value(v).map_err(|e| serde_to_ollama("agent.process decode", e))
+        decode_serde_value(v, "agent.process decode")
     }
 
     async fn execute_tool_calls(

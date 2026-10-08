@@ -857,3 +857,11 @@
 **五路径 / 保持语义**：`backend_registry.rs` 删除这一个私有重复包装，`backend_registry/directory.rs` 的原九个分支直接以相同 Arc trait 对象装配共享运行库的原 provider；加本计划、主台账 K-EMO-03 第二/第五列的当前锚点与有限进展、DEBT_CHANGELOG。关键词本体、输出全字段、回退条件/告警/超时/权限、last-wins/none、Remote/Directory adapter、Fast 强度和公开 API 均不改；不是删除降级出口，也不并入六槽 Emotion。台账其它行和本行优先级/完成条件保留，历史计划与事件仅追加。
 
 **适用验证 / 出口**：先跑原 runtime 关键词与 Host Fast 回归，修改后同一回归及 Host lib、定向 Host Clippy、fmt、分层和适用文档/债结构/编码/diff；纯私有等价整理不另造镜像测试，不新增公开 API/doctest 要求。核实际五路径、原 runtime/adapter/Fast 字节与九处条件/日志保持，充分即停。K-EMO-03 保持 OPEN，仅本片 local checkpoint；相关小批次组合后才一次完整本地与目标 SHA 正式 CI，不为此片单独推矩阵。上一前批终态如已取得，随本次实质片据原 receipt 回填，不能用它证明本片。Full/Agent/双核/签名/TLS 等已定暂缓、用户数据及原 CP-INT 证据不触碰。
+
+### K-RESILIENCE-01 · Remote 结果解码复用既有 helper（2026-10-09）
+
+**起点 / 原因 / 停线**：从干净本地 `abedde6565b8d09640ea2a2597fe26fe9254576a` 接续；main 的前批 `f78696a20ae143e61c7ba92f0673197db90fbc44` 已通过一次完整本地链与正式 [37804969337](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37804969337) attempt 1 / 17 项，但这不证明本片。五个既有 Remote/Directory 入口仍内联同一个 `serde_json::from_value → serde_to_ollama`，原 adapter 已有完全相同的 `decode_serde_value`；D1 读 helper 与五处调用即足够整理，不追其它传输、崩溃或 Full 反例。M / 常规，controller 实施与直接自查，independent=false。
+
+**十路径 / 固定行为**：只改 `remote_plugin/{emotion_http,agent_http,reply_post_process_http,reply_post_process_directory_http,theater_director_directory_http}.rs` 五个解码调用与 import、中英 `REMOTE_PLUGIN_PROTOCOL.md`、主台账 K-RESILIENCE-01 第五列、本计划与 DCL 追加。复用原 helper，保持每处 DTO 类型与错误 context 字符串；params、method、HTTP 请求/授权/超时、fallback 开关与条件、Agent 工具轮数/顺序、后处理输出映射、剧场 prompt 校验、公共签名及依赖不变。不是统一所有失败策略；成功 result 的 decode 错误仍不触发 builtin。协议文档只补当前 helper 锚点，并将旧 Full OPEN 状态复述换成冻结决策链接；Full Deferred 不解冻，旧 Minimal Stage 不重领。
+
+**有限出口 / CI 节奏**：原 Remote 定向回归在整理前后使用同一测试正文；定向 Host Clippy、fmt、分层、默认及改文链接、docs-only 旧路径、镜像/登记/债结构/编码/diff；再核十路径、五处精确等价替换、原 helper/transport/config/DTO/测试 Git blob 与历史正文保持。无新增公开 API，不另造镜像测试或增加 doctest 矩阵。通过后保存第二个可审查本地 checkpoint；与上一情绪片等待相关有限批次出口，不逐片推完整 CI。K-RESILIENCE-01 仍 Partial / Full Deferred，无真实模型/语音、外网请求、用户 DB 或历史业务身份；仅原库测试自有 loopback/临时 grant 夹具。

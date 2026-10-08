@@ -1,12 +1,13 @@
 //! JSON-RPC：`emotion.analyze`
 
 use crate::domain::emotion_analyzer::EmotionResult;
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::domain::user_emotion_analyzer::UserEmotionAnalyzer;
 use crate::domain::BuiltinUserEmotionAnalyzer;
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
+use crate::infrastructure::remote_plugin::adapter::{
+    decode_serde_value, RemotePluginAdapterBlocking,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use serde_json::json;
 use std::sync::atomic::AtomicBool;
@@ -47,7 +48,7 @@ impl UserEmotionAnalyzer for RemoteUserEmotionAnalyzerHttp {
         self.adapter.call_with_builtin_fallback(
             METHOD_EMOTION_ANALYZE,
             params,
-            |v| serde_json::from_value(v).map_err(|e| serde_to_ollama("emotion.analyze decode", e)),
+            |v| decode_serde_value(v, "emotion.analyze decode"),
             || self.fallback.analyze(text),
         )
     }

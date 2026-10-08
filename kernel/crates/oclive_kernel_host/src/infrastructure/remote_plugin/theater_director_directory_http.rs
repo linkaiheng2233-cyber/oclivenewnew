@@ -1,10 +1,11 @@
 //! Directory plugin JSON-RPC: `theater.build_prompt`.
 
 use crate::domain::builtin_theater_director::BuiltinTheaterDirector;
-use crate::domain::error_helpers::serde_to_ollama;
 use crate::error::Result;
 use crate::infrastructure::high_risk_grants::HighRiskGrantStore;
-use crate::infrastructure::remote_plugin::adapter::RemotePluginAdapterBlocking;
+use crate::infrastructure::remote_plugin::adapter::{
+    decode_serde_value, RemotePluginAdapterBlocking,
+};
 use crate::infrastructure::remote_plugin::config::RemotePluginHttpConfig;
 use crate::infrastructure::remote_plugin::RemoteHttpClientBlocking;
 use oclive_kernel_contracts::theater_director::{
@@ -68,8 +69,8 @@ impl TheaterDirectorPromptProvider for DirectoryTheaterDirector {
             THEATER_BUILD_PROMPT_METHOD,
             params,
             |v| {
-                let out: RemoteTheaterPromptResult = serde_json::from_value(v)
-                    .map_err(|e| serde_to_ollama("theater.build_prompt decode", e))?;
+                let out: RemoteTheaterPromptResult =
+                    decode_serde_value(v, "theater.build_prompt decode")?;
                 let prompt = validate_prompt(&out.prompt)?;
                 Ok(TheaterPromptBuildOutput { prompt })
             },
