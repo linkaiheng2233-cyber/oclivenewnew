@@ -823,3 +823,11 @@
 **三路径 / 保留**：S 级文档，controller 实施与自查，independent=false；只改主台账第五列、本计划 / DCL-63 追加，原四列、其它状态行和历史正文保留。不新增调度规则、工具发现接口、权限并集、并发 / 重试或多 provider 回退；不动代码、公共契约、蓝图或配置。暂缓仍是 OPEN，不关闭债务或把未实现功能改名为完成。
 
 **解冻 / 出口**：维护者明确恢复后，先冻结工具名冲突、授权归属、超时 / 隔离、顺序 / 短路及 trace，再实施 composite；小 Kernel / Host 边界保持。仅适用文档门禁和精确写集 / 保留核验后建本地 checkpoint，后续实质批次携带，不单独触发全量 CI。无 Agent 场景、业务身份或模型 / 工具调用；已有锚点足够登记决定，停止调查其它 Agent 组合。
+
+### K-SUPPLY-12 · Tauri SDK override 引用根声明（2026-10-08）
+
+**原因 / 限度 / 基线**：干净 `25230a4835a0d225747614345417d856cd6d37df` 带已批准的单 Agent 暂缓记录；main 的 `c9b08a96` 正式 CI 另行收口。根 SDK dependency 与 override 各写 `^2.11.1`，以后单改前者会触发 npm EOVERRIDE；本机 npm 10.9.8 支持[官方根 spec 引用](https://docs.npmjs.com/cli/v10/configuring-npm/package-json/#overrides)。M 元数据维护，controller 实施 / 自查，independent=false；已核根声明、锁、workspace / 插件消费者即施工，不研究全部依赖家族。
+
+**四路径 / 保持语义**：仅根 `package.json` 的 API override 值改为 `$@tauri-apps/api`，继续全树约束且不升级 SDK；另外只追加主台账 K-SUPPLY-12 第五列、本计划和 DCL-64。根 dependency、其它四条 override、所有 workspace manifest、锁文件、代码 / 脚本 / 测试 / 权限 / 默认功能保持，父债 Partial 不变。原 npm ci 和完整解析树通过，锁逐字节相同；原工作树与本片安装 SDK 2.11.1 的 67 个普通文件集合 / bytes / SHA256 全同。到此停止追加等价证明，不新写镜像实现的测试。
+
+**有限出口 / CI 节奏**：原 IPC seam 消费回归、typecheck / lint / build、module-compat、生产与全图 audit 分列，再做适用文档 / 编码 / 登记 / 债结构 / diff 与精确四路径 / 历史保全；安装图、锁或 SDK 发生额外差量即停止，不刷新锁或 force。完整 audit 的原 4 low 保留，生产 0、high / critical 0 不等于父债完成；shell-quote 固定补丁与上游撤销条件、签名 / TLS / Agent / 双核止线不解除。本片只保存本地 checkpoint，后续有限实质批次携带；不打断既有正式 CI，也不为一个引用化字段立即再跑全量。无 Rust / 真实 Tauri / 模型 / 音频 / 用户 DB / 旧身份验证。

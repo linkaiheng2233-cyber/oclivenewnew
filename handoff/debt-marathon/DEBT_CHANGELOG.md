@@ -804,3 +804,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **差量 / 责任 / 止线**：按[三路径计划](ROUND-02-PLAN.md#k-agent-merge-01--保持单-agent暂缓合并2026-10-08)只登记主台账第五列、本计划和本事件；controller 实施 / 自查，independent=false。原权限、单 Agent 行为、接口与配置保持；父债 Deferred / OPEN，解冻需明确恢复并冻结既有语义问题。历史、其它债务与缓存冻结批次不改，没有新场景、身份或模型 / 工具调用。
 - **有限出口 / CI 节奏**：只做文档门禁与三路径 / 历史文本核验，回执在新隔离树 `.cursor/plans/debt-agent-defer-20261008-r0/`；通过后建本地 checkpoint，后续实质批次携带。不为优先级记录单独跑全量 CI，也不把上批尚未完成的结果冒充本片验收。
 - **实际适用结果**：八项文档检查 native 0（默认 52 / 三改文链接、docs-only 旧路径、镜像、登记、债结构、编码与 diff），另有三路径 / 历史保留核验 native 0。147 行 / 12 auto plans 是结构输出，不是偿债完成数；其它台账文本与原四列相同，计划 / DCL 历史仅追加。编码门首次因 controller 写错脚本名而 MODULE_NOT_FOUND、native 1；使用真实 `check-doc-encoding.mjs` 的新回执通过，旧失败保留，不归因产品。diff 的 LF→CRLF 提示保留，不称零 stderr。
+
+### DCL-20261008-64 · Tauri SDK override 的根声明引用化
+
+- **原因 / 例子 / 实施**：根 SDK 的 dependency 和 override 两处重复同一版本范围；未来只改 dependency 会造成 npm EOVERRIDE。按[四路径有限计划](ROUND-02-PLAN.md#k-supply-12--tauri-sdk-override-引用根声明2026-10-08)，采用 npm 官方 `$name` 根声明引用，保留约束，仅去掉手工同步的第二个事实来源；不删除 override、不升级 SDK。controller 实施与语义自查，independent=false。
+- **实际安装 / 停线**：原 npm 10.9.8 ci native 0，锁逐字节相同、完整 npm ls native 0 且依赖树相同；两树 SDK 仍 2.11.1、67 文件集合 / bytes / SHA256 全同。原消费者回归 6/6、typecheck 和 module-compat 已通过；达到保持行为证据后不再扩展调查或新增等价测试。生产 audit native 0 / 漏洞 0；完整 audit native 1 / 4 low、0 moderate / high / critical，原始非零回执保留，不能写成全图零风险。
+- **边界 / 出口**：K-SUPPLY-12 仍 Partial，KaTeX low 和 shell-quote 临时兼容补丁的上游撤销条件保持；签名 / reqwest TLS / 多 Agent / 双核冻结不变。后续完成 lint / frontend build、适用文档门禁与精确写集 / 历史保全再保存本地 checkpoint，不触发新的全量矩阵。日志在本片 `.cursor/plans/debt-api-override-ref-20261008-r0/`，不随 Git 自动转让；不跑 Rust / 真实 Tauri / 模型 / 音频 / 用户数据或旧业务场景。一次写入前补丁因 controller 错用标题分隔符被工具拒绝，改用实际文件尾部后继续，没有源码或行为失败。
+- **实际适用出口**：lint / typecheck / frontend build / module-compat native 0，原 IPC 消费回归 6/6；八项文档门禁 native 0，147 行 / 12 auto plans 仅为结构输出。构建把旧生成 bridge 的换行重写为 LF；保全原始输出，确认 HEAD / index / 过滤后 working blob 同一身份，刷新该路径 index 后无 staged 内容变化，没有源码回退。精确四路径、单字段引用差量、锁不变、其它台账与历史文本保持再核验后建本地 checkpoint；diff 的 LF→CRLF 提示保留，不称零 stderr。到此停止扩大测试或依赖研究，正式验收不从缓存批次或父 SHA 借用。
