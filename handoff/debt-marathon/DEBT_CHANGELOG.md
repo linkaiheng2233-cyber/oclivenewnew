@@ -797,3 +797,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **实际开发证据 / 自主处理**：原工具不存在时测试 native 1（模块缺失），实现后原十项通过；针对访问失败与最后一次读之后的时间窗口再补两项必要负控，12/12 native 0。真实 CLI 正负退出 / TempDir / Junction / 硬链接 / 坏参数 / 原文件保持均由同一实现执行。一次真实 cache 显式调用 native 0、完整、约 9.29 秒；统计是当前非原子元数据快照，不计算清理收益、不重跑凑样本。一次 apply_patch 格式错误在任何文件写入前被工具拒绝，修正补丁格式后继续；没有把它算成产品失败，也没有覆盖原 native 红测。controller 实施和语义自查，independent=false。
 - **批次出口 / 暂缓**：开发窄测与适用门禁之后，和上片 DCL-61 形成有限维护批次，冻结新 SHA 后只跑一次完整本地链，成功才 FF / push 并取精确 SHA 正式 CI；尚未取得前只称 Locally verified。旧二进制、CP-INT 记录 / run ID、原缓存文件、用户 DB / token / 模型 / 音频不动，无业务或外部网络调用。签名 / TLS / Full Resilience / Agent 合并 / Production Stream / 双核解冻等用户决策门继续保留；下一实施需要未决取舍时再问维护者。
 - **本片实际窄测出口**：12/12 合同及两处脚本语法、默认 / 六改文链接、旧路径、镜像、登记、债结构、编码与 diff 均 native 0；精确十一条写集和文本保留核验 native 0。package 只有两个维护脚本、Cargo 全部非注释值及原 Dimension 5 步骤相同，主台账其它文本和历史正文保留。147 行 / 12 auto plans 只是结构输出，父债保持 OPEN。diff stderr 保留 LF→CRLF 提示，不称零 stderr；单次真实盘点不作为完整 CI 或可回收量证据。
+
+### DCL-20261008-63 · 单 Agent 保持与多 Agent 合并暂缓
+
+- **维护者决定 / 原因 / 例子**：维护者选择“保持单 Agent，暂缓合并”。例如蓝图写两个 Agent，当前只执行折叠后的一个；直接改成按序接管会改变任务 / 工具副作用语义。有限核对 `wrap_agent_if_merged`、`PluginResolver`、`AgentProvider::process` 与调用者提供的 `AgentInput.tools` 已足够判断不是机械整理，到这里停止扩查；工具并集仍未实现。
+- **差量 / 责任 / 止线**：按[三路径计划](ROUND-02-PLAN.md#k-agent-merge-01--保持单-agent暂缓合并2026-10-08)只登记主台账第五列、本计划和本事件；controller 实施 / 自查，independent=false。原权限、单 Agent 行为、接口与配置保持；父债 Deferred / OPEN，解冻需明确恢复并冻结既有语义问题。历史、其它债务与缓存冻结批次不改，没有新场景、身份或模型 / 工具调用。
+- **有限出口 / CI 节奏**：只做文档门禁与三路径 / 历史文本核验，回执在新隔离树 `.cursor/plans/debt-agent-defer-20261008-r0/`；通过后建本地 checkpoint，后续实质批次携带。不为优先级记录单独跑全量 CI，也不把上批尚未完成的结果冒充本片验收。
+- **实际适用结果**：八项文档检查 native 0（默认 52 / 三改文链接、docs-only 旧路径、镜像、登记、债结构、编码与 diff），另有三路径 / 历史保留核验 native 0。147 行 / 12 auto plans 是结构输出，不是偿债完成数；其它台账文本与原四列相同，计划 / DCL 历史仅追加。编码门首次因 controller 写错脚本名而 MODULE_NOT_FOUND、native 1；使用真实 `check-doc-encoding.mjs` 的新回执通过，旧失败保留，不归因产品。diff 的 LF→CRLF 提示保留，不称零 stderr。
