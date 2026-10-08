@@ -865,3 +865,11 @@
 **十路径 / 固定行为**：只改 `remote_plugin/{emotion_http,agent_http,reply_post_process_http,reply_post_process_directory_http,theater_director_directory_http}.rs` 五个解码调用与 import、中英 `REMOTE_PLUGIN_PROTOCOL.md`、主台账 K-RESILIENCE-01 第五列、本计划与 DCL 追加。复用原 helper，保持每处 DTO 类型与错误 context 字符串；params、method、HTTP 请求/授权/超时、fallback 开关与条件、Agent 工具轮数/顺序、后处理输出映射、剧场 prompt 校验、公共签名及依赖不变。不是统一所有失败策略；成功 result 的 decode 错误仍不触发 builtin。协议文档只补当前 helper 锚点，并将旧 Full OPEN 状态复述换成冻结决策链接；Full Deferred 不解冻，旧 Minimal Stage 不重领。
 
 **有限出口 / CI 节奏**：原 Remote 定向回归在整理前后使用同一测试正文；定向 Host Clippy、fmt、分层、默认及改文链接、docs-only 旧路径、镜像/登记/债结构/编码/diff；再核十路径、五处精确等价替换、原 helper/transport/config/DTO/测试 Git blob 与历史正文保持。无新增公开 API，不另造镜像测试或增加 doctest 矩阵。通过后保存第二个可审查本地 checkpoint；与上一情绪片等待相关有限批次出口，不逐片推完整 CI。K-RESILIENCE-01 仍 Partial / Full Deferred，无真实模型/语音、外网请求、用户 DB 或历史业务身份；仅原库测试自有 loopback/临时 grant 夹具。
+
+### K-LLM-ENV-02 · slot resolution 测试进程环境保护补齐（2026-10-09）
+
+**触发 / 基线 / 归因限度**：相关 Host 整理 `2a85179094ee4f45cdba80a90f2a938f9c2670a4` 的一次完整本地链 native 0（1277.3788755 秒），正式 [37818504017](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37818504017) attempt 1 为 15 success、Windows workspace test 与 ci-gate failure，不能宣称 main 已恢复。原失败 `env_llm_override_surfaces_in_debug_chain` 为 None / Some(remote)。该进程四个用例仅两个持有 ENV_TEST_LOCK，但另外两个初始化 AppState 时也调用 DB→env 写入；这是明确夹具隔离缺口，远端没有记录究竟哪个初始化线程在该次断言前清值，不补造精确时序。原生产环境事务与父债有限 Done 不重判。
+
+**四路径 / 自主边界**：只改 `distros/desktop-tauri/tests/slot_resolution_chain.rs`、主台账同债第五列、本计划与 DEBT_CHANGELOG。同一私有 RAII fixture 取得原锁，保存并清理本测试进程的 backend 原值；四个用例整个初始化/消费期间共用该锁，正常结束与 unwind 在释放锁之前恢复原值。四条原断言和生产 AppState/env/provider/debug 代码保持，不新增全局运行时锁、环境架构、超时/重试、六槽/权限/默认 feature 或 generic fixture 框架。controller 实施与语义自查，independent=false；资源构建仅在新拥有工作树的已核包含性/非 reparse 目录，旧工作树/原 CI 失败/账本不改。
+
+**有限验证 / 节奏 / 停止**：旧冻结 CI 是实际红例；按 test-threads=4 跑原四项，定向桌面 Clippy/fmt，默认与三改文链接、docs-only 旧路径、登记/债结构/编码/diff；核精确四路径、原断言与生产源码/锁/历史保持。取得对应证据即停止，不穷尽四线程排列或归因到未观测的具体线程。冻结修复提交后，一次完整本地链与新 SHA 的正式 CI 用于 main 修复，不对旧 run rerun、不造绿灯回写提交。所有原失败保留；Full/单 Agent/双核/签名/TLS 冻结及公共兼容未决不解，零真实模型/音频/用户库/旧业务身份。原始证据在本机 ignored `.cursor/plans/debt-slot-env-20261009-r0/`，不随 Git 自动转让。

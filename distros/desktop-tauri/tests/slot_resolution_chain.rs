@@ -18,11 +18,41 @@ use oclive_kernel_types::models::PluginBackendSource;
 use oclivenewnew_tauri::api::role::{
     get_plugin_resolution_debug_impl, load_role_impl, set_session_plugin_backend_impl,
 };
+use std::ffi::OsString;
 use std::fs;
 use std::sync::Arc;
 use tempfile::TempDir;
 
 static ENV_TEST_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+struct TestEnvironment {
+    original_backend: Option<OsString>,
+    _lock: tokio::sync::MutexGuard<'static, ()>,
+}
+
+impl TestEnvironment {
+    async fn acquire() -> Self {
+        // AppState initialization applies DB-backed env too, even in tests that
+        // never call set_var themselves. Protect every case in this process.
+        let lock = ENV_TEST_LOCK.lock().await;
+        let original_backend = std::env::var_os("OCLIVE_LLM_BACKEND");
+        std::env::remove_var("OCLIVE_LLM_BACKEND");
+        Self {
+            original_backend,
+            _lock: lock,
+        }
+    }
+}
+
+impl Drop for TestEnvironment {
+    fn drop(&mut self) {
+        // Drop runs before the lock field is released, including on unwind.
+        match &self.original_backend {
+            Some(value) => std::env::set_var("OCLIVE_LLM_BACKEND", value),
+            None => std::env::remove_var("OCLIVE_LLM_BACKEND"),
+        }
+    }
+}
 
 fn write_legacy_role(roles_root: &TempDir, role_id: &str, memory: &str, llm: &str) {
     let role_dir = roles_root.path().join(role_id);
@@ -68,6 +98,7 @@ fn vscode_ceiling_host() -> HostProfile {
 
 #[tokio::test]
 async fn v2_pack_session_memory_override_in_memory_only() {
+    let _environment = TestEnvironment::acquire().await;
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
     });
@@ -112,8 +143,7 @@ async fn v2_pack_session_memory_override_in_memory_only() {
 
 #[tokio::test]
 async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
-    let _guard = ENV_TEST_LOCK.lock().await;
-    std::env::remove_var("OCLIVE_LLM_BACKEND");
+    let _environment = TestEnvironment::acquire().await;
 
     let tmp = TempDir::new().unwrap();
     write_legacy_role(&tmp, "legacy_slot", "builtin", "ollama");
@@ -147,8 +177,7 @@ async fn legacy_plugin_backends_pack_resolves_without_slot_registry() {
 
 #[tokio::test]
 async fn env_llm_override_surfaces_in_debug_chain() {
-    let _guard = ENV_TEST_LOCK.lock().await;
-    std::env::remove_var("OCLIVE_LLM_BACKEND");
+    let _environment = TestEnvironment::acquire().await;
 
     let llm = Arc::new(MockLlmClient {
         reply: "ok".to_string(),
@@ -170,11 +199,11 @@ async fn env_llm_override_surfaces_in_debug_chain() {
     .expect("debug");
 
     assert_eq!(debug.llm_env_override.as_deref(), Some("remote"));
-    std::env::remove_var("OCLIVE_LLM_BACKEND");
 }
 
 #[tokio::test]
 async fn host_profile_ceiling_replaces_pack_remote_before_session_override() {
+    let _environment = TestEnvironment::acquire().await;
     let tmp = TempDir::new().unwrap();
     write_legacy_role(&tmp, "ceiling_role", "remote", "remote");
     let llm: Arc<dyn oclive_kernel_host::infrastructure::llm::LlmClient> =
