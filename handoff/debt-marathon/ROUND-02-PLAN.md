@@ -831,3 +831,11 @@
 **四路径 / 保持语义**：仅根 `package.json` 的 API override 值改为 `$@tauri-apps/api`，继续全树约束且不升级 SDK；另外只追加主台账 K-SUPPLY-12 第五列、本计划和 DCL-64。根 dependency、其它四条 override、所有 workspace manifest、锁文件、代码 / 脚本 / 测试 / 权限 / 默认功能保持，父债 Partial 不变。原 npm ci 和完整解析树通过，锁逐字节相同；原工作树与本片安装 SDK 2.11.1 的 67 个普通文件集合 / bytes / SHA256 全同。到此停止追加等价证明，不新写镜像实现的测试。
 
 **有限出口 / CI 节奏**：原 IPC seam 消费回归、typecheck / lint / build、module-compat、生产与全图 audit 分列，再做适用文档 / 编码 / 登记 / 债结构 / diff 与精确四路径 / 历史保全；安装图、锁或 SDK 发生额外差量即停止，不刷新锁或 force。完整 audit 的原 4 low 保留，生产 0、high / critical 0 不等于父债完成；shell-quote 固定补丁与上游撤销条件、签名 / TLS / Agent / 双核止线不解除。本片只保存本地 checkpoint，后续有限实质批次携带；不打断既有正式 CI，也不为一个引用化字段立即再跑全量。无 Rust / 真实 Tauri / 模型 / 音频 / 用户 DB / 旧身份验证。
+
+### K-RESILIENCE-01 · 保持 Minimal，Full Deferred（2026-10-08）
+
+**已确认决定 / 基线 / 责任**：维护者明确要求保持 Minimal，Full Deferred；[决策 §8](../../creator-docs/architecture/DESIGN_DECISIONS.md#full-resilience-deferred)为冻结范围与复评条件唯一入口。从干净 `86f788a771ef5492da4da105aa81375c1f8458f0` 接续；controller 实施 / 自查，independent=false。这是已批准的文档冻结，不是设计或实现 Full，Kernel / Host 既有权责仅引用原 SSOT。
+
+**精确六路径 / 保全**：主台账 K-RESILIENCE-01 后续 / 状态、原 Minimal long-plan、中英 canonical DESIGN_DECISIONS、本计划、DCL-65；同一台账 K-BUILD-07 第五列携带已取得的缓存批终态，不新做证据专用提交。其余台账文本、历史 Stage JSON / 原 Wave / 旧决策正文、代码、依赖、权限及 Agent / 工具 / 六槽语义保持。EN wrapper 保持指向 canonical body；不新增顶层文件或另一份状态表。
+
+**有限出口 / 后续**：默认及六改文链接、docs-only 旧路径、镜像、登记、债结构、编码和 diff；额外核六路径、许可行 / 单元格、历史正文与 JSON 保留。仅 local checkpoint，后续有限实质批次统一验收，不为冻结文档单独全量。完成后简报位置与剩余前提，继续普通债务；首候选 K-CROSS-01 只核已声明 unsupported 的拒绝主路径及直接回归，有明确缺口才施工，证据足够即停，不扩大真实音频 / 硬件 / 全平台矩阵。架构未决项仍单独登记；复评不是自动解冻。

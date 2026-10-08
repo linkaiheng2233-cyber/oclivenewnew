@@ -77,6 +77,22 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
 
 ---
 
+<a id="full-resilience-deferred"></a>
+
+## 8. 保持 Minimal 韧性，Full 暂缓（2026-10-08）
+
+| 决定 | 依据与冻结范围 |
+|------|----------------|
+| **保持现有 Minimal；Full 为 Deferred** | 维护者确认现有有限收束继续有效；没有明确故障目标时不因“Full”名称发明通用层。暂缓不是完成，也不是永久取消；本次不增加实现。当前债状态见[唯一台账](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。 |
+| **保留小 Kernel / Host 的权责边界** | 沿用[既有权责](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)：Kernel 守住契约、权限合法性、必要因果与终态等硬边界；发行版故障处理和运行环境适配由 Host 在这些边界内承担。本次不新增公共 API 或架构权力。 |
+| **不自动引入执行策略** | 不擅自增加自动重试、熔断、模块接管或降级；现有 Agent、工具调用、六槽交互和已验 Remote 行为保持。既有策略仍依原实现与授权运行，暂缓不删除它们。 |
+
+**重新评估条件**：只有出现具体且可复现的故障案例、现有 Minimal 无法满足明确的可靠性需求，并且目标、影响范围及语义风险能够界定，才重新评估 Full。重新评估不等于自动解冻实施；涉及新执行语义、契约或架构权力分配时仍须维护者确认。没有满足这些前提的候选继续登记，不能为了偿债数量自行打开 Full。
+
+原 Minimal 计划与历史效力见[冻结入口](../../handoff/debt-marathon/long-plans/K-RESILIENCE-01.md#full-deferred-freeze)；执行与接手事件见[DCL-65](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261008-65--保持-minimal并将-full-韧性暂缓)。
+
+---
+
 ## 相关文档
 
 - [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
