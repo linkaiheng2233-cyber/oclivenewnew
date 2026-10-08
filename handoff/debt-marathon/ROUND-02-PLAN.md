@@ -798,3 +798,12 @@
 **写集 / 预期 / 闭环**：仅修改 `kernel/crates/oclive_kernel_runtime/src/domain/lexicon/lexicon_zh_cn.json`、原外部消费者测试 `kernel/crates/oclive_kernel_runtime/tests/base_emotion.rs`、本计划、主台账 K-EMO-01 行及 DEBT_CHANGELOG，共五路径。追加独立作者词批 `en-direct-20261008`：每个非 neutral 维度两个直接词，共十二词；沿用现有英文 weight=2、`space_boundary`、一次首命中和否定标记规则，旧词逐项及顺序不变，JSON schema/语言键不变。没有导入 VADER/AFINN 数据或其极性评分，没有新 parser、枚举、状态、Prompt 策略或公开接口。生产链为嵌入词表 → 原 `analyze_material` → 七维结果与完整 Base 线索 → 原 Host 消费，主 LLM 保留角色侧权威；Host/Tauri/UI/插件与角色包接线无需改。
 
 **验证 / CI 节奏 / 未覆盖**：先加真实公开消费回归，确认旧数据拒绝所需正例，再补词表。正例覆盖十二词、大小写和标点；负例验证 ASCII 标识符边界、直接否定及 Base 仍报告否定线索；原中文/英文回归保持。完成 runtime 定向、库与原外部 Base 测试、Clippy/fmt、分层及适用文档/编码/债结构/diff；公共签名不变，不新增 doctest 要求。开发片先形成本地 checkpoint，相关批次收口才做一次完整本地链、冻结与目标 SHA 正式 CI，不用父 SHA 绿灯代替新提交。反讽、主体/引述、跨词否定、语义权重校准、多轮与真实模型质量仍未覆盖，K-EMO-07 不由本片关闭；若需要改变这些语义或引入模型/外部数据，先登记并跳过，不续预算穷尽。
+
+
+### D-DEBT-LEDGER-01 · 技术债接手现状的三处过期表述（2026-10-08）
+
+**起点 / 真实问题 / 限度**：干净 `6f11a54fef02281f45aef4aeb2301b6b5226d10c` 与实际远端一致。有限筛选剩余 Remote 入口时，已核的 Prompt / Memory / Event / ComplexEmotion 主路径没有新的行为等价收束点，Agent 硬失败和工具循环不强行并入回退策略；达到现有事实即结束该候选。改读接手台账发现 D-CLI-BLUEPRINT-05 第二列还说 HTTP/Tauri/UI 未接通，与同一第五列及 ROLE_PACK_BOUNDARY §0.11–0.19 冲突；K-SUPPLY-10 与 K-EMO-01 仍把已收口片写作目标正式待验。只核到已有契约、生产注册 / UI 接线和两批原 closeout 件即施工，不追全部声明、真实模型 / 音频或故障矩阵。
+
+**精确四路径 / 语义 / 保全**：本计划、DEBT_CHANGELOG、主台账和新 `archive/TECHNICAL_DEBT_HANDOFF_ROWS_20261008.md`。归档逐字保留三个基线原行；台账最小角色第二 / 四列区分已接基础操作与待产品选择的丰富适配，原第五列承诺不变；Supply 只更新第五列过期待验表述并引用原 SHA CI；Emotion 的问题 / 后续列区分已补直接词与未实施外部词库，第五列按原 SHA CI 纠正待验阶段；D-DEBT-LEDGER-01 第五列追加这次有限进展。不复制阶段矩阵、造另一份当前状态或修改历史事件。三个父债仍 Partial，K-EMO-07 OPEN、双核 Frozen / Deferred；共享运行库在小 Kernel 外，Host 自行绑定资源，六槽可替换不等于固定六阶段或任意缺能力也成功。
+
+**验证 / 出口 / 调度**：默认及四文件链接、docs-only 旧路径、登记、镜像、债结构、编码、diff；另核精确写集、归档三行相同、除许可单元格外台账文本相同、计划 / DCL 历史为原文前缀。controller 实施和语义自查，independent=false。保存本地文档 checkpoint，main 保持已正式验收的 6f11a54f；本片不单独推送或重跑完整 CI、不把旧 SHA 绿灯当新文档正式验收。后续相关实质批次再按实际写集收口。没有源代码 / 依赖 / 权限 / 公共 API / CI 变化，零模型、TTS、用户 DB 或历史 CP-INT 重放；接手误判消除且门禁通过即停。
