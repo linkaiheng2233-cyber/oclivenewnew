@@ -4,7 +4,9 @@ use crate::infrastructure::directory_plugins::DirectoryPluginRuntime;
 use crate::infrastructure::remote_plugin::{
     DirectoryComplexEmotionHttp, RemoteComplexEmotionHttp, RemotePluginHttpConfig,
 };
-use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionProvider;
+use oclive_kernel_runtime::domain::complex_emotion::{
+    BuiltinKeywordComplexEmotionProvider, ComplexEmotionProvider,
+};
 use oclive_validation::{slot_registry_instances_sorted, SlotRegistryEntry};
 use std::collections::BTreeMap;
 use std::sync::atomic::AtomicBool;
@@ -12,7 +14,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use super::BackendRegistry;
-use super::{BuiltinComplexEmotionArc, NoopComplexEmotionArc, RemoteComplexEmotionArc};
+use super::{NoopComplexEmotionArc, RemoteComplexEmotionArc};
 
 impl BackendRegistry {
     #[must_use]
@@ -44,7 +46,7 @@ impl BackendRegistry {
     ) -> Arc<dyn ComplexEmotionProvider> {
         let remote_fb = self.remote_fallback_allowed.clone();
         match entry.backend.trim() {
-            "builtin" => Arc::new(BuiltinComplexEmotionArc),
+            "builtin" => Arc::new(BuiltinKeywordComplexEmotionProvider),
             "none" => Arc::new(NoopComplexEmotionArc),
             "remote" => {
                 let cfg = entry
@@ -63,7 +65,7 @@ impl BackendRegistry {
                         target: "oclive_plugin",
                         "complex_emotion backend=remote but no url/env; using builtin"
                     );
-                    return Arc::new(BuiltinComplexEmotionArc);
+                    return Arc::new(BuiltinKeywordComplexEmotionProvider);
                 };
                 match RemoteComplexEmotionHttp::new(cfg, remote_fb, self.high_risk_grants.clone()) {
                     Ok(http) => Arc::new(RemoteComplexEmotionArc(Arc::new(http))),
@@ -73,12 +75,12 @@ impl BackendRegistry {
                             "complex_emotion remote client build failed: {}; using builtin",
                             e
                         );
-                        Arc::new(BuiltinComplexEmotionArc)
+                        Arc::new(BuiltinKeywordComplexEmotionProvider)
                     }
                 }
             }
             "directory" => self.pick_complex_emotion_directory(entry, remote_fb),
-            _ => Arc::new(BuiltinComplexEmotionArc),
+            _ => Arc::new(BuiltinKeywordComplexEmotionProvider),
         }
     }
 
@@ -92,7 +94,7 @@ impl BackendRegistry {
                 target: "oclive_plugin",
                 "complex_emotion backend=directory but runtime disabled; using builtin"
             );
-            return Arc::new(BuiltinComplexEmotionArc);
+            return Arc::new(BuiltinKeywordComplexEmotionProvider);
         };
         let plugin_id = entry
             .plugin
@@ -104,7 +106,7 @@ impl BackendRegistry {
                 target: "oclive_plugin",
                 "complex_emotion backend=directory but plugin id missing; using builtin"
             );
-            return Arc::new(BuiltinComplexEmotionArc);
+            return Arc::new(BuiltinKeywordComplexEmotionProvider);
         };
         if !rt.manifest_provides_capability(&pid, "complex_emotion") {
             tracing::warn!(
@@ -112,7 +114,7 @@ impl BackendRegistry {
                 "directory plugin_id={} missing provides complex_emotion; using builtin",
                 pid
             );
-            return Arc::new(BuiltinComplexEmotionArc);
+            return Arc::new(BuiltinKeywordComplexEmotionProvider);
         }
         match rt.ensure_rpc_url(pid.as_str()) {
             Ok(url) => {
@@ -126,7 +128,7 @@ impl BackendRegistry {
                             pid,
                             e
                         );
-                        Arc::new(BuiltinComplexEmotionArc)
+                        Arc::new(BuiltinKeywordComplexEmotionProvider)
                     }
                 }
             }
@@ -137,7 +139,7 @@ impl BackendRegistry {
                     pid,
                     e
                 );
-                Arc::new(BuiltinComplexEmotionArc)
+                Arc::new(BuiltinKeywordComplexEmotionProvider)
             }
         }
     }

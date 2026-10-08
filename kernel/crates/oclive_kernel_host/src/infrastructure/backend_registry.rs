@@ -1,7 +1,6 @@
 use crate::domain::agent::{AgentProvider, BuiltinReActAgent};
 use crate::domain::complex_emotion::{
-    BuiltinKeywordComplexEmotionProvider, ComplexEmotionInput, ComplexEmotionOutput,
-    ComplexEmotionProvider,
+    ComplexEmotionInput, ComplexEmotionOutput, ComplexEmotionProvider,
 };
 use crate::domain::event_estimator::{BuiltinEventEstimator, EventEstimator};
 use crate::domain::local_plugin_bridge::{
@@ -45,17 +44,6 @@ mod agent;
 mod directory;
 mod mcp;
 mod slots;
-
-struct BuiltinComplexEmotionArc;
-
-impl ComplexEmotionProvider for BuiltinComplexEmotionArc {
-    fn resolve_turn(
-        &self,
-        input: &ComplexEmotionInput,
-    ) -> crate::error::Result<ComplexEmotionOutput> {
-        Ok(BuiltinKeywordComplexEmotionProvider.resolve_turn_inner(input))
-    }
-}
 
 struct RemoteComplexEmotionArc(Arc<RemoteComplexEmotionHttp>);
 

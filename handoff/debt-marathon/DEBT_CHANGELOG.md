@@ -828,3 +828,11 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **验证 / 节奏**：controller 实施与直接语义总审，independent=false；日志在 ignored `.cursor/plans/debt-voice-platform-guard-20261008-r0/`，首轮真实红灯保留，VM experimental 提示与换行提示不称零 stderr。完成适用专项与文档 / 精确保全后 local checkpoint；与 Agent 暂缓 / SDK 引用化 / Full 冻结共同形成有限批次，才做一次完整门禁与推送验收。证据足够即停止扩展调查。
 - **本机工具前提**：首次 TTS 棘轮 native 1，因新执行包装未携带本机 Python 路径，缺 `py` 启动器；不是回归失败。保留原日志，仅在子进程设置已有 `OCLIVE_VOICE_PYTHON` 指向 portable Python 后该棘轮 native 0，父环境未改。原锁离线 npm ci native 0，不升级/刷新依赖；其中缓存 audit 输出不代替在线供应链结论，原完整图 low 边界保留。
 - **实际适用出口**：TTS 棘轮、module-compat（含插件索引）、默认 Dimension 5 native 0（31 checks）；文档八项 native 0。追加本段后只复验受影响链接 / diff 和八路径精确保全，原 profile/锁/历史 Minimal 与其它台账保持。源码回归已足够支持该有限修复，停止增加等价证明；批次包含四个逻辑切片，完整本地和目标远端结果在冻结后另取，不将上述窄门禁写成全仓已验。
+
+### DCL-20261009-67 · 注册表复用原 builtin complex emotion provider
+
+- **原因 / 例子 / 有限判断**：K-EMO-03 的 builtin 规则仍在降级与 Fast 路径接线，不能按旧“单引用”印象删除。注册表私有 `BuiltinComplexEmotionArc` 只重复共享运行库原 trait 的同一个 `Ok(resolve_turn_inner(input))`；例如缺少 Remote 地址时仍以原规则返回相同输出，去掉包装不改变为何回退。D1 核到 trait、九处装配和直接消费者即足够，不扩大情绪质量或所有故障组合。
+- **实施 / 责任 / 范围**：按[五路径计划](ROUND-02-PLAN.md#k-emo-03--注册表复用原-builtin-provider2026-10-09)移除这一私有包装并直接构造原 provider，旧关键词本体与 Remote/Directory/Fast 不改；主台账第二列用实际符号路径代替已移动行号，第五列登记本片，其它列/行与历史保持。controller 实施与语义自查，independent=false；无新公共 API、六槽/设施归属、权限、超时、重试、模型调用或状态策略。Full/Agent/双核/签名/TLS 暂缓保持。
+- **已验 / 停线 / 接手**：原关键词回归修改前后均 5/5，原 Fast 3/3 修改前通过且在修改后 Host lib 637/637 中保持；定向 Host all-targets Clippy、workspace fmt native 0。达到等价整理证据后不新增同构测试；继续适用分层/module-compat、文档/债结构/编码/diff 和五路径总审，再存 local checkpoint，K-EMO-03 仍 OPEN。原件与 native 回执在本机 ignored `.cursor/plans/debt-emo-provider-20261009-r0/`，不随 Git 自动转让。
+- **基线 / CI 节奏**：起点 `f78696a20ae143e61c7ba92f0673197db90fbc44` 已完整本地 native 0（1493.6002258 秒），起步时前批正式 37804969337 仍在观察，不能将其冒充本片远端结果。本片不独立推矩阵；相关有限批次收口才一次完整链与目标 SHA 正式 CI。此前观察会话中断与 API EOF 原始失败分别保留，只读续观同一个远端 run，未 rerun。宿主实机/真实音频/模型、用户 DB 与原 CP-INT 证据不碰。
+- **实际适用出口**：分层、完整 module-compat（含六个插件索引）、八项文档/债结构/编码/diff 门禁 native 0；147 行/12 auto plans 只为结构输出，不是偿债数量。追加本句后只复验受影响的改文链接/diff，再核五路径、九处精确替换、原规则/adapter/Fast 与锁不变、其它台账行和计划/DCL 历史保持。没有公开 API 变化，不新增 doctest 或重复全量；换行提示保留，不称零 stderr。

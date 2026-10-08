@@ -849,3 +849,11 @@
 **出口 / 停线**：同一断言在原实现 8 过 9 败，修后 17/17；只替换平台与 IO，不复制 handler、不改原源码字符串或实际监听端口。定向回归/语法/TTS ratchet/module-compat、默认 Dimension5 --ci（门禁接入）和适用文档/精确写集。现有 UI 已按 ok/reason/message 显示错误，无需新增策略；不运行真实声卡/模型/侧车。到此停止补证、K-CROSS 保持 Partial；与前面三片在一个有限里程碑统一完整本地与目标 SHA 正式 CI，不逐片全量。
 
 **本次有限里程碑**：承接单 Agent 暂缓 `25230a48`、SDK override 引用化 `86f788a7`、Full Deferred 冻结 `7830981a`，再携带本片修补；相对已验 main `c9b08a96` 为四个可审查切片。仅此批次做一次 `npm run check:ci-local`，适用门禁通过后冻结精确 HEAD/写集/字节，再按已授权的 main fast-forward / 一次 push 验目标 SHA 正式 CI；主工作树或远端漂移则先对账，不强推。正式结果先记交付回执，下次实质改动再入账，不产生绿灯回写提交。未取得目标 CI 前这些切片只属本地证据，不能借 c9 的旧绿灯。
+
+### K-EMO-03 · 注册表复用原 builtin provider（2026-10-09）
+
+**起点 / 问题 / 限度**：从干净 `f78696a20ae143e61c7ba92f0673197db90fbc44` 建独立工作树；该前批完整本地链 native 0（1493.6002258 秒），正式 37804969337 尚在观察，不将其写成已验。D1 仅核原 `BuiltinKeywordComplexEmotionProvider` 的 trait 实现、注册表包装及九个构造点、Remote/Directory 与 Fast 直接消费者；发现私有 `BuiltinComplexEmotionArc` 只重复同一 `Ok(resolve_turn_inner(input))`，无独立状态/策略，到此已足够整理，不扩情绪质量、模型或跨回合研究。M，controller 实施与自查，independent=false。
+
+**五路径 / 保持语义**：`backend_registry.rs` 删除这一个私有重复包装，`backend_registry/directory.rs` 的原九个分支直接以相同 Arc trait 对象装配共享运行库的原 provider；加本计划、主台账 K-EMO-03 第二/第五列的当前锚点与有限进展、DEBT_CHANGELOG。关键词本体、输出全字段、回退条件/告警/超时/权限、last-wins/none、Remote/Directory adapter、Fast 强度和公开 API 均不改；不是删除降级出口，也不并入六槽 Emotion。台账其它行和本行优先级/完成条件保留，历史计划与事件仅追加。
+
+**适用验证 / 出口**：先跑原 runtime 关键词与 Host Fast 回归，修改后同一回归及 Host lib、定向 Host Clippy、fmt、分层和适用文档/债结构/编码/diff；纯私有等价整理不另造镜像测试，不新增公开 API/doctest 要求。核实际五路径、原 runtime/adapter/Fast 字节与九处条件/日志保持，充分即停。K-EMO-03 保持 OPEN，仅本片 local checkpoint；相关小批次组合后才一次完整本地与目标 SHA 正式 CI，不为此片单独推矩阵。上一前批终态如已取得，随本次实质片据原 receipt 回填，不能用它证明本片。Full/Agent/双核/签名/TLS 等已定暂缓、用户数据及原 CP-INT 证据不触碰。
