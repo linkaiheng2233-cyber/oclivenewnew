@@ -45,6 +45,14 @@ const syntax = spawnSync(process.execPath, ['--check', rpcServer], {
 if (syntax.status !== 0) {
   fail(syntax.stderr?.trim() || 'rpc_server.mjs syntax check failed')
 }
+const platformConformance = spawnSync(process.execPath, [
+  '--experimental-vm-modules', '--test',
+  path.join(repoRoot, 'scripts/test-voice-platform-conformance.test.mjs'),
+], { cwd: repoRoot, encoding: 'utf8', timeout: 15_000 })
+if (platformConformance.status !== 0) {
+  fail([platformConformance.error?.message, platformConformance.stdout, platformConformance.stderr]
+    .filter(Boolean).join('\n') || 'voice platform conformance regression failed')
+}
 const rpcServerSource = fs.readFileSync(rpcServer, 'utf8')
 if (
   !rpcServerSource.includes(

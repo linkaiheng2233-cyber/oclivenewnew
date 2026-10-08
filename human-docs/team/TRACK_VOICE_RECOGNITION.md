@@ -141,6 +141,7 @@ node distros/chat-pro/plugins/com.oclive.voice.asr/rpc_server.mjs
 | `node scripts/test-voice-speak-path.mjs --probe-only` | TTS probe 路径诚实失败 | 三 OS 实机出声 |
 | `node scripts/test-voice-speak-path.mjs --role-path distros/chat-pro/roles/mumu --runs 5 --stream-only --max-ttfc-ms 2500` | 当前机器 warm TTFC 分位数、角色参考音频预热与真实 PCM stream | 跨机器统一性能承诺 |
 | `node scripts/check-voice-tts-ratchet.mjs` | TTS 契约棘轮 | 三 OS |
+| `node --experimental-vm-modules --test scripts/test-voice-platform-conformance.test.mjs`（默认 TTS 棘轮包含） | 原网关 RPC 控制流在替代平台值下明确拒绝 unsupported 的 ASR/TTS；探测/预热/发声不触发引擎 IO，Windows 与自建端点声明不被误拒 | Linux/macOS 实机或 UI、真实音频/引擎、Host 资源准入；仅替身 IO 与平台值 |
 
 | **human-only** | 说明 |
 |----------------|------|

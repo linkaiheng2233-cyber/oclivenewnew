@@ -62,6 +62,8 @@ Requires `tts_expansion_enabled`. Params:
 
 Failure `tts_expansion_disabled` when expansion off. **No Piper fallback.**
 
+`voice.probe_tts`, `voice.warm` and `voice.speak` honor the selected profile's OS declaration in `asr_profiles.json`. A declared unsupported profile returns `ok: false, reason: "unsupported_platform"` with its profile/platform/message before engine discovery, network probes or engine spawn; a missing profile returns `profile_not_found`. This also applies to an unavailable `directive.synth_profile`. Refusal does not fabricate an unload confirmation or probe a bundled endpoint for coordinated cleanup; existing Host lease-retention rules remain. Profiles without an OS restriction, including user-managed `local_http` and `cloud`, retain their routing. The offline regression uses the actual gateway dispatcher with IO substitutes; it is not a real OS/device acceptance test. Platform and pending acceptance scope: [voice track](../../../../human-docs/team/TRACK_VOICE_RECOGNITION.md#平台--asr--tts--webview差异声明).
+
 ### `voice.build_directive`
 
 Unchanged entry; `rules-v1` now fills `emo_text` + role-pack `ref_map`.

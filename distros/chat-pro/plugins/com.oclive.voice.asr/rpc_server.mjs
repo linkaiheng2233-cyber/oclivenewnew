@@ -163,6 +163,7 @@ function profileEngine(profileRec) {
 }
 
 function shouldRunBundledSidecar(profileRec) {
+  if (!profileRec?.ok) return false;
   const cfg = pluginConfig || {};
   if (cfg.tts_expansion_enabled !== true) return false;
   const routing = synthRoutingFromConfig(profileRec);
@@ -532,6 +533,7 @@ async function probeSidecarEndpoint(endpoint, expectedModelDir) {
 
 async function ensureCosyvoiceSidecar(profileId) {
   const profileRec = resolveTtsProfileRecord(profileId);
+  if (!profileRec.ok) return ttsProfileFailure(profileRec);
   if (!shouldRunBundledSidecar(profileRec)) {
     return { ok: false, reason: "sidecar_not_applicable" };
   }
@@ -852,9 +854,20 @@ function resolveTtsProfileRecord(profileId) {
   const id = (profileId || pluginConfig?.tts_profile || readProfiles().default_tts_profile || DEFAULT_TTS_PROFILE).trim();
   const resolved = resolvePlatformProfile(id);
   if (!resolved.ok) {
-    return { id, ok: false, profile: null };
+    return { ...resolved, profile: null };
   }
   return { id, ok: true, profile: resolved.profile };
+}
+
+function ttsProfileFailure(profileRec) {
+  return {
+    ok: false,
+    profile: profileRec.id,
+    platform: PLATFORM,
+    reason: profileRec.reason,
+    message: profileRec.message || "TTS profile is unavailable",
+    audio_base64: "",
+  };
 }
 
 function stableJson(value) {
@@ -1240,6 +1253,7 @@ async function handleSpeakCore(params) {
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
+  if (!profileRec.ok) return ttsProfileFailure(profileRec);
   const routing = synthRoutingFromConfig(profileRec);
   const engine = routing.engine || profileRec.profile?.engine;
   let sidecarEndpoint = routing.localEndpoint;
@@ -1337,6 +1351,9 @@ async function handleSpeak(params) {
       audio_base64: "",
     };
   }
+  // A refused profile acquired no engine resources. Do not probe or release a
+  // bundled endpoint merely because the host supplied a release-after-call flag.
+  if (!resolveTtsProfileRecord(result.profile || profileId).ok) return result;
   return {
     ...result,
     resource_transition: {
@@ -1354,6 +1371,7 @@ async function handleProbeTts(params) {
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
+  if (!profileRec.ok) return ttsProfileFailure(profileRec);
   const routing = synthRoutingFromConfig(profileRec);
   let sidecarEndpoint = routing.localEndpoint;
   let sidecarReady = false;
@@ -1403,6 +1421,7 @@ async function handleWarm(params) {
     readProfiles().default_tts_profile ||
     DEFAULT_TTS_PROFILE;
   const profileRec = resolveTtsProfileRecord(profileId);
+  if (!profileRec.ok) return ttsProfileFailure(profileRec);
   const routing = synthRoutingFromConfig(profileRec);
   const engine = routing.engine || profileRec.profile?.engine;
   const directive =

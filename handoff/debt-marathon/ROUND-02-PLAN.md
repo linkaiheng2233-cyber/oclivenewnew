@@ -839,3 +839,13 @@
 **精确六路径 / 保全**：主台账 K-RESILIENCE-01 后续 / 状态、原 Minimal long-plan、中英 canonical DESIGN_DECISIONS、本计划、DCL-65；同一台账 K-BUILD-07 第五列携带已取得的缓存批终态，不新做证据专用提交。其余台账文本、历史 Stage JSON / 原 Wave / 旧决策正文、代码、依赖、权限及 Agent / 工具 / 六槽语义保持。EN wrapper 保持指向 canonical body；不新增顶层文件或另一份状态表。
 
 **有限出口 / 后续**：默认及六改文链接、docs-only 旧路径、镜像、登记、债结构、编码和 diff；额外核六路径、许可行 / 单元格、历史正文与 JSON 保留。仅 local checkpoint，后续有限实质批次统一验收，不为冻结文档单独全量。完成后简报位置与剩余前提，继续普通债务；首候选 K-CROSS-01 只核已声明 unsupported 的拒绝主路径及直接回归，有明确缺口才施工，证据足够即停，不扩大真实音频 / 硬件 / 全平台矩阵。架构未决项仍单独登记；复评不是自动解冻。
+
+### K-CROSS-01 · TTS unsupported 主路径修补（2026-10-08）
+
+**有限问题 / 基线 / 责任**：从 `7830981aba1876cb6b73d6cf5c916852b6c89961` 独立接续；M / 常规现有声明修复，controller 实施与直接总审，independent=false。原平台解析已给拒绝结果，但 TTS record 丢失 reason、probe/warm/speak 未核 ok；因此 Linux/macOS 内置 profile 的 warm 可误报 skipped 成功，probe/speak 继续引擎路径。D1 已足够行动，不扩大三平台设备调查。
+
+**八路径 / 闭环**：原 voice RPC、一个实际 ES module dispatcher 回归、既有 TTS ratchet、插件 README、语音轨道已有入口表、主台账 K-CROSS 第五列、本计划、DCL-66。源 profile/权限/Kernel/六槽/前端 API 不变；旧 ASR 拒绝、有效 Windows、用户自建 HTTP/cloud 与空文本/关闭扩展优先级保持；不可用 profile 的资源包装不得为了拒绝回合探测/卸载端点，也不伪造释放确认。Host 原“无确认保留租约”的安全语义未改，前置资源准入与真实宿主符合性不在此替身证明内。
+
+**出口 / 停线**：同一断言在原实现 8 过 9 败，修后 17/17；只替换平台与 IO，不复制 handler、不改原源码字符串或实际监听端口。定向回归/语法/TTS ratchet/module-compat、默认 Dimension5 --ci（门禁接入）和适用文档/精确写集。现有 UI 已按 ok/reason/message 显示错误，无需新增策略；不运行真实声卡/模型/侧车。到此停止补证、K-CROSS 保持 Partial；与前面三片在一个有限里程碑统一完整本地与目标 SHA 正式 CI，不逐片全量。
+
+**本次有限里程碑**：承接单 Agent 暂缓 `25230a48`、SDK override 引用化 `86f788a7`、Full Deferred 冻结 `7830981a`，再携带本片修补；相对已验 main `c9b08a96` 为四个可审查切片。仅此批次做一次 `npm run check:ci-local`，适用门禁通过后冻结精确 HEAD/写集/字节，再按已授权的 main fast-forward / 一次 push 验目标 SHA 正式 CI；主工作树或远端漂移则先对账，不强推。正式结果先记交付回执，下次实质改动再入账，不产生绿灯回写提交。未取得目标 CI 前这些切片只属本地证据，不能借 c9 的旧绿灯。
