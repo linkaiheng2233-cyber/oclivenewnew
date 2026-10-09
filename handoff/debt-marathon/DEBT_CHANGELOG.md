@@ -879,3 +879,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **局部事实 / 停止线**：按[七路径计划](ROUND-02-PLAN.md#k-supply-12--上游安全补丁与临时-override-撤销2026-10-09)，生成锁恰两节点、其它字段全同；原 npm 10 ci / 全树 native 0。复用原兼容探针新副本，良性 quote/parse 和参数展开通过；四种危险分隔符只在内存 TypeError，双子进程成功 CLI 0、子进程 7→CLI 1；production build native 0。前后 production 0、full 4 low／0 moderate／0 high／0 critical。到此实际撤销条件足够，不继续证明攻击可达性或调查其它例外。
 - **状态 / 历史 / 证据坐标**：K-SUPPLY-12 父债仍 Partial、KaTeX low 不关闭，旧批准/失败/audit/事件与其它已定冻结原文保留；中英安全记录增加当前撤销事实。安装 deprecated 提示、可选依赖缺失和 Git 换行提示如实报告，不称零 stderr。原件在本机忽略目录 .cursor/plans/debt-compat-20261009-r0/42–56-*，不随 Git 自动转让。controller 实施和专项自查，independent=false；没有新产品/Rust/测试/API或真实模型/TTS/用户 DB 运行。
 - **批次出口**：与本地 79dd65a0 / ee99fdf3 的相关方向文档合批；适用门禁后冻结最终 SHA，一次完整本地 check:ci-local，再依既有推送授权 FF/push并取得该 SHA 正式 CI。当前尚未取得后两项，不能以 d984 已验或窄测宣称新 main 通过；终态存冻结回执，不另起仅回写绿灯提交。
+
+### DCL-20261009-74 · 撤销后供应链摘要同步
+
+- **原因 / 自主处置**：本批已撤销 concurrently 的临时兼容 override，中英供应链指南的当前摘要仍写“待上游撤销”。按 G17 对齐两处摘要并链接当前滚动观察；八月历史、旧安全例外、其它条目与父债 Partial 原样保持，不把指南改成新的状态来源。controller 实施与语义自查，independent=false。
+- **计划 / 证据边界**：按[四路径文档计划](ROUND-02-PLAN.md#k-supply-12--撤销后供应链摘要同步2026-10-09)在 fd19e489 的完整本地链真实结束后实施，前12路径冻结验证期间未改。此片没有源码、配置、锁、脚本或运行行为变化，仅核适用文档与差量/历史保全，复用 fd19 的同一实现/依赖图全量证据，不重复 Rust/全量本地。最后实际 HEAD 仍须取得其正式 CI，不能声称它直接执行过 fd19 的本地命令，不是 CI 绿灯回写提交。
+- **接手范围**：K-SUPPLY-12 保持 Partial、KaTeX low 和其它四条例外独立；K-EMO-06 Deferred、有限公共兼容规则已采纳，其它冻结不变。原本地记录在 .cursor/plans/debt-compat-20261009-r0/，忽略原件不随 Git 自动转让；本片到摘要对齐停止，不从这处文案重开全仓调查。
