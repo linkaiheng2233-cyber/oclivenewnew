@@ -1,15 +1,34 @@
 # 六槽开工包 · `agent`
 
-> **读者**：开发 ReAct / MCP 工具编排或 Agent 目录插件的工程师。
-> **读完能做什么**：接入 `agent` 槽、配置 MCP，理解短路主链语义。
-> **耗时**：约 **45 min**
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §9](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
-> **最后更新**：2026-09-05
+> **读者**：编写基础任务实现，或维护参考 Host 的 ReAct / MCP 与 Agent 目录插件的工程师。
+> **读完能做什么**：选择 Base 委托任务或丰富 Agent 路径，辨认案例、生产借用和授权边界。
+> **耗时**：基础入口为短导航；参考 Host 流程约 **45 min**
+> **SSOT 范围**：人类路由与 checklist；公共接入点见 [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，参考 Host 定义见 [§9](../../../handoff/MODULE_MAP_AND_HANDOFF.md#9-第-6-模块--agent)
+> **最后更新**：2026-10-09
 > **下一篇**：[llm](llm.md) · [memory](memory.md)
 
 ---
 
-## 1. 你插在哪
+## 0. 先选接入路径
+
+基础委托任务从下方开始；维护 `AgentProvider`、MCP 或参考 Host 短路流程则读 **§1–§6**。丰富路径的配置和上下文不自动成为所有 Base 实现的前置要求。
+
+### AgentBase：区分纯案例与已有授权下的真实任务
+
+1. 在[公共契约](../../../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)找到 `AgentBase::execute`。现有 [`ScalarCountAgent`](../../../kernel/crates/oclive_kernel_runtime/src/domain/base_agent.rs) 只支持其声明的计数任务，不调用模型或工具，也不是生产 Host 后端；任务词汇不是 Base 通用指令集。
+2. 看[`MinimalRoleBaseConsumer`](../../../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs)如何直接委托明确任务。需要参考 Host 已有 ReAct 能力时，入口是 [`BuiltinReActAgent::task_execution_base`](../../../kernel/crates/oclive_kernel_host/src/domain/agent.rs)，借用当前模型、实际角色/会话身份与已有工具授权；接线细节见 [`agent_base_binding.rs`](../../../kernel/crates/oclive_kernel_host/src/domain/agent_base_binding.rs)。
+3. 纯装配例子见 [`minimal_role_host`](../../../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs)。普通最小聊天不会自动执行 Agent；有明确任务再借用选定实现，保持当前单 Agent 范围。
+
+**基础路径 checklist**：
+
+- [ ] 先说明支持的任务、结果含义和资源范围；保留完整失败，不把文字报告当作目标完成、效果回滚或安全重试证明。
+- [ ] 请求文本不授予工具权限；实际调用仍守已有授权，丢弃 future 不当作工具或模型已经停止。
+
+请求、失败和绑定查[接入点清单](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)。本导航不实现多 Agent 合并，也不自动替换配置的 remote / directory 后端。
+
+---
+
+## 1. 参考 Host：你插在哪
 
 - **MODULE_MAP**：[§9 第 6 模块 · `agent`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#9-第-6-模块--agent)
 - **当前配置 / 运行时折叠**：蓝图 `slot_registry.type: agent` → `PluginBackends.agent`；legacy v1 才是 `settings.json.plugin_backends.agent`

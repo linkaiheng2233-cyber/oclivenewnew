@@ -1,15 +1,34 @@
 # 六槽开工包 · `prompt`
 
-> **读者**：改 Prompt 段落公式、overlay 或 prompt 后端的工程师。
-> **读完能做什么**：在 `PromptBuilder::build_prompt` 边界内改组装逻辑，守 guardrails 纪律。
-> **耗时**：约 **50 min**
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §7](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
-> **最后更新**：2026-09-04
+> **读者**：编写基础 Prompt 实现，或维护参考 Host 的段落公式、overlay 与 prompt 后端的工程师。
+> **读完能做什么**：选择基础组装或丰富 Prompt 路径，找到实现、消费者和 Host 接线。
+> **耗时**：基础入口为短导航；参考 Host 流程约 **50 min**
+> **SSOT 范围**：人类路由与 checklist；公共接入点见 [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，参考 Host 定义见 [§7](../../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)
+> **最后更新**：2026-10-09
 > **下一篇**：[07 §2](../../07_COMMON_TASKS.md#2-改-prompt-段落) · [llm](llm.md)
 
 ---
 
-## 1. 你插在哪
+## 0. 先选接入路径
+
+基础组装实现从下方开始；维护 `PromptBuilder`、overlay 或蓝图后端则读 **§1–§6**。后者的检查属于参考 Host 丰富路径，不自动成为所有 Base 实现的前置要求。
+
+### PromptBase：找到组装与消费入口
+
+1. 在[公共契约](../../../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)找到 `PromptBase::assemble`，再读现有 [`LiteralMaterialAssembler`](../../../kernel/crates/oclive_kernel_runtime/src/domain/base_prompt.rs) 的实现约定：材料按原顺序原样拼接，非空额外要求返回 `Unsupported`。这是该实现的范围，不是所有 Prompt 实现必须采用的算法。
+2. 看[`MinimalRolePromptConsumer`](../../../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs)如何先准备最小角色人设和本次材料，再委托调用方选定的 Prompt。这里已准备人设，选定实现不应再次重复注入；材料标题也不构成下游防注入保证。
+3. 参考 Host 的显式入口见 [`process_minimal_message_with_prompt`](../../../kernel/crates/oclive_kernel_host/src/role_kernel.rs)。独立 Host 装配可读现有 [`minimal_role_host`](../../../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs)；这是已有案例导航，不承诺配置式插件注册。
+
+**基础路径 checklist**：
+
+- [ ] 写清实现接受的材料与要求；经消费者核对原文、顺序、空结果和完整失败。
+- [ ] 调用方选择能力、材料和执行器；组装不会自行取得资源权限，也不安排固定六槽回合。
+
+请求、失败和绑定的定义只查[接入点清单](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)。本导航不代表真实模型输出质量已验收。
+
+---
+
+## 1. 参考 Host：你插在哪
 
 - **MODULE_MAP**：[§7 第 4 模块 · `prompt`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#7-第-4-模块--prompt)
 - **当前配置 / 运行时折叠**：蓝图 `slot_registry.type: prompt` → `PluginBackends.prompt`；legacy v1 才是 `settings.json.plugin_backends.prompt`
