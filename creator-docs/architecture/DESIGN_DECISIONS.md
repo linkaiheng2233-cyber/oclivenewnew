@@ -93,6 +93,20 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
 
 ---
 
+<a id="emotion-memory-extension-deferred"></a>
+
+## 9. 情绪驱动长期记忆：暂缓实施，保留可选扩展（2026-10-09）
+
+维护者选择 **K-EMO-06 Deferred**：当前情绪与记忆的基础能力原则上足以支撑现阶段目标，核心项目优先处理这些基础能力的实际缺陷，不继续开发高级情绪驱动长期记忆策略。这里是本阶段的范围决定，不是复杂情绪质量、所有场景或长期效果已经验证；Deferred 不等于已完成、已实现或永久取消。当前状态仍见[唯一台账](../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
+
+**保留的方向**：情绪参与长期记忆筛选、重要性或权重调整，可以由第三方模块或发行版作为可选扩展探索。例如，高情绪内容是否优先记住、临时抱怨是否进入长期库，属于扩展的产品策略，不成为所有 Memory 或 Emotion 实现的最低义务。扩展仍需遵守现有公共合同和实际授权；记录方向不证明任意高级模块已经可接入，也不授权自动读写 Host 长期库。
+
+**边界**：不纳入小 Kernel 核心职责，不提前增加六槽 Base 的强制方法、字段或默认策略，不把扩展输出赋予领域提交权。沿用[Kernel / Host 分责](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)与[六槽 Base / Extension 边界](../../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension)；本次不改变现有情绪、记忆、Agent、工具调用或六槽交互实现。
+
+**重新评估条件**：出现具体可复现的接入案例，证明现有公开契约阻碍一个明确的高级模块或发行版需求时，记录受阻接口、预期能力、影响范围和最小反例，再评估是否调整公共契约。不能仅因有研究价值或缺少高级算法而自动解冻；新增执行语义、权限或公共强制义务仍须维护者确认。方向、范围和反例已足以支持取舍时停止调查，不穷尽所有未来策略。
+
+---
+
 ## 相关文档
 
 - [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)

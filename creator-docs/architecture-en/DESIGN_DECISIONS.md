@@ -83,4 +83,18 @@ See the [freeze entry and historical Minimal plan](../../handoff/debt-marathon/l
 
 ---
 
+<a id="emotion-memory-extension-deferred"></a>
+
+## 9. Emotion-driven long-term memory: defer implementation, retain optional extensions (2026-10-09)
+
+The maintainer keeps **K-EMO-06 Deferred**. Existing basic emotion and memory capabilities are considered sufficient in principle for the current-stage goals; the core project prioritizes their concrete defects rather than developing advanced emotion-driven long-term-memory policies. This is a scope decision, not evidence of complex-emotion quality, every scenario or long-term effects. Deferred means neither completed, implemented nor permanently cancelled. Current status belongs to the [debt inventory](../../handoff/TECHNICAL_DEBT_INVENTORY.md).
+
+**Retained direction:** third-party modules or distros may explore emotion-based memory selection, importance or weighting as optional extensions. Whether intense content should be retained preferentially, or a temporary complaint should enter long-term memory, is an extension's product policy rather than a minimum obligation for every Memory or Emotion implementation. Extensions remain subject to existing public contracts and actual authorization. Recording this direction proves neither universal plug-in compatibility nor permission to read or write Host long-term storage automatically.
+
+**Boundary:** this direction is outside the small Kernel's core responsibilities. It adds no mandatory six-slot Base methods, fields or default policies, and extension output acquires no domain-commit authority. Follow the existing [Kernel / Host responsibilities](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) and [Base / Extension boundary](../../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension). Existing emotion, memory, Agent, tool and six-slot execution remains unchanged.
+
+**Reassessment conditions:** a concrete reproducible integration case must demonstrate that an existing public contract obstructs a specific advanced-module or distro need. Record the obstructing interface, expected capability, impact scope and minimal counterexample before assessing a contract adjustment. Research value or a missing advanced algorithm alone does not unfreeze implementation. New execution semantics, authority or mandatory public obligations still require maintainer confirmation. Stop investigation once the direction, scope and counterexample suffice for a decision; do not enumerate every future policy.
+
+---
+
 [中文](../architecture/DESIGN_DECISIONS.md)

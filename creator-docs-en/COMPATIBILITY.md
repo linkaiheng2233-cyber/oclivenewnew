@@ -66,6 +66,48 @@ Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for a
 
 ---
 
+<a id="six-slot-minimal-compatibility-draft"></a>
+
+## Six-slot Base / minimal logical role compatibility review scope (Draft · 2026-10-09)
+
+**Status:** the maintainer authorized bounded design; these specific rules await review and are not a new stable-release guarantee. Implementation baseline: `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`. No Rust API, validator, version or execution semantics changed. Responsibilities and capability semantics remain in [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension); the logical role definition remains in [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract). Listing a symbol does not cover every export of its crate.
+
+### Candidate public inventory
+
+| Review subject | Existing public entry and source | Bounded scope |
+|---|---|---|
+| Six calls | `oclive_kernel_contracts::{MemoryBase, EmotionBase, EventBase, PromptBase, LlmBase, AgentBase}`; [call binding](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs) | Existing single-method names, signatures, borrows, normal results and confirmed capability semantics; no fixed six-slot schedule |
+| Async binding | `BaseCallFuture` in that crate; same source | Existing boxed local future usable through `dyn`; no mandatory `Send`, `Sync` or `'static`, and no inferred cancellation, rollback or retry safety |
+| Requests and failure carrier | `oclive_kernel_types::{MemoryBaseRequest, EmotionBaseRequest, EventBaseRequest, PromptBaseRequest, LlmBaseRequest, AgentBaseRequest, BaseCallError, BaseCallErrorKind}`; [data binding](../kernel/crates/oclive_kernel_types/src/slot_base.rs) | Existing fields/types, material versus purpose, normal results versus failed calls; no HTTP/SSE, permission handle or product terminal state |
+| Minimum logical definition | `oclive_validation::MinimalRoleDefinition`, re-exported as `oclive_kernel_types::MinimalRoleDefinition`; [definition](../kernel/crates/oclive_validation/src/minimal_role.rs) | Nonblank `persona_prompt` and at least one `visual_assets` reference, each nonblank; preserve authored content and asset order without seven portraits, filenames, URI schemes or rich `Role` |
+| Logical validation and JSON projection | `oclive_validation::{validate_minimal_role_definition, parse_minimal_role_definition}`; same source | Existing logical validity and accepted/rejected projection inputs; unknown fields are ignored, not retained. Passing proves neither existence, safety nor rendering of assets and defines no universal disk pack |
+
+Legacy reference-Host ports, `AppState`, local role-loading/session DTOs, concrete shared-consumer assembly, rich packs, directory-plugin protocols, network bridges and storage do not become stable small-Kernel APIs through this table. The shared runtime retains minimum adaptation; distros own resources, lifecycle and extensions and may set separate compatibility rules. Advanced emotion-driven long-term memory remains an [optional extension under the confirmed deferral](../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred), not a Base obligation.
+
+### Candidate compatible / breaking interpretations
+
+| Example change | Interpretation and required check |
+|---|---|
+| Replace internal retrieval/decoding or fix a basic defect while preserving public input, result and failure commitments | May preserve the contract; use actual consumers and defect regressions. Algorithm changes are not automatically compatible or proof of model quality |
+| Add required Base methods/supertraits, strengthen `Send` / `Sync` / `'static`, or require moving the local future across threads | Existing valid implementations may stop compiling; treat as source Breaking, not an internal refactor |
+| Add an `Option` field to a current public request struct | External struct literals can still stop compiling; assess Rust-source compatibility separately from optional JSON-field compatibility |
+| Rename/remove fields, change borrows/results, or reinterpret normal empty results as failures or not-called | Review source and behavior Breaking separately; `Ok`, empty text and capability return still do not prove product success or invocation termination |
+| Add a reason to `#[non_exhaustive] BaseCallErrorKind` | Existing binding permits an external unknown branch; still review behavior and adapters. Unknown means non-normal completion, not retryable, effect-free or stopped; `detail` / Display remains no machine protocol |
+| Require rich fields in the minimum projection, reject currently accepted unknown fields, or inject relation/seven-dimensional personality defaults | Alters minimal input or validation; review data/behavior Breaking. Ignoring unknown fields does not promise lossless rich-pack preservation |
+| Add an independent optional extension | Specify extension inputs, outputs, associations, authorization and required versions; existing Base-only implementations acquire no extra obligations. Do not report required enhancements satisfied through silent degradation or activate unselected enhancements implicitly |
+
+State whether compatibility concerns **Rust source, logical data, behavior or a particular transport**. One change can preserve one layer and break another. Existing Rust requests/errors carry no serde wire and a shared logical role creates neither a C ABI nor a universal network protocol.
+
+### Review, migration and bounded verification
+
+Propose reusing the existing [Breaking process](../handoff/BREAKING_CHANGE_PROCESS.md), not a second approval system. The proposer lists affected symbols, old/new behavior, downstreams and migration; Host/module authors update actual adapters and tests; role-converter authors own distro-to-logical mapping and resource checks. The maintainer reviews the need, feasibility and duration of compatibility layers for each concrete Breaking change. Apply the existing release-cycle read-compatibility rule only to data where it actually applies; do not invent runtime compatibility for Rust traits.
+
+Reuse the [Base-only fixture](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs), [request/error tests](../kernel/crates/oclive_kernel_types/src/slot_base.rs), [minimum logical validation](../kernel/crates/oclive_validation/src/minimal_role.rs) and [replaceable six-slot consumer case](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs). Actual public-Rust changes run affected regressions plus G8 workspace doctests and a named old-surface consumer; JSON/validation changes check accepted and rejected examples. A prior full CI or a test file alone proves no universal future plug-in compatibility. Stop when evidence distinguishes this change's compatibility effect; do not enumerate all Hosts, algorithms and devices.
+
+**Versions and review question:** retain current [independent artifact version rules](development/RELEASE_VERSIONING.md). Do not substitute crate `0.2.0`, proposal numbering, `API_VERSION` or pack schema for one another; add no six-slot negotiation or 1.0 announcement. The pending decision is whether to adopt this inventory and interpretation as review rules for the bounded public layer. Actual version bumps, retirement of old interfaces and new execution semantics belong to their concrete changes and approvals. This draft closes none of the other K-CORE-BOUNDARY-01 scopes.
+
+---
+
 ## One-page external compatibility (host / editor / launcher / packs / kernel / CLI)
 
 | Component | Version source | Relation to host | Notes |

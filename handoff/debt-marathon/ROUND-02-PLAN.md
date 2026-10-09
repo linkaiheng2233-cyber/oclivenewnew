@@ -873,3 +873,21 @@
 **四路径 / 自主边界**：只改 `distros/desktop-tauri/tests/slot_resolution_chain.rs`、主台账同债第五列、本计划与 DEBT_CHANGELOG。同一私有 RAII fixture 取得原锁，保存并清理本测试进程的 backend 原值；四个用例整个初始化/消费期间共用该锁，正常结束与 unwind 在释放锁之前恢复原值。四条原断言和生产 AppState/env/provider/debug 代码保持，不新增全局运行时锁、环境架构、超时/重试、六槽/权限/默认 feature 或 generic fixture 框架。controller 实施与语义自查，independent=false；资源构建仅在新拥有工作树的已核包含性/非 reparse 目录，旧工作树/原 CI 失败/账本不改。
 
 **有限验证 / 节奏 / 停止**：旧冻结 CI 是实际红例；按 test-threads=4 跑原四项，定向桌面 Clippy/fmt，默认与三改文链接、docs-only 旧路径、登记/债结构/编码/diff；核精确四路径、原断言与生产源码/锁/历史保持。取得对应证据即停止，不穷尽四线程排列或归因到未观测的具体线程。冻结修复提交后，一次完整本地链与新 SHA 的正式 CI 用于 main 修复，不对旧 run rerun、不造绿灯回写提交。所有原失败保留；Full/单 Agent/双核/签名/TLS 冻结及公共兼容未决不解，零真实模型/音频/用户库/旧业务身份。原始证据在本机 ignored `.cursor/plans/debt-slot-env-20261009-r0/`，不随 Git 自动转让。
+
+### 已确认的可选扩展暂缓与公共兼容设计准入（2026-10-09）
+
+**基线 / 决定 / 责任**：干净 `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`，维护者选择 1A/2A/3A/4A，并明确高级情绪驱动长期记忆由第三方/发行版可选探索、核心项目不扩实现。controller 实施与语义自查，independent=false；方向冻结为 M 文档，后续公共规则为重风险规划，方案审核前不生效。
+
+**五路径与保留**：只在中英 canonical DESIGN_DECISIONS 新增 K-EMO-06 决定；台账更新同债条件/状态、K-CORE-BOUNDARY-01 / K-EVENT-STREAM-01 / D-SCAFFOLD-EVOLUTION-04 第五列追加本次选择；本计划追加，DCL 对应依赖同步并追加事件。K-EMO-06 Deferred 不等于 Done/Implemented；Event 生产化继续暂缓但旧原型存在，Stage 2C 继续观察。其它父债状态、原事件与案例保持，不新建第二份状态表。
+
+**契约方向 / 下一片**：依已确认的小 Kernel、六槽 Base / Extension 与最小逻辑角色边界，先列有限公共调用面、源码/数据兼容例子、测试和迁移责任。兼容规则草案写在现有 COMPATIBILITY 中英 SSOT，不扩完整 Host API、磁盘角色包、物理拆分或稳定版本承诺；先核现行接口和直接测试入口，足够形成可审阅方案即停。真正新增公共义务、版本保证或执行语义须审核；已定 Full/Agent/双核/签名/TLS 暂缓保持。
+
+**适用门禁 / CI 节奏**：默认及改文链接、docs-only stale paths、镜像、登记、债结构、编码、diff；精确写集与历史正文保全、未改生产/测试/锁。无源码/签名变化，不为方向记录新增 Rust/doctest、业务场景或全量 CI；先存本地 checkpoint，相关已批准实质批次冻结时一次完整验证/推送，main 当前已验 d984 保持。已有验收终态只证明 d984，不代替本片。
+
+### K-CORE-BOUNDARY-01 · 有限兼容审阅规则草案（2026-10-09）
+
+**准入与效力**：维护者选择 1A，只授权设计现有六槽 Base / 最小逻辑角色的有限兼容规则；[中英 COMPATIBILITY 草案](../../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)尚待审核，不是稳定发布、新执行语义或已实现的兼容框架。基线 d984，承接 DCL-70 的已确认暂缓记录；controller 设计和自查，independent=false。
+
+**四路径 / 有限来源 / 输出**：只扩现有 COMPATIBILITY 中英小节，本计划与 DCL-71 追加，不另建顶层 SSOT。核六槽现有 public 调用、local future、六请求/失败载体、最小定义/两校验函数和根 re-export，引用 MODULE_MAP、ROLE_PACK_BOUNDARY 与原 Breaking/版本规则；给出 Rust 源码、逻辑数据和行为的不同例子，明确可选增强不加 Base 义务、错误原因不自动授予重试、投影不是磁盘包。直接源码已足以形成范围和审阅问题后停止，不重测所有 B1/B2 或全部发行版。
+
+**验证 / 后续**：复用既有 fixture 仅作为将来实际变更的适用回归入口，不把存在测试或基线 CI 当新公共承诺全验。此次仅运行适用文档/结构/编码和精确差异自查，不新增源码、版本、测试、doctest、依赖或运行场景。审核点只问是否采纳这一有限审阅清单及判读；实际 Breaking、版本 bump 或旧接口撤销另随对应变更审阅。未获审核前保持草案，K-CORE-BOUNDARY-01 OPEN；其它已定暂缓不解冻。

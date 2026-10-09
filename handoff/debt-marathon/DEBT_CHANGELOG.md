@@ -48,7 +48,7 @@
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
 | D-CLI-BLUEPRINT-05 | **已裁定逻辑契约 / 宿主接入缺口**：保留参考 Host 旧接口、增量接入最小逻辑定义；跨发行版不要求统一磁盘封装 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；共享定义、本地快照、CLI 显式文件校验、Prompt Base 与双来源独立 Host 案例已存在。关系归发行版；`content.json` 只是本地适配示例 | 继续核参考 Host 内部增量接入点与真实发行版映射；不切换 CLI 默认生成目标，不用产品默认值填充旧 `Role`，不把示例误记为参考 Host 激活 |
-| K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置 |
+| K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置；2026-10-09 仅准入有限公共兼容设计，方案待审，不解冻其它验收面 |
 | K-UID-DEFAULT-02 | **已裁定并收口**：有效显式选择优先，发行版默认 A 高于角色默认 B，A 不存在则回退合法 B | 主台账 §1、[DCL-45](#dcl-20261006-45--发行版默认身份兑现用户确认的优先级)；`58be11fa` 精确正式 CI 已通过，loader／global／per-scene／恢复默认与消费者已同步 | 默认选择合同 Done；不因字段名或此合同去迁移全部 legacy 历史关系 |
 | K-AGENT-MERGE-01、V-FUSED-01 | **独立范围 / 决策门**：工具 composite 与多槽实例融合不能混为同一实现 | 主台账前瞻风险及 [融合 stub](long-plans/V-FUSED-01.md)；前者须定工具冲突、权限、顺序/短路、超时/隔离与 trace，后者仍受其 Phase 3 条件约束 | 核单 Agent 行为与诊断声明；不从多 ID 推断已合并，也不以此阻断单 Agent/MCP 使用 |
 | K-DUAL-ROLLBACK-02、DUAL-CORE-FREEZE | **维护冻结 / 未解决**：2026-10-07 维护者选择暂停 Beta 继续维护；解冻后才选择 NULL 恢复或收窄实验写入 | 主台账 §1/§2及 [冻结范围与解冻条件](long-plans/DUAL-CORE-FREEZE.md)；补偿不是数据库事务 | 当前仅保留事实与接手方向，继续其他可开工债务；不自动启用、扩证或修补 Beta，也不要求 Stable 等待其全部修复 |
@@ -58,10 +58,10 @@
 
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
-| K-EVENT-STREAM-01 | Stage A 的 Session/wire/checkpoint、存储/隐私/ACK及未定恢复策略是 Stage C consumer runtime 的**硬前置 / 决策门** | [RFC_RUNTIME_EVENT_STREAM](../../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)；Trace/DTO/探针不是 Production，A.2.2.2 的宿主密钥恢复、多宿主协调尚不能当已冻结 | 在获准 A 切片中取证与固化合同；不启生产读取/消费循环、不真实发送或撤回外部消息 |
+| K-EVENT-STREAM-01 | Stage A 的 Session/wire/checkpoint、存储/隐私/ACK及未定恢复策略是 Stage C consumer runtime 的**硬前置 / 决策门** | [RFC_RUNTIME_EVENT_STREAM](../../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md)；Trace/DTO/探针不是 Production，A.2.2.2 的宿主密钥恢复、多宿主协调尚不能当已冻结 | 在获准 A 切片中取证与固化合同；不启生产读取/消费循环、不真实发送或撤回外部消息；2026-10-09 选择 2A，生产化继续暂缓，既有原型保留 |
 | K-PROACTIVE-01 | **共用能力**：现有 Event Ring、可信 origin 与一次性 permit；不要求 Production Stream 整债 Done 才能核现有非用户回合 | 主台账前瞻风险、[Event Ring](../../creator-docs/plugin-and-architecture/EVENT_RING.md)；生产持久消费属于上行独立范围 | 核现有主动链与拒绝/零副作用合同；不建立第二套回合入口或把 Trace 接到行为反馈 |
 | K-RESOURCE-COORD-01、D-SCAFFOLD-RESOURCE-01 | **契约能力硬前置 / 协同**：CLI 复用已实现 types/Host Plan Compiler；目录自动装配、真实渲染和 soak 是资源父债的独立剩余范围 | [资源 RFC](../../creator-docs/rfc/RFC_BLUEPRINT_EXTENSION_AND_RESOURCE_COORDINATION.md)、主台账；工具界面需要具体可用字段/原因码，不要求资源父债所有硬件条件先 Done | 核只读配置/诊断、round-trip 与无 GPU/observe-only 负例；不发明新 schema、设备探测或自动跨适配器授权 |
-| D-SCAFFOLD-EVOLUTION-04 | **决策门**：使用问题、一个有界目标、迁移及来源/权限/沙箱 | [脚手架 RFC](../../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)、主台账；Stage 2C 仍需单独取舍，资源工具并不自动解冻组合/namespace/离线生命周期 | 收集实际使用问题；不把依赖解析、市场/联网安装和第三方 CI 编排权并进首批 |
+| D-SCAFFOLD-EVOLUTION-04 | **决策门**：使用问题、一个有界目标、迁移及来源/权限/沙箱 | [脚手架 RFC](../../creator-docs/rfc/RFC_SCAFFOLD_PACKAGE_V1.md)、主台账；Stage 2C 仍需单独取舍，资源工具并不自动解冻组合/namespace/离线生命周期 | 收集实际使用问题；不把依赖解析、市场/联网安装和第三方 CI 编排权并进首批；2026-10-09 选择 4A，继续观察，Stage 2C 不启动 |
 | K-CI-IMPACT-01、D-CI-AI-REVIEW-03 | **数据硬前置**：AI 评测复用 Shadow/Compare 的版本化真实数据；不要求 selective 全部开放才开始采集 | 主台账前瞻风险；漏选/过选与全量结果对应同事件，训练/评测隔离。AI 不拥有降级确定性门禁、Runner 或 Secret 的权力 | 核已有数据/目录边界；无冻结评测与运行预算不训练，模拟语料不代替真实 CI 漏选证据 |
 | K-LLM-ENV-02 | **原缺陷已有限结案 / 新反例另立范围**：旧 DB 读取覆盖新环境并误清 dirty 的可控交错与目标 SHA CI 已验收；真实 provider、跨进程与长期压力不随之转绿 | 主台账 §1、[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md)；`86cbb2d5` 的 CI 17/17，不把原先 Partial 阶段倒写成完成 | 无新的可复现反例不继续扩张矩阵；若出现独立故障，另定隔离与预算，不碰用户凭据或真实 provider 配置 |
 
@@ -70,7 +70,8 @@
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
 | K-EMO-01、03 | **协同**：词表与显式降级路径；按实际语言/重复实现边界区分 | 主台账 §1；英文扩充先核中文词表条件，降级出口收拢须保留现有主 LLM 与安全回退语义 | 固定文本回归与调用点盘点；词表完善不等于复杂语义或角色质量已通过 |
-| K-EMO-05、06、07 | 趋势需 M2 历史数据，记忆权重需独立语义决策，复杂情绪优化需固定角色/场景评测：分别是**数据硬前置 / 决策门 / 证据门** | 主台账 §1；05/06 不因 07 研究自动获准；07 仅 shadow/advisor，对照通过后才可有界进入 Prompt | 准备可审计评测输入和数据字段；真实 7B 运行须预算，不让规则/CHS/VAD 成为第二个决策内核。历史 S01 FAIL 不因新文档变绿 |
+| K-EMO-05、07 | 趋势需 M2 历史数据，复杂情绪优化需固定角色/场景评测：分别是**数据硬前置 / 证据门** | 主台账 §1；05 不因 07 研究自动获准；07 仅 shadow/advisor，对照通过后才可有界进入 Prompt | 准备可审计评测输入和数据字段；真实 7B 运行须预算，不让规则/CHS/VAD 成为第二个决策内核。历史 S01 FAIL 不因新文档变绿 |
+| K-EMO-06 | **已确认 Deferred / 可选扩展**：2026-10-09 维护者选择 3A；高级情绪驱动长期记忆不列入核心开发目标 | [决定、边界与重评条件](../../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)；须有具体可复现接入案例证明现有契约阻碍明确需求，才评估公共调整；评估不自动授权实施 | 记录第三方模块/发行版可选探索；继续修基础能力的真实缺陷，不新增高级策略或 Base 强制接口，不以研究价值自行解冻 |
 | K-VOICE-01、09 与 H03 真实音频 | **共享测量 / 外部条件**：真实硬件、音频输出、隔离与 soak；不是彼此整债 Done 的前置 | 主台账 §1、[语音跟踪](../../human-docs/team/TRACK_VOICE_RECOGNITION.md)；TTFC/分段边界、30 分钟矩阵与听感分别记账。前端内存音频不能代替真实声音 | 核测量方案与既有消费者合同；不自行播放、使用模型或放宽 8 秒/显存安全线 |
 | K-VOICE-07 | **规范硬前置**：精确文件和锚点定义 `voice_directive v2 / engine_extras` | [v2 计划](long-plans/K-VOICE-07.md)；任意编号 §4.1 或 `voice.asr` 小节均不满足 | 只读找规范；没有精确依据即保留 `needs-directive-v2-rfc-anchor`，不自创协议 |
 | K-VOICE-02、03、05、08 | **独立产品/上游条件**：通用 adapter、CosyVoice 平台稳定、Fish 观察、非 CosyVoice chunked 抽象 | 主台账 §1及对应 stub；社区 RPC Minimal、角色语音路由已结案部分不重开 | 明确一个适配器/平台范围；不把全部语音上游成熟度作为无音频本地工作的前置 |
@@ -851,3 +852,16 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **实际隔离缺口 / 决定**：测试仅两条显式 env 用例持锁，其余两条 AppState 初始化也会通过原生产 DB→env 路径清 backend。按[四路径计划](ROUND-02-PLAN.md#k-llm-env-02--slot-resolution-测试进程环境保护补齐2026-10-09)给全部四条用例同一私有 fixture；退出/unwind 在锁释放前恢复原 backend 值。原断言、生产读取/环境事务和 Kernel/Host 公共语义不改；不为偶发放宽断言或让全部 CI 测试串行。远端具体清值线程未记录，不制造精确归因。
 - **验收 / 原状态 / 止线**：旧实际 CI 为红例，原四条并发入口、定向 Clippy/fmt与适用文档/债结构/编码/diff 后形成 local checkpoint，再一次完整本地和新 SHA 正式验收；没有公开 API 变更，不追加 doctest 或同构锁测试。父债原 K-LLM-ENV-02 有限 Done 保持；K-EMO-03 OPEN、K-RESILIENCE-01 Partial / Full Deferred 与其它已定冻结不扩大。controller 实施和自查，independent=false；旧 CI、工作树和 CP-INT 原件保留，不启动真实模型/音频或读取用户数据库，充分即停止排查。
 - **本片实际出口**：原四条在 `--test-threads=4` 下两次均 4 passed / 0 failed；定向桌面测试 Clippy `-D warnings`、fmt native 0。默认/三改文链接、docs-only 旧路径、登记/债结构/编码/diff 均 native 0；147 行/12 auto plans 只为结构输出，不是偿债数量。随后只复验受影响链接/diff并核四路径、原断言和生产/锁/历史保全，停止重复并发排列；完整本地和新 SHA 正式 CI 尚未取得，不能以窄测宣布 main 恢复。缓存 npm audit 输出不代替在线供应链结论，换行提示与原 CI failure 如实保留。
+
+### DCL-20261009-70 · 可选扩展暂缓与公共兼容设计准入
+
+- **维护者决定**：选择 1A/2A/3A/4A；K-CORE-BOUNDARY-01 仅准入有限公共兼容设计，Production Stream 继续暂缓，脚手架 Stage 2C 继续观察。K-EMO-06 明确 Deferred，高级情绪参与长期记忆筛选/重要性/权重保留为第三方模块或发行版的可选方向，不列为核心项目当前实现目标，不增加 Base 必做方法或字段。依据与重评条件只在[决定 §9](../../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)，不复制模块定义。
+- **原因 / 例子**：当前阶段优先保证基础能力并处理真实缺陷。高情绪的临时抱怨是否进入长期记忆，属于具体扩展的产品策略，不由六槽基础检索自动决定；有价值的未来方向不等于现在须由核心项目实施或现有契约已阻碍接入。只有可复现案例证明某接口挡住明确高级需求，才有界评估契约调整；新语义仍须确认。
+- **实际范围 / 接续**：按[五路径计划](ROUND-02-PLAN.md#已确认的可选扩展暂缓与公共兼容设计准入2026-10-09)记录决定与受影响依赖，保持其它行/旧事件/历史证据。controller 实施及自查，independent=false；后续只设计六槽 Base 与最小逻辑角色的兼容草案，未经审核不宣布规则生效、发布稳定版或关闭父债。没有实现、测试、依赖、权限、模型/TTS、用户数据库或旧 CP-INT 身份变化。
+- **前批真实终态 / 节奏**：基线 d984 的完整本地 `check:ci-local` native 0（1346.7177701 秒）及[正式 37864145434](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37864145434) attempt 1、17/17 success 含 ci-gate 已取得；旧 2a851790 的 15/17 红例保留，新观察器 API EOF 是 CLI 观察失败，终态由同 run API 核验，未 rerun。随本次实质决定登记，不为绿灯另起提交；不将旧 SHA 绿灯算作新方向记录或兼容草案的远端通过。本轮适用文档/结构核验后存本地 checkpoint，不重复 Rust、业务回放或完整矩阵。
+
+### DCL-20261009-71 · 六槽 Base 与最小逻辑角色兼容审阅草案
+
+- **产出 / 范围**：依维护者的 1A 在现有[兼容 SSOT](../../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)及英文镜像提出有限公共清单、相容/Breaking 例子、迁移责任和适用测试入口；其它完整 Host/磁盘/网络/存储接口不因所在 crate 或名字相同被纳入。高级情绪驱动记忆仍按[已确认决定](../../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)由第三方/发行版可选探索，K-EMO-06 Deferred，没有实现。
+- **原因 / 例子 / 自主设计**：`Option` 字段在 JSON 中可能可选，在 Rust struct literal 中仍可能使旧实现不能编译；local future 增加 `Send` 也可能淘汰原合法实现。因此兼容层级必须分别说明，而非只看版本号或“新增”。复用当前 `#[non_exhaustive]` 错误边界和现有 Breaking 流程，不发明协商系统、稳定 1.0 或运行时兼容包装；保留原版本和所有现行能力语义。
+- **证据 / 结论边界**：按[四路径设计计划](ROUND-02-PLAN.md#k-core-boundary-01--有限兼容审阅规则草案2026-10-09)读取现有 binding/types、最小逻辑校验、根 re-export 及直接 fixture 入口即停止。源码足以设计清单，不等于真实跨版本消费已经验证；controller 语义自查，independent=false。只跑文档/结构/编码及历史/写集核对，没有新 Rust/业务/模型/音频验证，不重复全量矩阵。具体规则待维护者审核，本条不能当规则已生效或父债 Done；公共契约仍依既有范围。

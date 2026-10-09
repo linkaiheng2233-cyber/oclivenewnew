@@ -64,6 +64,48 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 ---
 
+<a id="six-slot-minimal-compatibility-draft"></a>
+
+## 六槽 Base / 最小逻辑角色的兼容审阅范围（草案 · 2026-10-09）
+
+**效力**：维护者已批准进入有限设计，本节具体规则尚待审核，不是新的稳定版本保证。受检实现基线为 `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`；本节没有改 Rust API、校验器、版本或运行语义。模块职责和能力语义只引用 [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension)，最小角色定义只引用 [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract)。下表圈定审阅对象，不将所在 crate 的全部导出纳入承诺。
+
+### 候选公共清单
+
+| 审阅对象 | 现有公共入口与依据 | 限定范围 |
+|---|---|---|
+| 六槽调用 | `oclive_kernel_contracts::{MemoryBase, EmotionBase, EventBase, PromptBase, LlmBase, AgentBase}`；[调用绑定](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs) | 现有单方法的名字、签名、借用关系、对应正常结果及已确认能力语义；不要求依固定顺序调用六槽 |
+| 异步绑定 | 同 crate 的 `BaseCallFuture`；同上源码 | 现有可 `dyn` 使用的 boxed local future；不强制实现或 future 为 `Send` / `Sync` / `'static`，不推导取消、回滚或重试安全 |
+| 请求与失败载体 | `oclive_kernel_types::{MemoryBaseRequest, EmotionBaseRequest, EventBaseRequest, PromptBaseRequest, LlmBaseRequest, AgentBaseRequest, BaseCallError, BaseCallErrorKind}`；[数据绑定](../kernel/crates/oclive_kernel_types/src/slot_base.rs) | 现有字段/类型、材料与用途区别，以及正常结果与调用失败的区别；不冻结 HTTP/SSE、权限句柄或产品终态 |
+| 最小逻辑定义 | `oclive_validation::MinimalRoleDefinition`，由 `oclive_kernel_types::MinimalRoleDefinition` 重导出；[定义](../kernel/crates/oclive_validation/src/minimal_role.rs) | 非空 `persona_prompt` 与至少一项、每项非空的 `visual_assets` 引用；正文与资产顺序原样保留，不指定七张表情图、文件名、URI 方案或完整 `Role` |
+| 逻辑校验与 JSON 投影 | `oclive_validation::{validate_minimal_role_definition, parse_minimal_role_definition}`；同上源码 | 当前逻辑合法性及投影的接受/拒绝边界；当前未知字段被忽略而非保留。通过不证明资源存在、安全或可渲染，不定义跨发行版磁盘包 |
+
+完整参考 Host 的旧端口、`AppState`、最小角色本地加载/会话 DTO、共享消费者的具体装配、丰富角色格式、目录插件协议、网络桥与存储均不因本表成为小 Kernel 的稳定 API。共享运行库继续承担最小适配，发行版承担资源、生命周期和扩展接线；这不阻止它们独立制定自己的兼容规则。高级情绪驱动长期记忆沿[已确认的可选扩展决定](architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)，不成为 Base 必修项。
+
+### 相容与破坏性变化：候选判读
+
+| 变化例子 | 判读与所需核对 |
+|---|---|
+| 替换内部检索/解码算法或修基础缺陷，保留公开输入、结果和错误承诺 | 可作为保持合同的内部改动；按实际消费者与原问题回归，不把算法改动一概视为相容或保证模型质量 |
+| 给 Base 增加必做方法/超 trait，强化 `Send` / `Sync` / `'static`，或把 local future 改为必须跨线程 | 原合法实现可能无法继续编译；按源代码 Breaking 处理，不作为内部重构直接合入 |
+| 给当前公开请求 struct 增加一个 `Option` 字段 | 外部 struct literal 仍可能不能编译；Rust 源码兼容须单独核，不能套用“JSON 可选字段通常兼容”结论 |
+| 更名/删除现有字段、改变借用/返回形状、把正常空结果解释成失败或未调用 | 分别核源码与行为 Breaking；`Ok`、空文本和能力返回仍不直接证明产品成功或 invocation terminal |
+| 给 `#[non_exhaustive] BaseCallErrorKind` 增加原因 | 当前绑定允许外部保留未知分支；仍须核行为和适配。未知原因继续表示未正常完成，不自动等于可重试、无副作用或已停止；不把 `detail` / Display 文案升级为机器协议 |
+| 在最小逻辑投影新增必填丰富角色字段，拒绝当前可接受的未知字段，或注入关系/七维人格默认值 | 改变最小输入或校验边界，按数据/行为 Breaking 审阅；当前忽略未知字段不承诺无损保存丰富包 |
+| 增加独立可选增强 | 先明确增强的输入、输出、关联、授权与所需版本；原 Base-only 实现不因此承担新增义务。必需增强不可静默降成“已经满足”，未选择的增强不隐式启用 |
+
+“相容”须注明 **Rust 源码 / 逻辑数据 / 行为 / 具体传输** 哪一层；同一改动可在一层相容、另一层破坏。当前请求/错误的 Rust 绑定不自带 serde wire，也不因跨发行版最小定义存在而形成 C ABI 或统一网络协议。
+
+### 审阅、迁移与有限验证
+
+建议沿用 [Breaking 流程](../handoff/BREAKING_CHANGE_PROCESS.md)，不另造审批系统：变更提出者列受影响符号、旧/新行为、下游及迁移；Host/模块作者按实际使用面改适配和测试；角色转换器作者负责本发行版格式到逻辑定义的映射与资源检查。兼容层是否需要、能否实现及保留多久按具体 Breaking 由维护者审核；既有发布周期读兼容规则只在其实际适用的数据面使用，不假造 Rust trait 的运行时兼容层。
+
+复用已有[Base-only fixture](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)、[请求/错误单测](../kernel/crates/oclive_kernel_types/src/slot_base.rs)、[最小逻辑校验](../kernel/crates/oclive_validation/src/minimal_role.rs)与[可替换六槽消费案例](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs)。实际改公共 Rust API 时跑受影响回归及 G8 的 workspace doctest，选明确使用旧面的消费者证明原问题；JSON/校验变化另核接受和拒绝样例。单次已有全 CI 或文件存在不等于所有未来第三方组合已验证；证据足以识别本次兼容影响后停止，不穷尽 Host/算法/设备组合。
+
+**版本与审核点**：保持当前各产物的[独立版本规则](development/RELEASE_VERSIONING.md)，不把 crate `0.2.0`、设计稿编号、`API_VERSION` 或角色包 schema 互相代用，不新增六槽协议协商或宣布 1.0。此次待确认的是：是否将本清单及判读作为这一有限公共层的兼容审阅规则。真实版本 bump、旧接口撤销或新执行语义在对应实质变更中单独确定；本草案不能替代它们的批准，也不关闭 K-CORE-BOUNDARY-01 的其它剩余面。
+
+---
+
 ## 对外兼容一页表（主程序 / 编写器 / 启动器 / 包 / 内核 / CLI）
 
 | 组件 | 版本来源 | 与主程序关系 | 备注 |
