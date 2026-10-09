@@ -939,3 +939,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **交付 / 自主选择**：按[五路径计划](ROUND-02-PLAN.md#模块实现者里程碑与两条过期待验对账2026-10-09)只改两条状态行的过期待验，并在台账维护行追加链接；[里程碑交接入口](waves/WAVE-20261009-MODULE-AUTHOR-MILESTONE.md)串起已有Memory案例、六槽导航、AI规则和有限质量复核。没有新规则、运行实现、接口、依赖或队列状态；controller直接实施和语义自查 independent=false。
 - **验收 / 收口纪律**：适用文档检查与精确写集/原行/历史/其它状态保全后冻结提交；积累批次一次完整本地链，再按此次与既有推送授权FF/push main并取得同SHA正式CI。新终态只存原始回执与交付报告，不为回写绿灯另造提交。清洁性与实际远端身份在动作前复核，冲突只停相关动作。此处是执行计划与历史对账，不提前宣称本片完整/远端已验；结果读取冻结提交及对应Actions。
 - **下一步止点**：暂无具体新模块或Host对象，到基线交接结束。后续由真实实现/接入需求带动清障；不自动补五套实现、重新调查质量或解冻签名/TLS/双核/Full/多Agent/高级情绪记忆/Production Stream/CI分层。H04、S01、真实音频、平台、崩溃窗口和独立浏览器范围不扩大。
+
+### DCL-20261009-83 · 干净工作树的验证资源前置与分阶段收口
+
+- **真实问题 / 修正收益**：aeea1bbc冻结后首次 `npm run check:ci-local` native 101（364.675秒），controller未在新工作树准备Tauri内核资源。核到现有CI的debug bundle步骤即停止调查；原入口native 0后接续Rust，不改规则/配置、不造主平台stub。[里程碑入口](waves/WAVE-20261009-MODULE-AUTHOR-MILESTONE.md#3-验收与转让方式)补可执行前置，避免下一位接手人再次漏做。
+- **实际证据 / 归属**：所有进程仍在 `aeea1bbcb561fc61002c140c42e3551bc2ae6b6f`。原完整入口失败前D5 PASS（31 checks，sample lib明确skip）、前端lint/typecheck/build/fmt通过；debug bundle native 0（11.196秒）；接续 `check:rust` native 0（429.619秒，Host637/runtime273/desktop33 passed），`check:rust:integration` native 0（954.231秒，workspace＋串行CLI）。完整入口本身保持101，不包装成直接native 0。原失败/续验、编译和Git换行stderr分件保留；生成bridge核同Git blob后仅更新索引，零暂存差量；父环境不变，没有源码/依赖/API变化。
+- **有限写集 / 出口**：上述进程全部终态后才追加本事件、本计划实际接续和Wave的资源前置，三Markdown实质修正与原历史保全同轮验收；controller自查 independent=false。原源码/依赖检查按aeea绑定并核新差量仅文档，不重复Rust或完整入口；随后冻结最终SHA、主树/远端身份匹配才FF并一次push。新SHA正式CI结果仍待实际取得；不为绿灯造提交、不改任何债务状态或已定边界。
