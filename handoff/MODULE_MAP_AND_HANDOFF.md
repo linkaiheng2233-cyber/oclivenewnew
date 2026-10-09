@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-09-19（仅补阅读效力提示；下方候选版本与历史证据基线未重标）
+**最后更新**：2026-10-09（新增 §3.1.1 实现者接入点；候选与历史证据基线未重标）
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · Kernel/Host 权责候选及定点源码对照 · 在边界内如何改**。
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -381,6 +381,27 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 | **编译期** | 各槽 `trait` + `PluginHost`；换实现 **不改** `process_message` 顺序 |
 | **配置期** | 当前参考宿主 v2/v3/v4 蓝图的 `slot_registry` 多实例 → 折叠 `PluginBackends`（同 `type` **last-wins**，`position` 大者优先）；该格式族的新 Stable 样例使用 v4，这条装配链不属于内核最小角色 contract |
 | **运行期** | `set_session_slot_override` 叠在有效快照上（**不写盘**） |
+
+### 3.1.1 Base 实现者接入点清单（一页）
+
+**读者与用途**：编写 Rust Base 实现或新 Host 的开发者；本清单定位现有公共调用面和装配点，不定义新合同，也不是角色包创作指南。规范含义仍见 §0.4–§0.9；当前 Rust 数据和方法分别以 [`types::slot_base`](../kernel/crates/oclive_kernel_types/src/slot_base.rs) 与 [`contracts::slot_base`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs) 为准。
+
+六种方法均返回 `BaseCallFuture<'a, T>`，输出是 `Result<T, BaseCallError>`；共同失败载体保留 `kind` 与完整 `detail`，分类为 `Failed / Unavailable / Unsupported / Cancelled / TimedOut`，不能解析 detail 代替分类。正常空值不是失败，也不证明产品任务完成。future 不强制 `Send`；执行器、取消、重试、授权与资源生命周期由调用方决定。请求文本不授予资源权限。
+
+| 槽与唯一 Base 方法 | 请求 → 正常返回 | 实现资源绑定 / 现有参考实现 | 现有共享消费者 | 参考 Host 接线：有 / 无及实际范围 |
+|---|---|---|---|---|
+| Memory · `retrieve` | `MemoryBaseRequest { materials, query }` → `Vec<String>` | 本次显式候选材料；[`KeywordMemoryBase`](../kernel/crates/oclive_kernel_runtime/src/domain/base_memory.rs) 无存储句柄；[`QueryMemoryRetrieval`](../kernel/crates/oclive_kernel_runtime/src/domain/query_memory.rs) 另提供已有 Base 视图 | `MinimalRoleBaseConsumer::retrieve` 直接委托选定实现 | **有**：[`process_minimal_local_conversation`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs) 在生产区调用 `QueryMemoryRetrieval.retrieve`，消费当前最小会话材料；不是任意后端的配置式替换入口 |
+| Emotion · `analyze` | `EmotionBaseRequest { material, context }` → `Option<String>` | [`KeywordEmotionBase`](../kernel/crates/oclive_kernel_runtime/src/domain/base_emotion.rs) / builtin 用户分析器复用内置词表；不绑定七维状态 | `MinimalRoleBaseConsumer::analyze`（`EmotionBase`）直接委托 | **有**：同一最小会话入口消费 builtin Base 线索；不迁移 rich 状态或所有配置后端 |
+| Event · `analyze` | `EventBaseRequest { material, context }` → `Option<String>` | [`LlmEventAnalyzer::new(&generator)`](../kernel/crates/oclive_kernel_runtime/src/domain/base_event.rs) 借用调用方选定 `LlmBase`，一次分析会生成一次 | `MinimalRoleBaseConsumer::analyze`（`EventBase`）直接委托 | **有（按需）**：[`event_analysis_base`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/minimal_event.rs) 借用既有正文客户端；**无**普通聊天自动调用 |
+| Prompt · `assemble` | `PromptBaseRequest { materials, requirements }` → `String` | [`LiteralMaterialAssembler`](../kernel/crates/oclive_kernel_runtime/src/domain/base_prompt.rs) 无资源；非空额外要求按其有限约定拒绝 | `MinimalRolePromptConsumer` 准备人设；`MinimalRoleBaseConsumer` 复用该准备 | **有**：[`process_minimal_message_with_prompt`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 显式选实现，默认最小文本入口使用已有默认 Prompt |
+| LLM · `generate` | `LlmBaseRequest { input }` → `String` | runtime **无**独立 `base_llm.rs`；[`HostTextGenerationBase`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/minimal_llm.rs) 借用 Host 已装配客户端 / 模型 / 授权；独立 Host 可自行实现 | `MinimalRoleTextConsumer` 或 `MinimalRoleBaseConsumer::generate` | **有**：`text_generation_base` 薄视图及最小文本入口；不重建 provider 或统一 remote wire |
+| Agent · `execute` | `AgentBaseRequest { task, context }` → `String` | [`ScalarCountAgent`](../kernel/crates/oclive_kernel_runtime/src/domain/base_agent.rs) 为纯计数案例；[`HostAgentBaseView`](../kernel/crates/oclive_kernel_host/src/domain/agent_base_binding.rs) 借用 builtin 模型、工具授权与实际身份 | `MinimalRoleBaseConsumer::execute` 直接委托明确任务 | **有（显式借用）**：[`BuiltinReActAgent::task_execution_base`](../kernel/crates/oclive_kernel_host/src/domain/agent.rs)；**无**普通最小聊天自动 Agent，纯计数实现也没有生产 Host 绑定 |
+
+**接入方式**：[`MinimalRoleBaseBindings`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs) 接收实现的借用引用，`MinimalRoleBaseConsumer::new` 校验最小定义；调用者随后只调用实际需要的 trait 方法。构造六引用的这个可选消费者，不要求每次运行六槽，不增加固定顺序；只需文本时已有 Prompt / Text 消费者。Base-only fixture 见 [`base_only_fixture.rs`](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)，独立 Host 装配见 [`minimal_role_host`](../kernel/crates/oclive_kernel_runtime/examples/minimal_role_host.rs)。
+
+**判读提醒**：早期 B1 文字曾说明 “not wired into the reference Host”；当前 `slot_base.rs` 已注明参考 Host 通过显式选定的 Base 绑定消费，不自动替换 legacy 接口或要求固定六阶段。上表按当前实际接线定位，不能用旧说明否认后续有限入口。`process_message.rs` 的 `MemoryBase` 导入和调用均在生产函数内；`minimal_llm.rs` / `minimal_event.rs` 当前位于 Host 的 `domain/chat_engine/`，确实存在。是否配置式可替换、主界面是否调用、是否有真实模型证据仍分别判断。
+
+**外部 Memory 调用案例**：[`external_memory_base/main.rs`](../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs) 是独立编译的 example crate；调用端通过公开 import 将自己的 [`RecentLiteralMemory`](../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/memory.rs) 交给现有消费者。仓库根执行 `cargo run --locked -p oclive_kernel_runtime --example external_memory_base`；案例只调用 Memory、使用本次内存材料，不依赖参考 Host，不代表独立发布包、任意异步执行器或配置式插件装载。具体检索约定写在实现文件，不成为 Base 强制要求。
 
 ### 3.2 有效 backends 解析链
 

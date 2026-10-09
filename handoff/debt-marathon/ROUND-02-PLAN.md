@@ -931,3 +931,20 @@
 **十二路径 / 闭环**：修改 `AI_CHANGE_BOUNDARIES.md`、`AI_VERIFICATION_PROTOCOL.md`、`LAYERING_BASELINE.json`、根 `package.json`、`scripts/check-abstraction-ratchet.mjs`、本目录 `AI_AND_PIPELINE_GATES.md`、contracts 的 `slot_base.rs` 两处过期注释、根 `AGENTS.md` 与 `.cursor/skills/oclive-dev-pipeline/SKILL.md` 的拆分摘要；本计划与 DCL 只追加，在既有 waves 新建本批报告。第三方发现先分类；数量观察只提供范围、方法和定位，不把单实现、大文件或新增脚本直接判红。保留原分层/依赖硬门禁，准入审阅依真实职责而非必须有第二实现者。拆分原件先保全，不用 HEAD 覆盖未提交工作；Rust 拆分补所有权、可见性、调用/清理顺序和适用 feature 纪律。
 
 **验证 / 限度 / 停线**：新观察器同实现自测、仓库观察和错误输入负例；原分层、Dimension 5 `--ci`（脚本改动）、默认及改文链接、docs-only 旧路径、登记/债结构/编码/diff。contracts 仅改注释，定向 crate doctest 检查文案不破坏原例子；无公共签名变化，G8 全 workspace doctest不触发。核十二路径、历史前缀、原核心基线值、锁和运行源码保持。观察器不接入必需 CI，未改变集成链，不重复完整 CI 或业务验证。最多处理已定位的规则缺口，不重查全仓抽象/脚本重复，也不调整 Memory selector；证据足以修正限制即停止。全部冻结项与债务状态保留，不升级 Done。完成后保存可转让提交；先保留 main 候选原件，合流前检查真实重叠。
+### 路线一 · 外部 Memory Base 的最小消费者案例（2026-10-09）
+
+**锚点 / 目标 / 限度**：维护者选择模块 / 插槽实现者路线；“谁 + 哪槽”冻结为外部 Rust 模块实现者 + Memory，交付一页接入点和一个通过公共 traits 被现有最小消费者真实调用的实现。起点 `894047c52780375c9c01d596e442ff59231c596d` 已按授权文档 FF 接到 main，原 `2ef5af05` CI 仍只证明其 SHA。原审查工作区的无关空白编辑保留，新隔离分支施工。查到必要实现与调用即停止，不拓查其余五槽、角色包创作或发行版。
+
+**写集 / 闭环**：MODULE_MAP §3.1.1 维护一页六槽入口；runtime 的 `examples/external_memory_base/main.rs` 与 `memory.rs` 提供外部 example crate 的实现和真实调用；本计划、DEBT_CHANGELOG 只追加，waves 新增本片交付。六路径之外不修改；types / contracts / 共享消费者 / Host / 配置 / 锁 / 台账状态 / 旧 rich API 均保持。Host 本次提供材料和明确字面检索约定 → 外部 Memory → 原 `MemoryBase` → 原 `MinimalRoleBaseConsumer` → 忠实选材或完整 `Unsupported` → 案例运行与测试。其它引用复用现有参考实现，仅配置禁止生成的 LLM 夹具以证明本次零生成；不造五槽新实现或调度器。
+
+**验证 / 成本**：现有公共面足够，不能为了 TDD 发明缺失公共 API。先写调用案例，缺少新案例私有 Memory 模块时编译红（不证明旧公共契约缺陷），再实现到绿；测试覆盖实际替换、空匹配、未支持要求的完整失败和只消费本次材料。runtime / Host 相关回归、Clippy、fmt、分层、module-compat、默认及改文链接、docs-only路径、镜像、登记、债结构、编码和写集检查；用户要求公共面案例显式 `cargo test --locked --workspace --doc`，不把 `--lib` 视作 doctest。开发期窄测，主题完成后一次完整本地链；冻结实际提交后一次推送取得该 SHA 正式 CI，不为回写绿灯造提交。controller 实施和语义自查，independent=false；案例多文件 M、里程碑出口 L，无真实模型 / 音频 / 服务 / 用户库。
+
+**停止 / 升级**：外部 Memory 被现有消费者调用成功、适用回归通过、入口足以接手即止。可复现的表达障碍才提新旧两个案例；权限、调度权或公共强制义务变化先问维护者。既定签名 / TLS / 双核 / Full / 多 Agent / K-EMO-06 / Production Stream / CI 分层等冻结不动；有限例子不改变 H04、S01、平台 / TTS / 崩溃 / 浏览器边界。
+
+### 辅助限制接续与并行基线合流（2026-10-09）
+
+**基线 / 目标 / 分工**：维护者要求继续并接手辅助限制优化。main `b6a918748a933757011611d625e0e6e17f2e6823` 干净，Memory `f94069ddd7b26e7661c81dd310175c0b6fc9e857` 已有本地完整链和正式 CI 17/17（原 SHA）。M / 常规，controller 直接实施与语义自查，independent=false；在独立工作树组合两个原提交，不重写其历史，也不声称两个原证据相加就是新 SHA 正式通过。
+
+**九路径 / 有限改动**：仅导入原 Memory Wave 与两个例子 Rust 文件；MODULE_MAP 的接入清单保留，仅校正 B1 当前 / 历史提示；DCL 保留两事件，主线 AI 76 不变，Memory 76→77 记来源后再追加本事件 78，并在现有更新规则补并行编号对账。本计划保留两段原追加内容后追加本段；新 Wave 记录本次范围。AI_CHANGE_BOUNDARIES 的 G8 后果与收尾摘要链接既有 applicable 门禁，AI_VERIFICATION_PROTOCOL 补编译红归因和 CI 观察失败口径。公共签名、生产 Rust、观察器、硬基线、npm/Cargo 配置 / 锁、旧例子字节、现有 required gate、台账 / 队列状态不改。
+
+**验收 / CI 节奏 / 停止**：组合后原 Memory 测试三项、原观察器 self-test / 真实 JSON；默认与七份改文显式链接、docs-only 旧路径、登记 / 债结构 / 编码 / diff。精确九路径、旧事件 / 两原计划保全、DCL 唯一编号与来源、所有原运行源码 / 脚本 / 配置保持；新 Rust 文件逐字节等于原已验例子。没有新公共 API、集成行为或门禁脚本变动，不为规则澄清重复完整链、workspace doctest或正式 CI；适用本地证据齐全后只作 Locally verified。main 仍为原 b6 且干净才 FF；有新重叠则保留分支。无新槽位 / 真实模型 / 音频 / 服务 / 用户库，不推远端 main、不改冻结。达到具体三类口径与编号合流修正即停止，不无限搜辅助规则。

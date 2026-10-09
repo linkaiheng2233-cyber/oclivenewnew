@@ -17,7 +17,7 @@
 | G5 | 改 **monorepo 路径**须 grep `roles/`、`src-tauri`、`join("roles")`；Rust 用 `chat_pro_roles_dir()` / `resolve_project_roles_dir()`；JS 用 `scripts/lib/chat-pro-roles-dir.mjs`（**脚本：`scripts/check-stale-paths.mjs`**） | CI `check-stale-paths` 红 |
 | G6 | **编排**只在 `oclive_kernel_host::process_message` 及 `turn_pipeline/`；Tauri `api/*.rs` 薄封装，**不在 `lib.rs` 堆业务** | 分层 ratchet 红 |
 | G7 | DTO / 错误码以 `oclive_kernel_types` + [KERNEL_ERROR_CODE_CONVENTION.md](../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md) 为准；回复字段 **`reply`** | 前后端契约断裂 |
-| G8 | 改 **公开 DTO 字段 / trait 签名 / crate 名 / 公开 re-export** 后须 `cargo test --workspace --doc`（`check:rust` 与 `--lib` **不跑 doctest**） | rustdoc 示例漂移 → CI `rust` 硬门禁红（本地 `--lib` 全绿掩盖）；见 [AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md) §2.1 |
+| G8 | 改 **公开 DTO 字段 / trait 签名 / crate 名 / 公开 re-export** 后须 `cargo test --workspace --doc`（`check:rust` 与 `--lib` **不跑 doctest**） | rustdoc 示例可能漂移；普通 workspace 对默认关闭的 doctest 不提供该覆盖，须显式验证；见 [AI_VERIFICATION_PROTOCOL.md](./AI_VERIFICATION_PROTOCOL.md) §2.1 |
 | G9 | **简洁优先 / 反冗余**：在你**已因其它原因改动**的代码里，顺手收敛明显重复（多分支手写同一大 struct、复制粘贴字段块、未用 import、自己引入的死代码）——struct 用 `#[derive(Default)]` + `..Default::default()` 或共享 base helper，只列差异字段。**收敛须行为等价 + 相关测试绿**；**禁止**为清而清做与当前任务无关的大重构（§9 防过度工程）。新加字段时优先让构造点用 `..Default::default()`，避免 N 处手写全字段。 | 认知负担累积 / 或反向触发过度重构与行为漂移 |
 | G10 | **模块定义 / 划分 / 槽位与设施关系** 只改 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md)；不在 AGENTS、OCLIVE_ARCHITECTURE、PLUGIN_V1 长文复制同表 | 文档屎山 · 改一模块牵十处 |
 | G11 | **无 RFC 或关键决策记录，不新建** `handoff/*.md` / `creator-docs` 顶层文档；优先扩展现有 SSOT 一节或 `handoff/<distro>/` | 索引膨胀 · AI 无法定位 |
@@ -94,7 +94,7 @@
 - **向后兼容优先**：优先新增可选字段、能力探测、读旧写新和明确降级；插件自身 `version` 不是宿主兼容保证。Breaking 走 [`BREAKING_CHANGE_PROCESS.md`](./BREAKING_CHANGE_PROCESS.md)。
 - **完成声明**必须列出：已改节点、已核对无需改节点、兼容/回退行为、跨边界测试。模块关系与兼容层见 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) §12.5–§12.6 与 [`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)。
 
-**收尾自检（声称「写完」前）**：`cargo test --workspace --doc`（G8）+ 受影响的集成测 + `node scripts/dimension5-acceptance.mjs --ci`；`cargo clippy` 无新增 warning。涉及 Chat Pro / 目录插件 / 插槽时另跑 `npm run check:module-compat`。
+**收尾自检（声称「写完」前）**：按[项目流水线的变更面门禁表](../.cursor/skills/oclive-dev-pipeline/SKILL.md#⑤)选 applicable 项，并说明选择理由；公共 API 变更仍满足 G8，Rust 实现跑受影响检查 / 回归，Chat Pro / 目录插件 / 插槽跑 module-compat 和实际受影响边界。纯文案或私有等价整理不因这句摘要自动升级成 workspace doctest、Dimension 5 或完整矩阵；发版 / main CI 恢复 / 债 Done 仍走原 L 出口，用户已明确指定的验收不得自行省略。
 
 ---
 
