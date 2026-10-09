@@ -33,7 +33,7 @@ Start with only these items:
 
 `memory_seed.json` is a read-only seed supplied by the creator. It is separate from user-generated long-term memory. Mutable personality and user memory belong to the runtime and must not be written back into the pack.
 
-The seven-image set is a recommended optional cross-distro standard; all seven are mandatory only when claiming `portable-core`. Current reference-host base validation permits no portraits. The [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) requires a persona prompt and at least one visual asset, which adaptation of this product pack must supply. Shared logical validation is implemented; actual loading and CLI integration remain pending.
+The seven-image set is a recommended optional cross-distro standard; all seven are mandatory only when claiming `portable-core`. Current reference-host base validation permits no portraits. The [kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) requires a persona prompt and at least one visual asset, which adaptation of this product pack must supply. Shared logical validation, local loading preparation from caller-selected files, and CLI `validate-minimal-local` are implemented within the [minimal-role local preparation scope](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备). This does not complete a minimal-pack generator, media decoding, or the rich-role lifecycle, and does not require every distro to use the same disk packaging.
 
 For a first pack, leave `slot_registry`, `groups`, remote plugins, dual-core settings, and MCP alone. They belong to distro or advanced integration work.
 

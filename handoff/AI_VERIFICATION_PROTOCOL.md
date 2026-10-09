@@ -48,7 +48,7 @@
 | 前端烟测 | Vitest + Playwright preview | `npm run test:unit`；`test:e2e:preview`（Ubuntu CI） | `creator-docs/testing/OVERVIEW.md` |
 | Fuzz | `kernel/fuzz/fuzz_targets/` | **7** 目标 | `creator-docs/testing/FUZZING.md` |
 
-> **⚠️ 本地绿 ≠ 远程绿（doctest 盲区）**：日常门禁 `npm run check:rust`（= `cargo test --workspace --lib`）与 Playbook 基线 `cargo test -p oclive_kernel_host --lib` **均跳过 doctest**；CI 的 `rust` job 跑 `cargo test --workspace`（**含 doctest**）。**改动公开 DTO 字段 / trait 签名 / crate 重命名 / 公开 re-export 路径后，必须 `cargo test --workspace --doc`**，否则 rustdoc 示例漂移会在本地全绿却让 CI 硬门禁红（2026-06-25 实例：`AgentInput` 加字段、crate 改名后三处 doctest 在 `--lib` 下不可见）。
+> **⚠️ 本地绿 ≠ 远程绿（doctest 覆盖）**：日常 lib 测试和 Playbook 的 `--lib` 基线跳过 doctest；CI 普通 workspace 测试只覆盖默认启用的库文档测试。runtime、Host 与桌面 manifest 当前写 `doctest=false`，普通测试默认省略这些 crate 的 doctest；显式 `--doc` 仍可选择库文档测试，须按实际命令和退出码核覆盖。**改动公开 DTO 字段 / trait 签名 / crate 重命名 / 公开 re-export 路径后，仍须 `cargo test --workspace --doc`**；列清单不等于执行通过。2026-06-25 的历史实例（`AgentInput` 加字段、crate 改名后三处 doctest 在 `--lib` 下不可见）保留其当时范围，不当作当前全部 crate 默认有覆盖的依据。选择规则见 [Cargo 测试文档](https://doc.rust-lang.org/cargo/commands/cargo-test.html)。
 
 **声称「某模块无单测」前必须**：
 

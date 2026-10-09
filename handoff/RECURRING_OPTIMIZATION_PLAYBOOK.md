@@ -3,9 +3,9 @@
 > **定位**：一份**可反复运行**的地基巡检流程。不是一次性审查报告，而是每隔一段时间 / 关键节点照着跑一遍的"体检套餐"。
 > **SSOT 范围**：本文只定义巡检的触发、分档、取证和记录方式；AI 可改范围、开发阶段、数字核实、模型委派和技术债状态分别以各自 SSOT 为准。
 >
-> **核心信条**：保证地基稳固才能走得远。但**地基是为了承载"惊喜"（官方剧场 demo / 发行版），不是为了自身完美**——见文末「§9 元纪律」。
+> **核心信条**：保证地基稳固才能走得远。但**地基是为了承载维护者当前选定的开发目标与可体验结果，不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-10-01（文档声明支撑调查入口） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-10-09（覆盖语义、每轮核对与有限收束） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -79,8 +79,8 @@
 
 **历史巡检曾把技术面评为 A−，但评级必须以 §8 最新一轮证据为准，不能把旧结论当永久事实。** 当前产品侧的关键瓶颈仍包括“还没有足够多陌生人亲眼见过它发光”，工程巡检只负责守住承载这一体验的地基。
 
-- 当前"惊喜"= 官方**剧场 demo**(两个反差角色吃早饭准备上学,用户戳一下微改剧情——喝苦中药/快迟到/换称呼/改性格——看角色做出符合人设的有趣反应;强模型一次性预生成骨架,本地小模型只改用户动的那一小段,"弹改动加载"遮延迟)。目标:让陌生人 60 秒内脱口而出"卧槽"。
-- 因此 **§9 元纪律** 是硬约束:**凡不直接服务于"让它发光"的优化,默认 Deferred 只记录不动手。** 这份巡检手册存在的意义是**防地基回退,不是追内核完美**。
+- **历史产品示例，非当前目标 SSOT**：官方**剧场 demo**(两个反差角色吃早饭准备上学,用户戳一下微改剧情——喝苦中药/快迟到/换称呼/改性格——看角色做出符合人设的有趣反应;强模型一次性预生成骨架,本地小模型只改用户动的那一小段,"弹改动加载"遮延迟)。目标:让陌生人 60 秒内脱口而出"卧槽"。
+- 当前目标以维护者本轮指令和已采纳的阶段计划为准；Kernel 接入、模块开发、发行版体验都可以是目标，不由这段历史 demo 替代。**§9 元纪律**要求守住已确认的硬边界，其余无实际收益的打磨延后；不凭巡检观察改技术债状态。手册存在的意义是**防地基回退，不追内核完美**。
 
 ### 项目分量（一句话量级）
 
@@ -114,7 +114,7 @@ Rust workspace 成员、源码、迁移、测试和文档规模均以 `cargo met
 
 ---
 
-## 2. 基线门禁（巡检每轮必跑；首次 FAIL 先停查根因）
+## 2. 基线门禁（每轮核对；范围变化才重跑，首次 FAIL 先停查根因）
 
 先核对工具与环境：受检 SHA、dirty/untracked、`rg` 及实际被门禁调用的 Python 解释器。Windows 的 TTS ratchet 默认调用 `py -3`；若本机只有 Python 3.10+ 而没有 `py`，用脚本支持的 `OCLIVE_VOICE_PYTHON` 指向**实际解释器可执行文件**，记录该配置，不把缺启动器误报为 TTS 产品失败。PowerShell 下逐条跑（**不要用 `&&`**）：
 
@@ -125,9 +125,9 @@ node scripts/check-domain-layering.mjs         # ratchet 数值不得上涨
 git status                                      # 确认工作树状态 / 与 origin 差距
 ```
 
-本表是**巡检基线**，不是每个代码/文档提交都必须照跑的开发门禁；开发验收按 diff 选 applicable 项。离线、锁文件或本机内存约束需要附加 `--locked`、`--offline`、`-j 1` 时，报告须列实际命令和覆盖限制，不把调整后的本地结果冒充 CI 原命令。任一项失败先保全退出码与原文，按 §0 区分环境、检查器和产品；修正环境后须重新通过本轮基线才继续巡检。
+本表是**巡检基线**，不是每个代码/文档提交都必须照跑的开发门禁；开发验收按 diff 选 applicable 项。先核对已有原始证据的 SHA、实现/依赖差量、命令覆盖和环境前提：范围相同且原件可核对时可复用；条件变化则补受影响项，最终正式验收仍绑定目标 SHA。纯文档沿用同一代码与依赖图时，准确区分直接执行的旧 SHA 和新文档的定向检查，不重复全量，不将父提交绿灯写成当前提交已验。具体停止规则见[核实协议 §2.10](AI_VERIFICATION_PROTOCOL.md#210-技术债实施足以修复与验收即停止补证)。离线、锁文件或本机内存约束需要附加 `--locked`、`--offline`、`-j 1` 时，报告须列实际命令和覆盖限制，不把调整后的本地结果冒充 CI 原命令。任一项失败先保全退出码与原文，按 §0 区分环境、检查器和产品；修正环境后须重新通过本轮基线才继续巡检。
 
-> **⚠️ doctest 盲区**：上面的 `--lib` 与日常 `npm run check:rust`（`cargo test --workspace --lib`）**都不跑 doctest**，但 CI `rust` job 跑 `cargo test --workspace`（**含 doctest**）。**本轮若改了公开 DTO 字段 / trait 签名 / crate 名 / re-export，必须补 `cargo test --workspace --doc`**，否则会出现「本地全绿 / 远程 CI 硬门禁红」（见 [`AI_VERIFICATION_PROTOCOL.md`](./AI_VERIFICATION_PROTOCOL.md) §2.1）。
+> **⚠️ doctest 覆盖**：上面的 `--lib` 与日常 `npm run check:rust` 的 lib 测试不跑 doctest；CI 普通 workspace 测试只运行默认启用的文档测试，不能概括成所有 crate 都覆盖。runtime、Host 和桌面 manifest 目前写 `doctest=false`，普通测试默认省略其文档测试；**显式 `--doc` 仍能选择库文档测试**，不能误读为禁用显式验证。本轮若改公开 DTO 字段 / trait 签名 / crate 名 / re-export，仍按 G8 补 `cargo test --workspace --doc` 并核实际退出码；`--doc -- --list` 仅列出示例，不证明示例通过。见[核实协议 §2.1](AI_VERIFICATION_PROTOCOL.md)与 [Cargo 测试文档](https://doc.rust-lang.org/cargo/commands/cargo-test.html)。
 
 **判定**：门禁（择要）含 layering ratchet / **cargo audit** / **cargo deny（licenses+bans）** / lockfile（禁 sqlx-mysql·rsa 回潮）/ ensure-plan 快照 / CHANGELOG 中英 parity / Markdown 本地链接 / stale 路径 ratchet（doc + code）/ host re-export ratchet / theater prompt drift / **verify:ui** / **vite build** / **tauri beforeBuildCommand 路径 ratchet**。任一 FAIL → **本轮停止所有优化,先恢复基线**。
 
@@ -158,7 +158,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] 核心 crate 依赖图仍严格单向（`types→contracts→runtime→host→{server,tauri}`）；CI planner、scaffold、validation、fuzz 等旁路成员按各自边界另查
 - [ ] `domain→infrastructure` 反向依赖无新增（对照 `LAYERING_BASELINE.json`）
 - [ ] `process_message`（`kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs`）在当前参考 Host 内仍是唯一主编排入口，业务逻辑未泄漏到 `distros/desktop-tauri/src/api/*`
-- [ ] 冻结项（dual_core / blueprint v3 / expert_routing）仍 feature-gated 默认不编译
+- [ ] 冻结实验执行链仍默认关闭：Host `dual_core` 与其 `expert_routing` 受 feature 约束，v3 执行还须核对应启用条件。`oclive_validation` 的 v3 兼容校验属于默认可编译工具，不因实验执行冻结而删除或宣称不存在；逐项区分校验、接线和实际执行，不自动解冻。
 
 **愿景拷问**
 - [ ] 【V1】完整 `OcliveKernel` 已可由 library 进程内嵌入；最小内核物理抽离（**K-CORE-BOUNDARY-01**）进度——本轮裁决：阻塞 / 非阻塞？（§3.1）
@@ -230,7 +230,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] `ROLE_PACK_SPEC.md` 字段 vs schema；`DISTRO_CAPABILITY_PROFILE.md` vs `host_profile.rs`
 - [ ] `NAMING_CONVENTIONS.md` canonical 路径 vs 实际 import
 - [ ] `CHANGELOG.md` + `CHANGELOG.en.md` `[Unreleased]` **中英 parity**（门禁项）
-- [x] 姊妹仓：`oclive-vscode/ROADMAP.md`、`VSCODE_DISTRIBUTION.md`（"能力优先"）、pack-editor README deprecated 状态
+- [ ] 姊妹仓：`oclive-vscode/ROADMAP.md`、`VSCODE_DISTRIBUTION.md`（"能力优先"）、pack-editor README deprecated 状态（按本轮范围核对；未复核写未复核，不继承历史勾选）
 - [ ] 许可证迁移后无残留 AGPL（除历史性引用）
 
 **愿景拷问**
@@ -265,8 +265,8 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] AI 硬约束清单存在且最新（建议 `AI_CHANGE_BOUNDARIES.md` 或 AGENTS「禁止区」：不在角色任务改 `slot_registry`、不把 RFC Draft 当未实现而删 wiring、不引归档当 truth、改锁文件必跑 `cargo audit` 并更新 `KNOWN_VULNERABILITIES.md`）
 
 **4. 门禁语义纯度（全档）**
-- [x] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；Stage 1 `ci-impact-plan` 是唯一非阻塞影子报告，不冒充验证 job
-- [x] loom / fuzz / e2e-tauri / cli-bench / visual-smoke 已迁出 `ci.yml` 进入独立 Nightly/手动工作流；Nightly 内不吞失败，`npm-audit` 对生产与完整开发图均为硬门禁
+- [ ] CI job 只分两类：**硬门禁（红=不能合）** 与 **nightly/可见性（不挡 main）**；Stage 1 `ci-impact-plan` 是唯一非阻塞影子报告，不冒充验证 job（按本轮范围核对；未复核写未复核，不继承历史勾选）
+- [ ] loom / fuzz / e2e-tauri / cli-bench / visual-smoke 已迁出 `ci.yml` 进入独立 Nightly/手动工作流；Nightly 内不吞失败，`npm-audit` 对生产与完整开发图均为硬门禁（按本轮范围核对；未复核写未复核，不继承历史勾选）
 - [ ] 本地 `check:release` 与 CI 全集差距已知并记录(不假装等价)
 
 **愿景拷问**
@@ -328,19 +328,20 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 ### 本轮延后（Deferred；已入库写编号，未入库写原因）
 ### 未测项、环境限制与副作用
 
-### 六维健康度评分（仅全档；双栏：正确性 / 愿景最优性）
-| 维度 | 正确性 | 愿景最优性 | 理由 |
+### 六维健康度评分（仅全档；维度 1/2/3/4/6/7，双栏：正确性 / 当前目标收益）
+| 维度 | 正确性 | 当前目标收益 | 理由 |
 | 基线 | | — | |
 | 一架构 | | | |
 | 二性能 | | | |
 | 三设计 | | | |
 | 四技术债 | | — | |
 | 六文档 | | | |
+| 七条理与边界 | | | |
 
 ### 下一轮建议
 ```
 
-**评分基准**：A=优且无新债 / B=良有小债 / C=可用但有结构隐患 / D=有阻塞风险 / F=基线破。
+**评分基准**：A=当前范围质量优且无已确认阻断 / B=良且有有限可维护缺口 / C=可用但有结构隐患 / D=有已确认阻塞风险 / F=适用基线失败。未测或证据不足写“未评分”，不按观察条数扣分，也不以全仓无新债作为 A 的条件。
 
 快/半档保留本模板的基线、发现、处置与未测项，评分栏写“未评分”，不引用旧轮次分数当现状。表内 Done 仅指**本轮已完成的具体修复**，不是技术债台账的 Done 状态；每项数字与结论都应能追溯到受检 SHA、命令、退出码或原始文件。
 
@@ -367,7 +368,7 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 **约束**：
 
 1. **历史全档曾获 A 级，不代表当前 HEAD 的全档评分。** 巡检的目的是**防回退**，不是**追完美**；未实测维度保持未评分，旧轮次不能补当前证据。
-2. **硬门禁、安全、兼容或确定性回退先处理。** 其余不直接服务当前“惊喜”（官方剧场 demo / 发行版上线 / Apache-2.0 落地）的优化，默认 Deferred，并按 §4 的证据等级记录；不能用“愿景优先”略过阻断项。
+2. **硬门禁、安全、兼容或确定性回退先处理。** 其余投入按维护者当前选定的开发目标和可验证收益取舍；历史剧场 demo、发行版上线或许可落地只是目标示例。无实际受阻动作或收益下降时延后调查，按 §4 记录观察，不自动把债务台账改为 Deferred；不能用“愿景优先”略过阻断项。
 3. **三类发现优先保留并处理**（因其直接服务愿景）：
    - 维度一【V2】槽态真实性缺口（可替换性是核心卖点的实现质量）
    - 维度二【剧场实时 / V1 低算力】性能预算（直接决定 demo 体感）

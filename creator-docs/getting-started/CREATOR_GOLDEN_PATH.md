@@ -33,7 +33,7 @@ cargo run -p oclive-cli -- pack create -o .\work\my-role --flat --id my-role --n
 
 `memory_seed.json` 是创作者提供的只读种子，不是用户运行后产生的长期记忆。可变人设和用户长期记忆由运行时管理，不要写回角色包。
 
-七图集是推荐的可选跨发行版标准，仅选择 `portable-core` profile 时才强制七张。当前参考宿主基础校验允许没有立绘；[kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) 则要求 persona prompt + 至少 1 个视觉资产，映射该产品包时仍需满足这一内容要求。共享逻辑校验已实现，实际加载与 CLI 接入仍待完成。
+七图集是推荐的可选跨发行版标准，仅选择 `portable-core` profile 时才强制七张。当前参考宿主基础校验允许没有立绘；[kernel minimal contract](../../handoff/ROLE_PACK_BOUNDARY.md) 则要求 persona prompt + 至少 1 个视觉资产，映射该产品包时仍需满足这一内容要求。共享逻辑校验、调用方指定文件的本地加载准备和 CLI `validate-minimal-local` 已实现，范围见[最小角色本地准备](../../handoff/ROLE_PACK_BOUNDARY.md#05-第四代码切片调用方指定文件的本地加载准备)。这不代表最小包生成器、媒体解码或丰富角色生命周期已经完成，也不要求所有发行版采用同一磁盘封装。
 
 初次创作不需要修改 `slot_registry`、`groups`、远程插件、双核或 MCP；这些属于发行版和高级集成能力。
 
