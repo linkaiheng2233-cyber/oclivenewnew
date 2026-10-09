@@ -1,20 +1,50 @@
 # 六槽开工包 · `memory`
 
-> **读者**：改记忆检索、STM/LTM 策略或 memory 后端的工程师。
-> **读完能做什么**：分清聊天日志/STM/LTM，并理解 memory 如何提出回想事件、被采纳后影响本轮回复。
-> **耗时**：约 **50 min**
-> **SSOT 范围**：人类 checklist；定义见 [MODULE_MAP §4](../../../handoff/MODULE_MAP_AND_HANDOFF.md)
-> **最后更新**：2026-09-05
+> **读者**：编写基础 Memory 实现，或维护参考 Host 的记忆检索、STM/LTM 策略和后端的工程师。
+> **读完能做什么**：选择自己的接入路径；基础实现者能运行已有消费者案例，参考 Host 维护者能区分聊天日志/STM/LTM 与回想流程。
+> **耗时**：基础案例约 **5–10 min**；参考 Host 开工包约 **50 min**
+> **SSOT 范围**：人类开工路由与 checklist；公共接入点见 [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，参考 Host 定义见 [§4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)
+> **最后更新**：2026-10-09
 > **下一篇**：[chat-storage](../side-channels/chat-storage.md) · [side-channels 索引](../side-channels/)
 
 ---
 
-## 1. 你插在哪
+## 0. 先选接入路径
+
+| 你要做什么 | 从哪里开工 |
+|---|---|
+| 写一个通过现有公共接口被调用的基础检索实现 | 下方 **MemoryBase 案例**；按调用方提供的材料和资源运行 |
+| 改参考 Host 的丰富记忆后端、持久化或回想策略 | **§1–§6**；沿已有 `MemoryRetrieval`、配置和存储接线 |
+
+### MemoryBase 案例：先跑通，再替换自己的实现
+
+1. 打开作者自己的 [`memory.rs`](../../../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/memory.rs)，读它的检索约定与 `impl MemoryBase`；再打开 [`main.rs`](../../../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs)，看 `MinimalRoleBaseBindings.memory` 如何借用该实现，以及 `MemoryBase::retrieve(&consumer, request)` 如何通过已有消费者调用。
+2. 在仓库根运行下面两个命令。这里复用已验证的离线命令，要求本机已准备 Rust 依赖缓存；缺缓存时先完成依赖准备。案例的实现与 runtime 库分开编译；无需先配置蓝图、STM/LTM、模型或启动参考 Host。
+
+   ```powershell
+   cargo run --locked --offline -p oclive_kernel_runtime --example external_memory_base
+   cargo test --locked --offline -p oclive_kernel_runtime --example external_memory_base
+   ```
+
+3. 现有案例运行输出为 `external memory: selected=2 baseline=3 memory_calls=1 llm_calls=0`。它比较同一批材料下的两个实现，各自使用自己的检索约定；新实现选最近两条，已有关键词实现选三条。`literal:<exact substring>` 属于这个作者的实现约定，不是 Base 规定的通用查询语法。
+4. 编写自己的实现时，先替换算法和对应的调用要求，再用消费者调用核对实际输出、正常空结果与完整失败。资源、材料来源与异步执行器由调用方提供；本例只驱动立即就绪的内存实现，不能把其中的 `immediate` helper 当作任意异步实现的执行器。
+
+**本路径的验收 checklist**：
+
+- [ ] 实现说明了自己接受的查询与材料约定；未支持的要求保留完整失败。
+- [ ] 实际通过现有消费者调用，正常空结果和失败能区分；不把“调用成功”当作“找到了所有相关事实”。
+- [ ] 来源与资源范围由调用方明确，未隐式读取旧材料、数据库或取得新权限。
+
+公共请求、失败与资源绑定仍查 [接入点清单](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)。本例只调用 Memory；绑定六个引用不要求六槽每轮全部执行。它也没有将自定义实现注册到参考 Host 的蓝图后端，进入该路径仍需按下面的实际接线处理。
+
+---
+
+## 1. 参考 Host：你插在哪
 
 - **MODULE_MAP**：[§4 第 1 模块 · `memory`](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)
 - **当前配置 / 运行时折叠**：蓝图 `slot_registry.type: memory` → `PluginBackends.memory`；legacy v1 才是 `settings.json.plugin_backends.memory`
 - **Trait**：`MemoryRetrieval`（`oclive_kernel_contracts`）
-- **主链 hook**：memory 槽在 `turn_pipeline/pre.rs` 检索；内核编排在 `post_llm` 写入 STM/LTM，写入不属于 `MemoryRetrieval` trait
+- **主链 hook**：memory 槽在 `turn_pipeline/pre.rs` 检索；参考 Host 在 `post_llm` 写入 STM/LTM，写入不属于 `MemoryRetrieval` trait
 - **Event Ring hook**：`co_present/run_middle.rs` 从本轮相关记忆选候选 → `memory.recall.candidate` → `memory.recollection.activated`（可能无）
 
 ---

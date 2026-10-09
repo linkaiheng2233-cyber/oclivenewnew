@@ -948,3 +948,11 @@
 **九路径 / 有限改动**：仅导入原 Memory Wave 与两个例子 Rust 文件；MODULE_MAP 的接入清单保留，仅校正 B1 当前 / 历史提示；DCL 保留两事件，主线 AI 76 不变，Memory 76→77 记来源后再追加本事件 78，并在现有更新规则补并行编号对账。本计划保留两段原追加内容后追加本段；新 Wave 记录本次范围。AI_CHANGE_BOUNDARIES 的 G8 后果与收尾摘要链接既有 applicable 门禁，AI_VERIFICATION_PROTOCOL 补编译红归因和 CI 观察失败口径。公共签名、生产 Rust、观察器、硬基线、npm/Cargo 配置 / 锁、旧例子字节、现有 required gate、台账 / 队列状态不改。
 
 **验收 / CI 节奏 / 停止**：组合后原 Memory 测试三项、原观察器 self-test / 真实 JSON；默认与七份改文显式链接、docs-only 旧路径、登记 / 债结构 / 编码 / diff。精确九路径、旧事件 / 两原计划保全、DCL 唯一编号与来源、所有原运行源码 / 脚本 / 配置保持；新 Rust 文件逐字节等于原已验例子。没有新公共 API、集成行为或门禁脚本变动，不为规则澄清重复完整链、workspace doctest或正式 CI；适用本地证据齐全后只作 Locally verified。main 仍为原 b6 且干净才 FF；有新重叠则保留分支。无新槽位 / 真实模型 / 音频 / 服务 / 用户库，不推远端 main、不改冻结。达到具体三类口径与编号合流修正即停止，不无限搜辅助规则。
+
+### 路线一 · Memory 实现者的人类开工入口（2026-10-09）
+
+**具体阻碍 / 起点 / 尺寸**：维护者要求继续模块接入主线，受众与槽位仍为外部 Rust Memory 实现者。干净基线 `51f8f26b184b7c13d55756667909b9bd7e492f19` 已合流原案例；现有人类 Memory 开工包只列 `MemoryRetrieval` / STM-LTM / 蓝图后端，容易被读成基础实现者必须接这些设施。M / 轻，controller 直接实施与语义自查，independent=false；必要入口已足够定位，不继续查其余五槽或全仓文档。
+
+**五路径 / 闭环**：只改 `human-docs/modules/slots/memory.md` 和已有 EN 摘要，先分基础实现与参考 Host 维护两路径，链接现有 example / 消费者 / 接入清单，给原运行命令、输出判读和适用 checklist。旧丰富流程只澄清其参考 Host 归属；本计划与 DCL-79 只追加，既有 waves 目录新建本批报告。原 Rust 实现、契约、权限、配置、资源授权、消费者、Host、脚本、依赖 / 锁、台账与队列不改；literal 查询仍属于作者约定，六引用不意味着六阶段调度，immediate helper 不是通用 executor。
+
+**证据 / 出口 / 停止**：复用原案例的 Git 内容与已执行的 run / test 证据，两个命令及结果须与源码 / 原回执对应；新片只跑默认和五改文显式链接、docs-only 旧路径、镜像、登记、债结构、五份编码、diff及原历史 / 五路径 / 中英语义核对。文档镜像工具不代替语义自查。不跑新 Rust、业务、workspace doctest或全量 CI，不把原 SHA 绿灯改绑本片。适用检查后本地提交，main 仍为原51f8且干净才FF，已有授权内备份无PR分支，不推远端main；入口足以让读者选择并运行现有案例即停止，不把后端注册、树外发布或新公共义务藏进文档任务。既定冻结和未测边界保持，执行结论至多 Locally verified，不改债务状态。
