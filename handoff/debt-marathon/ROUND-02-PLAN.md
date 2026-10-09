@@ -923,3 +923,11 @@
 **七路径 / 预期闭环**：在既有 waves 目录交付项目审查与三条路线；手册澄清默认和显式 doctest、已有证据复用、实验执行与兼容校验、每轮勾选、六维评分模板及当前目标；核实协议同步唯一 doctest 提醒；黄金路径中英只纠正已有有限本地加载和 CLI 入口。本计划和 DCL-75 只追加。台账、队列、旧 Wave/历史滚动行、源码、测试、配置、锁和受保护原件无变；不把语义漂移制造成新实现债或改已定冻结。
 
 **门禁 / CI 节奏 / 停止**：默认与七改文显式链接、docs-only 旧路径、镜像、登记、债结构、编码、diff及精确写集/历史前缀核验。无公共 API 或行为改变，纯文档无需新增 Rust/TDD/doctest/live，不重复本地或远端全量；保留已验 main，文档只保存独立提交及无 PR 分支备份，不自动合入 main或借旧 SHA 宣称新文档提交有正式 CI。交付可读全景、有限修正及路线输入后停止调查，未来实际模块/发行目标由维护者选择。
+
+### AI 限制优化与有限证据复核（2026-10-09）
+
+**目标 / 起点 / 分工**：维护者提供桌面 DeepSeek 建议，要求完善项目限制。基线 `894047c52780375c9c01d596e442ff59231c596d`；main 留有四项未提交候选，已连同建议原件保全到本机 `E:/OCLive/_recovery/AI-GUARDRAILS-20261009-R0/`。在独立 `codex/ai-guardrails-20261009-r0` 工作树优化候选，不覆盖另一模块工作树。M / 常规，controller 实施和语义自查，independent=false；建议是待核实材料，不授予架构、删除或安全权限。
+
+**十二路径 / 闭环**：修改 `AI_CHANGE_BOUNDARIES.md`、`AI_VERIFICATION_PROTOCOL.md`、`LAYERING_BASELINE.json`、根 `package.json`、`scripts/check-abstraction-ratchet.mjs`、本目录 `AI_AND_PIPELINE_GATES.md`、contracts 的 `slot_base.rs` 两处过期注释、根 `AGENTS.md` 与 `.cursor/skills/oclive-dev-pipeline/SKILL.md` 的拆分摘要；本计划与 DCL 只追加，在既有 waves 新建本批报告。第三方发现先分类；数量观察只提供范围、方法和定位，不把单实现、大文件或新增脚本直接判红。保留原分层/依赖硬门禁，准入审阅依真实职责而非必须有第二实现者。拆分原件先保全，不用 HEAD 覆盖未提交工作；Rust 拆分补所有权、可见性、调用/清理顺序和适用 feature 纪律。
+
+**验证 / 限度 / 停线**：新观察器同实现自测、仓库观察和错误输入负例；原分层、Dimension 5 `--ci`（脚本改动）、默认及改文链接、docs-only 旧路径、登记/债结构/编码/diff。contracts 仅改注释，定向 crate doctest 检查文案不破坏原例子；无公共签名变化，G8 全 workspace doctest不触发。核十二路径、历史前缀、原核心基线值、锁和运行源码保持。观察器不接入必需 CI，未改变集成链，不重复完整 CI 或业务验证。最多处理已定位的规则缺口，不重查全仓抽象/脚本重复，也不调整 Memory selector；证据足以修正限制即停止。全部冻结项与债务状态保留，不升级 Done。完成后保存可转让提交；先保留 main 候选原件，合流前检查真实重叠。

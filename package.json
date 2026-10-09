@@ -68,6 +68,7 @@
     "test:build-cache": "node --test scripts/inspect-build-cache.test.mjs",
     "test:toolchain": "node --test scripts/lib/gate-toolchain.test.mjs scripts/check-toolchain.test.mjs",
     "check:toolchain": "node scripts/check-toolchain.mjs",
+    "check:abstraction": "node scripts/check-abstraction-ratchet.mjs",
     "check:module-compat": "node scripts/check-module-compat.mjs && node scripts/validate-plugins-index.mjs",
     "test:module-quality": "node scripts/module-quality-harness.mjs --self-test && node scripts/module-quality-runner.mjs --self-test && node scripts/module-quality-compare.mjs --self-test",
     "quality:modules": "node scripts/module-quality-runner.mjs --compare-with examples/module-quality-harness/fixtures/observations.reference.v1.json --output target/oclive-module-quality/observations.current.json",

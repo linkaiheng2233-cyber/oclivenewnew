@@ -64,6 +64,8 @@
 **3. 精简而非冗余（同功能取更短、更少分支）**
 - 同等功能选代码量 / 分支更少的写法；同一逻辑复制粘贴 **≥2 次即抽 helper**。
 - 不写「将来可能用得上」的参数 / 泛型 / trait（speculative generality = §9 点名的过度工程）。
+- **新增 trait / 端口说明实际职责**：写明当前消费者、需隔离或替换的边界，以及具体类型为何不足。公共契约、树外实现、资源隔离或当前测试替换需求可以支持接口；**不强制先有第二个实现者**。只有「以后可能用得上」而无当前需求时使用具体类型。怀疑两个接口重复时先核请求/结果、责任与实际共用实现，不能仅凭薄包装或方法同名判重复；公共接口调整仍沿 G8 与兼容流程。
+- **抽象数量只作观察**：`npm run check:abstraction` / `node scripts/check-abstraction-ratchet.mjs --json` 输出 Git 已跟踪工作区的声明、实现文本命中、文件大小与脚本数量；配置见 [`LAYERING_BASELINE.json`](./LAYERING_BASELINE.json)。**不是数量上限或必需 CI 门禁**，增长、单实现或大文件不自动判失败。先看具体职责、耦合与维护障碍，足以行动即停；有新增争议按[核实协议 §2.7](./AI_VERIFICATION_PROTOCOL.md#27-代码冗余--过度工程--不简洁声称)分类，不为降低数字而拆分或删接口。
 
 **4. 解耦与可维护（人类开发者认知负担优先）**
 - 守分层（G6）：编排只在 `process_message` / `turn_pipeline`；`api/*.rs` 薄封装；`lib.rs` 不堆业务。
@@ -241,6 +243,7 @@
 - `node scripts/check-stale-paths.mjs` — 文档 + 代码路径（dimension5 拆为 doc/code 两检）
 - `node scripts/check-markdown-links.mjs` — 人类中英文模块包与关键 AI/SSOT 锚点的本地 Markdown 相对链接
 - `node scripts/check-doc-registry.mjs` — handoff 根级文档登记 + 重复块哨兵（G14/G16）
+- `npm run check:abstraction` — 可选抽象观察；接口/大文件/脚本审阅需要时运行，数量不影响退出码；`--json` 给定位和限制，`--self-test` 验证观察器。原分层与依赖棘轮仍是硬门禁
 - `node scripts/dimension5-acceptance.mjs --ci` — 检查项总数以脚本结尾 `PASS (N checks)` 为准（含 `cargo deny` · doc registry · 人类模块链接）
 - 关键路径索引：[BUS_FACTOR_NOTES.md](./BUS_FACTOR_NOTES.md)
 - 技术债 / 冻结：[TECHNICAL_DEBT_INVENTORY.md](./TECHNICAL_DEBT_INVENTORY.md)

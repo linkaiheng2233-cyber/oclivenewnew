@@ -68,16 +68,10 @@ rg '<ModuleName>' distros/desktop-tauri/tests
 **生产路径统计须**：
 
 1. 排除 `tests/`、`tests.rs`
-2. 排除 `#[cfg(test)]` **之后**的代码块（文件内联测试模块）
+2. 核对内联测试模块的实际起止边界及 feature/cfg；不能把首次 `#[cfg(test)]` 之后的整份文件都判为测试
 3. 区分 `.unwrap()`、`.unwrap_or()`、`.expect()`（三者语义不同）
 
-**参考命令（Node，仓库根）**：
-
-```powershell
-node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(const e of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,e.name);if(e.isDirectory()){if(e.name==='target')continue;walk(p,a);}else if(e.name.endsWith('.rs'))a.push(p);}return a;}let prod=0,test=0;for(const p of walk('kernel/crates/oclive_kernel_host/src')){let t=fs.readFileSync(p,'utf8');const n=(t.match(/\.unwrap\(\)/g)||[]).length;if(!n)continue;if(p.endsWith('tests.rs')){test+=n;continue;}const parts=t.split(/#\[cfg\(test\)\]/);prod+=(parts[0].match(/\.unwrap\(\)/g)||[]).length;test+=n-prod;}console.log({prod,test});"
-```
-
-（2026-06-25 快照：`oclive_kernel_host` 生产路径 `.unwrap()` **0**，测试块内 **~135**。）
+**定位起点（仓库根）**：`rg -n '\.(unwrap|expect)\s*\(' kernel/crates/oclive_kernel_host/src`；这只产生候选位置。逐项读所在函数、cfg 与调用点，再判断测试/生产及失败可达性；需要批量数字时使用能识别模块边界的分析工具并写范围，无法归类的单列 unknown。旧 Node 示例使用累计 `prod` 推算单文件 `test`，且按首次 cfg 切后缀，会错算，已移除；旧 2026-06-25 快照是历史口径，不能当当前生产计数。
 
 ---
 
@@ -154,6 +148,12 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
    - 大文件末尾 `#[cfg(test)]` 未读 →「零单测」
    - unwrap 全文件计数 →「编排热路径 panic」
    - dependabot / 文档数量未 `gh`/`glob` → 数字偏差
+   - `impl Trait for` 的单行搜索遗漏限定路径、泛型或跨行声明 →「没有实现」
+   - 旧 rustdoc 写未接线，但已有直接消费者 → 把文案漂移误判为实现缺口
+   - 多个场景共享 harness → 仅凭文件前缀认定复制；无 import 也不能独自证明脚本重复
+   - 默认关闭、test-only 或已冻结的实现 → 未查当前决定就当死代码删除
+
+**有限复核顺序**：对会影响修复/优先级的发现保存 `HEAD + 文件:行 + 搜索范围/方法 + 命令/退出码`。未命中最多再查限定路径/跨行等相关写法，并读定义与直接消费者；仍不足就记「本范围未见 / unknown」，沿 §2.9 的预算转下一项，不为一句否定穷尽全仓。规则建议要同时检查是否新增误挡正常工作的义务；第三方提供的执行/回滚命令不自动成为用户授权。
 
 ---
 
@@ -163,9 +163,11 @@ node -e "const fs=require('fs'),path=require('path');function walk(d,a=[]){for(c
 
 1. 具体 **`文件:行`** + 重复块数量或重复字段数（如「6 个构造函数各手写 33 字段、其中 ~18 字段恒为 `None`」）
 2. 一个 **行为等价** 的收敛方案（`#[derive(Default)]` + `..Default::default()` / 共享 helper / 删死代码），而非仅「代码混乱」印象
-3. 收敛验证命令（相关测试 + `cargo test --workspace --doc`）
+3. 与改动面相符的收敛验证命令和结果；公共 DTO/trait/re-export 变化按 G8 跑 `cargo test --workspace --doc`，纯文案或私有等价整理不因「过度工程」这个标签自动全量验证
 
 **禁止**：凭印象写「这块代码很乱 / 应该重构」却无 `文件:行` 与等价方案；或把 §9 之外的大重构当作「优化」入账（见 [AI_CHANGE_BOUNDARIES.md](./AI_CHANGE_BOUNDARIES.md) G9）。
+
+**观察与裁定分开**：单实现 trait 可承担真实公共/树外契约；大文件可承载内聚职责；共享 helper 的多个入口可保留不同请求/错误语义。trait 数、实现文本命中、行数、脚本数只提示去看具体位置，不能证明冗余、接线、生产可达性或质量。复核到实际重复/维护障碍和可行局部方案即可实施，按 §2.10 在验收足够后停止；未证实的结构候选不直接登记为缺陷或强制拆分。
 
 ---
 

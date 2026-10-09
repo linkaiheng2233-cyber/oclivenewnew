@@ -4,8 +4,10 @@
 //! `handoff/MODULE_MAP_AND_HANDOFF.md` §0.4–§0.9. They are added **alongside** the
 //! reference-runtime ports documented in this crate root: the existing port table, the
 //! legacy slot traits, the wire shapes and the plugin protocol are unchanged, and no
-//! legacy implementation is claimed to satisfy these traits. This binding is not wired
-//! into the reference Host.
+//! legacy implementation is claimed to satisfy these traits automatically. The reference
+//! Host consumes selected Base views through explicit bindings alongside its legacy ports;
+//! this is not a wholesale replacement or a mandatory six-step turn. Current composition
+//! scope is documented in `handoff/MODULE_MAP_AND_HANDOFF.md`.
 //!
 //! Each trait has exactly one method and returns [`BaseCallFuture`]. What that binding
 //! does and does not promise to implementations and hosts is documented once, on
@@ -79,8 +81,9 @@ use oclive_kernel_types::{
 /// # What this binding is
 ///
 /// - It is the **independent B1 binding**: it does not replace the reference-runtime
-///   ports of this crate and is **not** wired into the reference Host. No legacy
-///   implementation is claimed to satisfy it.
+///   ports of this crate. The reference Host uses explicit selected Base bindings;
+///   legacy implementations do not automatically satisfy this binding. Composition
+///   and scheduling remain the Host's responsibility.
 /// - Every method returns this explicitly boxed local future, which keeps the traits
 ///   usable through `dyn`: a caller can hold several implementations of one slot and
 ///   choose among them, without a registry, a negotiation system or a macro dependency.

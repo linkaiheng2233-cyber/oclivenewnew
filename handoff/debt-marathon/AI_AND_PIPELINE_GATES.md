@@ -147,9 +147,11 @@ Plan/Stage 勾选的命令必须有「因何 applicable」。欠债默认参考�
 1. **前端验收以 ESLint 为准，禁止对仓库文件跑 `prettier --write`**（semi/quotes/operator-linebreak 与 prettier 默认相反）。手改后只用 `npx eslint --fix` 收尾，此后不再重跑 prettier。
 2. **拆 TS/JS 模块前，先对每个待外移标识符 grep 全部使用点并区分「读 / 赋值 / 方法调用」**：ES 模块导入绑定只读——对导入的 `let` 直接赋值是 TS2632。只有「模块自包含状态 + 读写它的函数」可整体外移；共享可变状态留在声明处，或改由导出的 accessor 函数变更。
 3. **公共 API 保持原路径**：拆分后原入口文件 `export { ... } from './new'` 再导出；动手前先 grep 所有 import sites，确认路径别名与目录解析仍可用。
-4. **机械拆分（行号切片）允许，但必须**：切片前对每个边界行做 `startsWith` 断言；原文件被覆盖后用 `git show HEAD:<path>` 恢复干净源再重切；拆分后依次跑 eslint --fix → typecheck → 对应 workspace 单测（缺 export 会被 TS2459 批量暴露，属于级联而非新 bug）。
+4. **机械拆分（行号切片）允许，但必须**：先保全当前磁盘原件和 hash，切片前对每个边界行做 `startsWith` 断言；需要重切时从该已核实原件生成，不用 HEAD 覆盖未提交工作。`git show HEAD:<path>` 只可作历史比对；只有已确认当前字节等于 HEAD、没有并发改动时才可作为重切来源。前端拆分后依次跑 eslint --fix → typecheck → 对应 workspace 单测（缺 export 会被 TS2459 批量暴露，属于级联而非新 bug）。
 5. **每条 shell 命令开头 `Set-Location` 到仓库根**；跑工具用仓库 `npm run` 脚本或已安装本地 bin，禁止在错误 cwd 裸 `npx`（会按错误 package.json 临时安装新版工具）。
-6. **PowerShell 原生进程 stderr 回显为 `NativeCommandError` 是假错误**（如 vitest 日志）；成败判定只看 `$LASTEXITCODE` 与工具自身的 PASS / `test result` 行。
+6. **PowerShell 原生进程 stderr 回显为 `NativeCommandError` 不独自证明失败**（如 vitest 日志）；立即保存 `$LASTEXITCODE`，结合工具自身的 PASS / `test result` 行判断。stderr 原文保留并解释，不能统一称为假错误或无错误。
 7. **Vue SFC 拆分后不得只靠全 stub 测试验收模板**：逐项核对 template 内组件标签仍有局部 import 或明确的全局注册；组件单测至少保留一条不 stub 生产子组件的挂载路径，并断言最终原生交互节点，防止“stub 能渲染、真实组件解析失败”漏检。
 
-**拆完必检**（每个文件拆完的提交级验收）：eslint 0 error · typecheck 0 · 对应 workspace `test:unit` 全绿 · 至少一条真实模板组件解析测试 · 一次拆分 = 一个独立提交（提交后 worktree 干净）。
+**Rust 拆分追加纪律**：行数不是必须拆分的阈值；先指出实际耦合、重复或修改障碍，并选内聚边界。核所有权/借用、可变状态、可见性和 re-export、trait impl 所属模块、cfg/feature、调用与错误/清理顺序；不借拆分新增执行语义、接口或降低原断言。保留原公开路径，生命周期/并发限制不变。无法维持这些条件时停止该切片，记录具体设计问题；不顺手扩大为架构重写。
+
+**拆完必检**（按真实改动 applicable）：前端走 ESLint/typecheck/受影响单测；Vue 模板另有上述真实解析路径。Rust 走 fmt、定向 check/Clippy/受影响回归；触及 feature 边界时补对应配置，公开 API/re-export 变化另按 G8 doctest。保留可审阅拆分提交与历史原件；无需为纯 Rust 拆分跑前端全部测试，也不为每个切片重复全量 CI。无关 dirty 原样保留，不能为了 worktree 干净而还原他人修改。
