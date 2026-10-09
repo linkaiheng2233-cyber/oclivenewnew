@@ -48,7 +48,7 @@
 | 目标 | 前置关系与有效范围 | 依据 / 解除条件 | 可先执行的范围 |
 |------|--------------------|----------------|----------------|
 | D-CLI-BLUEPRINT-05 | **已裁定逻辑契约 / 宿主接入缺口**：保留参考 Host 旧接口、增量接入最小逻辑定义；跨发行版不要求统一磁盘封装 | [ROLE_PACK_BOUNDARY §0](../ROLE_PACK_BOUNDARY.md)、主台账 §1；共享定义、本地快照、CLI 显式文件校验、Prompt Base 与双来源独立 Host 案例已存在。关系归发行版；`content.json` 只是本地适配示例 | 继续核参考 Host 内部增量接入点与真实发行版映射；不切换 CLI 默认生成目标，不用产品默认值填充旧 `Role`，不把示例误记为参考 Host 激活 |
-| K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置；2026-10-09 仅准入有限公共兼容设计，方案待审，不解冻其它验收面 |
+| K-CORE-BOUNDARY-01、V-EMBED-01、V-PORTABLE-01 | **互补验收面**：逻辑 Kernel、完整参考运行时嵌入、跨发行版映射；物理拆分与 Full 实机条件分别是**决策门 / 外部条件** | [MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)、主台账；已验 B1/B2、进程内门面及 [ChatPro 案例](../CHATPRO_HOST_KERNEL_INTEGRATION_GATE.md) 只在所列范围复用 | 按选定 Kernel 延伸合同核 Host；不把跨发行版 UI Full 或物理小 core 交付作为工具链、CLI 或嵌入研究的统一前置；2026-10-09 有限公共兼容审阅规则已获维护者采纳，其它验收面保持原范围，不因规则已有自动完成 |
 | K-UID-DEFAULT-02 | **已裁定并收口**：有效显式选择优先，发行版默认 A 高于角色默认 B，A 不存在则回退合法 B | 主台账 §1、[DCL-45](#dcl-20261006-45--发行版默认身份兑现用户确认的优先级)；`58be11fa` 精确正式 CI 已通过，loader／global／per-scene／恢复默认与消费者已同步 | 默认选择合同 Done；不因字段名或此合同去迁移全部 legacy 历史关系 |
 | K-AGENT-MERGE-01、V-FUSED-01 | **独立范围 / 决策门**：工具 composite 与多槽实例融合不能混为同一实现 | 主台账前瞻风险及 [融合 stub](long-plans/V-FUSED-01.md)；前者须定工具冲突、权限、顺序/短路、超时/隔离与 trace，后者仍受其 Phase 3 条件约束 | 核单 Agent 行为与诊断声明；不从多 ID 推断已合并，也不以此阻断单 Agent/MCP 使用 |
 | K-DUAL-ROLLBACK-02、DUAL-CORE-FREEZE | **维护冻结 / 未解决**：2026-10-07 维护者选择暂停 Beta 继续维护；解冻后才选择 NULL 恢复或收窄实验写入 | 主台账 §1/§2及 [冻结范围与解冻条件](long-plans/DUAL-CORE-FREEZE.md)；补偿不是数据库事务 | 当前仅保留事实与接手方向，继续其他可开工债务；不自动启用、扩证或修补 Beta，也不要求 Stable 等待其全部修复 |
@@ -865,3 +865,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **产出 / 范围**：依维护者的 1A 在现有[兼容 SSOT](../../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)及英文镜像提出有限公共清单、相容/Breaking 例子、迁移责任和适用测试入口；其它完整 Host/磁盘/网络/存储接口不因所在 crate 或名字相同被纳入。高级情绪驱动记忆仍按[已确认决定](../../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)由第三方/发行版可选探索，K-EMO-06 Deferred，没有实现。
 - **原因 / 例子 / 自主设计**：`Option` 字段在 JSON 中可能可选，在 Rust struct literal 中仍可能使旧实现不能编译；local future 增加 `Send` 也可能淘汰原合法实现。因此兼容层级必须分别说明，而非只看版本号或“新增”。复用当前 `#[non_exhaustive]` 错误边界和现有 Breaking 流程，不发明协商系统、稳定 1.0 或运行时兼容包装；保留原版本和所有现行能力语义。
 - **证据 / 结论边界**：按[四路径设计计划](ROUND-02-PLAN.md#k-core-boundary-01--有限兼容审阅规则草案2026-10-09)读取现有 binding/types、最小逻辑校验、根 re-export 及直接 fixture 入口即停止。源码足以设计清单，不等于真实跨版本消费已经验证；controller 语义自查，independent=false。只跑文档/结构/编码及历史/写集核对，没有新 Rust/业务/模型/音频验证，不重复全量矩阵。具体规则待维护者审核，本条不能当规则已生效或父债 Done；公共契约仍依既有范围。
+
+### DCL-20261009-72 · 采纳有限兼容规则与有界清理出口
+
+- **维护者决定 / 当前范围**：已审核上片方案并选择采纳有限审阅规则；[中英兼容 SSOT](../../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)从草案转为现行。六槽调用、local future、请求/失败载体与最小逻辑定义/校验的清单、例子及迁移边界保持，不扩大完整 Host、磁盘、网络或稳定版本承诺。K-CORE-BOUNDARY-01 父债仍 OPEN；K-EMO-06 Deferred 与其它暂缓不变。上片 DCL-70/71 是当时设计记录，原文保留。
+- **辅助材料 / 收口理由**：维护者提供桌面《OCLive-历史技术债清理与完成标准》v2.0 供结合使用；仅将其中“明确实际受阻动作、复用有效证据、必修阻碍解除后结束专项”的要点接到[既有债务入口](README.md#有界清理与恢复开发出口)。桌面核实快照不成为仓库状态表、架构或门禁来源，不原样复制全篇/分类表，不自动改变优先级、解冻、删除缓存或启动全部验证。
+- **原因 / 例子**：高级记忆策略暂缓不阻断基础六槽开发；真实音频缺口只影响需真实音频的验收，不能靠重复 Host 单测消除。恢复的是已明确且无阻碍的目标路径，不把剩余 OPEN/Partial 改写为 Done，也不把队列没有 auto 项当所有历史债务完成。
+- **计划 / 验证边界**：基线为本地 `79dd65a0`，按[六路径接续计划](ROUND-02-PLAN.md#有限兼容规则采纳与有界清理接续2026-10-09)只更新当前规则/台账对应口径、依赖行、README并追加本计划/本事件。controller 直接实施和语义自查，independent=false；仅核受影响文档门禁、原范围/历史/源码与锁/桌面字节保全，不新增 Rust/doctest/业务/模型/实机或完整 CI。main 已验 d984 保持；本片只存本地 checkpoint，不以它宣称新 SHA 正式已验或全部开发已恢复。

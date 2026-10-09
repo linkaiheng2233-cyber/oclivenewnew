@@ -66,11 +66,11 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 <a id="six-slot-minimal-compatibility-draft"></a>
 
-## 六槽 Base / 最小逻辑角色的兼容审阅范围（草案 · 2026-10-09）
+## 六槽 Base / 最小逻辑角色的兼容审阅范围（已采纳 · 2026-10-09）
 
-**效力**：维护者已批准进入有限设计，本节具体规则尚待审核，不是新的稳定版本保证。受检实现基线为 `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`；本节没有改 Rust API、校验器、版本或运行语义。模块职责和能力语义只引用 [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension)，最小角色定义只引用 [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract)。下表圈定审阅对象，不将所在 crate 的全部导出纳入承诺。
+**效力**：维护者于 2026-10-09 审核并采纳本节的有限兼容审阅规则，用于现有公共层的变更判断；这不构成新的稳定版本保证。受检实现基线为 `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`；本节没有改 Rust API、校验器、版本或运行语义。模块职责和能力语义只引用 [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension)，最小角色定义只引用 [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract)。下表圈定审阅对象，不将所在 crate 的全部导出纳入承诺。
 
-### 候选公共清单
+### 有限公共清单
 
 | 审阅对象 | 现有公共入口与依据 | 限定范围 |
 |---|---|---|
@@ -82,7 +82,7 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 完整参考 Host 的旧端口、`AppState`、最小角色本地加载/会话 DTO、共享消费者的具体装配、丰富角色格式、目录插件协议、网络桥与存储均不因本表成为小 Kernel 的稳定 API。共享运行库继续承担最小适配，发行版承担资源、生命周期和扩展接线；这不阻止它们独立制定自己的兼容规则。高级情绪驱动长期记忆沿[已确认的可选扩展决定](architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred)，不成为 Base 必修项。
 
-### 相容与破坏性变化：候选判读
+### 相容与破坏性变化：审阅判读
 
 | 变化例子 | 判读与所需核对 |
 |---|---|
@@ -98,11 +98,11 @@ OCLive 的能力上限取决于整条模块链，而不是某一个组件的最�
 
 ### 审阅、迁移与有限验证
 
-建议沿用 [Breaking 流程](../handoff/BREAKING_CHANGE_PROCESS.md)，不另造审批系统：变更提出者列受影响符号、旧/新行为、下游及迁移；Host/模块作者按实际使用面改适配和测试；角色转换器作者负责本发行版格式到逻辑定义的映射与资源检查。兼容层是否需要、能否实现及保留多久按具体 Breaking 由维护者审核；既有发布周期读兼容规则只在其实际适用的数据面使用，不假造 Rust trait 的运行时兼容层。
+沿用 [Breaking 流程](../handoff/BREAKING_CHANGE_PROCESS.md)，不另造审批系统：变更提出者列受影响符号、旧/新行为、下游及迁移；Host/模块作者按实际使用面改适配和测试；角色转换器作者负责本发行版格式到逻辑定义的映射与资源检查。兼容层是否需要、能否实现及保留多久按具体 Breaking 由维护者审核；既有发布周期读兼容规则只在其实际适用的数据面使用，不假造 Rust trait 的运行时兼容层。
 
 复用已有[Base-only fixture](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs)、[请求/错误单测](../kernel/crates/oclive_kernel_types/src/slot_base.rs)、[最小逻辑校验](../kernel/crates/oclive_validation/src/minimal_role.rs)与[可替换六槽消费案例](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs)。实际改公共 Rust API 时跑受影响回归及 G8 的 workspace doctest，选明确使用旧面的消费者证明原问题；JSON/校验变化另核接受和拒绝样例。单次已有全 CI 或文件存在不等于所有未来第三方组合已验证；证据足以识别本次兼容影响后停止，不穷尽 Host/算法/设备组合。
 
-**版本与审核点**：保持当前各产物的[独立版本规则](development/RELEASE_VERSIONING.md)，不把 crate `0.2.0`、设计稿编号、`API_VERSION` 或角色包 schema 互相代用，不新增六槽协议协商或宣布 1.0。此次待确认的是：是否将本清单及判读作为这一有限公共层的兼容审阅规则。真实版本 bump、旧接口撤销或新执行语义在对应实质变更中单独确定；本草案不能替代它们的批准，也不关闭 K-CORE-BOUNDARY-01 的其它剩余面。
+**版本与效力**：保持当前各产物的[独立版本规则](development/RELEASE_VERSIONING.md)，不把 crate `0.2.0`、设计稿编号、`API_VERSION` 或角色包 schema 互相代用，不新增六槽协议协商或宣布 1.0。本清单及判读已获采纳；每次实际变更仍须列出影响面并通过适用审阅与验证。真实版本 bump、旧接口撤销或新执行语义在对应实质变更中单独确定；本规则不能替代它们的批准，不证明稳定发布或所有下游已验，也不关闭 K-CORE-BOUNDARY-01 的其它剩余面。
 
 ---
 

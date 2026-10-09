@@ -68,11 +68,11 @@ Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for a
 
 <a id="six-slot-minimal-compatibility-draft"></a>
 
-## Six-slot Base / minimal logical role compatibility review scope (Draft · 2026-10-09)
+## Six-slot Base / minimal logical role compatibility review scope (Adopted · 2026-10-09)
 
-**Status:** the maintainer authorized bounded design; these specific rules await review and are not a new stable-release guarantee. Implementation baseline: `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`. No Rust API, validator, version or execution semantics changed. Responsibilities and capability semantics remain in [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension); the logical role definition remains in [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract). Listing a symbol does not cover every export of its crate.
+**Status:** the maintainer reviewed and adopted these bounded compatibility review rules on 2026-10-09 for changes to the existing public layer. This is not a new stable-release guarantee. Implementation baseline: `d9847b70c8c6164ab4715813f7e55bcfb6bb20ed`. No Rust API, validator, version or execution semantics changed. Responsibilities and capability semantics remain in [MODULE_MAP §0.4–0.9](../handoff/MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension); the logical role definition remains in [ROLE_PACK_BOUNDARY](../handoff/ROLE_PACK_BOUNDARY.md#01-已确认的最小逻辑-contract). Listing a symbol does not cover every export of its crate.
 
-### Candidate public inventory
+### Bounded public inventory
 
 | Review subject | Existing public entry and source | Bounded scope |
 |---|---|---|
@@ -84,7 +84,7 @@ Follow [`AI_CHANGE_BOUNDARIES.md`](../handoff/AI_CHANGE_BOUNDARIES.md) G17 for a
 
 Legacy reference-Host ports, `AppState`, local role-loading/session DTOs, concrete shared-consumer assembly, rich packs, directory-plugin protocols, network bridges and storage do not become stable small-Kernel APIs through this table. The shared runtime retains minimum adaptation; distros own resources, lifecycle and extensions and may set separate compatibility rules. Advanced emotion-driven long-term memory remains an [optional extension under the confirmed deferral](../creator-docs/architecture/DESIGN_DECISIONS.md#emotion-memory-extension-deferred), not a Base obligation.
 
-### Candidate compatible / breaking interpretations
+### Compatible / breaking review interpretations
 
 | Example change | Interpretation and required check |
 |---|---|
@@ -100,11 +100,11 @@ State whether compatibility concerns **Rust source, logical data, behavior or a 
 
 ### Review, migration and bounded verification
 
-Propose reusing the existing [Breaking process](../handoff/BREAKING_CHANGE_PROCESS.md), not a second approval system. The proposer lists affected symbols, old/new behavior, downstreams and migration; Host/module authors update actual adapters and tests; role-converter authors own distro-to-logical mapping and resource checks. The maintainer reviews the need, feasibility and duration of compatibility layers for each concrete Breaking change. Apply the existing release-cycle read-compatibility rule only to data where it actually applies; do not invent runtime compatibility for Rust traits.
+Reuse the existing [Breaking process](../handoff/BREAKING_CHANGE_PROCESS.md), not a second approval system. The proposer lists affected symbols, old/new behavior, downstreams and migration; Host/module authors update actual adapters and tests; role-converter authors own distro-to-logical mapping and resource checks. The maintainer reviews the need, feasibility and duration of compatibility layers for each concrete Breaking change. Apply the existing release-cycle read-compatibility rule only to data where it actually applies; do not invent runtime compatibility for Rust traits.
 
 Reuse the [Base-only fixture](../kernel/crates/oclive_kernel_contracts/tests/base_only_fixture.rs), [request/error tests](../kernel/crates/oclive_kernel_types/src/slot_base.rs), [minimum logical validation](../kernel/crates/oclive_validation/src/minimal_role.rs) and [replaceable six-slot consumer case](../kernel/crates/oclive_kernel_runtime/tests/minimal_role_six_slots.rs). Actual public-Rust changes run affected regressions plus G8 workspace doctests and a named old-surface consumer; JSON/validation changes check accepted and rejected examples. A prior full CI or a test file alone proves no universal future plug-in compatibility. Stop when evidence distinguishes this change's compatibility effect; do not enumerate all Hosts, algorithms and devices.
 
-**Versions and review question:** retain current [independent artifact version rules](development/RELEASE_VERSIONING.md). Do not substitute crate `0.2.0`, proposal numbering, `API_VERSION` or pack schema for one another; add no six-slot negotiation or 1.0 announcement. The pending decision is whether to adopt this inventory and interpretation as review rules for the bounded public layer. Actual version bumps, retirement of old interfaces and new execution semantics belong to their concrete changes and approvals. This draft closes none of the other K-CORE-BOUNDARY-01 scopes.
+**Versions and effect:** retain current [independent artifact version rules](development/RELEASE_VERSIONING.md). Do not substitute crate `0.2.0`, proposal numbering, `API_VERSION` or pack schema for one another; add no six-slot negotiation or 1.0 announcement. This inventory and interpretation have been adopted; each actual change still identifies its impact and passes applicable review and verification. Actual version bumps, retirement of old interfaces and new execution semantics belong to their concrete changes and approvals. These rules replace no concrete approval, prove no stable release or acceptance of every downstream, and close none of the other K-CORE-BOUNDARY-01 scopes.
 
 ---
 
