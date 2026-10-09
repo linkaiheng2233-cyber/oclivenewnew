@@ -132,6 +132,14 @@
 
 该补丁已冻结于 `1e81033d6c8efcff8bb9f502c642560e57335cf1`：一次完整本地链 native 0（1491.7835099 秒），[正式 CI 37513747676](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37513747676) attempt 1、17/17 success，含 ci-gate，未 rerun。父债保持 Partial，等待上游撤销条件与 KaTeX low 的各自收敛；不借 audit 0 判 Done。原因、批准与原始回执坐标见 [DCL-53](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-53--shell-quote-临时兼容补丁与撤销条件)，本次随资源原因说明实质合流回填，见 [DCL-54](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-54--资源原因说明合流与已验基线确认)。
 
+### 2026-10-09 上游采用安全链并撤销临时例外
+
+维护者已明确临时补丁应在上游采用安全版本后退出。[concurrently 9.2.5 官方发行](https://github.com/open-cli-tools/concurrently/releases/tag/v9.2.5)将精确依赖从 shell-quote 1.9.0 更新到 **1.12.0**，仍满足本仓原声明 `^9.2.1`。官方 npm 元数据与生成锁一致；本片更新父包 **9.2.4→9.2.5**、叶子 **1.11.0→1.12.0**，撤销 `overrides.concurrently`，其它四条例外及所有声明/脚本保持。锁差量恰为这两个节点，旧 2026-10-07 批准、扫描与失败记录原文保留，不能理解为当前仍需该补丁。
+
+原 npm 10 的 `npm ci --ignore-scripts --no-audit --no-fund` / `npm ls --all`、原代表性 quote/parse、生产参数展开、良性双子进程成功 exit 0 / 子进程 7→CLI 1、实际 production build 均 native 0。四种 comment 后行分隔符仍在内存中被 TypeError 拒绝，攻击字符串未交 shell。锁仍由临时官方 npm 11.21.0 定向生成，不更改全局工具链；安装的 deprecated 提示与可选依赖缺失照实保留，不当作 peer 失败或零 stderr。
+
+本次前后 production audit 均 **0**，full 均 **4 low / 0 moderate / 0 high / 0 critical**，两条 high 门禁 native 0。ESLint Markdown→KaTeX low 和其它 override 各自保持，K-SUPPLY-12 父债 **Partial**；扫描只对应当前锁/时点。完整本地出口和新 SHA 正式 CI 待本次批次冻结后取得，不能以旧 SHA 绿灯替代；计划、局部证据与停止线见 [DCL-73](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261009-73--上游安全补丁与临时-override-撤销)。
+
 ### 历史已验证时点（2026-08-21）
 
 CI **`npm-audit`** job 以硬门禁运行 `npm audit --omit=dev --audit-level=high`；远端 CI [`30692428026`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30692428026) 的生产依赖扫描为 **0 vulnerabilities**。本地复现：仓库根目录运行同一命令。

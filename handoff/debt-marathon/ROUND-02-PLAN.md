@@ -901,3 +901,11 @@
 **执行方式 / 非目标**：每个候选写具体受阻动作、为何现在处理、有限完成条件；已有证据范围未变即复用。修明确缺陷，按适用范围定向验证，需正式结案的批次才取得目标 SHA 的完整出口。必修阻碍解决、残余限制不挡目标路径并且必要证据齐全即结束专项，不继续寻找下一个优化，不把147行全清、替身或空自动队列作为恢复条件。具体产品路径未定时不能自行声称该产品全面恢复；先核相关基础阻碍即可，桌面指南不授予删除/新语义/外部运行权限。
 
 **验证 / 停止**：精确六路径、兼容段原清单与例子保全、旧 DCL/计划正文保全、未改源码/测试/锁/ADR/桌面原件及中英同步；适用链接、docs-only旧路径、镜像、登记、债结构、编码与diff。无源码或签名改变，不跑新Rust、doctest、业务或完整矩阵；只存本地提交，main d984 保持。达到规则采纳与入口接续后停止本片，不以辅助文档为由重新测绘全仓。
+
+### K-SUPPLY-12 · 上游安全补丁与临时 override 撤销（2026-10-09）
+
+**原因 / 授权 / 限度**：维护者已要求记录临时补丁并在上游采用安全版本后更新依赖链。干净本地 ee99fdf3 承接已采纳的有限兼容规则与辅助清理入口；main d984 已验保持。只核官方支持线和[9.2.5 发行](https://github.com/open-cli-tools/concurrently/releases/tag/v9.2.5)，发现精确采用 shell-quote 1.12.0，现有 ^9.2.1 范围可接受。到撤销条件和实际消费者足够判定即停止，不扩查 KaTeX 跨版、所有依赖、签名或 TLS。
+
+**七路径 / 闭环 / 风险**：根 package.json 只移除 overrides.concurrently，其它四条例外/声明/脚本不变；package-lock 由临时官方 npm 11.21.0 定向生成，只允许 concurrently 9.2.4→9.2.5 与 shell-quote 1.11.0→1.12.0 两节点，超出差量保全并重规划，不能手改/force。中英 KNOWN_VULNERABILITIES 只增加当前观察、保留旧原文；唯一台账只改 K-SUPPLY-12 第五列并保持 Partial；本计划和 DCL 只追加。原 npm 10 ci/peer/audit→复用原内存 quote 与生产展开/良性 CLI 回归→真实 build→完整批次和精确 SHA 正式 CI。安全依赖重风险规划、局部 M / 正式出口 L；controller 直接实施与语义自查，independent=false，无新 Rust/公开 API/权限/门禁语义。
+
+**验证 / 收口**：先保存前 production/full JSON；生成锁结构精确检查、原 npm ci 与 npm ls、后 production/full audit 两条 high 门禁、原兼容探针的新副本（仅解析位置/版本更新）、production build 及适用文档/写集/历史/源码与 Cargo.lock 保全。已有代表性证据足够，不另造同构测试。相关两份文档 checkpoint 与本实际依赖片合为一个冻结批次，一次 check:ci-local，通过后按既有授权 FF/push，并观察同 SHA 正式 CI 实际终态；不逐 helper 全量，不 rerun 旧证据、不再做绿灯回写提交。生成 bridge 若只有换行差异须先保全 raw、核同 Git blob 再刷新 index；不接受语义变化。
