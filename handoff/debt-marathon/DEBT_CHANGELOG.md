@@ -990,3 +990,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者确认脚手架文档收尾后，要求基线确认、集成验收与推送，再准备CI分层。按[里程碑计划](ROUND-02-PLAN.md#基础脚手架--合批集成验收与推送2026-10-11)接续干净 `46318810`；六个开发切片合批，controller实施与语义自查 independent=false。
 - **变动边界**：已有代码/模板/文档成果作为整体验收，本轮只追加计划/本事件及[集成交接快照](waves/WAVE-20261011-KERNEL-BASE-INTEGRATION.md)，不并入SDK或其它债分支、不改公共义务、运行语义或债务状态。原main `2b0390cd`、旧Wave及两历史正文保全。
 - **出口 / 续接**：真实资源前置后一次完整本地链及适用显式doctest，冻结SHA→FF main→一次push→目标正式CI；最终实际退出码、run和ci-gate在交付报告披露，不提前写已通过或回写绿灯专用提交。之后仅按既有CI SSOT准备有界责任分层，不把准备或影子计划冒充选择性运行已验。
+
+### DCL-20261011-94 · K-CI-IMPACT-01 责任分层首片准备
+
+- **原因 / 例子**：维护者授权脚手架推送后准备CI分层。按[有限准备计划](ROUND-02-PLAN.md#k-ci-impact-01--责任分层首片准备2026-10-11)，从干净 `24f62303e9bdea37061fe44acc7a0830dc519f98` 的独立工作树接续；controller实施与语义自查 independent=false。当前 `rust` job需前端/Tauri资源，Base模块作者却只需公共契约窄测，先提供便于复现的出口比立即重写全部CI更有直接收益。
+- **变动 / 边界**：[现有CI设计](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#kernel-host-ci-first-slice)收束8组主路径职责，提出一个本地 `check:kernel-base` 检查链；该命令尚未实现，不把rich兼容导出、共享runtime或参考Host组合整体标成纯Kernel。不改workflow、catalog/schema、影响图、元数据、selector、required gate或Push/ready策略；K-CI-IMPACT-01继续In progress，其它债与冻结保持。
+- **验证 / 出口**：中文设计、英文摘要、本计划和本事件共四个Markdown路径；适用文档门禁、编码、精确diff及计划/事件历史前缀保全后本地提交。英语镜像原20/17模拟条数按当前源数据更正为21/18，仍是模拟而非真实CI。主树冻结SHA及其正式验收分别报告；本准备不借用旧SHA绿灯。达到首片可以开工即停止调查，后续远端迁移仍需覆盖/唯一所有权、仓库合同测试和适用同SHA正式证据。

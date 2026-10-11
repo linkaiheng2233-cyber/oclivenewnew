@@ -1044,3 +1044,13 @@
 **门禁 / 冻结 / 推送**：新增三文适用链接、路径、镜像/登记、债结构、编码/历史/diff先通过，冻结一个最终SHA。准备真实debug内核资源后运行一次 `npm run check:ci-local`；清除子进程继承的CARGO_TARGET_DIR，让生成工程E2E拥有各自缓存，辅助Voice仅在验证子进程显式用已核本机Python。复核原生成bridge字节/Git内容和环境、副作用；有公开枚举增量，显式workspace doctest按原公开面验收口径随该合批执行，不以--lib代替。CLI集成由原串行入口拥有，不另建平行组合。适用本地全部通过且主树/远端身份未漂移时FF main，一次push；等待绑定该完整SHA的正式ci.yml与ci-gate终态，不为绿灯回写制造新HEAD。
 
 **停止 / 下一步**：正式CI失败读实际失败job、定点修复；观察API错误不当作job失败，恢复同run查询不rerun。脚手架达到本里程碑即停止主动扩面。推送后可只读准备Kernel公共契约/通用Host接入/具体Host和发行版/发布组合的CI责任清单；沿现有CI SSOT有限设计，不擅自取消required gate、扩大ready选择范围或改变公共安全策略。有权责或门禁的新取舍才交回维护者。
+
+### K-CI-IMPACT-01 · 责任分层首片准备（2026-10-11）
+
+**授权 / 基线 / 状态**：维护者授权脚手架集成推送后准备CI分层。起点为干净 `24f62303e9bdea37061fe44acc7a0830dc519f98`；主树与实际远端已一致，正式CI仍须按该SHA终态单独判断。M的设计准备，controller实施及语义自查 independent=false；不把本准备分支的文档结论冒充主树新SHA正式CI。
+
+**有界输入 / 问题**：复用[CI设计 §2.4](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#24-主工作流的执行所有权)四层分责。只看现有目录、主/Nightly workflow、受信命令、公共依赖和直接测试入口，以8组职责完成D1；上限8组或120分钟，确定一个可实施的首片即停。当前 `rust-workspace` 的实际job需要前端/Tauri资源并覆盖参考Host；模块作者缺少清楚的Base/最小角色窄测路由，不据此宣称全量job错误或所有下游都可跳过。
+
+**精确写集 / 不变量**：只修改 `creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md`、其英文镜像、本计划与DEBT_CHANGELOG。先保全四份磁盘原件，计划/事件只追加。设计中标明公共基础契约、共享消费者、具体Host、组合测试和跨层治理的现行出口；只提出一个不带Host的本地契约检查入口，尚不实现。workflow、catalog/schema、模块元数据、中央影响图、执行策略、required gate、Push/ready选择范围、公共API及全部冻结项保持。
+
+**验收 / 节奏 / 停止**：默认及改文链接、docs-only旧路径、镜像、登记、债结构、严格UTF-8/无BOM、精确diff与历史保全；纯Markdown准备不重复Rust/业务/全量CI。只保存本地准备提交，主树冻结SHA不动；不为等待CI再造业务验证。首片真正实施时再做受影响脚本与真实命令失败/成功回归，若接入受信CI编排再升为控制面验收；新ready选择类别仍须同SHA真实Compare，不能凭分责表或少量通过删边。未决权责/公共强制义务才向维护者提问，普通未判定范围明确保留，不重开全仓分类。

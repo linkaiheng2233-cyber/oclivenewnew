@@ -79,6 +79,36 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 **逐类迁移出口**：每批只选择一个已有实际重复执行或过选依据的范围，核直接归属、公共依赖及跨边界组合，形成可审查的最小变更。仅改模型特化策略时选择对应实现/Host 验证；公共契约变化继续沿依赖传播；发布时验证指定组合。精确选路仍须受前述真实 Compare、契约回归及稳定门禁约束；未知采用既有保守策略，不凭模拟、命名或缺少反例缩减验证。一个范围足以决定路由便结束调查，其余未知另记，不展开全仓测试重分类。这里是后续设计约束，当前工作流、元数据、影响图和执行策略均未改变。
 
+<a id="kernel-host-ci-first-slice"></a>
+
+#### 2026-10-11 首片准备：公共基础契约的独立检查入口
+
+**性质与止点**：这是基于 `24f62303e9bdea37061fe44acc7a0830dc519f98` 的有限设计，尚未实现新命令或改变CI选路。按现有目录、workflow及直接测试入口，将本次输入收束为下表8组职责；不逐个重分类全仓测试。职责层由[MODULE_MAP §0.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)拥有，本表只判验证出口。跨层治理不是额外的Kernel能力。
+
+| 入选职责组 / 现行入口 | 当前验证归属与直接依据 | 本片结论 / 不外推的范围 |
+|---|---|---|
+| 公共基础契约；目录中的 `kernel-contracts` / `rust-workspace` | 六Base及最小角色数据是公共面；但[目录](../../data/ci/validation-catalog.v1.json)的profile同时引用Host/组合job，实际 `rust` job先构建前端与Tauri资源，再跑非CLI workspace | 第一片可新增不依赖Host的本地检查入口；整个profile或 `contracts/types` 的全部旧rich导出不能直接等同纯Kernel |
+| 共享消费者；runtime测试和外部Memory案例 | [最小消费者测试](../../kernel/crates/oclive_kernel_runtime/tests/minimal_role_consumer.rs)与[外部Memory案例](../../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs)验证调用方绑定与真实调用；消费层在小Kernel之外 | 属通用接入的有限案例，单独保留；不把runtime内全部实现移入公共基础检查，也不新增固定六槽回合顺序 |
+| 参考Host条件运行；`kernel-host-dual-core` / `rust-arm64-cross` | 前者明确测试Host的可选feature；后者检查server/Host/runtime的目标编译 | 属具体实现和平台条件；现有回归保留，不构成双核解冻或ARM实机验收 |
+| 既有Host组合；`cross-host-e2e` / `oocp-test-suite` | [主workflow](../../.github/workflows/ci.yml)实际运行发行版、profile、bundled资源等脚本；cross-host脚本使用参考角色目录和Host进程 | 为现有Host接入/组合提供有限证据；不是任意合法Host的完整合规证明，也不反向定义所有Kernel承诺 |
+| 发行版呈现与插件；`frontend` / `plugins-index` / `remote-plugin-demo` | 前端job覆盖shared、ChatPro/Theater与浏览器预览；插件索引和remote示例拥有各自格式/接线检查 | 归具体Host/发行版及适配案例；令牌、IPC、真实音频和外部插件功能按各自目标验证，不能由命名或编译外推 |
+| 开发工具；`cli` 与scaffold路径 | CLI默认检查与 `diagnostics-host` 测试在同job分步执行；基础工程E2E验证生成物，Host案例通过显式feature参与 | 工具生成与Host接入分别报告；模板生成成功不是模块功能或发行版验收 |
+| 跨层治理；layering / Dimension 5 / cargo、npm audit / stale-paths | 治理检查覆盖仓库分层、依赖、文档、控制面和其它已登记约束；多个validator可由同job执行 | 不塞入某个Host业务层，也不为四层整齐机械拆job；供应链和控制面安全下限保持 |
+| 重型条件证据；Nightly的Loom / fuzz / CLI bench / visual / native Tauri | [Nightly](../../.github/workflows/nightly-advisory.yml)有明确目标与独立执行通道，部分覆盖公共数据解析，部分覆盖具体桌面/工具 | tier说明运行节奏，不能代替语义归属；逐项物理拆分与全量性能收益本轮未判定 |
+
+**第一片建议：先提供本地 `check:kernel-base`，不改变远端责任组。** 此名称是拟议入口，当前还不能执行。让基础模板作者无需准备前端、桌面资源、模型或数据库，就能复现六Base调用、已知失败原因和最小角色转换约束；复用现有设施，不建立另一套执行框架。拟议检查仅为：
+
+```sh
+cargo test --locked -p oclive_kernel_contracts --test base_only_fixture
+cargo test --locked -p oclive_kernel_types --test minimal_role_contract
+cargo clippy --locked -p oclive_kernel_contracts -p oclive_kernel_types --all-targets -- -D warnings
+cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types --doc
+```
+
+contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出；上述Clippy/doctest按当前crate编译面覆盖，不宣称所有内容均属小Kernel。该入口只验证已有Base/最小角色相关契约及编译文档；不覆盖Kernel所有硬边界、模块目标质量、共享消费者运行、Host业务或所有发行版。真实公开面变更仍按[核实协议](../../handoff/AI_VERIFICATION_PROTOCOL.md)显式跑workspace doctest，不能以这个窄入口替代。
+
+**有限实施与后续出口**：先加一条仓库本地入口，核同一命令链的成功、失败非零传播、实际依赖与不启动Host的边界，指南说明何时用窄测、何时用现有完整验收。不要复制Base测试、生成新DTO/trait或机械补六套包装。达到这一步即停；只有下一片真正需要远端接入时，才同步受信catalog、本地命令、workflow所有权与仓库合同测试。保留旧组合回归；要从原 `rust` job中迁走测试时先证明覆盖与唯一所有权，不能先新增一份重复高成本测试再称分层完成。ready选择类别扩展仍受真实Compare与正式gate约束。未知的更深测试归属、缓存/并发收益和发布矩阵另排，不成为本地入口的前置调查。
+
 ### 2.5 执行通道约定
 
 - `.github/workflows/ci.yml`：`ci-impact-plan` 产出执行范围；安全草稿 PR 与 ready 的纯文档 Canary 可选择性执行，其他事件 fail-safe 全量；草稿发布 `ci-draft-gate`，ready/Push 发布受保护的 `ci-gate`，两者都核对 selected/success 与 unselected/skipped；
