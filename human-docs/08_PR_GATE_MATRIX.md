@@ -9,7 +9,8 @@
 | **仅文档** (`*.md`, `human-docs/`, `creator-docs/`) | 链接抽查；若动 `CHANGELOG.md` → `node scripts/check-changelog-parity.mjs` | — |
 | **公共 Base / 最小角色开发反馈** | `npm run check:kernel-base`（源码仓库根目录） | 合批验收仍按实际影响选下列门禁；改公开 Rust API另跑 `cargo test --workspace --doc` |
 | **两公共 crate 的完整契约与兼容检查** | `npm run check:kernel-contracts`（源码仓库根目录） | 不代替共享消费者/Host/发行版回归；公共改动的下游影响仍须验证 |
-| **仅前端** (`distros/shared/`, `distros/chat-pro/`, `distros/chat-pro/e2e/`, `distros/chat-pro/vite.config.ts`) | `npm run test:unit` · `npm run build` | Linux/macOS：`npm run test:e2e:preview` |
+| **参考 Host 默认配置开发反馈** | `npm run check:reference-host`（源码仓库根目录） | 默认feature的Clippy/tests；可选feature、桌面组合及HTTP/持久化影响另按实际变更验证 |
+| **仅前端** (`distros/shared/`, `distros/chat-pro/`, `distros/chat-pro/e2e/`, `distros/chat-pro/vite.config.ts`) | `npm run check:frontend`（现有lint/类型/单测/Theater smoke/E2E构建组合）· `npm run build`（保留原生产构建要求） | Linux/macOS：`npm run test:e2e:preview`；桌面/IPC与发布按实际影响另验 |
 | **内核 / 编排** (`kernel/crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
 | **Tauri API** (`distros/desktop-tauri/src/api/`) | `cargo test -p oclivenewnew-tauri` · `npm run check` | `npm run test:e2e:core-api-restart` |
 | **Cargo.lock / 依赖** | `node scripts/dimension5-acceptance.mjs --ci` | `cargo audit` |
@@ -29,6 +30,12 @@ npm run check:kernel-base
 
 # 两公共crate完整契约与兼容检查
 npm run check:kernel-contracts
+
+# 参考Host默认配置反馈；不代替桌面及可选feature检查
+npm run check:reference-host
+
+# 发行版前端开发反馈；现有入口，不含Rust或完整发行版验收
+npm run check:frontend
 
 # 日常（与 CI frontend + rust 子集对齐）
 npm run check
@@ -53,4 +60,6 @@ npm run check:ci-local
 
 Windows 开发者：Playwright 见 [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) 与 CONTRIBUTING「Web 预览壳 E2E」。
 
-上表的新公共所有者为本地开发配置，尚待集成后的目标SHA正式CI；其余Host/组合检查保持。检查归属不授予少跑权限，required `ci-gate`及既有Push/ready策略未改变。
+参考Host本地入口不要求先构建前端或准备Tauri资源；当前默认feature为空，Host doctest关闭，不能据此宣称可选feature或全部Host功能已验收。执行内容、失败停止及边界以[参考Host默认检查说明](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#reference-host-local-check)为准。这个入口不改变上表远端job的所有权或required检查。
+
+上表的新公共所有者已集成/推送main `12bc7dc8`，正式结论单独绑定该SHA的CI结果；后续参考Host默认反馈入口仍为本地片。其余Host/组合检查保持。检查归属不授予少跑权限，required `ci-gate`及既有Push/ready策略未改变。

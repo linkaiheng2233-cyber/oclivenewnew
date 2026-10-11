@@ -35,6 +35,7 @@
     "bundle-kernel:tauri": "node scripts/bundle-kernel-for-tauri.mjs",
     "check:kernel-base": "node scripts/check-kernel-base.mjs",
     "check:kernel-contracts": "node scripts/check-kernel-contracts.mjs",
+    "check:reference-host": "node scripts/check-reference-host.mjs",
     "check:rust:fmt": "cargo fmt --all -- --check",
     "check:rust:clippy": "cargo clippy --workspace --all-targets --all-features -j 1 -- -D warnings",
     "check:rust:test": "cargo test --workspace --lib -j 1",

@@ -1026,3 +1026,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：维护者确认以纯净Kernel、特化运行工程Host、发行版三层组织接续工作。[六路径集成计划](ROUND-02-PLAN.md#ci-三层边界确认与关联切片集成2026-10-12)从干净 `3dd2e934` 接续；例如Memory返回合同归公共、材料与持久化归Host、ChatPro切换会话呈现归发行版。controller实施及语义自查 independent=false。
 - **变动 / 不变量**：只更新架构SSOT现有主图和工程名称口径，CI设计中英链接而不复制定义，计划/本事件追加和[本轮Wave](waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。共享支持在小Kernel外、自有Host接入继续允许；API/源代码/控制面/选择策略/required名称保持，K-CI-IMPACT-01继续In progress。五个既有切片合批，不混其它债分支。
 - **证据 / 出口**：复用受测代码逐字未变的完整本地链G24c exit0，新六文跑适用文档和保全门禁；冻结SHA后FF main、一次push、目标正式CI终态在交付报告披露，不提前填写通过或回写绿灯提交。后续有界盘点Host/发行版直接执行归属；真实架构或公共契约取舍记录跳过，不能把目录名或MIXED标签当成违规证明。
+
+### DCL-20261012-100 · 参考Host默认配置本地反馈
+
+- **原因 / 例子**：维护者要求三层持续推进，按[十路径计划](ROUND-02-PLAN.md#参考-host-默认配置本地检查入口2026-10-12)提供 `check:reference-host`，例如Host材料绑定开发可先验默认配置；桌面/可选feature仍另验。当前workspace对Host的feature合并不能直接视为独立Host条件，保留原CI混合所有者，避免迁移中无意减少覆盖。
+- **变动 / 边界**：固定Clippy/tests入口复用native helper、5项范围/失败负控、人类门禁和CI设计中英、计划/本事件/新Wave；只加一个npm命令。不改Rust/API/manifest/锁文件/workflow/catalog/影响图/required gate；不启用Host可选feature，不将default成功写成全Host或发行版验收，不解冻其它方向。
+- **既有第三层入口**：核发现成 `check:frontend` 并保持原命令逐字不变；人类矩阵改为直接使用此lint/类型/单测/Theater smoke/E2E构建组合，真实执行验证，不新增第二个前端runner。发布构建、桌面IPC及Linux预览等仍按实际影响补验。
+- **验证 / 出口**：[本轮Wave](waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)登记真实默认执行、脚本回归、适用治理/编码/保全与未验边界。独立开发分支保存本地提交，受验main `12bc7dc8`保持；正式CI与本片本地状态分开报告，不为每个小片推全矩阵，K-CI-IMPACT-01继续In progress。controller实施及语义自查 independent=false。

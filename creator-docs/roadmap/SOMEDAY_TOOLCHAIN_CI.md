@@ -132,21 +132,21 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | 推送main/master，或手动运行主workflow | 全部主CI责任组 | `ci-gate`；普通备份分支push本身不触发此workflow |
 | 规划warning、未知/高风险回退或规划失败 | 全量；规划失败仍使最终gate失败 | 不允许全量检查的通过掩盖规划失败 |
 
-上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。本地所有权首片的主workflow有14个验证责任job定义；公共契约、剩余Rust和前端各展开两平台，加上规划与gate，全量配置为19个实际job。已推送main `24f62303` 仍是原17-job配置；新配置尚待集成后的目标SHA正式CI。数量描述结构，不能作为质量或性能目标。
+上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。所有权首片的主workflow有14个验证责任job定义；公共契约、剩余Rust和前端各展开两平台，加上规划与gate，全量配置为19个实际job。2026-10-12已集成并推送main `12bc7dc8`；正式结论须绑定该SHA的实际CI结果，不借旧17-job基线的绿灯。数量描述结构，不能作为质量或性能目标。
 
-**本地首片：公共契约与兼容检查执行所有权。** 已同步catalog、完整本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context，具体集合与迁移规则见[下方责任对照](#ci-responsibility-map)。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读；新增责任组不等于全部CI分层完成。
+**已集成首片：公共契约与兼容检查执行所有权。** 已同步catalog、完整本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context，具体集合与迁移规则见[下方责任对照](#ci-responsibility-map)。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读；新增责任组不等于全部CI分层完成。
 
 **后续单独评估：选择范围。** 执行归属稳定后，才依据目标SHA的真实Compare与契约回归讨论某类ready PR能否选择性执行。不因本地窄测更快、一次主CI通过或四层分责表就移除影响边。缓存、性能矩阵和未判定的细粒度归属不是首片前置调查；开发切片定向验证，同主题里程碑才做适用完整验收。
 
-分类提交与main正式基线见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；本地所有权实施、适用验证与未执行项见[本片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。当前改动仅在本地开发分支，未合入/推送main，不借旧SHA的远端绿灯；K-CI-IMPACT-01仍为In progress。
+历史分类提交与正式基线见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；所有权实施和当时的适用本地验证见[首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。该首片现已合入/推送main `12bc7dc8`，具体集成范围见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)，正式CI结果在最终交付中单独绑定。下方参考Host默认反馈入口仍是后续本地片，不与main的验收混算；K-CI-IMPACT-01仍为In progress。
 
 <a id="ci-responsibility-map"></a>
 
-#### 维护者对接：现有检查的责任归属（2026-10-11，本地首片）
+#### 维护者对接：现有检查的责任归属（2026-10-11首片；2026-10-12已集成）
 
-架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与正式main `24f62303` 相同；下表更新为本地首片的[主workflow](../../.github/workflows/ci.yml)14个验证job。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
+架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与当时正式main `24f62303` 相同；下表更新为已集成首片的[主workflow](../../.github/workflows/ci.yml)14个验证job。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
 
-2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链，下一步合批集成并取得冻结目标SHA正式CI；详细结果在[三层集成交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
+2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链并集成/推送 `12bc7dc8`，正式CI只认冻结目标SHA；详细结果在[三层集成交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
 
 | 现有验证job | 责任归属 | 实际检查与不能外推的范围 |
 |---|---|---|
@@ -183,16 +183,28 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types
 
 新入口与窄入口复用同一个native命令辅助函数；工具缺失、失败或超时均非零并停止后续步骤，每步上限20分钟。它需要Node/Cargo/Clippy，不安装依赖，不准备前端或Host，不自动检查外部作者模块。未加 `--lib` / `--test` 过滤：保留两lib单测、`base_only_fixture`、`minimal_role_contract`、`runtime_event_stream_contract`、`runtime_event_stream_onebot_review`及两lib适用doctest。两个manifest当前没有自有feature；默认测试条件保持，Clippy保留all-targets/all-features。rich/Stream兼容测试未删减，也未新增公共接口义务。
 
-| 调整点 | 原所有者 | 本地首片所有者 / 保持覆盖的方法 |
+| 调整点 | 原所有者 | 首片所有者 / 保持覆盖的方法 |
 |---|---|---|
 | 两crate实际被执行的测试及Clippy目标 | `rust` 混合job，两平台 | `kernel-contracts`独立组，两平台、完整两crate目标；Clippy `--no-deps` 防止经其它根包又lint同一依赖。其余workspace的根包并集与原非CLI根包集合相同。 |
 | 共享消费者、参考Host、server、桌面等剩余回归 | `rust` 及各现有组合job | 保持原所有者及适用资源；剩余workspace仅排除两迁移根包，CLI原独立所有权保持。workspace fmt仍是治理，不归某个Host。 |
 | 门禁与受信选路 | 现有catalog/本地入口/workflow/repository contracts | 原会选中 `rust-workspace` 的5个profile同步加入新组；影子21场景只更新相应validator/job坐标，影响图不变。`ci-gate`聚合新组，选中/全量时不得跳过或失败；既有docs选择路径仍可合法跳过。 |
 | 旧受信基线尚不认识新组 | 原trusted-base机制 | 在受信目录核新validator及job映射；缺失/错误/解析失败走既有 `trusted_policy_bootstrap` 全量回退，不使用PR自己的目录批准少跑。正式main的required名称和ready/Push策略保持。 |
 
-第一批的收益是公共检查不必先准备前端/Tauri资源，并有可解释的执行所有者；**不是节省时间比例承诺**。检查集合已对齐，不长期保留重复两crate测试；各job仍可能编译共有依赖。到本地首片即可停止，不以全仓完全分离、全部混合job拆开或job数减少为完成条件。共享Memory调用案例继续作为小Kernel外的接入证据；细粒度性能、real模型/TTS、实机及全部崩溃窗口另有目标才验。
+第一批的收益是公共检查不必先准备前端/Tauri资源，并有可解释的执行所有者；**不是节省时间比例承诺**。检查集合已对齐，不长期保留重复两crate测试；各job仍可能编译共有依赖。到这片即可停止，不以全仓完全分离、全部混合job拆开或job数减少为完成条件。共享Memory调用案例继续作为小Kernel外的接入证据；细粒度性能、real模型/TTS、实机及全部崩溃窗口另有目标才验。
 
-实施与适用本地验证见[所有权首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。未改影响图/ready晋升类别/公共API/运行语义，不关闭K-CI-IMPACT-01；未合入推送或跑目标SHA正式CI，Linux及新远端配置仍待该出口。原责任调查的证据边界保留于[前轮报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)。
+实施与当时适用本地验证见[所有权首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)，集成/推送见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。正式目标SHA CI结果单列，不回写历史报告来制造新证据。未改影响图/ready晋升类别/公共API/运行语义，不关闭K-CI-IMPACT-01。原责任调查的证据边界保留于[前轮报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)。
+
+<a id="reference-host-local-check"></a>
+
+#### 参考 Host 默认配置的本地开发反馈（2026-10-12）
+
+三层中的第二层开发者可在源码根目录使用 **`npm run check:reference-host`**：依次执行 `cargo clippy --locked -p oclive_kernel_host --all-targets --no-deps -- -D warnings` 和 `cargo test --locked -p oclive_kernel_host`。复用已有native工具helper，Node/Cargo/Clippy必需；失败、缺工具或超时均非零并停止，每步20分钟。不主动构建前端/Tauri资源、不安装依赖、不启动生产Host或模型；测试中的隔离夹具仍按原测试行为运行。
+
+该入口选择Host当前默认feature（`default=[]`），Clippy不加 `--all-features`，测试不筛选lib或集成目标。`tauri-commands`、`dual_core`、`test-faults`与桌面依赖的feature组合未由它验收；manifest的 `doctest=false` 保持，不把默认测试说成含Host doctest。依赖仍可能编译，不能称为独立部署的纯净Host或整个发行版验收。
+
+例如只改参考Host的会话材料绑定，先运行此入口取得默认配置反馈，再按实际影响补HTTP、持久化、桌面或产品回归。现有 `rust` all-feature/桌面组合和dual_core job继续保留，新本地命令没有接入workflow/catalog或授予少跑权限。直接将Host从原workspace迁走会影响桌面依赖带来的feature条件，因此本片停在明确的本地出口；相关耦合由[本轮报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)登记，不先假定可无损拆分。
+
+第三层的前端开发反馈已有 **`npm run check:frontend`**，直接复用：lint、typecheck、shared/ChatPro单测、Theater smoke及ChatPro E2E构建。它不调用Cargo或替代桌面Rust/IPC、Linux预览E2E、打包及真实音频验收；不是完整发行版验收。此处只把既有入口与三层责任对齐，不新增第二个前端执行器。发行版若使用自有Host，仍需对自己的产品和实际组合另定义检查。
 
 ## 3. 规划输出与可解释性
 

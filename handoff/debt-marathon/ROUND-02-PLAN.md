@@ -1102,3 +1102,13 @@
 **验收 / 推送 / 停止**：适用默认＋六路径链接、docs-only旧路径、登记/镜像/编码/债结构、原件/历史前缀/受测代码摘要和精确diff。真实完整本地链沿用 `3dd2e934` 所承载的G24c exit0，本轮仅文档差量不重复Rust/业务或全链；差量摘要核对保证复用关系。冻结最终SHA后复核两树及实际远端身份，FF main并一次push，目标 `ci.yml` / `ci-gate`正式终态及URL记录到交付；不为绿灯回写另造提交。失败读取首因定点修复、不无变化rerun。正式CI期间只读准备下一片可行性，不移动受验主树。
 
 **后续预算 / 待决**：仅盘当前剩余rust、现有Host/发行版job的直接命令、manifest目标和资源前置，广度优先至能提出一个覆盖不减的小片即停，上限60分钟或4组直接责任。不以全仓物理分离、每个test归属、性能比例或消灭所有MIXED为目标。权限/调度/契约、required gate减少、选择策略扩大、依赖/feature语义未明的拆分，先登记跳过；明确的配置与文档整理可继续，普通边缘疑问不升级研究。
+
+### 参考 Host 默认配置本地检查入口（2026-10-12）
+
+**原因 / 基线 / 限度**：维护者授权三层边界持续推进，问题先记录跳过。上述4组直接盘点已足以确认：原workspace会通过桌面依赖启用Host的 `tauri-commands`，独立迁移不能假定feature条件保持；先保留该混合CI，提供明确的默认Host本地反馈。独立分支 `codex/ci-reference-host-local-20261012-r0` 从已推送冻结 `12bc7dc8243a2d3c3bf17f98306da1cf4cb8ca92` 开始，正在受验main保持不动。本轮M/常规，controller实施与语义自查 independent=false；不继续feature全集等价研究，不变更公共API、运行策略或选择权限。
+
+**十路径 / 保全 / 实施**：package只加 `check:reference-host`；新固定两步脚本/回归测试复用既有native helper；CI设计中英、人类门禁矩阵中英、PLAN/DCL只追加、新Wave。7份原件与13项控制/manifest摘要先保全于ignored `.cursor/plans/ci-reference-host-local-20261012-r0/`。命令为Host默认feature的all-targets Clippy `--no-deps -D warnings`，再完整默认Cargo测试；不加all-features，不构建前端/Tauri、不另建执行框架、不动workflow/catalog/影响图/旧入口/锁/源代码/旧报告。Host `default=[]`、`doctest=false` 按实际声明，默认反馈不替代原可选feature/桌面组合。
+
+**验收 / 续接**：入口缺失红保存；固定范围、native首步/次步失败、缺Cargo、未知参数负控；真实入口测试与Clippy；原helper及两公共入口回归、Dimension5 --ci及适用文档/编码/结构/写集/历史保全。未改Rust公共面，不额外workspace doctest；未影响集成链，不重复完整本地/远端矩阵。仅冻结本地提交，main正式CI按原冻结SHA另判；待下一批关联切片再合批验收推送，不用此本地切片冒充正式主树已验。达默认入口可用即停，有未判明的CI feature拆分继续保留。
+
+**第三层入口核对（同片、不新增脚本）**：现有 `check:frontend` 已组合lint/typecheck/unit/Theater smoke/E2E构建，package原件身份核对保持该命令。中英人类门禁与CI设计链接到此现成路径，真实执行一次验证其可用，不机械加同形runner；它不调用Cargo，也不代替桌面/IPC、Linux预览或发行版发布。前端入口不是完整发行版，适用 `npm run build` 发布构建仍按相关任务保留。
