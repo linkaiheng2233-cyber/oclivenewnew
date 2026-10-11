@@ -204,3 +204,73 @@ fn kernel_base_preview_check_and_failure_do_not_materialize_a_project() {
     assert_eq!(fs::read_dir(&project).unwrap().count(), 1);
     temp.close().unwrap();
 }
+
+#[test]
+fn the_readme_memory_exercise_observes_an_implementation_change() {
+    let temp = tempfile::tempdir().unwrap();
+    let project = temp.path().join("author-change");
+    let root = common::repo_root();
+    let init = common::run_cli_output(&[
+        "init",
+        "--non-interactive",
+        "--quiet",
+        "--template",
+        "kernel-base",
+        "--kernel-source",
+        root.to_str().unwrap(),
+        "-o",
+        project.to_str().unwrap(),
+    ]);
+    assert!(init.status.success(), "init: {init:?}");
+    fs::copy(root.join("Cargo.lock"), project.join("Cargo.lock")).unwrap();
+    let run_tests = || {
+        Command::new("cargo")
+            .current_dir(&root)
+            .args(["test", "--offline", "--color", "never", "--manifest-path"])
+            .arg(project.join("Cargo.toml"))
+            .output()
+            .unwrap()
+    };
+    let original_result = run_tests();
+    assert!(
+        original_result.status.success(),
+        "original: {original_result:?}"
+    );
+    let test_path = project.join("tests/base_contracts.rs");
+    let original = fs::read_to_string(&test_path)
+        .unwrap()
+        .replace("\r\n", "\n");
+    let suffix = original.replace(
+        ".filter(|item| item.contains(needle))",
+        ".filter(|item| item.ends_with(needle))",
+    );
+    assert_ne!(
+        suffix, original,
+        "README exercise could not find the implementation"
+    );
+    fs::write(&test_path, &suffix).unwrap();
+    let changed_result = run_tests();
+    let changed_stdout = String::from_utf8_lossy(&changed_result.stdout);
+    println!("README intentional behavior failure:\n{changed_stdout}");
+    assert!(
+        !changed_result.status.success(),
+        "changed implementation was not observed"
+    );
+    assert!(changed_stdout.contains("1 passed; 1 failed"));
+    assert!(changed_stdout.contains("external_memory_uses_only_this_calls_material ... FAILED"));
+    assert!(changed_stdout.contains("unsupported_requirement_preserves_the_typed_failure ... ok"));
+    assert!(changed_stdout.contains("left: []"));
+    let old_expectation = "\n        second\n";
+    assert_eq!(suffix.matches(old_expectation).count(), 1);
+    let accepted = suffix.replace(old_expectation, "\n        Vec::<String>::new()\n");
+    fs::write(&test_path, accepted).unwrap();
+    let accepted_result = run_tests();
+    assert!(
+        accepted_result.status.success(),
+        "new agreement: {accepted_result:?}"
+    );
+    let accepted_stdout = String::from_utf8_lossy(&accepted_result.stdout);
+    println!("README agreed behavior:\n{accepted_stdout}");
+    assert!(accepted_stdout.contains("2 passed; 0 failed"));
+    temp.close().unwrap();
+}

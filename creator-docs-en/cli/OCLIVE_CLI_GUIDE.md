@@ -62,6 +62,16 @@ This explicit template requires an existing OCLive checkout; it does not downloa
 
 `--dry-run --json` previews these five files; `--check --json` checks tools and the foundation source paths. Neither writes the project or user registry. There is no stub fallback. Runtime presets/backends, server shape, role/plugin/chat-storage options, custom pipeline, Monolith/dual-core/welding, quick/smart and alternate archive/existing-project flows are rejected. The five existing runtime recipes keep their previous defaults and overrides. Boundary SSOT: [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
 
+For what to edit, how to observe changed behavior and where to find consumer bindings, follow the foundation path in the [Memory developer guide](../../human-docs-en/modules/slots/memory.md) and the generated README. Generated tests verify the project and limited contract behavior; the shared consumer example verifies that example's actual integration. Authors and target distributions still own functional acceptance.
+
+| Entry point | Output and scope |
+|---|---|
+| `init --template kernel-base` | Rust Base contract project; authors implement their modules |
+| `init --preset minimal` | A preset for the original reference runtime recipe, not this foundation |
+| `plugin create` | Reference Host directory/Remote RPC scaffolds, not Rust Base implementations |
+| `pack create` | The current reference role-pack format, not a generic minimal-role definition generator |
+| UI plugin placement | Frontend extension points; follow the [placement guide](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md), separately from Kernel slot wiring |
+
 ## `doctor`: environment diagnostics
 
 ```bash

@@ -4,7 +4,7 @@
 > **读完能做什么**：选择自己的接入路径；基础实现者能运行已有消费者案例，参考 Host 维护者能区分聊天日志/STM/LTM 与回想流程。
 > **耗时**：基础案例约 **5–10 min**；参考 Host 开工包约 **50 min**
 > **SSOT 范围**：人类开工路由与 checklist；公共接入点见 [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，参考 Host 定义见 [§4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)
-> **最后更新**：2026-10-09
+> **最后更新**：2026-10-11
 > **下一篇**：[chat-storage](../side-channels/chat-storage.md) · [side-channels 索引](../side-channels/)
 
 ---
@@ -13,8 +13,23 @@
 
 | 你要做什么 | 从哪里开工 |
 |---|---|
+| 从空工程编写 Rust Base 实现 | 下方 **从基础工程开工**；只引用现有契约，不带 Host |
 | 写一个通过现有公共接口被调用的基础检索实现 | 下方 **MemoryBase 案例**；按调用方提供的材料和资源运行 |
 | 改参考 Host 的丰富记忆后端、持久化或回想策略 | **§1–§6**；沿已有 `MemoryRetrieval`、配置和存储接线 |
+
+### 从基础工程开工：我改哪里、运行什么、看到什么
+
+在包含 `kernel-base` 的 OCLive checkout 根目录执行，输出选择新目录；CLI 入口与参数边界见 [CLI 指南](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。该模板尚在独立分支时，不能在未合入的旧主树中调用。
+
+```bash
+cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities
+cd ../my-capabilities
+cargo test
+```
+
+先看生成的 README，再打开 `tests/base_contracts.rs`：其中 `TestMemory` 实现 `MemoryBase`，测试通过 trait 调用它，初次运行应有2项通过。README 提供一条可照做练习：将实现的包含匹配改成后缀匹配，看到旧期望失败，再确认并更新新约定后回到2项通过。详见 [README 模板](../../../kernel/crates/oclive-cli/src/templates/kernel_base/README.md.hbs)；不需要新测试框架或真实模型。自己的模块放入 `src/lib.rs` 或自建源码文件，异步执行器与资源绑定由调用方负责。
+
+这条路径分别核对工程可编译和示例的有限契约行为。下方现有案例再证明其外部实现能被共享消费者绑定调用；目标检索功能、质量、性能及发行版验收仍由作者与目标 Host 验证。找参考 Host 接线时回到 [接入点清单](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) 和本页 §1；“有生产接线”不表示可把任意 Base 直接注册成丰富后端。
 
 ### MemoryBase 案例：先跑通，再替换自己的实现
 

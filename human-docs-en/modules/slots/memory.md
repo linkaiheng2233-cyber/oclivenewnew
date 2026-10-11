@@ -2,14 +2,29 @@
 
 > Full checklist (ZH): [`human-docs/modules/slots/memory.md`](../../../human-docs/modules/slots/memory.md)
 > Scope: developer entry points and checklist. Public entry points: [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页); reference Host definitions: [§4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory).
-> Updated: 2026-10-09.
+> Updated: 2026-10-11.
 
 ## Choose your entry point
 
 | Your task | Start here |
 |---|---|
+| Start a Rust Base implementation in an empty project | **Start from the foundation** below; existing contracts only, without a Host |
 | Implement basic retrieval called through the current public interface | The **MemoryBase example** below; use caller-supplied materials and resources |
 | Maintain the reference Host's rich backend, storage or recollection policy | **Reference Host** below; follow existing `MemoryRetrieval`, configuration and storage wiring |
+
+### Start from the foundation: edit, run, observe
+
+From an OCLive checkout that contains `kernel-base`, choose a new output directory and run the following. A main checkout that has not merged this template cannot invoke it yet. See the [CLI guide](../../../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md) for options and boundaries.
+
+```bash
+cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities
+cd ../my-capabilities
+cargo test
+```
+
+Read the generated README, then open `tests/base_contracts.rs`: `TestMemory` implements `MemoryBase`, and the two tests call it through the trait. The README exercise changes substring matching to suffix matching, observes an old expectation fail, then explicitly agrees to the new behavior and updates that expectation; both tests pass again. See the [README template](../../../kernel/crates/oclive-cli/src/templates/kernel_base/README.md.hbs). No new test framework or real model is needed. Put your own module in `src/lib.rs` or source files you create; the caller supplies the executor and resource bindings.
+
+These steps verify project compilation and limited example contract behavior. The existing example below separately verifies its external implementation through the shared consumer. Module authors and the target Host still validate their declared retrieval function, quality, performance and distribution behavior. Use the [entry-point checklist](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) for reference Host wiring: an existing production call is not an automatic registration point for arbitrary Base implementations as rich backends.
 
 ### MemoryBase example: run it, then replace the implementation
 

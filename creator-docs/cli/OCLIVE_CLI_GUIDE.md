@@ -580,6 +580,18 @@ cargo test
 
 `--kernel-source` 必填；没有 stub 回退。`--dry-run --json` 仅预览这五个文件，`--check --json` 检查工具链与基础源码入口，均不写工程或项目注册表。`--preset`、`--backend-*`、`--project-type kernel-server`、角色/插件/聊天存储选项、非默认 `--pipeline`、Monolith/双核/焊接、quick/smart 及归档/现有工程替代流程会明确失败。原五配方的默认与覆盖规则不变；下列角色包、插件、蓝图和配置产物说明属于原运行配方。边界 owner 见 [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
 
+生成后先改哪里、如何观察实现变化、怎样找到已有消费者，见 [Memory 开工包](../../human-docs/modules/slots/memory.md) 的基础工程路径与生成 README。自带测试只证明工程/有限契约行为；共享消费者案例证明该案例的实际接入；目标功能仍需模块作者与发行版的场景验收。
+
+**不要混用开工入口**：
+
+| 入口 | 实际产物与范围 |
+|---|---|
+| `init --template kernel-base` | Rust Base 契约开发工程；作者自行实现模块 |
+| `init --preset minimal` | 原参考运行配方的配置预设，不是本基础工程 |
+| `plugin create` | 参考 Host 的目录/Remote RPC 插件骨架，不生成 Rust Base 实现 |
+| `pack create` | 当前参考角色包格式，不是通用最小角色定义生成器 |
+| UI 插件插入位置 | 前端扩展面，按 [插件放置指南](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md)；与 Kernel 六槽分别接线 |
+
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --quiet --template robot-soul -o ./out/doll
 cargo run -p oclive-cli -- init --non-interactive --template robot-gateway -o ./out/gateway

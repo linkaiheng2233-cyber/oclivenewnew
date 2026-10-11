@@ -25,6 +25,50 @@ cargo test
 
 测试只证明已有契约能在本工程中使用。Memory 示例仅在测试文件内，用本次材料做字面筛选；`literal:` 是该测试作者的约定，不是 Base 强制协议。它不安装模块、不调用模型，也不是通用异步执行器。其它槽无需为初始化工程而提供占位实现。
 
+## 第一条开发练习：修改 Memory，再观察测试
+
+先在工程根运行 `cargo test`：应看到 `external_memory_uses_only_this_calls_material` 和 `unsupported_requirement_preserves_the_typed_failure` 两项通过。前一项直接调用 `&dyn MemoryBase`；后一项检查不支持的查询保留 `Unsupported` 和 detail。
+
+打开 `tests/base_contracts.rs`，在 `impl MemoryBase for TestMemory` 中将：
+
+```rust
+.filter(|item| item.contains(needle))
+```
+
+改为：
+
+```rust
+.filter(|item| item.ends_with(needle))
+```
+
+这次有意把实现约定从“包含字面串”改成“以字面串结尾”。重新运行 `cargo test`，应看到1项通过、1项失败：第二次调用的材料以 `report` 结尾，不再匹配 `tea`，实际结果为 `[]`，旧期望仍是那条材料。这说明调用实际经过你修改的实现，测试也能发现功能约定变化。
+
+确认新约定就是你要的行为后，在同一测试中只将第二次 `assert_eq!` 的期望参数 `second` 改为 `Vec::<String>::new()`；再运行 `cargo test`，两项应通过。若改变并非预期，应恢复实现，不能为了绿灯随意降低期望。此练习不改公共契约，Unsupported 的测试保持。
+
+真实模块代码由你放入 `src/lib.rs` 或自建的源码文件；先说明材料、查询与结果约定，再提供针对目标功能的测试。异步实现可能返回 Pending，须由调用方提供适用执行器，不能照搬本例的即时 helper。
+
+## 从直接调用走向消费者绑定
+
+在 OCLive 源码 checkout 中查看 [Memory 模块开工包](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/human-docs/modules/slots/memory.md) 与已有 [外部 Memory 消费者案例](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs)：作者实现放入 `MinimalRoleBaseBindings.memory`，随后实际通过 `MemoryBase::retrieve(&consumer, request)` 调用。该例子的三个测试核对选材、空结果/完整失败、本次材料范围；材料来源、资源、权限和执行器由调用方明确，消费者不替 Host 选择能力或安排六槽顺序。
+
+在那个 checkout 根运行：
+
+```bash
+cargo run --locked -p oclive_kernel_runtime --example external_memory_base
+cargo test --locked -p oclive_kernel_runtime --example external_memory_base
+```
+
+运行应看到 `external memory: selected=2 baseline=3 memory_calls=1 llm_calls=0`，测试应为3项通过。它使用共享 runtime，属于独立接入案例；这些命令不在本生成工程运行，也无需把 runtime 加入本工程。参考 Host 的实际接线位置查下方接入点清单；本例没有把自定义实现注册到蓝图后端。
+
+## 测试通过分别说明什么
+
+| 层次 | 当前证据与责任 |
+|---|---|
+| 工程可用 | 脚手架生成的工程可编译，自带测试可运行 |
+| 契约符合 | 模块的所选请求、结果与失败有定向测试；当前仅示范 Memory 的有限调用 |
+| 接入可用 | 已有消费者案例真实绑定调用其外部实现；生成工程本身不宣称已接入 Host |
+| 目标功能可用 | 作者及目标发行版验证自己声明的检索功能、数据来源、质量与性能；不能从基础测试推导 |
+
 添加自己的实现时直接导入原公共类型；需要 Host、资源、运行时或额外能力时由后续接入工作显式选择。本工程引用本地源码路径，移动工程或源码树后需维护这些路径；它不是已发布的独立 Kernel 或 SDK 包。
 
 权责与实现者入口：[MODULE_MAP_AND_HANDOFF](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/handoff/MODULE_MAP_AND_HANDOFF.md) §3.1.1。
