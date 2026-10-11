@@ -116,6 +116,30 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 - Nightly 失败不会阻塞 main，但在 Nightly 内不得 `continue-on-error`；失败日志或 artifact 是待处理证据，不能粉饰为绿；
 - 同一 `workflow_jobs` 坐标按 validator 的 `tier` 落入对应受信通道，仓库契约测试防止 job 漂回错误工作流。
 
+<a id="ci-layering-development-handoff"></a>
+
+#### 分层对接：执行归属与选择范围分开迁移
+
+当前已经具备影响规划、受信目录、执行策略和最终gate；下一片优先复用这些设施。需要分清两个问题：**执行归属**回答某项检查由哪个责任组运行；**选择范围**回答某次改动能跳过哪些责任组。把公共基础检查从需要桌面资源的job中分出来，不自动授予PR跳过Host回归的权限。
+
+以下是[主workflow](../../.github/workflows/ci.yml)与[执行策略](../../scripts/ci-execution-policy.mjs)的现行行为，不是新策略：
+
+| 触发 / 条件 | 当前执行范围 | 最终出口 |
+|---|---|---|
+| 安全草稿PR：非shadow、无warning/fallback且范围与job非空 | 受信计划选中的责任组 | `ci-draft-gate`，不能满足main的required check |
+| ready PR，直接模块仅为已晋升的 `oclive.docs` 且满足上述安全条件 | 文档Canary选择范围 | `ci-gate` |
+| 其它ready PR | 全部主CI责任组 | `ci-gate` |
+| 推送main/master，或手动运行主workflow | 全部主CI责任组 | `ci-gate`；普通备份分支push本身不触发此workflow |
+| 规划warning、未知/高风险回退或规划失败 | 全量；规划失败仍使最终gate失败 | 不允许全量检查的通过掩盖规划失败 |
+
+上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。现有主workflow有13个验证责任job定义；Rust和前端各展开两平台，加上规划与gate，形成当前全量17个实际job。数量描述结构，不能作为质量或性能目标。
+
+**推荐下一片：远端执行归属。** 从已可复现的公共基础契约范围开片，同步catalog、本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context。先明确迁移的测试集合、原所有者和剩余回归；窄入口没有覆盖两crate全部测试，不能直接从workspace排除整个crate后宣称覆盖保持。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读。不增加同形包装或以新增job数量宣称分层完成。
+
+**后续单独评估：选择范围。** 执行归属稳定后，才依据目标SHA的真实Compare与契约回归讨论某类ready PR能否选择性执行。不因本地窄测更快、一次主CI通过或四层分责表就移除影响边。缓存、性能矩阵和未判定的细粒度归属不是首片前置调查；开发切片定向验证，同主题里程碑才做适用完整验收。
+
+分类提交、main正式基线与本地开发证据见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)。新入口目前只在本地开发分支，远端迁移未实施，K-CI-IMPACT-01仍为In progress。
+
 ## 3. 规划输出与可解释性
 
 规划器输出稳定排序的 `plan.json`，至少包含：

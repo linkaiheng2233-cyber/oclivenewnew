@@ -1062,3 +1062,11 @@
 **精确十路径 / 关联闭环**：package.json只加一个命令，新增 `scripts/check-kernel-base.mjs` 与同名test，CI设计中英、人类PR门禁矩阵中英、本计划/DCL追加、本批Wave。七份既有原件及hash先保全于 ignored `.cursor/plans/kernel-base-local-check-20261011-r0/`。npm入口→四条既有Cargo命令→复用native工具helper→成功/失败输出→文档使用与边界→入口回归；不复制Base实现或测试，不另建执行框架，不修改Rust、锁文件、依赖、共享消费者、Host、workflow、catalog、selector、required gate或任何冻结项。
 
 **有界验收 / 停止线**：新增入口不存在的红只证明尚未实施；真实命令链通过，定向回归核中途native非零停止、缺cargo/未知参数非零且无PASS。一次目标crate依赖树确认不引入Host/runtime/Tauri，不升级全workspace依赖调查。适用脚本语法/既有toolchain回归、Dimension5 --ci、默认＋已改文链接、镜像/登记、债结构、编码、精确diff与历史保全；未变Rust公共面，workspace doctest不适用，入口自身显式运行两crate doctest。达到命令可用与失败关闭即保存本地提交；不合入/推送main、不重跑全量远端CI、不关闭K-CI-IMPACT-01。下一片远端执行所有权需另行核覆盖及仓库合同，保留旧组合回归，不擅改ready/Push策略。
+
+### CI 分层 · 分类基线与维护者对接（2026-10-11）
+
+**授权 / 基线 / 预算**：维护者要求分类详实提交、确认开发基线，再了解CI并对接。接续干净 `2b8d03ae5a2305dc4de081f705c1e0c67ba6fd06`；已有准备与入口实施分别由 `a74e249c`、`2b8d03ae` 拥有，不重写提交。本轮M / 轻，controller实施及语义自查 independent=false；只核已有8组职责的直接workflow、catalog、执行策略、仓库合同入口及同SHA正式证据，D1足以给出下一片形状即停，上限120分钟。不进入逐测试全仓分类或缓存收益研究。
+
+**精确五路径 / 不变量**：现有CI设计中英各扩一节，将执行归属迁移和选择范围扩大分开；本计划、DEBT_CHANGELOG仅追加；新增 `waves/WAVE-20261011-CI-BASELINE-HANDOFF.md` 记录提交分类、main/开发基线与适用证据。四份原件及控制面/入口摘要先保全于ignored `.cursor/plans/ci-baseline-handoff-20261011-r0/`。不改Rust、脚本、package、workflow、catalog/影响图/元数据、selector、required gate、Push/ready策略或债务状态，不合入/推送main，不新建CI框架或第二份架构规则。
+
+**验证 / 出口**：实际读取远端main及正式run终态，区分main已正式验收与开发入口Locally verified；文档默认＋精确五路径链接、docs-only路径、镜像/登记、债结构、严格UTF-8无BOM、历史字节前缀、控制面原摘要及精确diff。纯Markdown对接不重复Rust、入口/业务测试、Dimension5或全量CI；旧入口失败记录与环境收尾更正沿用原证据，不冒充本轮重跑。完成文档本地提交并确认两树干净后，向维护者解释原因和下一片；远端执行迁移仍是待实施，不把本地命令称为整个Kernel验收或分层完成。

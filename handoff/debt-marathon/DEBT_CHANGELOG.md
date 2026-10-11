@@ -1002,3 +1002,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：维护者要求接续已冻结分责方案。按[有限实施计划](ROUND-02-PLAN.md#k-ci-impact-01--公共基础契约本地出口2026-10-11)，模块作者可以先用 `npm run check:kernel-base` 检查OCLive的公共契约基线，无需准备桌面资源；自己的模块仍另跑Cargo测试，不能由公共测试代替。controller实施与语义自查 independent=false。
 - **变动 / 边界**：一个npm命令、复用native helper的固定四步脚本及失败停止回归，实际范围/使用方式同步中英文CI设计与人类门禁矩阵；既有Base/最小角色/两crate Clippy/doctest未复制或改写。Rust、锁文件、Host及远端workflow/catalog/影响图/required gate/选路保持；K-CI-IMPACT-01继续In progress，其它债及冻结不变。
 - **验证 / 续跑**：[本批Wave](waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md)记录真实四步命令、目标依赖、失败关闭及适用治理门禁。开发切片只保存本地提交，不并入/推送main，不重复远端全矩阵，也不借main `24f62303` 的正式CI证明新SHA。下一片才处理远端唯一执行所有权及受信入口的同步，不能以本地命令可用宣称完整CI分层已完成。
+
+### DCL-20261011-96 · CI分层分类基线与维护者对接
+
+- **原因 / 例子**：维护者要求分类详实提交、确认基线，再了解CI。按[五路径有限计划](ROUND-02-PLAN.md#ci-分层--分类基线与维护者对接2026-10-11)接续干净 `2b8d03ae`；已有设计与本地命令分别保留于 `a74e249c`、`2b8d03ae`，不重写关联闭环。公共契约的检查入口可独立，不代表某次PR已获准跳过Host回归。controller实施及语义自查 independent=false。
+- **交付 / 边界**：现有CI设计中英明确执行归属与选择范围分两片，说明现行主workflow触发、受信执行与gate；[本轮快照](waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)分类主/开发基线与证据。本轮只读核对已知8组直接入口即停，不改workflow/catalog/影响图/selector/required gate或Push/ready策略，不合入/推送main，K-CI-IMPACT-01继续In progress。
+- **验证 / 续接**：main与实际远端 `24f62303` 的正式run 38111785703已17/17成功，本地入口只沿用原Locally verified证据，不能用旧绿灯证明新SHA。适用文档/编码/精确diff、原件和历史前缀保全后本地提交；纯Markdown不重复Rust/业务/Dimension5或远端CI。下一片在覆盖与唯一所有权明确后同步现有四处受信入口，具体Host和组合回归保留，选择范围另按真实Compare评估。

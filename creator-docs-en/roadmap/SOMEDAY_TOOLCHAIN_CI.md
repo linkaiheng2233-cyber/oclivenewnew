@@ -50,6 +50,30 @@ The two crates do not depend on Host/runtime/Tauri, but retain rich compatibilit
 
 The [slice report](../../handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md) records the actual chain, stop-on-failure regression, and dependency boundary; the [local gate matrix](../../human-docs-en/08_PR_GATE_MATRIX.md) explains narrow versus full checks. Stop at the usable local entry. Do not copy Base tests, add DTOs/traits, or manufacture six equivalent wrappers. A later remote slice must synchronize the trusted catalog, local command, workflow ownership, and repository contract tests. Retain existing combination regressions, prove coverage/unique ownership before moving tests out of `rust`, and do not call duplicated expensive execution successful layering. New ready-selective classes still require same-SHA real Compare and the formal gate. This slice changes no workflow, catalog/schema, impact edges, required context, Push/ready policy, public API, or freeze, and closes no debt.
 
+<a id="ci-layering-development-handoff"></a>
+
+## Layering handoff: separate execution ownership from selection policy
+
+The planner, trusted catalog, execution policy, and final gate already exist. Execution ownership assigns a check to a responsibility group; selection policy decides which groups a change may skip. Giving public foundation checks an entry independent of desktop resources does not authorize PRs to skip Host regressions.
+
+The [main workflow](../../.github/workflows/ci.yml) and [execution policy](../../scripts/ci-execution-policy.mjs) currently enforce:
+
+| Trigger / condition | Execution scope | Gate |
+|---|---|---|
+| Safe draft PR: non-shadow, warning/fallback-free, non-empty scope and jobs | Trusted selected groups | `ci-draft-gate`, never main's required check |
+| Ready PR whose direct modules are only promoted `oclive.docs`, with the same safety conditions | Docs canary selection | `ci-gate` |
+| Other ready PR | All main-CI groups | `ci-gate` |
+| Push to main/master, or manual main-workflow dispatch | All main-CI groups | `ci-gate`; pushing an ordinary backup branch alone does not trigger this workflow |
+| Planner warnings, unknown/high-risk fallback, or planner failure | Full; a planner failure also fails the final gate | Successful full validation cannot mask planner failure |
+
+Nightly remains a separate lane. The current main workflow defines 13 validation jobs; Rust and frontend each expand across two platforms, giving 17 actual jobs including the planner and gate. These counts describe structure, not quality or performance targets.
+
+The recommended next slice migrates remote execution ownership using the existing catalog, local command, workflow, and [repository contracts](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs). Preserve Push/ready policy and the required context. Identify the migrated test set, former owner, and remaining regressions first: the narrow local entry does not cover every test in either crate, so excluding whole crates from workspace testing would not prove preserved coverage. Shared dependencies may still compile; distinguish compilation reuse from executing the same test twice. Do not add equivalent wrappers or equate more jobs with completed layering.
+
+Evaluate wider ready selection separately, after ownership is stable, using real same-SHA Compare and contract evidence. Local speed, one successful full run, or a responsibility table cannot justify removing impact edges. Cache research, performance matrices, and deeper unclassified ownership are not prerequisites for this first slice. Keep targeted development checks and applicable full acceptance at a thematic milestone.
+
+The [2026-10-11 handoff snapshot](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md) records classified commits, the formal main baseline, and local development evidence. The new entry is currently on the local development branch only; remote migration is unimplemented and K-CI-IMPACT-01 remains In progress.
+
 The scaffold is only an assistant. Once the descriptor contract is stable, it may generate and validate module metadata, list catalog-approved profiles, and invoke the same planner. It may not own workflow orchestration, inject shell commands, approve secrets or self-hosted GPU runners, create a second impact/resource schema, or treat generation as CI success. Scaffold discovery, source locking, command namespaces, and compatibility are owned by [`RFC_SCAFFOLD_PACKAGE_V1.md`](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md); this document owns only the CI boundary.
 
 In short: **the scaffold produces and preflights knowledge that CI understands; CI consumes that same knowledge in a trusted environment and produces evidence.**
