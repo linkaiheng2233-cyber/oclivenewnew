@@ -1034,3 +1034,13 @@
 **精确六路径**：CLI指南中英、`examples/scaffold-kernel-base-custom/README.md`、本计划/DCL仅追加、新报告 `waves/WAVE-20261011-KERNEL-BASE-CLOSEOUT.md`。五份旧原件和hash先保全于本机 `.cursor/plans/kernel-base-closeout-20261011-r0/`。只补作者模板教程返回源码目录的步骤，明确新参数要求与反馈入口；不改源模板、Rust、公共契约、依赖/锁、权限、CI、旧Wave或债务状态。反馈按现有入口记录目标/平台/版本/模板/命令/预期/实际及最小复现，不新增采集框架或功能承诺。
 
 **验证 / 收口**：实际执行修正后的目录切换、CLI预览及摘要刷新命令，沿用原源码下Cargo/TTY/回归证据并明确其身份；适用默认＋已改文件链接、docs-only路径、镜像/登记/债结构、UTF-8无BOM、精确写集、原件及历史字节前缀/diff。纯Markdown修正不重复Rust、业务、workspace doctest或全量CI。保存本地收尾提交，main及其它支线保持，不推送或发布；阶段停止在已有基础开发路径可用，下一次脚手架施工由实际反馈/具体开发阻碍驱动。
+
+### 基础脚手架 · 合批集成验收与推送（2026-10-11）
+
+**授权 / 起点 / 尺寸**：维护者在文档收尾后明确要求确认基线、集成验收并推送，然后准备CI分层。干净脚手架分支 `46318810aaa8eda7f6f77b434a9bd3565942d354` 相对本地及实际远端main `2b0390cdecaeed428f9ea1f753098f4aa69f3ebd` 领先六提交，main原正式CI成功。L里程碑，controller实施与语义自查 independent=false。授权仅集成本批和准备下一条CI责任分层；不同时合入SDK草案或其它债分支，不扩脚手架功能、公共契约、发行版能力或冻结项。
+
+**写集 / 审查**：本计划和DCL仅追加，新增 `waves/WAVE-20261011-KERNEL-BASE-INTEGRATION.md` 交接快照；两原件先保全于 ignored `.cursor/plans/kernel-base-integration-20261011-r0/`。审既有49路径合批差量、共享生成/配置流、来源锁和例子依赖边界；入口到测试/文档关联闭环与原五运行配方保持。若验收有确定性失败，仅按首因定点修复及受影响检查，不降低门禁、不重跑已成功无关阶段。
+
+**门禁 / 冻结 / 推送**：新增三文适用链接、路径、镜像/登记、债结构、编码/历史/diff先通过，冻结一个最终SHA。准备真实debug内核资源后运行一次 `npm run check:ci-local`；清除子进程继承的CARGO_TARGET_DIR，让生成工程E2E拥有各自缓存，辅助Voice仅在验证子进程显式用已核本机Python。复核原生成bridge字节/Git内容和环境、副作用；有公开枚举增量，显式workspace doctest按原公开面验收口径随该合批执行，不以--lib代替。CLI集成由原串行入口拥有，不另建平行组合。适用本地全部通过且主树/远端身份未漂移时FF main，一次push；等待绑定该完整SHA的正式ci.yml与ci-gate终态，不为绿灯回写制造新HEAD。
+
+**停止 / 下一步**：正式CI失败读实际失败job、定点修复；观察API错误不当作job失败，恢复同run查询不rerun。脚手架达到本里程碑即停止主动扩面。推送后可只读准备Kernel公共契约/通用Host接入/具体Host和发行版/发布组合的CI责任清单；沿现有CI SSOT有限设计，不擅自取消required gate、扩大ready选择范围或改变公共安全策略。有权责或门禁的新取舍才交回维护者。
