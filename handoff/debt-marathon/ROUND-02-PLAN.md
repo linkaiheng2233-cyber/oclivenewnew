@@ -1078,3 +1078,17 @@
 **六路径 / 保全**：架构定义与源码对照只扩 `MODULE_MAP_AND_HANDOFF.md` 一节；执行归属与建议只扩CI设计中英；本计划与DEBT_CHANGELOG只追加；新增 `waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md` 记录范围与核验结果。五份磁盘原件及15项控制面/实现摘要先保全于ignored `.cursor/plans/ci-boundary-map-20261011-r0/`。只做文档，不改公共API、crate/目录名、运行行为、workflow、catalog/影响边、required gate或选择策略；不减少覆盖、不转债Done、不解冻既定架构项。
 
 **验收 / 出口**：默认与六路径显式Markdown链接、docs-only旧路径、镜像、登记、债结构、严格UTF-8无BOM/汉字、原件及历史字节前缀、控制面摘要、精确diff；各命令即时保留native exit、stdout/stderr。按纯文档变更不重复Rust/业务/Dimension5/远端矩阵。语义核对四项交付物及混合检查标签；保存本地文档提交，不合入/推送main。远端首片是待讨论建议，迁移前须核原/新执行集合、平台与feature条件、兼容回归及唯一所有权；未满足时保留原执行，不用窄入口排除整crate。
+
+### CI 分层 · 公共契约与兼容检查执行所有权（2026-10-11）
+
+**实施补充（同片）**：Clippy原默认会lint依赖，单独排除根包不足以划清检查所有权；两组加 `--no-deps`，保持原非CLI workspace根包并集，依赖编译仍可发生。仓库gate集合断言按行比较兼容LF/CRLF，不规范化整个workflow。旧trusted-base缺新组时走原全量bootstrap，并用实际工作流探针和原gate验证器做负控，不改变ready晋升类别。Dimension5本机缺默认 `py` launcher，使用已有 `OCLIVE_VOICE_PYTHON` 仅在子进程绑定现存Python；环境试错日志原样保留，不改生产脚本或用户环境。
+
+**授权 / 基线 / 路由**：维护者同意继续实施并理清执行所有权；接续干净 `5e483aa613265427c246ae23c916a9c5da7ccd07`。本片只迁移contracts/types既有完整检查，保留剩余workspace、Host/发行版组合及现行选择权限。触及主CI编排按L工程出口管理；自适应CI受信基线与失败关闭按重风险复核点审，controller实施及语义自查 independent=false，不声称独立复核。预算180分钟，基于直接目标/配置集合足以判断即停，不追全仓测试或缓存性能。关联主题冻结前一次完整本地 `check:ci-local`；本地切片状态保持Locally verified，正式集成出口仍需目标SHA远端CI，不提前转Done。
+
+**闭环 / 十四路径**：`.github/workflows/ci.yml` 新增Linux/Windows契约责任job并从原rust检查中排除两crate根测试/lint目标；catalog增加受信validator/command且所有原rust profile同时保留新组；shadow corpus只同步新增坐标；package与新 `scripts/check-kernel-contracts.mjs` / `.test.mjs` 提供完整本地链及失败关闭/真实迁移引导负控；`oclive_ci_plan/tests/repository_contract.rs` 核所有权、gate与控制面；CI设计和人类门禁矩阵各中英；本计划/DCL只追加；新增 `waves/WAVE-20261011-CI-CONTRACT-OWNER.md`。十一原件和十二项冻结摘要、Cargo metadata原始目标先保全于ignored `.cursor/plans/ci-contract-owner-20261011-r0/`。
+
+**不变量 / 过渡**：两crate当前无自有feature；新链Clippy仍all-targets/all-features、测试仍完整默认选择并保留适用doctest，不用 `check:kernel-base` 窄链代替。所有原rust选择继续覆盖新公共组；旧受信catalog未识别新所有者时用已有 `trusted_policy_bootstrap` 全量回退，不能在草稿漏掉迁走目标。required `ci-gate`、Push/其它ready全量、现行草稿/docs Canary权限、影响边与业务/API/锁文件保持；迁移后的剩余rust仍混合，不宣称所有内容都是Host或小Kernel。
+
+**验收 / 收口**：先红后绿新入口和仓库所有权合同；真实两crate完整链；同链native非零、工具缺失/未知参数、旧catalog过渡负控；ci_plan相关回归/Clippy、fmt、执行策略与Compare自检、21条shadow routing、Dimension5 --ci及分层/module-compat；适用中英文链接/登记/路径/编码/债结构、metadata目标与互斥根包集合、原件/历史前缀/精确diff。Cargo build/test串行以免cache争抢；无Rust公共API变化，workspace doctest不额外适用，真实完整链保留原两crate doctest。冻结为Locally verified本地提交后交付；不合入/推送main、不新发业务身份或真实服务、不解冻其它决策、不转债Done。目标SHA正式CI仍是集成时的后续出口，不以本地证明远端平台已经通过。
+
+**本地集成结果（同片收口）**：原 `check:ci-local` 完整链native exit0（2084.39秒）。第一次缺新工作树Tauri资源而exit101，按既有debug bundle入口准备生成资源后完整复跑通过，日志分别保留；Python覆盖仅作用于验证子进程。构建后的tracked bridge与base Git blob、生成输出和干净main逐字相同，保全后只刷新Git状态，最终仍为14路径；无需替换文件或重跑未变的完整链。新两平台workflow尚待后续冻结目标SHA正式CI，当前仅Locally verified。

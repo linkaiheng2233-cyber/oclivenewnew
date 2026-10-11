@@ -84,7 +84,7 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         .plan(request("release", "unmapped/fail-safe.txt"))
         .expect("release fallback plan");
     assert!(plan.fallback.full);
-    assert_eq!(plan.selected_validators.len(), 19);
+    assert_eq!(plan.selected_validators.len(), 20);
 
     let main_workflow =
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
@@ -174,7 +174,9 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
     assert!(gate_block.contains("retention-days: 90"));
     for job in &main_jobs {
         assert!(
-            gate_block.contains(&format!("      - {job}\n")),
+            gate_block
+                .lines()
+                .any(|line| line == format!("      - {job}")),
             "ci-gate must aggregate `{job}`"
         );
     }
@@ -242,13 +244,85 @@ fn repository_workflow_keeps_expensive_validation_ownership_disjoint() {
     let workflow =
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
     assert!(workflow.contains(
-        "cargo clippy --locked --workspace --exclude oclive-cli --all-targets --all-features"
+        "cargo clippy --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types --all-targets --all-features --no-deps"
     ));
     assert!(workflow.contains("cargo test --locked --workspace --exclude oclive-cli"));
     assert!(workflow.contains("cargo test --locked -p oclive-cli -- --test-threads=1"));
     assert!(workflow.contains("npm run typecheck"));
     assert!(workflow.contains("npm run audit:dependencies"));
     assert!(!workflow.contains("\n  cargo-audit:"));
+}
+
+#[test]
+fn public_contract_checks_have_one_owner_without_narrowing_host_coverage() {
+    let root = repo_root();
+    let catalog: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(root.join("data/ci/validation-catalog.v1.json")).unwrap(),
+    )
+    .unwrap();
+    let validator = catalog["validators"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|validator| validator["id"] == "kernel-contracts")
+        .expect("separate public contract/compatibility owner");
+    assert_eq!(validator["gate"], "required");
+    assert_eq!(validator["tier"], "pr");
+    assert_eq!(validator["command_id"], "check-kernel-contracts");
+    assert_eq!(
+        validator["workflow_jobs"],
+        serde_json::json!(["kernel-contracts"])
+    );
+    assert_eq!(
+        validator["platforms"],
+        serde_json::json!(["ubuntu-22.04", "windows"])
+    );
+    for profile in catalog["profiles"].as_array().unwrap() {
+        let validators = profile["validators"].as_array().unwrap();
+        if validators
+            .iter()
+            .any(|validator| validator == "rust-workspace")
+        {
+            assert!(
+                validators
+                    .iter()
+                    .any(|validator| validator == "kernel-contracts"),
+                "existing workspace selection must retain migrated checks: {}",
+                profile["id"]
+            );
+        }
+    }
+    let workflow = fs::read_to_string(root.join(".github/workflows/ci.yml")).unwrap();
+    let public = workflow_job_block(&workflow, "kernel-contracts");
+    assert!(public.contains("os: [ubuntu-22.04, windows-latest]"));
+    assert!(public.contains("node scripts/check-kernel-contracts.mjs"));
+    assert!(public.contains("node --test scripts/check-kernel-contracts.test.mjs"));
+    for preparation in [
+        "npm ci",
+        "npm run build",
+        "bundle-kernel",
+        "apt-get",
+        "OCLIVE_HTTP_API_MOCK_LLM",
+    ] {
+        assert!(
+            !public.contains(preparation),
+            "public checks must not prepare a Host: {preparation}"
+        );
+    }
+    let remaining = workflow_job_block(&workflow, "rust");
+    for command in [
+        "cargo clippy --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types --all-targets --all-features --no-deps -- -D warnings",
+        "cargo test --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types",
+    ] {
+        assert!(remaining.contains(command), "remaining workspace must exclude only migrated roots: {command}");
+    }
+    assert!(remaining.contains("cargo fmt --all -- --check"));
+    assert!(workflow_job_block(&workflow, "ci-gate")
+        .lines()
+        .any(|line| line == "      - kernel-contracts"));
+    assert!(
+        workflow.contains("Trusted base predates the public contract owner; bootstrap stays full.")
+    );
 }
 
 #[test]

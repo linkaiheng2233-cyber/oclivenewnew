@@ -128,6 +128,9 @@ jobs:
             echo "Trusted base predates the execution policy; bootstrap stays full."
             POLICY_SCRIPT="$GITHUB_WORKSPACE/scripts/ci-execution-policy.mjs"
             POLICY_ARGS=(--force-full-reason trusted_policy_bootstrap)
+          elif ! node -e 'const c=JSON.parse(require("node:fs").readFileSync(process.argv[1],"utf8")); const v=c.validators.find(v=>v.id==="kernel-contracts"); process.exit(v?.workflow_jobs.includes("kernel-contracts") ? 0 : 1)' "$GITHUB_WORKSPACE/target/oclive-ci/trusted/data/ci/validation-catalog.v1.json"; then
+            echo "Trusted base predates the public contract owner; bootstrap stays full."
+            POLICY_ARGS=(--force-full-reason trusted_policy_bootstrap)
           fi
           node "$POLICY_SCRIPT" resolve \
             --plan target/oclive-ci/plan.json \
@@ -151,6 +154,34 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  # Public contract and compatibility checks: no frontend, reference Host or desktop preparation.
+  kernel-contracts:
+    needs: ci-impact-plan
+    if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"kernel-contracts"')) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: ".nvmrc"
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master (explicit stable)
+        with:
+          toolchain: stable
+          components: clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Contract owner and trusted-base transition regressions
+        run: node --test scripts/check-kernel-contracts.test.mjs
+      - name: Public contracts and compatibility surface
+        env:
+          CARGO_BUILD_JOBS: "1"
+        run: node scripts/check-kernel-contracts.mjs
+
+  # Remaining workspace: shared runtime, reference Host, desktop and other compatibility checks.
   rust:
     needs: ci-impact-plan
     if: ${{ always() && (needs.ci-impact-plan.result != 'success' || needs.ci-impact-plan.outputs.run_full == 'true' || contains(needs.ci-impact-plan.outputs.selected_jobs, '"rust"')) }}
@@ -182,11 +213,11 @@ jobs:
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: clippy (workspace)
-        run: cargo clippy --locked --workspace --exclude oclive-cli --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types --all-targets --all-features --no-deps -- -D warnings
       - name: tests (workspace)
         env:
           CARGO_BUILD_JOBS: "1"
-        run: cargo test --locked --workspace --exclude oclive-cli
+        run: cargo test --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types
 
   layering-ratchet:
     needs: ci-impact-plan
@@ -552,6 +583,7 @@ jobs:
     if: ${{ always() }}
     needs:
       - ci-impact-plan
+      - kernel-contracts
       - rust
       - layering-ratchet
       - dimension5-acceptance

@@ -1014,3 +1014,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：维护者先确认公共Kernel、7B参考Host、自有Host/发行版及小Kernel外共享支持的责任，再讨论CI。按[六路径计划](ROUND-02-PLAN.md#ci-分层--维护者确认的责任边界与执行归属对照2026-10-11)接续干净 `c166af79`，controller实施及语义自查 independent=false。Memory的请求/结果归公共合同，材料绑定归Host，ChatPro切换会话规则归产品；目录或crate名称不能替代这一判断。
 - **交付 / 边界**：[MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)拥有确认方向、双Host路径、共享支持及实际入口；[CI设计中英](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#ci-responsibility-map)拥有13个主检查和其它workflow归属、MIXED标签及首片执行所有权建议；[本轮报告](waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)记录止点。原 §0.3 历史SHA证据不重标，不改API/运行行为/workflow/catalog/required gate/选择策略，不合入或推送main，K-CI-IMPACT-01继续In progress，其它债及冻结不变。
 - **验证 / 续接**：适用文档、编码、历史前缀/原件、15项控制面/实现摘要及精确六路径diff通过后保存本地提交；不重复Rust/业务/远端矩阵，旧正式CI不为新文档SHA盖章。首片只建议迁移两crate的既有完整检查并保留兼容面、两平台及实际feature条件；窄入口不能替代其全部目标。明确可施工范围即停止调查，实施仍待对接，选择范围扩大另议。
+
+### DCL-20261011-98 · 公共契约与兼容检查执行所有权首片
+
+- **原因 / 例子**：维护者授权继续理清CI所有权。按[14路径有限计划](ROUND-02-PLAN.md#ci-分层--公共契约与兼容检查执行所有权2026-10-11)从干净 `5e483aa6` 接续，controller实施及语义自查 independent=false。公共合同作者不应为检查两个crate先构建前端/Tauri；但窄Base入口不能替代完整兼容目标，迁移完整集合才有实际价值。
+- **实施 / 边界**：新 `check:kernel-contracts` 复用已有native helper，两平台独立job运行完整Clippy/tests/doctest；`rust`保留剩余workspace、资源及fmt。现有5个workspace profile同步选新组，gate聚合、旧受信目录全量bootstrap、21场景坐标及仓库合同同步；影响图/ready晋升类别/required名称/公共API/运行语义不改，K-CI-IMPACT-01继续In progress。两crate保留rich/Stream兼容面，不整体称为小Kernel，也不把新增job数当质量收益。
+- **验证 / 收口**：[本片报告](waves/WAVE-20261011-CI-CONTRACT-OWNER.md)分开记录真实两crate完整执行、失败关闭及trusted-base/原gate负控、规划器合同、31项Dimension5、覆盖/原件/历史保全与适用文档检查；原完整本地 `check:ci-local` native exit0（约34分44秒），新工作树缺Tauri资源的首失败与原debug bundle准备步骤分别保留。构建bridge逐字等于base/生成输出/干净main，只刷新Git状态后写集仍14路径。失败attempt不覆盖，收益停止于独立执行出口，不穷尽拆其它job。仅冻结本地开发提交，不合入/推送main，不借原main正式CI；新远端两平台与目标SHA正式验收在集成出口处理。
