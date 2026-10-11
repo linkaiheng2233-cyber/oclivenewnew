@@ -119,9 +119,13 @@ It asks for project name, source root, teaching example (`memory` or `none`), op
 
 Both retain all six Base contracts and public types. `none` does not disable runtime Memory, remove a contract or supply a Noop; authors and consumer wiring own runtime switches. A blank project's initial `cargo test` can run zero tests, which is not functional acceptance. Add `--base-example none` to the non-interactive command above to choose it; its preview lists the same four files.
 
+Explicit `--base-example` arguments require `--template kernel-base`; they do not apply to the legacy quick flow or other runtime recipes.
+
 **Maintain your own template**: use the [complete local foundation template example](../../examples/scaffold-kernel-base-custom/README.md) when you need your own layout, defaults or examples. It reuses `scaffold validate/inspect/resolve/generate`, source locking and per-call confirmation. Copy and edit the sources, explicitly refresh digests and the lock, then generate into a new directory. Current authoring supports file mappings and string variables, without conditions, loops, automatic inheritance or script execution. It adds no Host to the foundation.
 
 For what to edit, how to observe changed behavior and where to find consumer bindings, follow the foundation path in the [Memory developer guide](../../human-docs-en/modules/slots/memory.md) and the generated README. Generated tests verify the project and limited contract behavior; the shared consumer example verifies that example's actual integration. Authors and target distributions still own functional acceptance.
+
+**Usage feedback**: for problems generating, compiling, editing an example or binding a consumer, use the [repository issue tracker](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues). Include your development goal, template, CLI version/source commit, platform, working directory, full command, expected/actual output and a minimal reproduction. Distinguish template convenience from a public-contract expression problem; further improvements follow concrete usage problems.
 
 | Entry point | Output and scope |
 |---|---|

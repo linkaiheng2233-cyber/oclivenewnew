@@ -624,9 +624,13 @@ cargo run -p oclive-cli -- init --template kernel-base
 
 两者均保留六槽 Base 与公共类型。`none` 不表示关闭运行时记忆、删除契约或生成 Noop；实际运行开关由模板作者及消费者接线负责。空白工程初始 `cargo test` 可执行零项，不能当成模块功能通过。比如在上方非交互命令加 `--base-example none` 即可生成空白工程；预览也反映相同四文件。
 
+命令行显式传 `--base-example` 时须同时指定 `--template kernel-base`；它不适用于旧quick或其它运行配方。
+
 **自己维护模板**：文件布局、默认值或示例超出内置两种选择时，使用 [本地基础模板完整例子](../../examples/scaffold-kernel-base-custom/README.md)。它复用 `scaffold validate/inspect/resolve/generate`、来源锁与逐次确认；复制、修改模板、显式更新摘要并重新锁定后，向新目录生成。当前支持作者文件映射和字符串变量，不支持条件、循环、自动继承或脚本执行，不给基础工程增加 Host。
 
 生成后先改哪里、如何观察实现变化、怎样找到已有消费者，见 [Memory 开工包](../../human-docs/modules/slots/memory.md) 的基础工程路径与生成 README。自带测试只证明工程/有限契约行为；共享消费者案例证明该案例的实际接入；目标功能仍需模块作者与发行版的场景验收。
+
+**实际使用反馈**：遇到生成、编译、示例修改或消费者绑定的问题，可从[仓库反馈入口](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)提供开发目标、模板、CLI版本/源码提交、平台、执行目录、完整命令、预期和实际输出，附最小复现。模板便利性与公共契约表达障碍分别说明；后续改进按具体使用问题推进。
 
 **不要混用开工入口**：
 

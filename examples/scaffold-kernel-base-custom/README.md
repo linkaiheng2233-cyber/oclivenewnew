@@ -17,6 +17,8 @@ $sourceForCargo = $repo.Replace('\', '/')
 
 首次复制使用新目录，避免覆盖自己的原件。Linux/macOS可使用对应文件复制工具；保持相同的 `.oclive/scaffolds/package/` 布局及包内原字节。版本控制须保持包内LF换行，源摘要按实际字节核对。
 
+下面步骤在同一个PowerShell会话继续，保留 `$repo`、`$workspace` 和 `$sourceForCargo`。CLI命令从 `$repo`（OCLive源码根）执行，Cargo检查从生成工程根执行。
+
 ## 2. 查看、锁定与生成
 
 ```powershell
@@ -33,6 +35,7 @@ cd ../custom-memory
 cargo check
 cargo test
 cargo fmt -- --check
+Set-Location -LiteralPath $repo
 ```
 
 应得到Cargo、源码入口、自己的README、忽略文件及生成来源记录。README的开发目标应为 `Memory experiment`；换成 `--set "module_goal=Event experiment"` 并使用新输出目录，文本也随之改变。模板不预装Memory或其它槽实现，初始 `cargo test` 执行零项测试，不能解释为功能通过。
@@ -51,6 +54,7 @@ cargo fmt -- --check
 例如在 `templates/README.md.tmpl` 加入作者说明，或在自己的模板加入Memory测试文件。编辑后显式执行：
 
 ```powershell
+Set-Location -LiteralPath $repo
 node "$workspace/.oclive/scaffolds/refresh-digests.mjs"
 cargo run -p oclive-cli -- scaffold validate "$workspace/.oclive/scaffolds/package/oclive.scaffold.json"
 cargo run -p oclive-cli -- scaffold inspect dev.example.kernel-base --path $workspace
