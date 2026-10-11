@@ -1008,3 +1008,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：维护者要求分类详实提交、确认基线，再了解CI。按[五路径有限计划](ROUND-02-PLAN.md#ci-分层--分类基线与维护者对接2026-10-11)接续干净 `2b8d03ae`；已有设计与本地命令分别保留于 `a74e249c`、`2b8d03ae`，不重写关联闭环。公共契约的检查入口可独立，不代表某次PR已获准跳过Host回归。controller实施及语义自查 independent=false。
 - **交付 / 边界**：现有CI设计中英明确执行归属与选择范围分两片，说明现行主workflow触发、受信执行与gate；[本轮快照](waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)分类主/开发基线与证据。本轮只读核对已知8组直接入口即停，不改workflow/catalog/影响图/selector/required gate或Push/ready策略，不合入/推送main，K-CI-IMPACT-01继续In progress。
 - **验证 / 续接**：main与实际远端 `24f62303` 的正式run 38111785703已17/17成功，本地入口只沿用原Locally verified证据，不能用旧绿灯证明新SHA。适用文档/编码/精确diff、原件和历史前缀保全后本地提交；纯Markdown不重复Rust/业务/Dimension5或远端CI。下一片在覆盖与唯一所有权明确后同步现有四处受信入口，具体Host和组合回归保留，选择范围另按真实Compare评估。
+
+### DCL-20261011-97 · CI责任边界确认与现有执行归属对照
+
+- **原因 / 例子**：维护者先确认公共Kernel、7B参考Host、自有Host/发行版及小Kernel外共享支持的责任，再讨论CI。按[六路径计划](ROUND-02-PLAN.md#ci-分层--维护者确认的责任边界与执行归属对照2026-10-11)接续干净 `c166af79`，controller实施及语义自查 independent=false。Memory的请求/结果归公共合同，材料绑定归Host，ChatPro切换会话规则归产品；目录或crate名称不能替代这一判断。
+- **交付 / 边界**：[MODULE_MAP](../MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)拥有确认方向、双Host路径、共享支持及实际入口；[CI设计中英](../../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#ci-responsibility-map)拥有13个主检查和其它workflow归属、MIXED标签及首片执行所有权建议；[本轮报告](waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)记录止点。原 §0.3 历史SHA证据不重标，不改API/运行行为/workflow/catalog/required gate/选择策略，不合入或推送main，K-CI-IMPACT-01继续In progress，其它债及冻结不变。
+- **验证 / 续接**：适用文档、编码、历史前缀/原件、15项控制面/实现摘要及精确六路径diff通过后保存本地提交；不重复Rust/业务/远端矩阵，旧正式CI不为新文档SHA盖章。首片只建议迁移两crate的既有完整检查并保留兼容面、两平台及实际feature条件；窄入口不能替代其全部目标。明确可施工范围即停止调查，实施仍待对接，选择范围扩大另议。

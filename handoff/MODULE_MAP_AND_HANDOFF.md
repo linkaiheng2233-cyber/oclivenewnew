@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-10-09（新增 §3.1.1 实现者接入点；候选与历史证据基线未重标）
+**最后更新**：2026-10-11（§0.3.1 整理维护者确认的CI分责读图；候选与历史证据基线未重标）
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · Kernel/Host 权责候选及定点源码对照 · 在边界内如何改**。
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -87,6 +87,34 @@ Event Ring 的 wire、注册、权威与主动授权契约只维护于 [`EVENT_R
 `oclive_kernel_types::runtime_event_stream` 目前只是 Stage A.1 纯契约层；A.2.1 以版本化夹具冻结本地持久化设计，A.2.2.1 再以 OneBot v11 规范样本冻结 ACK、不确定投递、撤回非擦除与多宿主否定证据。A.2.2.2-R1/R2 只有独立开发者探针取得的一次真实 QQ 同步成功路径和一次真实提交后超时/显式对账路径；R3 只验证 AES-256-GCM 私有 locator 的跨进程存续，R4 只验证 NapCat 群历史扩展下的一次受控 ACK→locator 窗口恢复，R5 只用 synthetic-only 独立 SQLite 验证同一宿主内的跨进程 owner lease 与 fencing，R6 只冻结私聊或无可信历史能力时的失败关闭裁决。它们都不是 Production Output adapter/store、私聊/通用 OneBot 自动恢复或多宿主协调能力。当前仍没有 Production 存储/读取端口、consumer loop、Output 接线、Replay、Prompt 或回合接线，宿主级密钥恢复与多宿主 owner lease/fencing 也未关闭，不能被列为已运行模块。
 
 **当前参考运行时的稳定宿主入口**：可信 Rust composition root 通过 [`oclive_kernel_host::OcliveKernel`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs) 进入角色加载、回合、Event Ring 与关闭；HTTP/Tauri 仍是薄传输适配。`AppState` 是内部装配根，不是发行版/硬件集成合同；为此参考运行时新增入口须复用同一 `process_message` / `process_proactive_turn`，不得复制 pipeline。这不是要求未来所有 Host 采用它的领域模型与具体调度。
+
+<a id="kernel-reference-host-distro-boundaries"></a>
+
+### 0.3.1 公共 Kernel、参考 Host、发行版与共享接入支持
+
+**维护者确认的责任方向（2026-10-11）**：沿用 §0.1–§0.2 的小Kernel边界，将当前7B路径的工程选择与公共承诺分开阅读。“7B参考Host”是本次讨论名称，不改crate/API/目录名，也不表示该Host只允许7B模型。此处登记责任和当前入口，不宣称已完成物理拆库或全部公共硬边界验收。CI执行归属另由[CI设计](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#ci-responsibility-map)维护。
+
+```mermaid
+flowchart LR
+  K["公共 Kernel：契约与硬边界"] --> R["现有参考 Host"]
+  K --> H["开发者自己的 Host"]
+  R --> D1["复用参考 Host 的发行版"]
+  H --> D2["使用自有 Host 的发行版"]
+  K --> S["共享接入支持：消费者与适配"]
+  S -. "可选复用" .-> R
+  S -. "可选复用" .-> H
+```
+
+图表示公共承诺与接入依赖，不是固定调用序列；共享支持不是所有Host必须经过的中间层。公共接口变动可能影响两条Host路径，共享代码的存在也不授予它选择产品策略或资源的权力。
+
+| 责任位置 | 负责兑现的承诺 | 当前实现入口与阅读限制 |
+|---|---|---|
+| 公共Kernel | 六槽Base请求/返回/失败、最小逻辑角色及必要公共合法性、权限、因果和终态边界 | [`contracts/slot_base.rs`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)、[`types/slot_base.rs`](../kernel/crates/oclive_kernel_types/src/slot_base.rs)表达现有Base；[`validation/minimal_role.rs`](../kernel/crates/oclive_validation/src/minimal_role.rs)定义/校验最小角色，types重导出。有限接口/测试不证明所有硬边界；contracts/types/validation仍有旧rich或外围兼容面，整crate不等于小Kernel。 |
+| 共享接入支持（小Kernel外） | 在Host明确绑定下准备最小角色、调用能力并保留实际结果/失败；可复用的参考实现与适配 | [`minimal_role_consumer.rs`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs)的Prompt消费者和六Base消费者；[`外部Memory案例`](../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs)经现有消费者调用外部实现。调用方给材料、用途和实现；消费者不持有Host状态、不加载rich Role、不选资源或规定六槽每轮全跑。runtime内其它设施不因同crate而一律属于此层。 |
+| 7B参考Host | 将契约组织成当前运行环境，绑定模型/Prompt/记忆/情绪资源，管理状态、持久化、回合与既有故障策略 | [`role_kernel.rs`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs)完整门面、[`state/mod.rs`](../kernel/crates/oclive_kernel_host/src/state/mod.rs)装配、[`process_message.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)运行接线、[`db/mod.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/db/mod.rs)持久化。模型特化Prompt、修复、调优不是所有Host的义务；OcliveKernel也不是已独立可启动的小core。 |
+| 具体Host/发行版 | 自己的资源/能力接线和产品规则；可复用参考Host或自建合法Host | 当前ChatPro的[`minimalRoleChatStore.ts`](../distros/shared/src/stores/minimalRoleChatStore.ts)管绑定/当前会话材料，[`chatStoreSend.ts`](../distros/shared/src/stores/chatStoreSend.ts)管产品发送/恢复，[`桌面ChatBackend`](../distros/desktop-tauri/src/api/chat_backend.rs)接线传输。前端目录名shared不使ChatPro产品规则成为通用共享运行契约。开发者自有Host是允许路径，此表不声称另有一个已验收的完整自有Host实现。 |
+
+**Memory定点对照（当前源码，不覆盖全仓）**：Kernel的 `MemoryBase::retrieve` 接受调用方材料与查询，返回材料或完整失败；共享消费者将该请求交给已绑定实现。参考Host在 `process_minimal_local_conversation` 的生产正文中准备当前会话引用材料并调用 `QueryMemoryRetrieval`，这一固定接线并非强制经过六Base消费者；Prompt另有共享消费入口。`process_message.rs` 的Memory import位于生产区，`minimal_llm.rs` / `minimal_event.rs` 当前也已在同目录，不能沿用旧切片的“未找到”结论。ChatPro负责切换绑定时取消旧呈现并清空当前最小会话，未因此规定所有Host都采用同一会话或历史模型。
 
 ---
 

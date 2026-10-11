@@ -1070,3 +1070,11 @@
 **精确五路径 / 不变量**：现有CI设计中英各扩一节，将执行归属迁移和选择范围扩大分开；本计划、DEBT_CHANGELOG仅追加；新增 `waves/WAVE-20261011-CI-BASELINE-HANDOFF.md` 记录提交分类、main/开发基线与适用证据。四份原件及控制面/入口摘要先保全于ignored `.cursor/plans/ci-baseline-handoff-20261011-r0/`。不改Rust、脚本、package、workflow、catalog/影响图/元数据、selector、required gate、Push/ready策略或债务状态，不合入/推送main，不新建CI框架或第二份架构规则。
 
 **验证 / 出口**：实际读取远端main及正式run终态，区分main已正式验收与开发入口Locally verified；文档默认＋精确五路径链接、docs-only路径、镜像/登记、债结构、严格UTF-8无BOM、历史字节前缀、控制面原摘要及精确diff。纯Markdown对接不重复Rust、入口/业务测试、Dimension5或全量CI；旧入口失败记录与环境收尾更正沿用原证据，不冒充本轮重跑。完成文档本地提交并确认两树干净后，向维护者解释原因和下一片；远端执行迁移仍是待实施，不把本地命令称为整个Kernel验收或分层完成。
+
+### CI 分层 · 维护者确认的责任边界与执行归属对照（2026-10-11）
+
+**目标 / 预算**：接续干净 `c166af791eba58a8649514bcbe837f031394881f`。维护者确认公共Kernel、7B参考Host、具体Host/发行版及小Kernel外共享接入支持的责任方向；本轮先交边界图、当前实现入口、现有CI归属与一片调整建议，对接后才实施。M / 轻，controller实施及语义自查 independent=false。复用前轮五workflow调查，只核六槽/最小消费者/参考Host/ChatPro的直接入口和13个主CI验证job，D1主路径加Memory定点L2；上限120分钟，足以决定首片形状即停，不重开全仓合规或逐测试调查。
+
+**六路径 / 保全**：架构定义与源码对照只扩 `MODULE_MAP_AND_HANDOFF.md` 一节；执行归属与建议只扩CI设计中英；本计划与DEBT_CHANGELOG只追加；新增 `waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md` 记录范围与核验结果。五份磁盘原件及15项控制面/实现摘要先保全于ignored `.cursor/plans/ci-boundary-map-20261011-r0/`。只做文档，不改公共API、crate/目录名、运行行为、workflow、catalog/影响边、required gate或选择策略；不减少覆盖、不转债Done、不解冻既定架构项。
+
+**验收 / 出口**：默认与六路径显式Markdown链接、docs-only旧路径、镜像、登记、债结构、严格UTF-8无BOM/汉字、原件及历史字节前缀、控制面摘要、精确diff；各命令即时保留native exit、stdout/stderr。按纯文档变更不重复Rust/业务/Dimension5/远端矩阵。语义核对四项交付物及混合检查标签；保存本地文档提交，不合入/推送main。远端首片是待讨论建议，迁移前须核原/新执行集合、平台与feature条件、兼容回归及唯一所有权；未满足时保留原执行，不用窄入口排除整crate。

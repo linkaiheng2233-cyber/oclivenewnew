@@ -140,6 +140,49 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 分类提交、main正式基线与本地开发证据见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)。新入口目前只在本地开发分支，远端迁移未实施，K-CI-IMPACT-01仍为In progress。
 
+<a id="ci-responsibility-map"></a>
+
+#### 维护者对接：现有检查的责任归属（2026-10-11，未迁移）
+
+架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。下表基于 `c166af791eba58a8649514bcbe837f031394881f` 的[主workflow](../../.github/workflows/ci.yml)；主workflow与正式main `24f62303` 相同。只对13个验证job做责任对照，不把crate名、目录名、profile名或执行平台直接当架构层。**MIXED** 表示一个执行出口覆盖多个责任，尚未物理拆分，不表示违规或可删。
+
+| 现有验证job | 责任归属 | 实际检查与不能外推的范围 |
+|---|---|---|
+| `rust`（Linux/Windows） | **MIXED：公共契约、共享接入、参考Host、桌面及治理** | 前端构建/桌面资源准备后，workspace fmt、非CLI workspace all-targets/all-features Clippy及未显式追加feature的workspace测试；不能当纯公共Kernel检查，也不能只从窄入口通过推导可排除两crate全部测试。 |
+| `layering-ratchet` | 跨层治理 | domain分层棘轮；不是完整架构合规证明。 |
+| `dimension5-acceptance` | **MIXED：跨层治理＋已有工具/Host/产品约束** | `dimension5 --ci` 包含依赖/文档/分层等与已有定向检查，sample lib按此模式跳过；不是单一Kernel能力。 |
+| `npm-audit` | 跨层供应链治理 | npm生产与全依赖审计；不能代替Cargo或发布者身份验证。 |
+| `plugins-index` | 插件目录格式/仓库治理 | 插件索引一致性，不是全部模块功能或信任根验收。 |
+| `stale-paths` | 跨层路径治理 | 登记的旧路径规则，非全仓语义审查。 |
+| `kernel-host-dual-core` | 参考Host条件回归 | Host的可选dual_core feature；已有回归不解冻双核方向。 |
+| `cli` | **MIXED：开发工具＋显式参考Host接入** | CLI默认测试与 `diagnostics-host` 的最小角色/资源诊断回归分步运行；基础工程生成与Host功能分开解释。 |
+| `rust-arm64-cross` | 参考Host/共享运行代码的目标编译 | server/Host/runtime交叉 `cargo check`；无ARM实机执行证据。 |
+| `frontend`（Linux/Windows） | 发行版与其共享前端组件 | shared/ChatPro/Theater lint、类型、单测/构建；Linux另跑浏览器预览，不等于独立浏览器发行版或真实语音验收。 |
+| `cross-host-e2e` | 既有参考Host/发行版组合 | 当前跨Host记忆、发行版、profile、bundled资源及VSCode配置对照；不是所有合法自有Host的统一业务要求。 |
+| `oocp-test-suite` | 既有桌面/参考Host协议组合 | mock LLM下OOCP和重启检查，不证明真实模型语义质量或所有崩溃窗口。 |
+| `remote-plugin-demo` | 参考插件/传输适配案例 | loopback Python `memory.rank` RPC案例，不等同Rust `MemoryBase` 或任意插件/网络验收。 |
+
+当前没有专门拥有公共基础测试或共享消费者调用的独立主CI job，它们仍在混合出口中；**执行归属尚未分开**，不等于没有实现或没有相关测试。`ci-impact-plan` 属受信选择控制面，`ci-gate` 属最终聚合，不与13个验证job混计；两平台矩阵展开后全量仍是17个job。目录里的 `kernel-contracts` / `kernel-runtime` profile用于影响传播，不能因为下游测试归Host就删掉公共变更到它的边。
+
+| 其它现有workflow | 执行责任与证据边界 |
+|---|---|
+| [Nightly](../../.github/workflows/nightly-advisory.yml) | Loom为具体并发路径；fuzz有公共校验和兼容解析；CLI bench属工具；visual/native Tauri属发行版/桌面。五类按各自责任读，nightly是节奏而非架构层。 |
+| [Cargo lockfile audit](../../.github/workflows/cargo-audit-lockfile.yml) | 锁文件PR供应链检查；触发与audit参数不同于Dimension5，不能凭名称当同一重复检查。 |
+| [CI rerun](../../.github/workflows/ci-rerun-flake.yml) | 限定失败集合的一次人工重跑设施，非通用自动重试或验证责任。 |
+| [Kernel checksums](../../.github/workflows/release-kernel-checksums.yml) | server发布构建、版本manifest、校验和及Actions artifact；不是全部发行版发布、签名或公开发布验收。 |
+
+**建议的第一批：公共契约与兼容编译面的执行所有权，待维护者对接后实施。** 范围只含现有 `oclive_kernel_contracts` / `oclive_kernel_types` 的检查，命名为“公共契约与兼容检查”，不称两个crate都是小Kernel。已有 `check:kernel-base` 四步继续作为有限开发入口；远端迁移必须覆盖两crate的全部原执行目标，包括unit、integration、适用doctest及rich/Stream等已存在的兼容测试，不能用四步替代它们。
+
+| 调整点 | 当前所有者 | 拟议所有者 / 保持覆盖的方法 |
+|---|---|---|
+| 两crate实际被执行的测试及Clippy目标 | `rust` 混合job，两平台 | 独立契约/兼容责任组，仍Linux/Windows；迁移前以原命令选择的目标及平台/feature条件对照新集合，并区分Base/最小角色与旧兼容测试。未对齐时保留原执行，不移除。 |
+| 共享消费者、参考Host、server、桌面等剩余回归 | `rust` 及各现有组合job | 保持现有所有者及适用资源；依赖编译可以重复，不能把重复运行同一测试当作已迁移。workspace fmt仍是治理，不归某个Host。 |
+| 门禁与受信选路 | 现有catalog/本地入口/workflow/repository contracts | 同一实施片同步四处及aggregate gate的job集合；保留required `ci-gate`、Push/其它ready全量、现行草稿/docs Canary边界及未知全量回退，不新增ready选择类别。 |
+
+第一批的收益是公共检查不必先准备前端/Tauri资源，并有可解释的执行所有者；**不是节省时间比例承诺**。迁移集合未对齐前不排除整crate，也不先长期挂一份重复高成本检查。这一对照足以开片；不以全仓完全分离、全部混合job拆开或job数减少为完成条件。共享Memory调用案例继续作为小Kernel外的接入证据，暂不并入这批公共所有权调整；细粒度性能、real模型/TTS、实机及全部崩溃窗口另有目标才验。
+
+本轮只交责任对照和建议，未改workflow/catalog/影响图/API/运行语义，没有新正式CI结论。文档验证及调查止点见[本轮报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)。
+
 ## 3. 规划输出与可解释性
 
 规划器输出稳定排序的 `plan.json`，至少包含：
