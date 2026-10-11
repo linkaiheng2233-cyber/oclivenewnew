@@ -9,19 +9,29 @@
 
 ---
 
-## Install and help
+<a id="cli-common-commands"></a>
 
-From the **oclivenewnew repo root**:
+## Common commands: foundation module development
+
+These five actions are enough to start a Rust Base module. Generate and query CLI help from the **OCLive source root**; compile, test and check formatting from **your generated project root**.
+
+| Action | Common command | When |
+|---|---|---|
+| Create a project | `init --template kernel-base --kernel-source <source root>`; [full command and setup](#kernel-base-start) | Start a module project |
+| Check compilation | `cargo check` | After changing an implementation |
+| Run tests | `cargo test` | Verify your module's request, result and failure agreement |
+| Check formatting | `cargo fmt -- --check`; use `cargo fmt` to format | Before a commit |
+| Look up parameters | `cargo run -p oclive-cli -- init --help` | Look up generation options |
+
+Daily work usually repeats only `cargo check`, `cargo test`, and `cargo fmt -- --check`. These are Cargo commands, not aliases for `oclive test/build`; foundation work does not need experimental commands. Start with the [Memory guide](../../human-docs-en/modules/slots/memory.md) and your generated README.
+
+The integration boundaries below still apply: passing tests does not automatically register a module with a Host or establish functional acceptance. Common / less-common describes frequency on this development path, not stability, permission or deprecation status.
+
+To inspect all current CLI entries when needed:
 
 ```bash
-cargo build -p oclive-cli
 cargo run -p oclive-cli -- --help
-cargo run -p oclive-cli -- init --help
 ```
-
-The end of `init --help` lists **presets and the six-slot backend matrix**. The current legacy `init` scaffold writes that matrix as `plugin_backends`, matching the generated root **`CONFIG_REFERENCE.md`**. Current reference-host blueprint packs express composition through v4 `pipeline.ocblueprint` / `slot_registry`; that format is not the kernel-minimal role contract.
-
-**Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
 
 **Choose your onboarding path first**:
 
@@ -33,6 +43,22 @@ The end of `init --help` lists **presets and the six-slot backend matrix**. The 
 | Create a reference role pack | [Role-pack creator path](../role-pack/CREATOR_LEARNING_PATH.md) |
 
 **Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. Default help exposes 15 stable entries. The ten known experimental commands remain callable only with the global `--experimental` flag, while the legacy project-archive `template` command remains callable but hidden. Removed top-level `publish` is not an alias.
+
+## Less-common commands: consult for a specific task
+
+Foundation module authors do not need to learn these in advance. Plugin / role-pack authors and maintainers use them for their own goals; consult `<command> --help` for full parameters instead of reading every capability table.
+
+| Task | Entries | Scope |
+|---|---|---|
+| Setup and generation options | `init --list-templates` / `--check` / `--dry-run`; `cargo build -p oclive-cli` | Browse templates, check prerequisites, preview output or compile the tool separately; metadata options are in `init --help` |
+| Reference runtime recipes | `init --preset` / `--quick` / `--smart` / `--with-role-pack` | Choose for a reference-runtime target; Monolith remains experimental and foundation rejects runtime options |
+| Local scaffold packages | `scaffold list/inspect/validate/resolve/generate` | Discovery, validation, locking and bounded file generation |
+| Reference plugins / role packs | `plugin`, `pack` | Their own authoring, installation and validation paths |
+| Diagnostics / configuration | `doctor`, `config` | Environment and configuration; not the mandatory foundation path |
+| Maintenance / CI | `lint`, `ci`, `dev`, `registry`, `profile`, `kernel`, `explain`, `migrate-app-data`, `completions` | Use for the corresponding maintenance or integration task |
+| Experimental / compatibility entries | `build`, `bench`, `blueprint`, `compose`, `debug`, `dashboard`, `learn`, `test`, `market`, `collab`; legacy `template` | Existing experimental and compatibility rules remain unchanged |
+
+The end of `init --help` retains the legacy `plugin_backends` matrix, matching the original runtime recipe's `CONFIG_REFERENCE.md`. Current reference-host blueprint packs use v4 `pipeline.ocblueprint` / `slot_registry`, not the kernel-minimal role contract. Role-pack specification: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md).
 
 **Planned CLI** (not shipped): `pack diff`/`update`, `kernel update`, `dev --inject`, `bench history clear`/`export`/`import` — [VISION_ROADMAP_MONTHLY.md](../../creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md#oclive-cli-脚手架计划中).
 

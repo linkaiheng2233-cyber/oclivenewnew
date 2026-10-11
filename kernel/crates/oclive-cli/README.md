@@ -1,19 +1,31 @@
 # oclive-cli
 
-官方脚手架：在终端里交互（或非交互）生成**可独立 `cargo build`** 的无头运行时骨架或 library 集成工程。
+官方脚手架：提供 `kernel-base` 契约基础工程，以及既有无头参考运行时 / library 集成配方。按目标选模板；模块作者先了解下方常用动作即可开工。
 
-> **边界说明**：不传 `--kernel-source` 时，生成工程使用 **std + serde** 占位实现，只验证目录、配置与接口形状；传入 `--kernel-source <主仓根>` 后，`kernel_server` / `library` 会链接当前完整参考运行时，其中 library 暴露 `oclive_kernel_host::OcliveKernel` 进程内门面。这两种生成物都不等于已经物理抽离的“最小内核”；后者仍由技术债 **K-CORE-BOUNDARY-01** 跟踪，见 [TECHNICAL_DEBT_INVENTORY.md](../../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
+`kernel-base` 必须提供 `--kernel-source`，只引用现有 contracts/types，没有 Host 或占位回退；首次准备和完整生成命令见 [CLI 基础工程入口](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start)。
 
-## 安装 / 运行
+> **原运行配方的边界**：不传 `--kernel-source` 时，生成工程使用 **std + serde** 占位实现，只验证目录、配置与接口形状；传入 `--kernel-source <主仓根>` 后，`kernel_server` / `library` 会链接当前完整参考运行时，其中 library 暴露 `oclive_kernel_host::OcliveKernel` 进程内门面。这两种生成物都不等于已经物理抽离的“最小内核”；后者仍由技术债 **K-CORE-BOUNDARY-01** 跟踪，见 [TECHNICAL_DEBT_INVENTORY.md](../../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
+
+## 常用指令：基础模块开发
+
+| 动作 | 指令 / 入口 | 执行目录 |
+|---|---|---|
+| 生成工程 | `init --template kernel-base --kernel-source <源码根>`；[完整命令](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) | OCLive 源码根 |
+| 编译检查 | `cargo check` | 生成工程根 |
+| 测试 | `cargo test` | 生成工程根 |
+| 格式检查 | `cargo fmt -- --check`；修正格式用 `cargo fmt` | 生成工程根 |
+| 查参数 | 下方 `init --help` | OCLive 源码根 |
 
 ```bash
 # 在 oclivenewnew 仓库根目录
-cargo build -p oclive-cli
-cargo run -p oclive-cli -- --help
 cargo run -p oclive-cli -- init --help
 ```
 
-## 用法
+生成后的 Memory 示例、移入库源码和消费者入口见生成 README。以上 Cargo 指令属于基础开发工具，不是 CLI 的试验 `test/build`。全部指令按常用 / 不常用的阅读分类见 [CLI 指南](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#cli-common-commands)；频率分类不改变稳定/试验状态。
+
+## 不常用指令：按需专项
+
+模板浏览、`init --check/--dry-run`、元数据选项、`scaffold` 包管理和 CLI 单独编译，都是按需动作；无需日常反复操作。以下是原运行配方、参考角色包与维护入口；完整帮助用 `cargo run -p oclive-cli -- --help`。
 
 ### 交互式
 

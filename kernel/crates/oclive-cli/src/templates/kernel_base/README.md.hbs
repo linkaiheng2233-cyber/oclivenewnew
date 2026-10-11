@@ -21,9 +21,21 @@ README.md                 当前说明
 .gitignore                本工程构建产物
 ```
 
-```bash
-cargo test
-```
+### 常用指令
+
+在本工程根使用下面三个 Cargo 指令即可进行基础开发；初始化只在创建工程时使用。
+
+| 动作 | 指令 |
+|---|---|
+| 编译检查 | `cargo check` |
+| 运行测试 | `cargo test` |
+| 检查格式 | `cargo fmt -- --check`；修正格式用 `cargo fmt` |
+
+生成参数不记得时，在 OCLive 源码根执行 `cargo run -p oclive-cli -- init --help`。完整生成与 [常用 / 不常用指令分类](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/OCLIVE_CLI_GUIDE.md#cli-common-commands) 在 CLI 指南中。
+
+### 不常用指令
+
+模板浏览、生成预览/预检、脚手架包管理、参考 Host / 插件 / 角色包与维护工具按具体目标查阅即可。它们不要求在本工程运行，也不因“不常用”变成不稳定；原权限和试验开关保持。基础编译和测试使用上面的 Cargo 指令，不需要 `oclive --experimental test/build`。
 
 测试只证明已有契约能在本工程中使用。Memory 示例仅在测试文件内，用本次材料做字面筛选；`literal:` 是该测试作者的约定，不是 Base 强制协议。它不安装模块、不调用模型，也不是通用异步执行器。其它槽无需为初始化工程而提供占位实现。
 

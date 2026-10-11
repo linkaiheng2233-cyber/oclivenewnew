@@ -1008,3 +1008,11 @@
 **精确十路径 / 关联闭环**：根 README 中英、人类 README 中英、CLI 指南中英、生成 README 模板、计划/DCL 追加、新 Wave `WAVE-20261011-KERNEL-BASE-FIRST-USE.md`。首页只分流链接，CLI 负责首次准备及用途，生成 README 负责实际库迁移步骤；不复制六槽定义表或完整实现。原件及 hash 先保存，plan/DCL 历史仅追加。代码/默认值/契约/锁/消费者/注册/失败与权限语义、现有五运行配方、先前报告和其它支线原样保留。
 
 **验收 / CI 节奏 / 停止线**：保存实际 `init --help/--list-templates` 与 `scaffold --help`；实际生成工程，照 README 迁移 Memory 实现到 src 后编译测试（2项通过），串行4项原 E2E核新 README 渲染和原失败路径。默认＋改文/实际生成 README 显式链接、docs-only旧路径、镜像/登记/债结构、编码/diff/精确写集/原件/历史前缀。无公开 API 或生产代码改动，不重复 Clippy/workspace doctest/全量 CI；不把本地通过写成新 SHA 正式验收或技术债 Done。三项完成后冻结本地提交与能力报告，不合入或推送 main，不测试/宣传未来 Host 下载、真实模型或所有发行版。
+
+### 基础脚手架 · 常用与不常用指令（2026-10-11）
+
+**授权 / 基线 / 范围**：维护者要求只按常用 / 不常用规范分类，让开发者先掌握少量指令。基线 `c33e8a0fa6cd72e710a454da2cbe4892600c13bb`，工作树干净、main `2b0390cd` 不动。M / 轻，controller 实施及语义自查 independent=false。按基础模块作者的开发路径分阅读层次，不改 CLI 名称/可见性/路由、稳定/试验或权限状态，不新增别名/包装命令。
+
+**七路径 / 关联闭环**：CLI 指南中英、CLI crate README、生成 README 模板、计划/DCL 追加、新 Wave `WAVE-20261011-KERNEL-BASE-COMMAND-GUIDE.md`。常用为生成 init、Cargo check/test/fmt与帮助；不常用归入准备选项、脚手架包和参考运行时/插件/角色/维护/实验兼容的按需指引。crate README 的旧两种运行配方范围标明归属；详细用法仍链接 CLI SSOT。先保全六份原件，历史仅追加，不复制新的六槽契约或默认实现。
+
+**验收 / 出口**：一次4项原基础E2E核生成README渲染与原行为；实际生成示例并在其根执行 `cargo check`、`cargo test`、`cargo fmt -- --check`，确认常用命令可执行。默认＋改文/实际README链接、镜像、docs-only路径、登记、债结构、编码/diff、精确写集/原件/历史前缀。不写镜像实现测试，不为文档分类重复Clippy/全量CI/公开面doctest。指令分类能指导第一步即停止，本地保存提交，不合入/推送main或改变任何技术债/冻结结论。

@@ -8,19 +8,29 @@
 
 ---
 
-## 安装与帮助
+<a id="cli-common-commands"></a>
 
-在 **oclivenewnew 仓库根目录**：
+## 常用指令：基础模块开发
+
+先了解这五个动作即可开始 Rust Base 模块开发。生成与查询 CLI 帮助在 **OCLive 源码根**执行；生成后的编译、测试与格式检查在**自己的工程根**执行。
+
+| 动作 | 常用指令 | 使用时机 |
+|---|---|---|
+| 创建工程 | `init --template kernel-base --kernel-source <源码根>`；[完整命令与首次准备](#kernel-base-start) | 开始新模块工程 |
+| 编译检查 | `cargo check` | 修改实现后，先核编译 |
+| 运行测试 | `cargo test` | 核对模块自己的请求、结果与失败约定 |
+| 检查格式 | `cargo fmt -- --check`；需要格式化时用 `cargo fmt` | 提交前 |
+| 查参数 | `cargo run -p oclive-cli -- init --help` | 忘记生成选项时 |
+
+日常通常只反复使用 `cargo check`、`cargo test`、`cargo fmt -- --check`。它们是 Cargo 指令，不是 `oclive test/build` 的别名；无需为基础模块进入试验命令。生成后从 [Memory 开工包](../../human-docs/modules/slots/memory.md) 与生成 README 开始。
+
+基础与接入边界仍见下方说明：测试通过不代表自动接入 Host 或目标功能已经验收。常用 / 不常用按这条开发路径划分，不代表稳定性、权限或废弃状态。
+
+按需查看 CLI 全部当前入口：
 
 ```bash
-cargo build -p oclive-cli
 cargo run -p oclive-cli -- --help
-cargo run -p oclive-cli -- init --help
 ```
-
-`init --help` **末尾**附有 **预设与六槽后端矩阵**（当前 `init` legacy 脚手架写 `plugin_backends`；与生成项目根目录 **`CONFIG_REFERENCE.md`** 一致）。现行参考宿主蓝图包以 v4 `pipeline.ocblueprint` / `slot_registry` 表达组合；它不是内核最小角色 contract。
-
-**角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
 
 **先选上手路径**：
 
@@ -35,13 +45,16 @@ cargo run -p oclive-cli -- init --help
 
 ---
 
-## 官方命令面
+## 不常用指令：按具体任务查阅
 
-### 默认可见的稳定入口
+这里只表示基础模块作者不必预先学习；插件 / 角色包作者和维护者可以按自己的目标使用。完整参数查对应 `<命令> --help`，不用通读下方能力历史表。
+
+### 专项稳定入口
 
 | 域 | 命令 | 说明 |
 |----|------|------|
-| 项目初始化 | `init` | 配方、`--preset`、`--smart`（环境推荐）、`--with-role-pack`、`--kernel-source`、`--quick` 等；`--monolith` 仍属试验能力 |
+| 初次准备与生成选项 | `init --list-templates` / `--check` / `--dry-run`；`cargo build -p oclive-cli` | 模板浏览、有限预检、预览或单独编译工具；元数据选项查 `init --help` |
+| 参考运行配方 | `init --preset` / `--quick` / `--smart` / `--with-role-pack` 等 | 仅按参考运行时目标选择；`--monolith` 仍属试验能力，基础工程拒绝运行参数 |
 | 角色包 | `pack create` / `validate` / `publish` | 创建、校验、`.oclivepack` 打包 |
 | 插件 | `plugin create` / `install` / `uninstall` / `test` / `manage` | 脚手架与工程内安装；**manage** 为高级槽位/蓝图 |
 | 环境 | `doctor`（`--fix`）、`config` | 诊断与 `~/.oclive/config.toml` |
@@ -49,6 +62,8 @@ cargo run -p oclive-cli -- init --help
 | 脚手架工具 | `scaffold list/inspect/validate/resolve/generate` | 本地声明发现、信任提示、确定性解析与锁后声明式生成；不执行第三方命令 |
 | 本地开发 | `dev`、`registry`、`profile` | 角色监听、工程注册表、依赖/体积画像 |
 | 契约与迁移 | `kernel`、`explain`、`migrate-app-data`、`completions` | 运行时信息、错误解释、数据迁移与补全 |
+
+`init --help` 末尾的原预设与后端矩阵描述 legacy `plugin_backends`，与原运行配方的 `CONFIG_REFERENCE.md` 一致；现行参考宿主蓝图包使用 v4 `pipeline.ocblueprint` / `slot_registry`，不是内核最小角色 contract。角色包规范与校验见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)。
 
 ### 默认隐藏但保留调用兼容
 
