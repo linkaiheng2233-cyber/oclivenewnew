@@ -1092,3 +1092,13 @@
 **验收 / 收口**：先红后绿新入口和仓库所有权合同；真实两crate完整链；同链native非零、工具缺失/未知参数、旧catalog过渡负控；ci_plan相关回归/Clippy、fmt、执行策略与Compare自检、21条shadow routing、Dimension5 --ci及分层/module-compat；适用中英文链接/登记/路径/编码/债结构、metadata目标与互斥根包集合、原件/历史前缀/精确diff。Cargo build/test串行以免cache争抢；无Rust公共API变化，workspace doctest不额外适用，真实完整链保留原两crate doctest。冻结为Locally verified本地提交后交付；不合入/推送main、不新发业务身份或真实服务、不解冻其它决策、不转债Done。目标SHA正式CI仍是集成时的后续出口，不以本地证明远端平台已经通过。
 
 **本地集成结果（同片收口）**：原 `check:ci-local` 完整链native exit0（2084.39秒）。第一次缺新工作树Tauri资源而exit101，按既有debug bundle入口准备生成资源后完整复跑通过，日志分别保留；Python覆盖仅作用于验证子进程。构建后的tracked bridge与base Git blob、生成输出和干净main逐字相同，保全后只刷新Git状态，最终仍为14路径；无需替换文件或重跑未变的完整链。新两平台workflow尚待后续冻结目标SHA正式CI，当前仅Locally verified。
+
+### CI 三层边界确认与关联切片集成（2026-10-12）
+
+**授权 / 基线 / 路由**：维护者确认纯净Kernel、特化运行工程的Host、基于该工程的发行版三层，要求休息期间持续推进，待决事项记录并跳过。接续干净 `3dd2e934c9d3dbbe47ad04a53ca7fdd2ed67e4ac`；主树及实际远端仍为 `24f62303e9bdea37061fe44acc7a0830dc519f98`。沿用已授权的关联批次集成与推送节奏；本轮L集成出口、重风险控制面语义自查，controller直接实施 independent=false。不新增架构权力、公共义务、选择类别或required gate变更，不解除任何冻结。
+
+**精确六路径 / 保全**：只改架构SSOT现有§0.3.1主图与三层阅读口径、CI设计中英的链接口径、本计划/DCL只追加，新建本批Wave。五份磁盘原件、既有20路径关联差量中未写路径及锁/影响图/执行策略先保全于ignored `.cursor/plans/ci-three-layer-integration-20261012-r0/`。不改源代码、workflow、catalog、tests、npm入口、旧报告或二进制；“特化内核”视为工程组合名称，不把整个contracts/types或OcliveKernel门面称为已物理拆净的小core。共享支持和自有Host路径保留。
+
+**验收 / 推送 / 停止**：适用默认＋六路径链接、docs-only旧路径、登记/镜像/编码/债结构、原件/历史前缀/受测代码摘要和精确diff。真实完整本地链沿用 `3dd2e934` 所承载的G24c exit0，本轮仅文档差量不重复Rust/业务或全链；差量摘要核对保证复用关系。冻结最终SHA后复核两树及实际远端身份，FF main并一次push，目标 `ci.yml` / `ci-gate`正式终态及URL记录到交付；不为绿灯回写另造提交。失败读取首因定点修复、不无变化rerun。正式CI期间只读准备下一片可行性，不移动受验主树。
+
+**后续预算 / 待决**：仅盘当前剩余rust、现有Host/发行版job的直接命令、manifest目标和资源前置，广度优先至能提出一个覆盖不减的小片即停，上限60分钟或4组直接责任。不以全仓物理分离、每个test归属、性能比例或消灭所有MIXED为目标。权限/调度/契约、required gate减少、选择策略扩大、依赖/feature语义未明的拆分，先登记跳过；明确的配置与文档整理可继续，普通边缘疑问不升级研究。

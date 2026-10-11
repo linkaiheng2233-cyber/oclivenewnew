@@ -146,6 +146,8 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与正式main `24f62303` 相同；下表更新为本地首片的[主workflow](../../.github/workflows/ci.yml)14个验证job。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
 
+2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链，下一步合批集成并取得冻结目标SHA正式CI；详细结果在[三层集成交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
+
 | 现有验证job | 责任归属 | 实际检查与不能外推的范围 |
 |---|---|---|
 | `kernel-contracts`（Linux/Windows） | 公共契约与既有兼容面 | 两crate的all-targets/all-features Clippy（`--no-deps`）及全部默认测试/适用doctest；包含rich/Stream等兼容面，不称两crate整体都是小Kernel。无需前端/Tauri资源准备。 |

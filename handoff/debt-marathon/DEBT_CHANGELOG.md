@@ -1020,3 +1020,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：维护者授权继续理清CI所有权。按[14路径有限计划](ROUND-02-PLAN.md#ci-分层--公共契约与兼容检查执行所有权2026-10-11)从干净 `5e483aa6` 接续，controller实施及语义自查 independent=false。公共合同作者不应为检查两个crate先构建前端/Tauri；但窄Base入口不能替代完整兼容目标，迁移完整集合才有实际价值。
 - **实施 / 边界**：新 `check:kernel-contracts` 复用已有native helper，两平台独立job运行完整Clippy/tests/doctest；`rust`保留剩余workspace、资源及fmt。现有5个workspace profile同步选新组，gate聚合、旧受信目录全量bootstrap、21场景坐标及仓库合同同步；影响图/ready晋升类别/required名称/公共API/运行语义不改，K-CI-IMPACT-01继续In progress。两crate保留rich/Stream兼容面，不整体称为小Kernel，也不把新增job数当质量收益。
 - **验证 / 收口**：[本片报告](waves/WAVE-20261011-CI-CONTRACT-OWNER.md)分开记录真实两crate完整执行、失败关闭及trusted-base/原gate负控、规划器合同、31项Dimension5、覆盖/原件/历史保全与适用文档检查；原完整本地 `check:ci-local` native exit0（约34分44秒），新工作树缺Tauri资源的首失败与原debug bundle准备步骤分别保留。构建bridge逐字等于base/生成输出/干净main，只刷新Git状态后写集仍14路径。失败attempt不覆盖，收益停止于独立执行出口，不穷尽拆其它job。仅冻结本地开发提交，不合入/推送main，不借原main正式CI；新远端两平台与目标SHA正式验收在集成出口处理。
+
+### DCL-20261012-99 · CI三层边界确认与首片合批集成
+
+- **原因 / 例子**：维护者确认以纯净Kernel、特化运行工程Host、发行版三层组织接续工作。[六路径集成计划](ROUND-02-PLAN.md#ci-三层边界确认与关联切片集成2026-10-12)从干净 `3dd2e934` 接续；例如Memory返回合同归公共、材料与持久化归Host、ChatPro切换会话呈现归发行版。controller实施及语义自查 independent=false。
+- **变动 / 不变量**：只更新架构SSOT现有主图和工程名称口径，CI设计中英链接而不复制定义，计划/本事件追加和[本轮Wave](waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。共享支持在小Kernel外、自有Host接入继续允许；API/源代码/控制面/选择策略/required名称保持，K-CI-IMPACT-01继续In progress。五个既有切片合批，不混其它债分支。
+- **证据 / 出口**：复用受测代码逐字未变的完整本地链G24c exit0，新六文跑适用文档和保全门禁；冻结SHA后FF main、一次push、目标正式CI终态在交付报告披露，不提前填写通过或回写绿灯提交。后续有界盘点Host/发行版直接执行归属；真实架构或公共契约取舍记录跳过，不能把目录名或MIXED标签当成违规证明。
