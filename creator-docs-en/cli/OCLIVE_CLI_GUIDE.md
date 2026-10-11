@@ -1,6 +1,6 @@
 # oclive-cli user guide
 
-**oclive-cli** is the official oclive **kernel / headless project** scaffold: interact in the terminal (or script) to generate a **standalone `cargo build`-able** minimal project for hardware, sidecars, and multiple distribution shapes sharing the same configuration shape.
+**oclive-cli** provides a **Kernel contract development foundation** and existing **reference-runtime / headless project** recipes, generated interactively or from scripts. Choose by your development goal; each recipe has its own dependency, configuration and runtime scope.
 
 **Source**: [`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)
 
@@ -22,6 +22,15 @@ cargo run -p oclive-cli -- init --help
 The end of `init --help` lists **presets and the six-slot backend matrix**. The current legacy `init` scaffold writes that matrix as `plugin_backends`, matching the generated root **`CONFIG_REFERENCE.md`**. Current reference-host blueprint packs express composition through v4 `pipeline.ocblueprint` / `slot_registry`; that format is not the kernel-minimal role contract.
 
 **Role pack spec and validation**: [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md); **`pack`** subcommands are in section 6 of that doc and below.
+
+**Choose your onboarding path first**:
+
+| Goal | Entry |
+|---|---|
+| Write a Rust Base module without a Host | [Kernel foundation setup and generation](#kernel-base-start) → [Memory start pack](../../human-docs-en/modules/slots/memory.md) |
+| Use reference-runtime / headless recipes | [Existing factory onboarding](../getting-started/KERNEL_FACTORY_VISION.md) (`doctor` → `init --quick` → `cargo run`) |
+| Write reference Host RPC / UI plugins | [Plugin author path](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| Create a reference role pack | [Role-pack creator path](../role-pack/CREATOR_LEARNING_PATH.md) |
 
 **Aligned with code**: top-level commands match `kernel/crates/oclive-cli/src/main.rs`. Default help exposes 15 stable entries. The ten known experimental commands remain callable only with the global `--experimental` flag, while the legacy project-archive `template` command remains callable but hidden. Removed top-level `publish` is not an alias.
 
@@ -50,7 +59,14 @@ Scaffold Packages still cannot install from a network, execute `commands[].entry
 
 ---
 
-## Kernel contract foundation
+<a id="kernel-base-start"></a>
+
+## Kernel contract foundation: first setup and generation
+
+1. Prepare Rust / Cargo and your platform's linker; start with `rustc --version` and `cargo --version`. For Windows MSVC, see [Windows setup](../../human-docs-en/10_SETUP_WINDOWS.md). This path does not require starting Tauri, installing Node frontend dependencies, or preparing Ollama / a model.
+2. Check out an OCLive source version **containing `kernel-base`**, then run `cargo run -p oclive-cli -- init --list-templates` at its root. If the template is absent, obtain the matching source version; the old `--preset minimal` is not a substitute.
+3. The first `cargo run` compiles the repository CLI and its dependencies; the first generated-project `cargo test` may also download Cargo dependencies. Add Cargo's `--offline` only when dependencies are cached (before `--`). `--check` checks tool availability and foundation source paths, not dependency-cache completeness, linker availability or a successful full build.
+4. Run the following from **that same source root**; `--kernel-source .` selects it. Use a new or empty output directory, here alongside the source checkout; a nonempty directory is rejected. Generated dependencies refer to local source paths rather than copied source; edit the generated `Cargo.toml` paths if either directory moves.
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities

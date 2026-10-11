@@ -1,6 +1,6 @@
 # oclive-cli 使用指南
 
-**oclive-cli** 是 oclive 官方 **内核 / 无头项目** 脚手架：在终端中交互（或脚本化）生成**可独立 `cargo build`** 的最小工程，便于硬件、侧车与多发行形态复用同一套配置形状。
+**oclive-cli** 提供 **Kernel 契约开发基础工程**及既有**参考运行时 / 无头项目**配方，在终端交互或脚本化生成工程。先按开发目标选入口；不同配方的依赖、配置与运行能力各有范围。
 
 **源码**：[`kernel/crates/oclive-cli/`](../../kernel/crates/oclive-cli/)  
 **契约参考**（正式宿主）：[`PLUGIN_V1.md`](../plugin-and-architecture/PLUGIN_V1.md)  
@@ -22,7 +22,14 @@ cargo run -p oclive-cli -- init --help
 
 **角色包规范与校验**：见 [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md)；子命令 **`pack`** 见同文档第 6 节与下文。
 
-**5 分钟上手**（`doctor` → `init --quick` → `cargo run`）：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话无头参考运行时脚手架)。
+**先选上手路径**：
+
+| 目标 | 入口 |
+|---|---|
+| 写 Rust Base 模块，不带 Host | [Kernel 基础工程：首次准备与生成](#kernel-base-start) → [Memory 开工包](../../human-docs/modules/slots/memory.md) |
+| 使用参考运行时 / 无头配方 | [原 5 分钟上手](../getting-started/KERNEL_FACTORY_VISION.md#5-分钟从零到对话无头参考运行时脚手架)（`doctor` → `init --quick` → `cargo run`） |
+| 写参考 Host 的 RPC / UI 插件 | [插件作者路径](../plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| 制作参考角色包 | [角色包创作者路径](../role-pack/CREATOR_LEARNING_PATH.md) |
 
 **与实现对齐**：顶层子命令以 `kernel/crates/oclive-cli/src/main.rs` 的 `Commands` 枚举为准。默认帮助只展示稳定入口；试验命令仍可通过已知名称调用，但必须显式传全局 `--experimental`。旧工程归档 `template` 保持兼容可调用但默认隐藏。
 
@@ -568,7 +575,14 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |
 | `kernel-base` | Kernel 契约开发，不带 Host | 无 | 关闭 | library | 无 |
 
-**Kernel 基础工程**（需已检出的 OCLive 源码，不下载依赖源码或 Host）：
+<a id="kernel-base-start"></a>
+
+#### Kernel 基础工程：首次准备与生成
+
+1. 准备 Rust / Cargo 和当前平台的链接工具；先执行 `rustc --version`、`cargo --version`。Windows MSVC 环境见 [Windows 准备](../../human-docs/10_SETUP_WINDOWS.md)。本路径不需要启动 Tauri、安装 Node 前端依赖或准备 Ollama / 模型。
+2. 检出**包含 `kernel-base` 的 OCLive 源码版本**，在其根目录运行 `cargo run -p oclive-cli -- init --list-templates`。若列表未含该模板，应先取得对应源码版本；旧版 `--preset minimal` 不是替代品。
+3. 第一次 `cargo run` 会编译仓库 CLI 及其依赖；第一次生成工程的 `cargo test` 也可能需要下载 Cargo 依赖。已有缓存才可加 Cargo 的 `--offline`（放在 `--` 之前）；`--check` 只核工具存在与基础源码入口，不证明依赖缓存、链接器或整个构建已可用。
+4. 下方命令从**同一源码根目录**执行，`--kernel-source .` 指向它。输出选择新的或空目录，示例放到源码旁边；非空目录会拒绝。生成依赖指向本地源码路径，不复制源码，移动任一目录后须修改生成 `Cargo.toml` 中的路径。
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities

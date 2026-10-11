@@ -11,6 +11,8 @@ Kernel 契约基础开发工程，由 `oclive init --template kernel-base` 生�
 
 ## 文件与开工
 
+在本工程根目录执行下面命令。需要 Rust / Cargo 和平台链接工具，以及生成时指定的 OCLive 源码仍在原位置；依赖路径见 `Cargo.toml`。首次构建可能下载 Cargo 依赖，缓存齐全时才使用 `cargo test --offline`。完整首次准备见 [CLI 基础工程入口](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start)。本路径不要求桌面、Node 前端依赖、模型或服务正在运行。
+
 ```text
 Cargo.toml                公共契约依赖与独立 Cargo workspace
 src/lib.rs                开发者代码入口
@@ -45,7 +47,15 @@ cargo test
 
 确认新约定就是你要的行为后，在同一测试中只将第二次 `assert_eq!` 的期望参数 `second` 改为 `Vec::<String>::new()`；再运行 `cargo test`，两项应通过。若改变并非预期，应恢复实现，不能为了绿灯随意降低期望。此练习不改公共契约，Unsupported 的测试保持。
 
-真实模块代码由你放入 `src/lib.rs` 或自建的源码文件；先说明材料、查询与结果约定，再提供针对目标功能的测试。异步实现可能返回 Pending，须由调用方提供适用执行器，不能照搬本例的即时 helper。
+### 把练习实现移到自己的库
+
+确认练习行为后，可以用同一实现开始组织源码，不需要再生成工程：
+
+1. 从 `tests/base_contracts.rs` 将 `struct TestMemory;` 和它的 `impl MemoryBase` 移到 `src/lib.rs`，同时加入这两段使用的原 contracts/types 导入；将声明改为 `pub struct TestMemory;`，让集成测试能够引用。只移动模块实现，两个 `#[test]` 和即时 helper 仍留在测试文件。
+2. 在测试文件导入自己的库：`use my_capabilities::TestMemory;` 是工程名 `my-capabilities` 的例子；你的实际名称取生成 `Cargo.toml` 的 `[package].name`，导入时把 `-` 换成 `_`。保留测试使用的契约与请求/失败类型导入，去掉不再使用的导入。
+3. 在工程根再次运行 `cargo test`：保持原行为时应仍为2项通过。这次测试调用的是自己库里的实现；之后可用 `mod memory;` / `pub use memory::TestMemory;` 整理文件，按实际需要再做接入。
+
+正式模块先说明材料、查询与结果约定，再提供针对目标功能的测试。异步实现可能返回 Pending，须由调用方提供适用执行器，不能照搬本例的即时 helper。公开一个实现也不会自动把它安装到 Host；调用方仍须显式绑定资源与消费者。
 
 ## 从直接调用走向消费者绑定
 

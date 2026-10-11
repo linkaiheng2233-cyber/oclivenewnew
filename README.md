@@ -14,6 +14,7 @@
 |----------|------|----------------|
 | 角色包创作者 | [创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) | 约 30 分钟 |
 | 主仓开发者 | [人类开发者接手包](human-docs/README.md) | 30 分钟跑通，再按模块开工 |
+| Rust Base 模块作者 | [Kernel 基础工程开工](creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 示例](human-docs/modules/slots/memory.md) | 先生成与测试，再按目标接入 |
 | 插件 / 集成开发者 | [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 30–60 分钟 |
 | AI Agent | [AGENTS.md](AGENTS.md) | 按任务读取 SSOT |
 
@@ -305,7 +306,8 @@ flowchart LR
 | **普通用户**（安装 → 导入包 → 聊天） | [用户手册](creator-docs/getting-started/USER_MANUAL.md) |
 | **人类开发者**（不用 Cursor） | **[human-docs/README.md](human-docs/README.md)** · L0–L2 约 1 小时 |
 | **角色包创作者** | [CREATOR_LEARNING_PATH](creator-docs/role-pack/CREATOR_LEARNING_PATH.md) |
-| **插件 / 模块作者** | [PLUGIN_AUTHOR_LEARNING_PATH](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| **Rust Base 模块作者** | [Kernel 基础工程](creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) · [Memory 开工包](human-docs/modules/slots/memory.md) |
+| **参考 Host 的 RPC / UI 插件作者** | [PLUGIN_AUTHOR_LEARNING_PATH](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
 | **内核集成方** | [KERNEL_INTEGRATOR_LEARNING_PATH](creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) |
 | **贡献代码** | [CONTRIBUTING.md](CONTRIBUTING.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
 

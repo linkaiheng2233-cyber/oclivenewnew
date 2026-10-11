@@ -1,14 +1,18 @@
 # 人类开发者接手包
 
-**读者**：准备修改 OCLive 主仓代码的 Rust / Vue 开发者。
+**读者**：准备修改 OCLive 主仓代码，或从公共 Base 开始写模块的 Rust / Vue 开发者。
 **目标**：30 分钟跑起来，1 小时找到所属模块，随后只读与任务有关的文档。
-**最后更新**：2026-09-11。
+**最后更新**：2026-10-11。
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
 
 **本包是学习导览，不是第二份架构契约。** 想先理解项目：读 00 定位 → 01 的 Kernel / Host 分层 → 选模块看当前源码；想判断“已经做到哪里”，再查技术债。候选、已准备、已实现和暂停的区别见 [文档状态](../handoff/README.md#documentation-status)。不必先通读全部工程交接。
 
-## 30 分钟开始工作
+## 先选开工范围
+
+只写 Rust Base 模块，先走 [Kernel 基础工程：首次准备与生成](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 开工包](modules/slots/memory.md)，即可生成、测试、修改自己的实现，再查现有消费者。该路径不要求先启动桌面、准备模型或通读学习阶梯。准备修改主仓或参考 Host 时，再走下方环境与贡献路径；RPC / UI 插件仍走插件作者入口。
+
+## 主仓贡献：30 分钟开始工作
 
 1. 阅读 [02 · 三十分钟跑通](02_THIRTY_MINUTE_START.md)，完成依赖安装与基础门禁。
 2. 阅读 [04 · 工程约束](04_ENGINEERING_RULES.md)，知道分层、测试和文档边界。
@@ -21,8 +25,9 @@
 |------------|----------|
 | Vue / Chat Pro 界面 | [02 跑通](02_THIRTY_MINUTE_START.md) → [前端路径](paths/frontend.md) → [Chat Pro 开工包](modules/surfaces/frontend-chat-pro.md) |
 | Kernel 契约 / Rust 参考 Host | [01 简架构](01_ARCHITECTURE_SIMPLE.md) → [MODULE_MAP 权责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) → [06 参考主链路径](06_KERNEL_LEARNING_PATH.md) |
-| 六槽模块 | [03 术语](03_GLOSSARY.md) → [模块选择器](modules/README.md) → 对应 `modules/slots/*.md` |
-| 插件开发 | [插件作者路径](paths/plugin-author.md) → [插件契约](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
+| 从公共 Base 写 Rust 模块 | [Kernel 基础工程](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 首例](modules/slots/memory.md) → 按需选其它 [模块](modules/README.md) |
+| 维护主仓六槽实现 | [03 术语](03_GLOSSARY.md) → [模块选择器](modules/README.md) → 对应 `modules/slots/*.md` |
+| 参考 Host 的 RPC / UI 插件 | [插件作者路径](paths/plugin-author.md) → [插件契约](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
 | 硬件 / 无头 / 新发行版 | [集成路径](paths/integrator.md) → [HostProfile](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | 第一个小 PR | [07 常见任务](07_COMMON_TASKS.md) → [PR 门禁](08_PR_GATE_MATRIX.md) → [Good First Issues](../handoff/GOOD_FIRST_ISSUES.md) |
 

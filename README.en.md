@@ -13,6 +13,7 @@
 | Reader | Entry |
 |---|---|
 | Human contributor | [Learning path](human-docs-en/README.md) |
+| Rust Base module author | [Kernel foundation setup](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory example](human-docs-en/modules/slots/memory.md) |
 | Role / plugin author or integrator | [Documentation index](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) |
 | AI agent / maintainer | [AGENTS](AGENTS.md), then the task-specific [AI index](handoff/AI_READING_INDEX.md) |
 | Checking document authority or status | [Documentation layers and status](handoff/README.md#documentation-status) |
@@ -210,7 +211,8 @@ Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_
 | **End user** (install → import pack → chat) | [USER_MANUAL.md](creator-docs-en/getting-started/USER_MANUAL.md) |
 | **Human developer** (no Cursor) | **[human-docs-en/README.md](human-docs-en/README.md)** · L0–L2 ~1 hour |
 | **Role pack creator** | [CREATOR_LEARNING_PATH.md](creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md) |
-| **Plugin / module author** | [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| **Rust Base module author** | [Kernel foundation](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) · [Memory start pack](human-docs-en/modules/slots/memory.md) |
+| **Reference Host RPC / UI plugin author** | [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
 | **Kernel integrator** | [KERNEL_INTEGRATOR_LEARNING_PATH.md](creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) |
 | **Code contributor** | [CONTRIBUTING.en.md](CONTRIBUTING.en.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
 
