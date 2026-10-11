@@ -55,7 +55,11 @@ pub(crate) fn run_quick_init(args: &InitArgs) -> Result<()> {
 /// Returns an error when interactive input, kernel-source validation, or TUI selection fails.
 pub fn build_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> Result<ProjectConfig> {
     if args.template == Some(super::InitTemplateArg::KernelBase) {
-        return crate::kernel_base_scaffold::build_config(args);
+        return if args.non_interactive || args.dry_run || args.check || skip_interactive_confirm {
+            crate::kernel_base_scaffold::build_config(args)
+        } else {
+            crate::interactive::run_interactive(args)
+        };
     }
     if args.quick {
         let mut cfg = quick_project_config(&args.project_name);

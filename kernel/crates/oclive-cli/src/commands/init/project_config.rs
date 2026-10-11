@@ -115,6 +115,9 @@ pub struct ProjectConfig {
     pub with_example_plugin: bool,
     /// Kernel factory template to use (generates artifacts such as robot-gateway MCP).
     pub factory_template: Option<InitTemplateArg>,
+    /// Teaching content only; false does not disable any public Base contract.
+    #[serde(default)]
+    pub base_memory_example: bool,
     /// Automatically run the Monolith benchmark after generation completes.
     pub run_monolith_bench_after_init: bool,
     /// Points to the oclivenewnew repo root; the generated project writes path dependencies and replaces the placeholder `main`/`lib`.
@@ -147,6 +150,14 @@ impl ProjectConfig {
                 self.project_name
             );
             println!("Dependencies: contracts + types; no Host, providers or turn scheduler.");
+            println!(
+                "Teaching example: {}",
+                if self.base_memory_example {
+                    "Memory"
+                } else {
+                    "none (blank foundation)"
+                }
+            );
             return;
         }
         println!("—— Configuration summary ——");

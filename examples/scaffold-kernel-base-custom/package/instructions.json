@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "variables": {
+    "project_name": {
+      "description": "Valid Cargo package name",
+      "required": true
+    },
+    "kernel_source": {
+      "description": "Absolute OCLive source root, using forward slashes",
+      "required": true
+    },
+    "module_goal": {
+      "description": "Author's development goal",
+      "default": "Base module development"
+    }
+  },
+  "files": [
+    {
+      "source": "templates/Cargo.toml.tmpl",
+      "target": "Cargo.toml",
+      "mode": "text",
+      "sha256": "64cdbcac5a15fddaf3d5118dd8cfbf54f0ef0fcca56f9d2a9ecfacc2531f315c"
+    },
+    {
+      "source": "templates/lib.rs.tmpl",
+      "target": "src/lib.rs",
+      "mode": "copy",
+      "sha256": "467bf81c4bd2ef6692a0005034f2e2e52d5c18212e7b4d6b1832efb3319979d5"
+    },
+    {
+      "source": "templates/README.md.tmpl",
+      "target": "README.md",
+      "mode": "text",
+      "sha256": "18a99fa03aafb7e412bba5948b4db423a9a7e5bac1564020a3d549605af402a3"
+    },
+    {
+      "source": "templates/gitignore.tmpl",
+      "target": ".gitignore",
+      "mode": "copy",
+      "sha256": "306fd52e74fca6746e12acc750f232de15e71da917756a1270d74c91f5eb7368"
+    }
+  ]
+}

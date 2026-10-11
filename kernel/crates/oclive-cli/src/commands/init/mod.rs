@@ -21,6 +21,13 @@ use std::path::PathBuf;
 
 pub use crate::cli_english_init::PRESET_MATRIX_HELP;
 
+/// Optional teaching content for the contract-only foundation, not runtime backends.
+#[derive(clap::ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BaseExampleArg {
+    Memory,
+    None,
+}
+
 #[derive(Parser, Debug, Clone)]
 pub struct InitArgs {
     /// Output directory (created and populated with the new project)
@@ -46,6 +53,10 @@ pub struct InitArgs {
     /// Project template: kernel-base (contracts only) | robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
     #[arg(long, value_enum)]
     pub template: Option<InitTemplateArg>,
+
+    /// kernel-base teaching example: memory (default) | none (blank; all six contracts remain available)
+    #[arg(long, value_enum, requires = "template")]
+    pub base_example: Option<BaseExampleArg>,
 
     /// Preset: minimal | full | mixed
     #[arg(long)]
@@ -188,7 +199,13 @@ fn parse_chat_storage_location_arg(raw: &str) -> Result<String, String> {
 /// # Errors
 ///
 /// Returns an error when validation, user cancel, or project generation fails.
-pub fn run(args: InitArgs) -> Result<()> {
+pub fn run(mut args: InitArgs) -> Result<()> {
+    if args.base_example.is_some()
+        && args.template.is_some()
+        && args.template != Some(InitTemplateArg::KernelBase)
+    {
+        anyhow::bail!("--base-example is only supported by kernel-base, not runtime recipes");
+    }
     if args.template == Some(InitTemplateArg::KernelBase) {
         crate::kernel_base_scaffold::validate_options(&args)?;
     }
@@ -221,12 +238,19 @@ pub fn run(args: InitArgs) -> Result<()> {
     }
 
     let cfg = build_init_config(&args, false)?;
+    if args.base_example.is_some() && cfg.factory_template != Some(InitTemplateArg::KernelBase) {
+        anyhow::bail!("--base-example is only supported by kernel-base, not runtime recipes");
+    }
 
     if args.dry_run {
         return crate::init_plan::print_dry_run(&cfg, &args);
     }
 
     if !args.non_interactive {
+        if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
+            args.output = crate::interactive::pick_base_output(&args)?;
+            println!("Output directory: {}", args.output.display());
+        }
         cfg.print_summary();
         if !dialoguer::Confirm::with_theme(&dialoguer::theme::ColorfulTheme::default())
             .with_prompt("Generate project in this directory?")

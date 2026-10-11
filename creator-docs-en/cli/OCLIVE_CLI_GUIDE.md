@@ -100,9 +100,26 @@ cd ../my-capabilities
 cargo test
 ```
 
-This explicit template requires an existing OCLive checkout; it does not download a Host or copy the Kernel. It produces `Cargo.toml`, `src/lib.rs`, `tests/base_contracts.rs`, `README.md` and `.gitignore`, depending directly on existing contracts/types. No reference Host, shared runtime, Tauri, database, HTTP, role pack, plugin, default provider or six-slot scheduler is included. Developers own their module implementations and file organization. Test-local Memory examples demonstrate contract calls and typed failures only; their query agreement is not a Base requirement. The contracts crate still includes reference ports, so this project is not a separately published pure core or SDK.
+This explicit template requires an existing OCLive checkout; it does not download a Host or copy the Kernel. By default it produces `Cargo.toml`, `src/lib.rs`, `tests/base_contracts.rs`, `README.md` and `.gitignore`, depending directly on existing contracts/types. No reference Host, shared runtime, Tauri, database, HTTP, role pack, plugin, default provider or six-slot scheduler is included. Developers own their module implementations and file organization. Test-local Memory examples demonstrate contract calls and typed failures only; their query agreement is not a Base requirement. The contracts crate still includes reference ports, so this project is not a separately published pure core or SDK.
 
-`--dry-run --json` previews these five files; `--check --json` checks tools and the foundation source paths. Neither writes the project or user registry. There is no stub fallback. Runtime presets/backends, server shape, role/plugin/chat-storage options, custom pipeline, Monolith/dual-core/welding, quick/smart and alternate archive/existing-project flows are rejected. The five existing runtime recipes keep their previous defaults and overrides. Boundary SSOT: [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
+Non-interactive use requires `--kernel-source`; interactive use asks for it, defaulting to the current directory. `--dry-run --json` previews the selected file set; `--check --json` checks tools and the foundation source paths. Neither writes the project or user registry. There is no stub fallback. Runtime presets/backends, server shape, role/plugin/chat-storage options, custom pipeline, Monolith/dual-core/welding, quick/smart and alternate archive/existing-project flows are rejected. The five existing runtime recipes keep their previous defaults and overrides. Boundary SSOT: [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
+
+**Questionnaire and optional teaching content**: run from the source root:
+
+```bash
+cargo run -p oclive-cli -- init --template kernel-base
+```
+
+It asks for project name, source root, teaching example (`memory` or `none`), optional author, license (MIT by default), optional description and output directory, then confirms before writing. Supplied source/example/metadata options and non-default project names/output paths are retained. Invalid answers or cancellation produce no project. `--non-interactive`, `--dry-run` and `--check` remain scripted, do not ask questions and require an explicit source root.
+
+| Selection | Files | Meaning |
+|---|---|---|
+| `--base-example memory` (default) | Five files with test-local Memory calls and typed failures | Start with the existing teaching path |
+| `--base-example none` | Four files, omitting `tests/base_contracts.rs` | Blank contracts/types project; authors supply implementations and tests |
+
+Both retain all six Base contracts and public types. `none` does not disable runtime Memory, remove a contract or supply a Noop; authors and consumer wiring own runtime switches. A blank project's initial `cargo test` can run zero tests, which is not functional acceptance. Add `--base-example none` to the non-interactive command above to choose it; its preview lists the same four files.
+
+**Maintain your own template**: use the [complete local foundation template example](../../examples/scaffold-kernel-base-custom/README.md) when you need your own layout, defaults or examples. It reuses `scaffold validate/inspect/resolve/generate`, source locking and per-call confirmation. Copy and edit the sources, explicitly refresh digests and the lock, then generate into a new directory. Current authoring supports file mappings and string variables, without conditions, loops, automatic inheritance or script execution. It adds no Host to the foundation.
 
 For what to edit, how to observe changed behavior and where to find consumer bindings, follow the foundation path in the [Memory developer guide](../../human-docs-en/modules/slots/memory.md) and the generated README. Generated tests verify the project and limited contract behavior; the shared consumer example verifies that example's actual integration. Authors and target distributions still own functional acceptance.
 

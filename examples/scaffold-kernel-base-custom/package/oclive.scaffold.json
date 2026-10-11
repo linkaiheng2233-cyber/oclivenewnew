@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "package": {
+    "id": "dev.example.kernel-base",
+    "version": "1.0.0",
+    "display_name": "Developer-owned Kernel foundation",
+    "description": "Blank contract project with author-owned files and variables",
+    "maintainer": "Template author"
+  },
+  "compatibility": {
+    "oclive_cli": ">=0.1.0, <1.0.0",
+    "scaffold_contract": ">=1.1, <2"
+  },
+  "command_namespace": "dev.example.kernel-base",
+  "generators": [
+    {
+      "id": "project",
+      "kind": "project",
+      "driver": {
+        "kind": "instruction",
+        "path": "instructions.json",
+        "sha256": "6705c56fdd7451d6f8b29e23ea61bdd139d0cc26e2d6c982e9119fd2fcdbfdff"
+      }
+    }
+  ],
+  "commands": [],
+  "permissions": [
+    "project.write"
+  ],
+  "defaults": {
+    "module_goal": "Custom contract project"
+  },
+  "dependencies": [],
+  "extends": [],
+  "composition": {},
+  "extensions": {}
+}

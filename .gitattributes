@@ -3,3 +3,5 @@ src-tauri/migrations/*.sql text eol=lf
 # CI shell scripts must stay LF — CRLF makes `set -o pipefail` fail on Linux runners.
 *.sh text eol=lf
 scripts/*.sh text eol=lf
+# Scaffold source digests must match fresh checkouts on Windows and Unix.
+examples/scaffold-kernel-base-custom/package/** text eol=lf

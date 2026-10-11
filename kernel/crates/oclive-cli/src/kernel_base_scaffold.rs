@@ -24,6 +24,14 @@ pub const FILES: &[(&str, &str)] = &[
     (".gitignore", "/target/\n"),
 ];
 
+pub fn selected_files(
+    cfg: &ProjectConfig,
+) -> impl Iterator<Item = &'static (&'static str, &'static str)> + '_ {
+    FILES
+        .iter()
+        .filter(|(path, _)| cfg.base_memory_example || *path != "tests/base_contracts.rs")
+}
+
 pub fn validate_options(args: &InitArgs) -> Result<()> {
     let host_options = args.preset.is_some()
         || args.backend_memory.is_some()
@@ -80,6 +88,10 @@ pub fn build_config(args: &InitArgs) -> Result<ProjectConfig> {
         InitTemplateArg::KernelBase,
     );
     cfg.kernel_source = Some(source);
+    cfg.base_memory_example = args
+        .base_example
+        .unwrap_or(crate::init::BaseExampleArg::Memory)
+        == crate::init::BaseExampleArg::Memory;
     crate::init::apply_cargo_metadata_cli(&mut cfg, args);
     crate::init::ensure_cargo_license_default(&mut cfg);
     Ok(cfg)
@@ -96,8 +108,7 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path, context: &serde_json::Valu
     }
     let renderer = handlebars::Handlebars::new();
     // Render before creating output; a template rendering failure writes no project files.
-    let rendered = FILES
-        .iter()
+    let rendered = selected_files(cfg)
         .map(|(path, template)| {
             renderer
                 .render_template(template, context)

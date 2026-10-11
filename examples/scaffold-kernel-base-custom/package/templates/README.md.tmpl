@@ -1,0 +1,19 @@
+# {{project_name}}
+
+Development goal: {{module_goal}}
+
+This is a developer-owned blank template using existing contracts/types.
+All six Base interfaces remain available. No Memory implementation or test
+is generated; this does not disable a runtime slot.
+
+Start in `src/lib.rs`, add your implementations and tests, then run:
+
+```sh
+cargo check
+cargo test
+cargo fmt -- --check
+```
+
+An initial zero-test success proves compilation only. The author owns module
+functionality, resources and Host/consumer bindings. Local source paths in
+Cargo.toml must be updated if the source checkout moves.

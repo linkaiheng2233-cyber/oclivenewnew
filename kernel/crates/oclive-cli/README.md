@@ -2,7 +2,9 @@
 
 官方脚手架：提供 `kernel-base` 契约基础工程，以及既有无头参考运行时 / library 集成配方。按目标选模板；模块作者先了解下方常用动作即可开工。
 
-`kernel-base` 必须提供 `--kernel-source`，只引用现有 contracts/types，没有 Host 或占位回退；首次准备和完整生成命令见 [CLI 基础工程入口](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start)。
+`kernel-base` 只引用现有 contracts/types，没有 Host 或占位回退；非交互须提供 `--kernel-source`，交互会询问。首次准备和完整生成命令见 [CLI 基础工程入口](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start)。
+
+基础问答使用 `cargo run -p oclive-cli -- init --template kernel-base`。默认 `--base-example memory` 保留五文件教学工程，`--base-example none` 生成四文件空白工程；两者保留六槽契约，选项不控制运行时槽开关。需要自己的布局或示例时，参考 [作者维护的本地模板](../../../examples/scaffold-kernel-base-custom/README.md)，沿用原来源锁与明确确认。
 
 > **原运行配方的边界**：不传 `--kernel-source` 时，生成工程使用 **std + serde** 占位实现，只验证目录、配置与接口形状；传入 `--kernel-source <主仓根>` 后，`kernel_server` / `library` 会链接当前完整参考运行时，其中 library 暴露 `oclive_kernel_host::OcliveKernel` 进程内门面。这两种生成物都不等于已经物理抽离的“最小内核”；后者仍由技术债 **K-CORE-BOUNDARY-01** 跟踪，见 [TECHNICAL_DEBT_INVENTORY.md](../../../handoff/TECHNICAL_DEBT_INVENTORY.md)。
 

@@ -1,8 +1,8 @@
 //! Interactive collection of [`crate::init::ProjectConfig`] (skips prompts already set via CLI).
 
 use crate::init::{
-    BackendImpl, BackendSlots, ChatStorageBackend, FeatureSelection, InitArgs, InitTemplateArg,
-    PluginSelection, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
+    BackendImpl, BackendSlots, BaseExampleArg, ChatStorageBackend, FeatureSelection, InitArgs,
+    InitTemplateArg, PluginSelection, ProjectConfig, ProjectType, ProjectTypeArg, RolePackKind,
 };
 use crate::template_catalog::{project_config_from_template, CATALOG};
 use anyhow::{anyhow, Context, Result};
@@ -269,6 +269,11 @@ fn pick_chat_storage_location() -> Result<String> {
 
 /// At least memory / emotion / prompt / llm (minimal product chat path).
 pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
+    if args.template == Some(InitTemplateArg::KernelBase) {
+        let mut foundation_args = args.clone();
+        foundation_args.project_name = pick_init_project_name(args)?;
+        return crate::kernel_base_scaffold::build_config(&collect_base_options(&foundation_args)?);
+    }
     let project_name = pick_init_project_name(args)?;
 
     let template_choice = if let Some(t) = args.template {
@@ -286,15 +291,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         let mut foundation_args = args.clone();
         foundation_args.template = template_choice;
         foundation_args.project_name = project_name;
-        if foundation_args.kernel_source.is_none() {
-            let source: String = Input::with_theme(&ColorfulTheme::default())
-                .with_prompt("OCLive source root (contracts/types; no Host)")
-                .default(".".into())
-                .interact_text()
-                .context("kernel-base source")?;
-            foundation_args.kernel_source = Some(source.into());
-        }
-        return crate::kernel_base_scaffold::build_config(&foundation_args);
+        return crate::kernel_base_scaffold::build_config(&collect_base_options(&foundation_args)?);
     }
 
     let (mut cfg, template_default_monolith) = match (template_choice, args.preset.as_deref()) {
@@ -339,6 +336,7 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
                 skip_role_pack: false,
                 with_example_plugin: false,
                 factory_template: None,
+                base_memory_example: false,
                 run_monolith_bench_after_init: false,
                 kernel_source: None,
                 cargo_author: None,
@@ -417,4 +415,144 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
     }
 
     Ok(cfg)
+}
+
+fn collect_base_options(args: &InitArgs) -> Result<InitArgs> {
+    collect_base_options_with(args, |label, default, allow_empty| {
+        Input::with_theme(&ColorfulTheme::default())
+            .with_prompt(label)
+            .default(default.to_string())
+            .allow_empty(allow_empty)
+            .interact_text()
+            .context("kernel-base input")
+    })
+}
+
+/// Tests supply answers to the same collection flow; validation/generation remain shared.
+fn collect_base_options_with(
+    args: &InitArgs,
+    mut ask: impl FnMut(&str, &str, bool) -> Result<String>,
+) -> Result<InitArgs> {
+    let mut collected = args.clone();
+    if collected.kernel_source.is_none() {
+        collected.kernel_source =
+            Some(ask("OCLive source root (contracts/types; no Host)", ".", false)?.into());
+    }
+    if collected.base_example.is_none() {
+        let answer = ask(
+            "Teaching example: memory or none (blank; contracts stay available)",
+            "memory",
+            false,
+        )?;
+        collected.base_example = Some(match answer.trim().to_ascii_lowercase().as_str() {
+            "memory" => BaseExampleArg::Memory,
+            "none" => BaseExampleArg::None,
+            _ => anyhow::bail!("Teaching example must be memory or none"),
+        });
+    }
+    if collected.author.is_none() {
+        let answer = ask("Author (optional)", "", true)?;
+        if !answer.trim().is_empty() {
+            collected.author = Some(answer.trim().into());
+        }
+    }
+    if collected.license.is_none() {
+        collected.license = Some(ask("License (SPDX)", "MIT", false)?);
+    }
+    if collected.description.is_none() {
+        let answer = ask("Short description (optional)", "", true)?;
+        if !answer.trim().is_empty() {
+            collected.description = Some(answer.trim().into());
+        }
+    }
+    Ok(collected)
+}
+
+pub(crate) fn pick_base_output(args: &InitArgs) -> Result<std::path::PathBuf> {
+    if args.output != std::path::Path::new("generated-kernel") {
+        return Ok(args.output.clone());
+    }
+    let output: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Output directory (new or empty)")
+        .default(args.output.display().to_string())
+        .interact_text()
+        .context("kernel-base output")?;
+    Ok(output.into())
+}
+
+#[cfg(test)]
+mod foundation_questions {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn answers_reach_the_same_foundation_config_as_explicit_arguments() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let mut answers = [
+            root.display().to_string(),
+            "none".into(),
+            "Module Author".into(),
+            "Apache-2.0".into(),
+            "My module".into(),
+        ]
+        .into_iter();
+        let args = InitArgs::parse_from([
+            "init",
+            "--template",
+            "kernel-base",
+            "--project-name",
+            "custom-module",
+        ]);
+        let collected =
+            collect_base_options_with(&args, |_, _, _| Ok(answers.next().unwrap())).unwrap();
+        assert!(answers.next().is_none());
+        let from_answers = crate::kernel_base_scaffold::build_config(&collected).unwrap();
+        let explicit = InitArgs::parse_from([
+            "init",
+            "--non-interactive",
+            "--template",
+            "kernel-base",
+            "--project-name",
+            "custom-module",
+            "--kernel-source",
+            root.to_str().unwrap(),
+            "--base-example",
+            "none",
+            "--author",
+            "Module Author",
+            "--license",
+            "Apache-2.0",
+            "--description",
+            "My module",
+        ]);
+        let from_flags = crate::init::build_init_config(&explicit, false).unwrap();
+        assert_eq!(
+            serde_json::to_value(from_answers).unwrap(),
+            serde_json::to_value(from_flags).unwrap()
+        );
+    }
+
+    #[test]
+    fn explicit_options_skip_questions_and_invalid_answers_are_rejected() {
+        let args = InitArgs::parse_from([
+            "init",
+            "--template",
+            "kernel-base",
+            "--kernel-source",
+            ".",
+            "--base-example",
+            "memory",
+            "--author",
+            "",
+            "--license",
+            "MIT",
+            "--description",
+            "",
+        ]);
+        collect_base_options_with(&args, |_, _, _| panic!("explicit option was asked again"))
+            .unwrap();
+        let args =
+            InitArgs::parse_from(["init", "--template", "kernel-base", "--kernel-source", "."]);
+        assert!(collect_base_options_with(&args, |_, _, _| Ok("llm".into())).is_err());
+    }
 }

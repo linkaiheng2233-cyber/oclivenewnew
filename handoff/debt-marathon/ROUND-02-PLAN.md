@@ -1016,3 +1016,13 @@
 **七路径 / 关联闭环**：CLI 指南中英、CLI crate README、生成 README 模板、计划/DCL 追加、新 Wave `WAVE-20261011-KERNEL-BASE-COMMAND-GUIDE.md`。常用为生成 init、Cargo check/test/fmt与帮助；不常用归入准备选项、脚手架包和参考运行时/插件/角色/维护/实验兼容的按需指引。crate README 的旧两种运行配方范围标明归属；详细用法仍链接 CLI SSOT。先保全六份原件，历史仅追加，不复制新的六槽契约或默认实现。
 
 **验收 / 出口**：一次4项原基础E2E核生成README渲染与原行为；实际生成示例并在其根执行 `cargo check`、`cargo test`、`cargo fmt -- --check`，确认常用命令可执行。默认＋改文/实际README链接、镜像、docs-only路径、登记、债结构、编码/diff、精确写集/原件/历史前缀。不写镜像实现测试，不为文档分类重复Clippy/全量CI/公开面doctest。指令分类能指导第一步即停止，本地保存提交，不合入/推送main或改变任何技术债/冻结结论。
+
+### 基础脚手架 · 问答与模板自定义（2026-10-11）
+
+**授权 / 有限目标**：维护者采纳基础问答完善，并要求模板可微调、可自行维护；补问后明确“关闭记忆”仅控制生成内容与示例，保留六槽公共契约，实际运行开关由模板作者及接线负责。基线 `615a97a72472f11e90153d7fc40dcc2f62e543e2`，复用干净独立工作树，main `2b0390cd` 保持。M / 常规，controller实施及语义自查 independent=false。只核既有init、生成/预览与本地Scaffold Package链，达到目标即止，不调查全部模板/Host。
+
+**精确写集 / 两片闭环**：本机baseline逐条登记28路径，19份既有原件先保全。代码限init的mod/init_interactive/project_config/preset_config/init_config_tests、interactive、kernel_base_scaffold、generator模板上下文、init_plan；生成README模板与基础E2E关联闭环。基础专用 `--base-example memory|none` 保持默认Memory，空白工程不生成测试示例，公共依赖及六槽可用性保持；问答和非交互共用同一配置/生成函数，不新建问卷框架。CLI指南中英、Scaffold RFC中英及crate README同步实际范围。例子仅新增 `examples/scaffold-kernel-base-custom/` 的README、摘要更新辅助脚本及package内manifest/instruction和四个源模板；使用原本地声明式生成、来源锁和逐次确认，不增加命令执行、网络安装或模板继承协议。计划/DCL仅追加，另建本批Wave。
+
+**验收 / CI节奏**：新空白工程调用先在旧CLI红，再实现到绿；定向单元及基础E2E串行核默认五文件、空白四文件、六trait仍可用、预览一致、错误选项/来源/目录拒绝与取消零写入。实际本地自定义包发现/锁定/预览/生成/Cargo检查，并改源模板但不更新摘要验证拒绝；编辑/更新摘要后的再生成由真实用例核。离线CLI Clippy/fmt、原模板与scaffold回归、分层/module-compat、适用文档/镜像/登记/债结构、编码/写集/历史。未改公开DTO/trait/re-export，不重复workspace doctest或每片完整CI；只作本地提交，不能为main/技术债Done借旧绿灯。真实终端若工具可用则跑一次问答及一次取消，否则如实记未验，不以注入输入冒充TTY。既定冻结、Host及安全语义保持。
+
+**必要关联补充**：例子按原始字节登记source摘要，Windows默认换行转换会使新checkout不匹配；在保全原件后将 `.gitattributes` 纳入第28路径，仅对本例package固定 `text eol=lf`，不改旧规则或其它模板。验证工作区及Git检出副本的摘要与实际生成，不把摘要辅助脚本扩成通用发布工具。[本批报告](waves/WAVE-20261011-KERNEL-BASE-CUSTOMIZATION.md)记录终态与证据边界。

@@ -7,6 +7,231 @@ use std::fs;
 use std::process::Command;
 
 #[test]
+fn generated_blank_foundation_keeps_all_six_contracts_available() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = common::repo_root();
+    let project = temp.path().join("blank");
+    let args = [
+        "init",
+        "--non-interactive",
+        "--template",
+        "kernel-base",
+        "--base-example",
+        "none",
+        "--kernel-source",
+        root.to_str().unwrap(),
+        "-o",
+        project.to_str().unwrap(),
+    ];
+    let mut preview_args = args.to_vec();
+    preview_args.extend(["--dry-run", "--json"]);
+    let preview = common::run_cli_output(&preview_args);
+    assert!(preview.status.success(), "blank preview: {preview:?}");
+    let plan: serde_json::Value = serde_json::from_slice(&preview.stdout).unwrap();
+    assert_eq!(
+        plan["tree"],
+        serde_json::json!([
+            "blank/",
+            "  Cargo.toml",
+            "  src/lib.rs",
+            "  README.md",
+            "  .gitignore"
+        ])
+    );
+    assert!(!project.exists());
+    let init = common::run_cli_output(&args);
+    assert!(init.status.success(), "blank init: {init:?}");
+    assert_eq!(fs::read_dir(&project).unwrap().count(), 4);
+    assert!(!project.join("tests").exists());
+    let readme = fs::read_to_string(project.join("README.md")).unwrap();
+    assert!(readme.contains("空白契约工程"));
+    assert!(!readme.contains("## 第一条开发练习"));
+    fs::write(project.join("src/lib.rs"), r#"use oclive_kernel_contracts::{AgentBase, EmotionBase, EventBase, LlmBase, MemoryBase, PromptBase};
+
+pub fn accepts_all_six(
+    _memory: &dyn MemoryBase,
+    _emotion: &dyn EmotionBase,
+    _event: &dyn EventBase,
+    _prompt: &dyn PromptBase,
+    _llm: &dyn LlmBase,
+    _agent: &dyn AgentBase,
+) {
+}
+"#).unwrap();
+    fs::copy(root.join("Cargo.lock"), project.join("Cargo.lock")).unwrap();
+    let result = Command::new("cargo")
+        .current_dir(&project)
+        .args(["test", "--offline", "--color", "never"])
+        .output()
+        .unwrap();
+    assert!(result.status.success(), "six public traits: {result:?}");
+    temp.close().unwrap();
+}
+
+#[test]
+fn foundation_example_options_are_not_silently_used_by_runtime_recipes() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = common::repo_root();
+    let project = temp.path().join("rejected");
+    for extra in [
+        vec!["--template", "kernel-base", "--base-example", "emotion"],
+        vec!["--template", "headless-api", "--base-example", "none"],
+        vec!["--base-example", "none", "--quick"],
+        vec![
+            "--template",
+            "kernel-base",
+            "--base-example",
+            "none",
+            "--backend-memory",
+            "none",
+        ],
+    ] {
+        let mut args = vec![
+            "init",
+            "--non-interactive",
+            "--kernel-source",
+            root.to_str().unwrap(),
+            "-o",
+            project.to_str().unwrap(),
+        ];
+        args.extend(extra);
+        let result = common::run_cli_output(&args);
+        assert!(!result.status.success(), "accepted {args:?}");
+        assert!(!project.exists(), "wrote on invalid option {args:?}");
+    }
+    temp.close().unwrap();
+}
+
+#[test]
+fn developer_owned_base_template_generates_and_detects_unreviewed_edits() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = common::repo_root();
+    let source = root.join("examples/scaffold-kernel-base-custom");
+    let project = temp.path().join("author-project");
+    let scaffolds = project.join(".oclive/scaffolds");
+    for relative in [
+        "refresh-digests.mjs",
+        "package/oclive.scaffold.json",
+        "package/instructions.json",
+        "package/templates/Cargo.toml.tmpl",
+        "package/templates/lib.rs.tmpl",
+        "package/templates/README.md.tmpl",
+        "package/templates/gitignore.tmpl",
+    ] {
+        let destination = scaffolds.join(relative);
+        fs::create_dir_all(destination.parent().unwrap()).unwrap();
+        fs::copy(source.join(relative), destination).unwrap();
+    }
+    let home = temp.path().join("isolated-home");
+    let scaffold = |args: &[&str]| {
+        common::cli_command()
+            .env("OCLIVE_HOME", &home)
+            .arg("scaffold")
+            .args(args)
+            .args(["--path", project.to_str().unwrap()])
+            .output()
+            .unwrap()
+    };
+    let resolved = scaffold(&["resolve", "--write-lock"]);
+    assert!(resolved.status.success(), "lock: {resolved:?}");
+    let output = temp.path().join("custom-output");
+    let kernel_source = format!("kernel_source={}", root.display()).replace('\\', "/");
+    let generate = [
+        "generate",
+        "dev.example.kernel-base",
+        "project",
+        "--output",
+        output.to_str().unwrap(),
+        "--set",
+        "project_name=custom-base",
+        "--set",
+        &kernel_source,
+        "--set",
+        "module_goal=Memory experiment",
+        "--accept-untrusted",
+    ];
+    let mut preview_args = generate.to_vec();
+    preview_args.push("--dry-run");
+    let preview = scaffold(&preview_args);
+    assert!(preview.status.success(), "preview: {preview:?}");
+    assert!(!output.exists());
+    let result = scaffold(&generate);
+    assert!(result.status.success(), "generate: {result:?}");
+    assert!(fs::read_to_string(output.join("README.md"))
+        .unwrap()
+        .contains("Memory experiment"));
+    assert!(output.join(".oclive/scaffold.provenance.json").exists());
+    fs::copy(root.join("Cargo.lock"), output.join("Cargo.lock")).unwrap();
+    let check = Command::new("cargo")
+        .current_dir(&output)
+        .args(["check", "--offline", "--color", "never"])
+        .output()
+        .unwrap();
+    assert!(check.status.success(), "custom Cargo: {check:?}");
+
+    let edited = scaffolds.join("package/templates/README.md.tmpl");
+    let mut text = fs::read_to_string(&edited).unwrap();
+    text.push_str("\nAuthor's new template note.\n");
+    fs::write(&edited, text).unwrap();
+    let second = temp.path().join("custom-second");
+    let second_args = [
+        "generate",
+        "dev.example.kernel-base",
+        "project",
+        "--output",
+        second.to_str().unwrap(),
+        "--set",
+        "project_name=custom-second",
+        "--set",
+        &kernel_source,
+        "--set",
+        "module_goal=Event experiment",
+        "--accept-untrusted",
+    ];
+    let stale = scaffold(&second_args);
+    assert!(
+        !stale.status.success(),
+        "unchecked edit accepted: {stale:?}"
+    );
+    assert!(!second.exists());
+    // Fixture preparation uses the contract's digest utility; Rust E2E needs no Node runtime.
+    let instruction_path = scaffolds.join("package/instructions.json");
+    let mut instruction: serde_json::Value =
+        serde_json::from_slice(&fs::read(&instruction_path).unwrap()).unwrap();
+    for file in instruction["files"].as_array_mut().unwrap() {
+        let bytes = fs::read(
+            scaffolds
+                .join("package")
+                .join(file["source"].as_str().unwrap()),
+        )
+        .unwrap();
+        file["sha256"] = oclive_scaffold::scaffold_sha256_hex(&bytes).into();
+    }
+    let instruction_bytes = serde_json::to_vec_pretty(&instruction).unwrap();
+    fs::write(instruction_path, &instruction_bytes).unwrap();
+    let manifest_path = scaffolds.join("package/oclive.scaffold.json");
+    let mut manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(&manifest_path).unwrap()).unwrap();
+    manifest["generators"][0]["driver"]["sha256"] =
+        oclive_scaffold::scaffold_sha256_hex(&instruction_bytes).into();
+    fs::write(manifest_path, serde_json::to_vec_pretty(&manifest).unwrap()).unwrap();
+    let old_lock = scaffold(&second_args);
+    assert!(
+        !old_lock.status.success(),
+        "stale lock accepted: {old_lock:?}"
+    );
+    assert!(!second.exists());
+    assert!(scaffold(&["resolve", "--write-lock"]).status.success());
+    let regenerated = scaffold(&second_args);
+    assert!(regenerated.status.success(), "regenerate: {regenerated:?}");
+    let readme = fs::read_to_string(second.join("README.md")).unwrap();
+    assert!(readme.contains("Event experiment"));
+    assert!(readme.contains("Author's new template note."));
+    assert!(!home.exists(), "custom template wrote user state");
+    temp.close().unwrap();
+}
+
+#[test]
 fn generated_kernel_base_is_a_host_free_contract_project() {
     let temp = tempfile::tempdir().unwrap();
     let project = temp.path().join("foundation");

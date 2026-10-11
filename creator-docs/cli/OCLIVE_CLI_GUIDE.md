@@ -605,9 +605,26 @@ cd ../my-capabilities
 cargo test
 ```
 
-产物为 `Cargo.toml`、`src/lib.rs`、`tests/base_contracts.rs`、`README.md` 与 `.gitignore`。直接依赖现有 contracts/types，不含参考 Host、共享 runtime、Tauri、数据库、HTTP、角色包或插件；模块实现与组织由开发者维护，没有默认模块或六槽调度。测试内 Memory 示例只检查契约调用与 typed failure，不安装能力、不运行聊天；它的查询约定不是 Base 强制协议。现有契约 crate 仍含参考端口，因此这不是已独立发布的纯 core/SDK。
+默认产物为 `Cargo.toml`、`src/lib.rs`、`tests/base_contracts.rs`、`README.md` 与 `.gitignore`。直接依赖现有 contracts/types，不含参考 Host、共享 runtime、Tauri、数据库、HTTP、角色包或插件；模块实现与组织由开发者维护，没有默认模块或六槽调度。测试内 Memory 示例只检查契约调用与 typed failure，不安装能力、不运行聊天；它的查询约定不是 Base 强制协议。现有契约 crate 仍含参考端口，因此这不是已独立发布的纯 core/SDK。
 
-`--kernel-source` 必填；没有 stub 回退。`--dry-run --json` 仅预览这五个文件，`--check --json` 检查工具链与基础源码入口，均不写工程或项目注册表。`--preset`、`--backend-*`、`--project-type kernel-server`、角色/插件/聊天存储选项、非默认 `--pipeline`、Monolith/双核/焊接、quick/smart 及归档/现有工程替代流程会明确失败。原五配方的默认与覆盖规则不变；下列角色包、插件、蓝图和配置产物说明属于原运行配方。边界 owner 见 [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
+`--kernel-source` 在非交互模式必填；交互模式会询问，默认当前目录，没有 stub 回退。`--dry-run --json` 预览所选文件集，`--check --json` 检查工具链与基础源码入口，均不写工程或项目注册表。`--preset`、`--backend-*`、`--project-type kernel-server`、角色/插件/聊天存储选项、非默认 `--pipeline`、Monolith/双核/焊接、quick/smart 及归档/现有工程替代流程会明确失败。原五配方的默认与覆盖规则不变；下列角色包、插件、蓝图和配置产物说明属于原运行配方。边界 owner 见 [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
+
+**问答生成与教学内容微调**：从源码根执行下列命令，即进入基础工程问答，不需要先选择 Host 配方：
+
+```bash
+cargo run -p oclive-cli -- init --template kernel-base
+```
+
+依次确认工程名、源码根、教学示例（`memory` 或 `none`）、可选作者、许可证（默认 MIT）、可选描述和输出目录，最后确认才写盘。已提供的源码/示例/元数据选项及非默认工程名、输出目录沿用；输入无效或最后取消不会生成工程。`--non-interactive`、`--dry-run`、`--check` 保持脚本化，不提问，须显式提供源码根。
+
+| 选择 | 生成内容 | 含义 |
+|---|---|---|
+| `--base-example memory`（默认） | 五文件，附测试内 Memory 调用和失败示例 | 从一条已有教学路径开工 |
+| `--base-example none` | 四文件，省去 `tests/base_contracts.rs` | 空白 contracts/types 工程，作者自行添加实现及测试 |
+
+两者均保留六槽 Base 与公共类型。`none` 不表示关闭运行时记忆、删除契约或生成 Noop；实际运行开关由模板作者及消费者接线负责。空白工程初始 `cargo test` 可执行零项，不能当成模块功能通过。比如在上方非交互命令加 `--base-example none` 即可生成空白工程；预览也反映相同四文件。
+
+**自己维护模板**：文件布局、默认值或示例超出内置两种选择时，使用 [本地基础模板完整例子](../../examples/scaffold-kernel-base-custom/README.md)。它复用 `scaffold validate/inspect/resolve/generate`、来源锁与逐次确认；复制、修改模板、显式更新摘要并重新锁定后，向新目录生成。当前支持作者文件映射和字符串变量，不支持条件、循环、自动继承或脚本执行，不给基础工程增加 Host。
 
 生成后先改哪里、如何观察实现变化、怎样找到已有消费者，见 [Memory 开工包](../../human-docs/modules/slots/memory.md) 的基础工程路径与生成 README。自带测试只证明工程/有限契约行为；共享消费者案例证明该案例的实际接入；目标功能仍需模块作者与发行版的场景验收。
 

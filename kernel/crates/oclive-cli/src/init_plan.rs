@@ -98,9 +98,7 @@ pub fn build_tree_lines(cfg: &ProjectConfig, output: &std::path::Path) -> Vec<St
     let mut lines = vec![format!("{name}/")];
     if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
         lines.extend(
-            crate::kernel_base_scaffold::FILES
-                .iter()
-                .map(|(path, _)| format!("  {path}")),
+            crate::kernel_base_scaffold::selected_files(cfg).map(|(path, _)| format!("  {path}")),
         );
         return lines;
     }
