@@ -1,0 +1,30 @@
+# {{ project_name }}
+
+Kernel 契约基础开发工程，由 `oclive init --template kernel-base` 生成。
+
+## 基础与边界
+
+- 直接引用现有 `oclive_kernel_contracts` 与 `oclive_kernel_types`，不复制、不重新定义公共契约。
+- 六槽 Base 入口：`MemoryBase`、`EmotionBase`、`EventBase`、`PromptBase`、`LlmBase`、`AgentBase`；请求和 `BaseCallError` 使用原公共类型。contracts crate 还包含参考端口，其全部导出不等于纯小 Kernel。
+- `src/lib.rs` 是开发入口；模块实现与其文件组织由开发者自行维护。基础工程不预装槽实现、不统一调度六槽，不提供运行中的聊天服务。
+- 没有参考 Host、共享 runtime、Tauri、数据库或 HTTP 服务依赖；没有角色包、插件、模型配置或资源授权。未来 Host 预设为独立工作，本模板不下载或启动它们。
+
+## 文件与开工
+
+```text
+Cargo.toml                公共契约依赖与独立 Cargo workspace
+src/lib.rs                开发者代码入口
+tests/base_contracts.rs   仅测试内的 Memory 调用与失败示例
+README.md                 当前说明
+.gitignore                本工程构建产物
+```
+
+```bash
+cargo test
+```
+
+测试只证明已有契约能在本工程中使用。Memory 示例仅在测试文件内，用本次材料做字面筛选；`literal:` 是该测试作者的约定，不是 Base 强制协议。它不安装模块、不调用模型，也不是通用异步执行器。其它槽无需为初始化工程而提供占位实现。
+
+添加自己的实现时直接导入原公共类型；需要 Host、资源、运行时或额外能力时由后续接入工作显式选择。本工程引用本地源码路径，移动工程或源码树后需维护这些路径；它不是已发布的独立 Kernel 或 SDK 包。
+
+权责与实现者入口：[MODULE_MAP_AND_HANDOFF](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/handoff/MODULE_MAP_AND_HANDOFF.md) §3.1.1。

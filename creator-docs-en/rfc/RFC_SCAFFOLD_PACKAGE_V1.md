@@ -12,6 +12,12 @@ No package may define or override `oclive ci`, workflows, validator coordinates,
 
 ## Audit and command surface
 
+### Current addition: Kernel contract development foundation (2026-10-11)
+
+The maintainer confirmed a foundation using existing contracts, without a Host; developers supply their own capability implementations. `init --template kernel-base --kernel-source <source root>` generates a separate Rust library depending directly on contracts/types. It is not a standalone executable small Kernel, and the contracts crate's full reference-port surface is not the minimal contract. Output is limited to Cargo metadata, a source entry, test-local contract examples, a README and an ignore file. It installs no default slot implementations, turn ordering, role packs, plugins or resource services. The directory layout is a starting point, not a mandatory distribution layout.
+
+The five existing recipes and their defaults remain available. Runtime/Host options inappropriate to the foundation fail before writing files; the foundation does not enter the user project registry. Optional Host presets and their acquisition belong to later work. This slice adds no download, composition, third-party command execution or CI authority. Commands and limits are documented in the [CLI guide](../cli/OCLIVE_CLI_GUIDE.md#kernel-contract-foundation). The following audit retains its historical 2026-08-01 scope.
+
 The 2026-08-01 audit found 25 top-level commands, including 10 commands that require `--experimental` but still appear beside stable commands. It also found three conflicting uses of “template”: five `init --template` kernel recipes, legacy `.oclive-template.tar.gz` archive commands, and the new Scaffold Package concept.
 
 Stable visible commands after Stage 2A are `init`, `dev`, `pack`, `doctor`, `plugin`, `registry`, `lint`, `profile`, `config`, `ci`, `scaffold`, `kernel`, `explain`, `migrate-app-data`, and `completions`.

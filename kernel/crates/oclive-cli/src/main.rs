@@ -49,6 +49,7 @@ mod init_from_existing;
 mod init_plan;
 mod init_tui;
 mod interactive;
+mod kernel_base_scaffold;
 mod kernel_cmd;
 mod kernel_ensure;
 mod learn_cmd;

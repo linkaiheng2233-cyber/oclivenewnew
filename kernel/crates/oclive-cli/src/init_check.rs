@@ -24,7 +24,10 @@ pub fn run_precheck(args: &InitArgs) -> Result<()> {
     items.push(check_rust_toolchain());
     items.push(check_cargo());
     if let Some(ref ks) = cfg.kernel_source {
-        items.push(check_kernel_source(ks));
+        items.push(check_kernel_source(
+            ks,
+            cfg.factory_template == Some(InitTemplateArg::KernelBase),
+        ));
     } else if args.kernel_source.is_some() {
         items.push(CheckItem {
             id: "kernel_source".into(),
@@ -127,8 +130,13 @@ fn check_cargo() -> CheckItem {
     }
 }
 
-fn check_kernel_source(path: &Path) -> CheckItem {
-    match generator::validate_kernel_source(path) {
+fn check_kernel_source(path: &Path, foundation: bool) -> CheckItem {
+    let result = if foundation {
+        crate::kernel_base_scaffold::validate_source(path)
+    } else {
+        generator::validate_kernel_source(path)
+    };
+    match result {
         Ok(()) => CheckItem {
             id: "kernel_source".into(),
             status: "pass".into(),

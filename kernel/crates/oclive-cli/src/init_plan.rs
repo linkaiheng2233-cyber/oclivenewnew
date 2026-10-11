@@ -27,13 +27,23 @@ pub fn print_dry_run(cfg: &ProjectConfig, args: &InitArgs) -> Result<()> {
         output_dir: args.output.display().to_string(),
         template: cfg
             .factory_template
-            .map(|t| format!("{t:?}"))
+            .map(|t| {
+                if t == InitTemplateArg::KernelBase {
+                    "kernel-base".into()
+                } else {
+                    format!("{t:?}")
+                }
+            })
             .map(|s| s.replace("InitTemplateArg::", "").to_lowercase()),
         project_type: match cfg.project_type {
             ProjectType::KernelServer => "kernel_server".into(),
             ProjectType::Library => "library".into(),
         },
-        preset: args.preset.clone().unwrap_or_else(|| "minimal".into()),
+        preset: if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
+            "none".into()
+        } else {
+            args.preset.clone().unwrap_or_else(|| "minimal".into())
+        },
         monolith_enabled: cfg.monolith_enabled,
         monolith_preset: cfg.monolith_preset.map(|p| format!("{p:?}").to_lowercase()),
         kernel_linked: cfg.kernel_source.is_some(),
@@ -86,6 +96,14 @@ pub fn build_tree_lines(cfg: &ProjectConfig, output: &std::path::Path) -> Vec<St
         .and_then(|s| s.to_str())
         .unwrap_or("project");
     let mut lines = vec![format!("{name}/")];
+    if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
+        lines.extend(
+            crate::kernel_base_scaffold::FILES
+                .iter()
+                .map(|(path, _)| format!("  {path}")),
+        );
+        return lines;
+    }
     lines.push("  Cargo.toml".into());
     lines.push("  README.md".into());
     lines.push("  CONFIG_REFERENCE.md".into());

@@ -43,7 +43,7 @@ pub struct InitArgs {
     #[arg(long)]
     pub list_templates: bool,
 
-    /// Kernel factory template: robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
+    /// Project template: kernel-base (contracts only) | robot-soul | robot-gateway | dialogue-only | headless-api | library-embed
     #[arg(long, value_enum)]
     pub template: Option<InitTemplateArg>,
 
@@ -108,7 +108,7 @@ pub struct InitArgs {
     #[arg(long)]
     pub with_example_plugin: bool,
 
-    /// Path to the oclivenewnew root: server projects link the HTTP host; library projects link the stable in-process role kernel
+    /// OCLive source root: required contracts/types for kernel-base; reference Host for other linked templates
     #[arg(long)]
     pub kernel_source: Option<PathBuf>,
 
@@ -189,6 +189,9 @@ fn parse_chat_storage_location_arg(raw: &str) -> Result<String, String> {
 ///
 /// Returns an error when validation, user cancel, or project generation fails.
 pub fn run(args: InitArgs) -> Result<()> {
+    if args.template == Some(InitTemplateArg::KernelBase) {
+        crate::kernel_base_scaffold::validate_options(&args)?;
+    }
     if let Some(ref existing) = args.from_existing {
         return crate::init_from_existing::run_from_existing(existing, &args);
     }
@@ -239,13 +242,26 @@ pub fn run(args: InitArgs) -> Result<()> {
     }
 
     generator::write_project(&cfg, &args.output)?;
-    if let Err(e) = crate::registry::register_after_init(&cfg, &args.output) {
-        eprintln!("⚠ Failed to register in local registry: {e}");
+    if cfg.factory_template != Some(InitTemplateArg::KernelBase) {
+        if let Err(e) = crate::registry::register_after_init(&cfg, &args.output) {
+            eprintln!("⚠ Failed to register in local registry: {e}");
+        }
     }
     if cfg.run_monolith_bench_after_init {
         crate::init_bench::try_post_init_monolith_bench(&args.output);
     }
     if !args.quiet {
+        if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
+            println!(
+                "Generated contract-only development library: {}",
+                args.output.display()
+            );
+            println!(
+                "Next: cd {} and run cargo test; supply your own modules and Host separately.",
+                args.output.display()
+            );
+            return Ok(());
+        }
         if cfg.monolith_enabled && matches!(cfg.project_type, ProjectType::KernelServer) {
             let slug = crate::generator::project_slug(&cfg);
             println!("✓ Project created!");

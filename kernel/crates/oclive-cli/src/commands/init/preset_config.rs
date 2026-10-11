@@ -17,6 +17,7 @@ pub enum InitTemplateArg {
     DialogueOnly,
     HeadlessApi,
     LibraryEmbed,
+    KernelBase,
 }
 
 #[derive(clap::ValueEnum, Clone, Debug, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -87,6 +88,12 @@ pub fn template_defaults(t: InitTemplateArg) -> TemplateDefaults {
             role_pack: RolePackKind::None,
         },
         InitTemplateArg::LibraryEmbed => TemplateDefaults {
+            preset: "minimal",
+            project_type: ProjectType::Library,
+            monolith_default: false,
+            role_pack: RolePackKind::None,
+        },
+        InitTemplateArg::KernelBase => TemplateDefaults {
             preset: "minimal",
             project_type: ProjectType::Library,
             monolith_default: false,

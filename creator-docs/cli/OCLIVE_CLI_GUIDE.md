@@ -557,7 +557,7 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 
 ### 内核工厂模板（`--template`）
 
-套餐封装 **preset / Monolith / project-type**（显式 CLI 参数优先）。浏览矩阵：`oclive init --list-templates`。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
+既有运行配方封装 **preset / Monolith / project-type**（显式 CLI 参数优先）；新 `kernel-base` 是不带 Host 的契约开发工程，拒绝不适用的运行参数。浏览矩阵：`oclive init --list-templates`。愿景：[KERNEL_FACTORY_VISION.md](../getting-started/KERNEL_FACTORY_VISION.md)
 
 | template | 场景 | preset | Monolith 默认 | project-type | 默认 `--with-role-pack` |
 |----------|------|--------|---------------|--------------|-------------------------|
@@ -566,6 +566,19 @@ cargo run -p oclive-cli -- init --smart --non-interactive -o ./out --project-nam
 | `dialogue-only` | 纯对话服务 | full | 关闭 | kernel_server | `default` |
 | `headless-api` | 纯 API 无头 | full | 关闭 | kernel_server | 无 |
 | `library-embed` | 库嵌入 | minimal | 关闭 | library | 无 |
+| `kernel-base` | Kernel 契约开发，不带 Host | 无 | 关闭 | library | 无 |
+
+**Kernel 基础工程**（需已检出的 OCLive 源码，不下载依赖源码或 Host）：
+
+```bash
+cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities
+cd ../my-capabilities
+cargo test
+```
+
+产物为 `Cargo.toml`、`src/lib.rs`、`tests/base_contracts.rs`、`README.md` 与 `.gitignore`。直接依赖现有 contracts/types，不含参考 Host、共享 runtime、Tauri、数据库、HTTP、角色包或插件；模块实现与组织由开发者维护，没有默认模块或六槽调度。测试内 Memory 示例只检查契约调用与 typed failure，不安装能力、不运行聊天；它的查询约定不是 Base 强制协议。现有契约 crate 仍含参考端口，因此这不是已独立发布的纯 core/SDK。
+
+`--kernel-source` 必填；没有 stub 回退。`--dry-run --json` 仅预览这五个文件，`--check --json` 检查工具链与基础源码入口，均不写工程或项目注册表。`--preset`、`--backend-*`、`--project-type kernel-server`、角色/插件/聊天存储选项、非默认 `--pipeline`、Monolith/双核/焊接、quick/smart 及归档/现有工程替代流程会明确失败。原五配方的默认与覆盖规则不变；下列角色包、插件、蓝图和配置产物说明属于原运行配方。边界 owner 见 [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md)。
 
 ```bash
 cargo run -p oclive-cli -- init --non-interactive --quiet --template robot-soul -o ./out/doll
@@ -619,7 +632,7 @@ cargo run -p oclive-cli -- init --non-interactive --quiet --preset mixed --proje
 | `--monolith-bench-preset` | 同档位枚举；生成后自动 release 双构建 + `bench --runs 5` → `bench_results/report.json`（失败不阻塞） |
 | `--list-templates` | 打印模板矩阵后退出；交互 `init` 亦可在项目类型前选模板 |
 | `--quick` / `-q` | 极速：`preset=full`、无 Monolith、无根级 `roles/`；交互仅问项目名与输出目录 |
-| `--template` | `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（内核工厂套餐；见上表） |
+| `--template` | `kernel-base`（契约基础工程）或 `robot-soul` \| `robot-gateway` \| `dialogue-only` \| `headless-api` \| `library-embed`（原运行配方；见上表） |
 | `--with-role-pack` | `robot-soul-minimal` \| `default`；与 `--skip-role-pack` 互斥 |
 | `--with-example-plugin` | 附带 llamacpp 目录插件示例到根级 `plugins/` |
 | `--kernel-source` | 指向 oclivenewnew 根目录，生成 path 依赖与真实 HTTP 入口 |

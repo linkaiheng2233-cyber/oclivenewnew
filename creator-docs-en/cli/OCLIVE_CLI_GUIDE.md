@@ -50,6 +50,18 @@ Scaffold Packages still cannot install from a network, execute `commands[].entry
 
 ---
 
+## Kernel contract foundation
+
+```bash
+cargo run -p oclive-cli -- init --non-interactive --template kernel-base --kernel-source . --project-name my-capabilities -o ../my-capabilities
+cd ../my-capabilities
+cargo test
+```
+
+This explicit template requires an existing OCLive checkout; it does not download a Host or copy the Kernel. It produces `Cargo.toml`, `src/lib.rs`, `tests/base_contracts.rs`, `README.md` and `.gitignore`, depending directly on existing contracts/types. No reference Host, shared runtime, Tauri, database, HTTP, role pack, plugin, default provider or six-slot scheduler is included. Developers own their module implementations and file organization. Test-local Memory examples demonstrate contract calls and typed failures only; their query agreement is not a Base requirement. The contracts crate still includes reference ports, so this project is not a separately published pure core or SDK.
+
+`--dry-run --json` previews these five files; `--check --json` checks tools and the foundation source paths. Neither writes the project or user registry. There is no stub fallback. Runtime presets/backends, server shape, role/plugin/chat-storage options, custom pipeline, Monolith/dual-core/welding, quick/smart and alternate archive/existing-project flows are rejected. The five existing runtime recipes keep their previous defaults and overrides. Boundary SSOT: [Scaffold RFC](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md).
+
 ## `doctor`: environment diagnostics
 
 ```bash

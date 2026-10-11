@@ -984,3 +984,11 @@
 **停止 / 交接**：冻结后只读，不为 CI 数字回写制造新提交；原生命令、native exit、stdout/stderr及最终run/jobs身份保存在本工作树 ignored `.cursor/plans/milestone-handoff-20261009-r0/`，最终结果在交付报告披露，不假设随Git携带。远端推进、实际重叠、确定失败或新公共契约/权限/解冻取舍才停止相应动作。没有新模块或Host对象时到可接手基线即停，不自动实现其它五槽、重开审查或清空台账；已有冻结、H04/S01/真实音频/平台/崩溃/独立浏览器边界保持。
 
 **实际前置缺口与有限接续**：首次冻结aeea1bbc的完整入口在Clippy前置资源缺失处native 101；controller漏执行仓库已有的debug资源准备，既有CI有该步骤，规则/源码不需改。保留失败后运行原bundle入口，再在原冻结Git内容上接续Rust与集成阶段，两个native 0，父环境与Git内容保持。仅在所有进程结束后，补本交接Wave的干净checkout前置与诚实分阶段口径、本计划本段和DCL-83；三Markdown实质修正适用文档/范围保全检查，不重复已相同源码的全链，不把aeea本地退出码改绑新SHA。最终本地/远端身份仍需复核、一次push及对应正式CI，无green-only回写。
+
+### Kernel 基础脚手架 · 现有契约开发工程（2026-10-11）
+
+**授权 / 基线 / 目标**：维护者明确先做脚手架，基础工程排除 Host；进一步选择“先做现有契约的基础开发工程”，不要求独立可运行的小 Kernel 核心。基线 `2b0390cdecaeed428f9ea1f753098f4aa69f3ebd` 干净，独立工作树实施；M / 常规，controller 直接实施与语义自查，independent=false。新增显式 `kernel-base` 模板，引用现有 contracts/types，模块实现由开发者自行提供；旧五预设和默认行为保持。
+
+**写集 / 闭环**：CLI 的模板枚举/目录、参数校验、配置/生成/预检/预览/交互接线、专用文件模板、相关 CLI 集成测试、官方 kernel scaffold 的 profile 声明；既有中英 Scaffold RFC 与 CLI 指南、计划/DCL 追加及本批 Wave。生成物仅 Cargo、README、源码入口、契约测试和忽略文件，不导出新 SDK 门面、不生成六个默认模块或调度器，不含 Host/runtime/Tauri、角色包/插件/数据库/HTTP。现有契约 crate 仍含参考端口，不能把全部导出宣传为独立纯 core；只使用既有 Base 和公共类型。
+
+**验收 / 止点**：先写新 CLI 集成调用，在旧 CLI 因缺少模板选项而红；实现后生成外部新工程并真实 Cargo 编译/测试、检查解析依赖图没有参考 Host/runtime/Tauri，验证不适用运行选项在写盘前失败、非空目录不覆盖、check/dry-run 无产物。定向及 CLI 回归串行，Clippy/fmt、分层/module-compat 和文档/镜像/登记/债结构/编码/diff；显式 workspace doctest 不借普通测试冒充。相关本地验证通过后冻结可接手本地提交，不合入/推送 main、不为本片反复全量 CI、不标债 Done。基础工程可编译且依赖/产物边界成立即停止；SDK、Host 预设下载、核心物理迁移、六槽强制义务与所有既定冻结保持。

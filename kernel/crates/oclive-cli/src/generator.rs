@@ -501,6 +501,9 @@ fn config_reference_markdown() -> &'static str {
 }
 
 pub fn write_project(cfg: &ProjectConfig, out: &Path) -> Result<()> {
+    if cfg.factory_template == Some(InitTemplateArg::KernelBase) {
+        return crate::kernel_base_scaffold::write_project(cfg, out, &template_context(cfg, out));
+    }
     if out.exists() {
         let mut it = fs::read_dir(out).with_context(|| format!("read_dir {}", out.display()))?;
         if it.next().transpose()?.is_some() {

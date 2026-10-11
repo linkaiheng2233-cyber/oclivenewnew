@@ -1,0 +1,82 @@
+//! Test-local example only: not an installed module or a production future executor.
+
+use oclive_kernel_contracts::{BaseCallFuture, MemoryBase};
+use oclive_kernel_types::{BaseCallError, BaseCallErrorKind, MemoryBaseRequest};
+use std::task::{Context, Poll, Waker};
+
+struct TestMemory;
+
+impl MemoryBase for TestMemory {
+    fn retrieve<'a>(&'a self, request: MemoryBaseRequest<'a>) -> BaseCallFuture<'a, Vec<String>> {
+        Box::pin(async move {
+            if !request.query.starts_with("literal:") {
+                return Err(BaseCallError {
+                    kind: BaseCallErrorKind::Unsupported,
+                    detail: Some("Test fixture supports literal: queries only".into()),
+                });
+            }
+            let needle = &request.query["literal:".len()..];
+            Ok(request
+                .materials
+                .iter()
+                .filter(|item| item.contains(needle))
+                .map(|item| (*item).to_string())
+                .collect())
+        })
+    }
+}
+
+// This fixture always completes immediately. A real asynchronous module needs a caller's executor.
+fn immediate<T>(mut future: BaseCallFuture<'_, T>) -> Result<T, BaseCallError> {
+    match future
+        .as_mut()
+        .poll(&mut Context::from_waker(Waker::noop()))
+    {
+        Poll::Ready(result) => result,
+        Poll::Pending => panic!("test fixture must complete immediately"),
+    }
+}
+
+#[test]
+fn external_memory_uses_only_this_calls_material() {
+    let slot: &dyn MemoryBase = &TestMemory;
+    let first = ["Alice did not drink tea", "Bob is waiting"];
+    let second = ["Carol quoted an unconfirmed tea report"];
+    assert_eq!(
+        immediate(slot.retrieve(MemoryBaseRequest {
+            materials: &first,
+            query: "literal:tea",
+        }))
+        .expect("first fixture call"),
+        [first[0]]
+    );
+    assert_eq!(
+        immediate(slot.retrieve(MemoryBaseRequest {
+            materials: &second,
+            query: "literal:tea",
+        }))
+        .expect("second fixture call"),
+        second
+    );
+    assert!(immediate(slot.retrieve(MemoryBaseRequest {
+        materials: &[],
+        query: "literal:tea",
+    }))
+    .expect("empty material")
+    .is_empty());
+}
+
+#[test]
+fn unsupported_requirement_preserves_the_typed_failure() {
+    let slot: &dyn MemoryBase = &TestMemory;
+    let error = immediate(slot.retrieve(MemoryBaseRequest {
+        materials: &["This call has material"],
+        query: "semantic:tea",
+    }))
+    .expect_err("unsupported query must not become a fabricated success");
+    assert_eq!(error.kind, BaseCallErrorKind::Unsupported);
+    assert_eq!(
+        error.detail.as_deref(),
+        Some("Test fixture supports literal: queries only")
+    );
+}

@@ -15,7 +15,7 @@
   "commands": [],
   "permissions": ["project.write"],
   "defaults": {
-    "profiles": ["robot-soul", "robot-gateway", "dialogue-only", "headless-api", "library-embed"]
+    "profiles": ["robot-soul", "robot-gateway", "dialogue-only", "headless-api", "library-embed", "kernel-base"]
   },
   "dependencies": [],
   "extends": [],

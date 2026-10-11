@@ -23,6 +23,10 @@ Monolith (kernel_server only): add --monolith in non-interactive mode. oclive bu
 
 Factory templates (--template; explicit CLI flags override defaults):
 
+kernel-base: contracts/types-only development library; requires --kernel-source.
+It rejects runtime presets/backends, Host, role-pack, plugin and Monolith options.
+The following five legacy reference-runtime profiles retain their existing defaults:
+
 ┌─────────────────┬─────────┬──────────────────┬────────────────┬──────────────────────────────┐
 │ template        │ preset  │ monolith default │ project-type   │ default --with-role-pack     │
 ├─────────────────┼─────────┼──────────────────┼────────────────┼──────────────────────────────┤

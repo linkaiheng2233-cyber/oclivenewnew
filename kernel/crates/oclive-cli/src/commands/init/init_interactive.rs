@@ -54,6 +54,9 @@ pub(crate) fn run_quick_init(args: &InitArgs) -> Result<()> {
 ///
 /// Returns an error when interactive input, kernel-source validation, or TUI selection fails.
 pub fn build_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> Result<ProjectConfig> {
+    if args.template == Some(super::InitTemplateArg::KernelBase) {
+        return crate::kernel_base_scaffold::build_config(args);
+    }
     if args.quick {
         let mut cfg = quick_project_config(&args.project_name);
         apply_backend_cli_overrides(&mut cfg, args);
@@ -93,6 +96,9 @@ pub fn build_init_config(args: &InitArgs, skip_interactive_confirm: bool) -> Res
         c
     };
 
+    if cfg.factory_template == Some(super::InitTemplateArg::KernelBase) {
+        return Ok(cfg);
+    }
     apply_template_layer(args, &mut cfg);
     apply_monolith_options(args, &mut cfg);
     if cfg.monolith_enabled {

@@ -1,0 +1,18 @@
+[package]
+name = "{{ safe_package_name }}"
+version = "0.1.0"
+edition = "2021"
+license = "{{ cargo_license }}"
+{{#if cargo_author}}
+authors = ["{{ cargo_author }}"]
+{{/if}}
+{{#if cargo_description}}
+description = "{{ cargo_description }}"
+{{/if}}
+
+# Keep a generated project separate even when it is placed beneath another workspace.
+[workspace]
+
+[dependencies]
+oclive_kernel_contracts = { path = "{{ path_contracts }}" }
+oclive_kernel_types = { path = "{{ path_types }}" }

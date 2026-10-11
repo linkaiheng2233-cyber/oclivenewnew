@@ -945,3 +945,10 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **真实问题 / 修正收益**：aeea1bbc冻结后首次 `npm run check:ci-local` native 101（364.675秒），controller未在新工作树准备Tauri内核资源。核到现有CI的debug bundle步骤即停止调查；原入口native 0后接续Rust，不改规则/配置、不造主平台stub。[里程碑入口](waves/WAVE-20261009-MODULE-AUTHOR-MILESTONE.md#3-验收与转让方式)补可执行前置，避免下一位接手人再次漏做。
 - **实际证据 / 归属**：所有进程仍在 `aeea1bbcb561fc61002c140c42e3551bc2ae6b6f`。原完整入口失败前D5 PASS（31 checks，sample lib明确skip）、前端lint/typecheck/build/fmt通过；debug bundle native 0（11.196秒）；接续 `check:rust` native 0（429.619秒，Host637/runtime273/desktop33 passed），`check:rust:integration` native 0（954.231秒，workspace＋串行CLI）。完整入口本身保持101，不包装成直接native 0。原失败/续验、编译和Git换行stderr分件保留；生成bridge核同Git blob后仅更新索引，零暂存差量；父环境不变，没有源码/依赖/API变化。
 - **有限写集 / 出口**：上述进程全部终态后才追加本事件、本计划实际接续和Wave的资源前置，三Markdown实质修正与原历史保全同轮验收；controller自查 independent=false。原源码/依赖检查按aeea绑定并核新差量仅文档，不重复Rust或完整入口；随后冻结最终SHA、主树/远端身份匹配才FF并一次push。新SHA正式CI结果仍待实际取得；不为绿灯造提交、不改任何债务状态或已定边界。
+
+### DCL-20261011-87 · Kernel 契约基础工程脚手架
+
+- **原因 / 授权**：维护者要求脚手架先提供开发用的内核基础，不带 Host、预装模块或角色包，并明确选择“先做现有契约的基础开发工程”。[有限计划](ROUND-02-PLAN.md#kernel-基础脚手架--现有契约开发工程2026-10-11)从干净 `2b0390cdecaeed428f9ea1f753098f4aa69f3ebd` 独立施工，controller 实施与语义自查 independent=false。84–86 已由尚未合入的本地切片预留，本片使用87，不回改历史编号。
+- **实际改动 / 收益**：新增显式 `init --template kernel-base --kernel-source <源码根>`，通过既有 init / 官方 scaffold 入口生成五文件 Rust 库工程；只引用现有 contracts/types。测试内 Memory 示例让开发者先跑一次公共契约调用及完整失败；不造新 SDK 门面、默认六槽实现或运行调度。原五模板保持原顺序与默认，基础模板追加在末尾；运行选项拒绝而不是悄悄启用 Host，工程不登记用户项目注册表。
+- **验证 / 证据**：[本批 Wave](waves/WAVE-20261011-KERNEL-BASE-SCAFFOLD.md)记录旧 CLI 因缺模板选项而编译后的调用红、实现后外部工程编译与两条契约测试绿、解析依赖图边界、CLI 回归、Clippy/fmt 与显式 workspace doctest。检查/预览零工程写入、非空目录拒绝、运行参数拒绝均有实际 CLI 用例。这里是本地功能片，不借旧 SHA 正式 CI，不把基础工程描述成独立可启动小 Kernel。
+- **出口 / 保持**：在独立分支保存可转让本地提交；main、公共契约、运行实现、锁文件、现有工作流和债务状态保持。SDK、Host 预设下载以及 CI 分层留待各自目标，不为本片扩查其余五槽、运行模型或解冻架构。达到可生成、可编译且产物/依赖边界成立即停止。

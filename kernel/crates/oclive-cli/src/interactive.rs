@@ -282,6 +282,20 @@ pub fn run_interactive(args: &InitArgs) -> Result<ProjectConfig> {
         pick_factory_template()?
     };
     let manual_config = template_choice.is_none() && args.preset.is_none();
+    if template_choice == Some(InitTemplateArg::KernelBase) {
+        let mut foundation_args = args.clone();
+        foundation_args.template = template_choice;
+        foundation_args.project_name = project_name;
+        if foundation_args.kernel_source.is_none() {
+            let source: String = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("OCLive source root (contracts/types; no Host)")
+                .default(".".into())
+                .interact_text()
+                .context("kernel-base source")?;
+            foundation_args.kernel_source = Some(source.into());
+        }
+        return crate::kernel_base_scaffold::build_config(&foundation_args);
+    }
 
     let (mut cfg, template_default_monolith) = match (template_choice, args.preset.as_deref()) {
         (Some(t), _) => {

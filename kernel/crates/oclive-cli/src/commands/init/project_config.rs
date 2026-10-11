@@ -141,6 +141,14 @@ pub struct ProjectConfig {
 
 impl ProjectConfig {
     pub fn print_summary(&self) {
+        if self.factory_template == Some(super::preset_config::InitTemplateArg::KernelBase) {
+            println!(
+                "Contract-only Kernel development library: {}",
+                self.project_name
+            );
+            println!("Dependencies: contracts + types; no Host, providers or turn scheduler.");
+            return;
+        }
         println!("—— Configuration summary ——");
         println!("Project name: {}", self.project_name);
         println!("Type: {:?}", self.project_type);

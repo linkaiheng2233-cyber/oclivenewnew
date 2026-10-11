@@ -58,6 +58,15 @@ pub const CATALOG: &[TemplateCatalogEntry] = &[
         project_type: "library",
         default_role_pack: "none",
     },
+    TemplateCatalogEntry {
+        id: "kernel-base",
+        scene: "Kernel contract development",
+        description: "contracts/types only; requires --kernel-source; no Host or default modules",
+        preset: "none",
+        monolith: "off",
+        project_type: "library",
+        default_role_pack: "none",
+    },
 ];
 
 pub fn print_templates_table() {
@@ -74,7 +83,7 @@ pub fn print_templates_table() {
         );
     }
     println!(
-        "\nNote: explicit --preset / --monolith / --with-role-pack override template defaults."
+        "\nNote: runtime flags override legacy profile defaults; kernel-base rejects runtime options."
     );
     println!("Vision and weld comparison: creator-docs/getting-started/KERNEL_FACTORY_VISION.md");
     for e in CATALOG {
@@ -84,6 +93,7 @@ pub fn print_templates_table() {
 
 pub fn template_from_id(id: &str) -> Option<InitTemplateArg> {
     match id {
+        "kernel-base" => Some(InitTemplateArg::KernelBase),
         "robot-soul" => Some(InitTemplateArg::RobotSoul),
         "robot-gateway" => Some(InitTemplateArg::RobotGateway),
         "dialogue-only" => Some(InitTemplateArg::DialogueOnly),
@@ -109,6 +119,16 @@ pub fn project_config_from_template(name: &str, t: InitTemplateArg) -> crate::in
     cfg.monolith_enabled = td.monolith_default && td.project_type == ProjectType::KernelServer;
     cfg.role_pack_kind = td.role_pack;
     cfg.factory_template = Some(t);
+    if t == InitTemplateArg::KernelBase {
+        cfg.backends = crate::init::BackendSlots::all(crate::init::BackendImpl::None);
+        cfg.plugins = crate::init::PluginSelection {
+            directory_plugins: false,
+            kernel_server: false,
+            oocp: false,
+        };
+        cfg.features.use_complex_emotion = false;
+        cfg.skip_role_pack = true;
+    }
     cfg
 }
 
@@ -117,8 +137,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn catalog_lists_five_templates() {
-        assert_eq!(CATALOG.len(), 5);
+    fn catalog_lists_foundation_and_five_legacy_templates() {
+        assert_eq!(CATALOG.len(), 6);
+        assert!(template_from_id("kernel-base").is_some());
         assert!(template_from_id("robot-gateway").is_some());
         assert!(template_from_id("unknown").is_none());
     }

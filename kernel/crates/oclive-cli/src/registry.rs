@@ -97,6 +97,7 @@ fn template_id_str(t: InitTemplateArg) -> &'static str {
         InitTemplateArg::DialogueOnly => "dialogue-only",
         InitTemplateArg::HeadlessApi => "headless-api",
         InitTemplateArg::LibraryEmbed => "library-embed",
+        InitTemplateArg::KernelBase => "kernel-base",
     }
 }
 
