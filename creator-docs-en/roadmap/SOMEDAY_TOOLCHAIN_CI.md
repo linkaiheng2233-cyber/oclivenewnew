@@ -20,7 +20,7 @@ Shadow evidence has two distinct levels. `data/ci/shadow-scenarios.v1.json` and 
 
 <a id="kernel-host-ci-first-slice"></a>
 
-## Kernel / Host responsibility: first slice prepared, not implemented
+## Kernel / Host responsibility: first local slice
 
 The responsibility model starts with Kernel public contracts, then generic Host integration, concrete Host/distro behavior, and the selected release combination. Architecture ownership stays in [MODULE_MAP §0.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities). Model-specific prompts, repair policies, emotion presentation, and tuning belong to their implementation/Host; model size is not itself a module boundary. Evidence for these behaviors must name the model and conditions. Dependency propagation remains necessary when a public contract changes.
 
@@ -37,7 +37,7 @@ The 2026-10-11 preparation is bound to `24f62303e9bdea37061fe44acc7a0830dc519f98
 | Layering / Dimension 5 / Cargo and npm audit / stale paths | Cross-cutting repository governance; not another Kernel capability and not a reason to mechanically split jobs. |
 | Nightly Loom / fuzz / CLI bench / visual / native Tauri | Target-dependent evidence. Tier describes scheduling, not semantic ownership; deeper splitting and performance gains are unknown in this preparation. |
 
-The proposed first implementation is **a local `check:kernel-base` entry**. This name is a proposal and cannot currently be run. Reuse these existing commands:
+The first implementation is **`npm run check:kernel-base`**, run from the OCLive source root. It needs Node (per package.json), Cargo, and Clippy, without preparing frontend or desktop resources. [`check-kernel-base.mjs`](../../scripts/check-kernel-base.mjs) reuses the native-command helper and stops with a nonzero exit on failure, a missing tool, or timeout. Each step has a 20-minute limit; the command appears first and Cargo output appears after the step finishes. Generated projects still run their own `cargo check` / `cargo test`; this entry does not automatically check external modules. It runs these existing commands in order:
 
 ```sh
 cargo test --locked -p oclive_kernel_contracts --test base_only_fixture
@@ -46,9 +46,9 @@ cargo clippy --locked -p oclive_kernel_contracts -p oclive_kernel_types --all-ta
 cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types --doc
 ```
 
-The two crates do not depend on Host/runtime/Tauri, but retain rich compatibility exports. Clippy/doctest cover their current compilation surface, not an assertion that every export is small Kernel. The entry would cover existing Base/minimal-role contracts and compilation examples without preparing desktop resources, models, or a database. It would not cover every Kernel hard boundary, module quality, shared-consumer execution, Host business, or all distros. Public API changes still require the applicable explicit workspace doctest.
+The two crates do not depend on Host/runtime/Tauri, but retain rich compatibility exports. Clippy/doctest cover their current compilation surface, not an assertion that every export is small Kernel. The entry covers existing Base/minimal-role contracts and compilation examples without preparing desktop resources, models, or a database. It does not cover every Kernel hard boundary, module quality, shared-consumer execution, Host business, or all distros. Public API changes still require the applicable explicit workspace doctest.
 
-Implement and test one local command chain, including nonzero failure propagation, its actual dependency boundary, and guidance on narrow versus full checks; stop there. Do not copy Base tests, add DTOs/traits, or manufacture six equivalent wrappers. A later remote slice must synchronize the trusted catalog, local command, workflow ownership, and repository contract tests. Retain existing combination regressions, prove coverage/unique ownership before moving tests out of `rust`, and do not call duplicated expensive execution successful layering. New ready-selective classes still require same-SHA real Compare and the formal gate. This preparation changes no workflow, catalog/schema, impact edges, required context, Push/ready policy, public API, or freeze, and closes no debt.
+The [slice report](../../handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md) records the actual chain, stop-on-failure regression, and dependency boundary; the [local gate matrix](../../human-docs-en/08_PR_GATE_MATRIX.md) explains narrow versus full checks. Stop at the usable local entry. Do not copy Base tests, add DTOs/traits, or manufacture six equivalent wrappers. A later remote slice must synchronize the trusted catalog, local command, workflow ownership, and repository contract tests. Retain existing combination regressions, prove coverage/unique ownership before moving tests out of `rust`, and do not call duplicated expensive execution successful layering. New ready-selective classes still require same-SHA real Compare and the formal gate. This slice changes no workflow, catalog/schema, impact edges, required context, Push/ready policy, public API, or freeze, and closes no debt.
 
 The scaffold is only an assistant. Once the descriptor contract is stable, it may generate and validate module metadata, list catalog-approved profiles, and invoke the same planner. It may not own workflow orchestration, inject shell commands, approve secrets or self-hosted GPU runners, create a second impact/resource schema, or treat generation as CI success. Scaffold discovery, source locking, command namespaces, and compatibility are owned by [`RFC_SCAFFOLD_PACKAGE_V1.md`](../rfc/RFC_SCAFFOLD_PACKAGE_V1.md); this document owns only the CI boundary.
 

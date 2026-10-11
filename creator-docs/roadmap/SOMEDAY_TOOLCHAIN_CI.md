@@ -81,9 +81,9 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 <a id="kernel-host-ci-first-slice"></a>
 
-#### 2026-10-11 首片准备：公共基础契约的独立检查入口
+#### 2026-10-11 首片：公共基础契约的独立检查入口
 
-**性质与止点**：这是基于 `24f62303e9bdea37061fe44acc7a0830dc519f98` 的有限设计，尚未实现新命令或改变CI选路。按现有目录、workflow及直接测试入口，将本次输入收束为下表8组职责；不逐个重分类全仓测试。职责层由[MODULE_MAP §0.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)拥有，本表只判验证出口。跨层治理不是额外的Kernel能力。
+**性质与止点**：分责准备基于 `24f62303e9bdea37061fe44acc7a0830dc519f98`，本片只实现下述本地入口，未改变CI选路。按现有目录、workflow及直接测试入口，将本次输入收束为下表8组职责；不逐个重分类全仓测试。职责层由[MODULE_MAP §0.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities)拥有，本表只判验证出口。跨层治理不是额外的Kernel能力。
 
 | 入选职责组 / 现行入口 | 当前验证归属与直接依据 | 本片结论 / 不外推的范围 |
 |---|---|---|
@@ -96,7 +96,7 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 | 跨层治理；layering / Dimension 5 / cargo、npm audit / stale-paths | 治理检查覆盖仓库分层、依赖、文档、控制面和其它已登记约束；多个validator可由同job执行 | 不塞入某个Host业务层，也不为四层整齐机械拆job；供应链和控制面安全下限保持 |
 | 重型条件证据；Nightly的Loom / fuzz / CLI bench / visual / native Tauri | [Nightly](../../.github/workflows/nightly-advisory.yml)有明确目标与独立执行通道，部分覆盖公共数据解析，部分覆盖具体桌面/工具 | tier说明运行节奏，不能代替语义归属；逐项物理拆分与全量性能收益本轮未判定 |
 
-**第一片建议：先提供本地 `check:kernel-base`，不改变远端责任组。** 此名称是拟议入口，当前还不能执行。让基础模板作者无需准备前端、桌面资源、模型或数据库，就能复现六Base调用、已知失败原因和最小角色转换约束；复用现有设施，不建立另一套执行框架。拟议检查仅为：
+**第一片本地入口：`npm run check:kernel-base`，不改变远端责任组。** 在OCLive源码根目录运行；只需Node（版本按package.json）、Cargo和Clippy，无需先准备前端、桌面资源、模型或数据库。实现见 [`check-kernel-base.mjs`](../../scripts/check-kernel-base.mjs)，复用既有native命令helper，按顺序执行以下四条已有检查；非零、工具缺失或超时即停止并让入口非零，每步上限20分钟。先显示命令，Cargo输出在该步结束后显示。它不是脚手架生成工程的自动验收器，作者仍在自己的工程运行 `cargo check` / `cargo test`。检查链仅为：
 
 ```sh
 cargo test --locked -p oclive_kernel_contracts --test base_only_fixture
@@ -107,7 +107,7 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types --doc
 
 contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出；上述Clippy/doctest按当前crate编译面覆盖，不宣称所有内容均属小Kernel。该入口只验证已有Base/最小角色相关契约及编译文档；不覆盖Kernel所有硬边界、模块目标质量、共享消费者运行、Host业务或所有发行版。真实公开面变更仍按[核实协议](../../handoff/AI_VERIFICATION_PROTOCOL.md)显式跑workspace doctest，不能以这个窄入口替代。
 
-**有限实施与后续出口**：先加一条仓库本地入口，核同一命令链的成功、失败非零传播、实际依赖与不启动Host的边界，指南说明何时用窄测、何时用现有完整验收。不要复制Base测试、生成新DTO/trait或机械补六套包装。达到这一步即停；只有下一片真正需要远端接入时，才同步受信catalog、本地命令、workflow所有权与仓库合同测试。保留旧组合回归；要从原 `rust` job中迁走测试时先证明覆盖与唯一所有权，不能先新增一份重复高成本测试再称分层完成。ready选择类别扩展仍受真实Compare与正式gate约束。未知的更深测试归属、缓存/并发收益和发布矩阵另排，不成为本地入口的前置调查。
+**有限实施与后续出口**：同一命令链的成功、失败非零传播及目标crate实际依赖按[本片报告](../../handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md)记录；使用指南见[本地门禁矩阵](../../human-docs/08_PR_GATE_MATRIX.md)。不复制Base测试、生成新DTO/trait或机械补六套包装。达到本地入口可用即停；只有下一片真正需要远端接入时，才同步受信catalog、本地命令、workflow所有权与仓库合同测试。保留旧组合回归；要从原 `rust` job中迁走测试时先证明覆盖与唯一所有权，不能先新增一份重复高成本测试再称分层完成。ready选择类别扩展仍受真实Compare与正式gate约束。未知的更深测试归属、缓存/并发收益和发布矩阵另排，不成为本地入口的前置调查。
 
 ### 2.5 执行通道约定
 

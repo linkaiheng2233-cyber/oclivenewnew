@@ -1054,3 +1054,11 @@
 **精确写集 / 不变量**：只修改 `creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md`、其英文镜像、本计划与DEBT_CHANGELOG。先保全四份磁盘原件，计划/事件只追加。设计中标明公共基础契约、共享消费者、具体Host、组合测试和跨层治理的现行出口；只提出一个不带Host的本地契约检查入口，尚不实现。workflow、catalog/schema、模块元数据、中央影响图、执行策略、required gate、Push/ready选择范围、公共API及全部冻结项保持。
 
 **验收 / 节奏 / 停止**：默认及改文链接、docs-only旧路径、镜像、登记、债结构、严格UTF-8/无BOM、精确diff与历史保全；纯Markdown准备不重复Rust/业务/全量CI。只保存本地准备提交，主树冻结SHA不动；不为等待CI再造业务验证。首片真正实施时再做受影响脚本与真实命令失败/成功回归，若接入受信CI编排再升为控制面验收；新ready选择类别仍须同SHA真实Compare，不能凭分责表或少量通过删边。未决权责/公共强制义务才向维护者提问，普通未判定范围明确保留，不重开全仓分类。
+
+### K-CI-IMPACT-01 · 公共基础契约本地出口（2026-10-11）
+
+**授权 / 起点 / 尺寸**：维护者要求继续推进。接续干净 `a74e249c8c444525073eecf3705e587f0df84089` 的已冻结首片方案，main与实际远端仍为 `24f62303e9bdea37061fe44acc7a0830dc519f98`；该main正式CI `38111785703` 已17/17成功，本片不能借它给新SHA盖章。M / 常规，controller实施及语义自查 independent=false；目标仅为能运行的 `check:kernel-base` 本地入口。
+
+**精确十路径 / 关联闭环**：package.json只加一个命令，新增 `scripts/check-kernel-base.mjs` 与同名test，CI设计中英、人类PR门禁矩阵中英、本计划/DCL追加、本批Wave。七份既有原件及hash先保全于 ignored `.cursor/plans/kernel-base-local-check-20261011-r0/`。npm入口→四条既有Cargo命令→复用native工具helper→成功/失败输出→文档使用与边界→入口回归；不复制Base实现或测试，不另建执行框架，不修改Rust、锁文件、依赖、共享消费者、Host、workflow、catalog、selector、required gate或任何冻结项。
+
+**有界验收 / 停止线**：新增入口不存在的红只证明尚未实施；真实命令链通过，定向回归核中途native非零停止、缺cargo/未知参数非零且无PASS。一次目标crate依赖树确认不引入Host/runtime/Tauri，不升级全workspace依赖调查。适用脚本语法/既有toolchain回归、Dimension5 --ci、默认＋已改文链接、镜像/登记、债结构、编码、精确diff与历史保全；未变Rust公共面，workspace doctest不适用，入口自身显式运行两crate doctest。达到命令可用与失败关闭即保存本地提交；不合入/推送main、不重跑全量远端CI、不关闭K-CI-IMPACT-01。下一片远端执行所有权需另行核覆盖及仓库合同，保留旧组合回归，不擅改ready/Push策略。

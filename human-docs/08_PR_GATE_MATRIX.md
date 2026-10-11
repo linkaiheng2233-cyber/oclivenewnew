@@ -7,6 +7,7 @@
 | 改动类型 | 必跑（本地） | 可选 / 条件 |
 |----------|--------------|-------------|
 | **仅文档** (`*.md`, `human-docs/`, `creator-docs/`) | 链接抽查；若动 `CHANGELOG.md` → `node scripts/check-changelog-parity.mjs` | — |
+| **公共 Base / 最小角色开发反馈** | `npm run check:kernel-base`（源码仓库根目录） | 合批验收仍按实际影响选下列门禁；改公开 Rust API另跑 `cargo test --workspace --doc` |
 | **仅前端** (`distros/shared/`, `distros/chat-pro/`, `distros/chat-pro/e2e/`, `distros/chat-pro/vite.config.ts`) | `npm run test:unit` · `npm run build` | Linux/macOS：`npm run test:e2e:preview` |
 | **内核 / 编排** (`kernel/crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
 | **Tauri API** (`distros/desktop-tauri/src/api/`) | `cargo test -p oclivenewnew-tauri` · `npm run check` | `npm run test:e2e:core-api-restart` |
@@ -15,7 +16,14 @@
 
 ## 快速组合
 
+在 OCLive 源码根目录运行 `npm run check:kernel-base`，会依次运行现有 Base fixture、最小角色合同测试、两项公共 crate 的 Clippy 和显式 doctest。需要 Node（按 package.json）、Cargo 和 Clippy；不要求先构建前端或准备桌面资源。命令失败即停止并返回非零；首次编译较慢，每步先显示命令，Cargo 输出在该步结束后显示，每步上限20分钟。详细[检查范围及未覆盖边界](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#kernel-host-ci-first-slice)由CI设计维护。
+
+例如修改 Memory 的 Base 调用时，先用这个入口检查 OCLive 的公共契约基线，再运行自己模块的测试。脚手架生成工程仍在其自身目录执行 `cargo check` / `cargo test`；本入口不会自动检查树外模块。消费者接线、Host行为及里程碑验收按实际改动补相应检查；窄测通过不等于完整CI通过。
+
 ```bash
+# 公共基础契约的日常窄测（OCLive源码仓库）
+npm run check:kernel-base
+
 # 日常（与 CI frontend + rust 子集对齐）
 npm run check
 
