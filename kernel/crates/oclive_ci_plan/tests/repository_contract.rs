@@ -84,7 +84,7 @@ fn repository_catalog_maps_every_validator_to_its_execution_lane() {
         .plan(request("release", "unmapped/fail-safe.txt"))
         .expect("release fallback plan");
     assert!(plan.fallback.full);
-    assert_eq!(plan.selected_validators.len(), 20);
+    assert_eq!(plan.selected_validators.len(), 21);
 
     let main_workflow =
         fs::read_to_string(root.join(".github/workflows/ci.yml")).expect("read main workflow");
@@ -320,9 +320,9 @@ fn public_contract_checks_have_one_owner_without_narrowing_host_coverage() {
     assert!(workflow_job_block(&workflow, "ci-gate")
         .lines()
         .any(|line| line == "      - kernel-contracts"));
-    assert!(
-        workflow.contains("Trusted base predates the public contract owner; bootstrap stays full.")
-    );
+    assert!(workflow.contains(
+        "Trusted base predates the current public/default-Host owners; bootstrap stays full."
+    ));
 }
 
 #[test]
@@ -455,6 +455,66 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
         .reasons
         .iter()
         .any(|reason| reason.starts_with("risk_override:ci-control-plane:")));
+}
+
+#[test]
+fn default_reference_host_has_its_own_configuration_without_removing_desktop_coverage() {
+    let root = repo_root();
+    let catalog: serde_json::Value = serde_json::from_str(
+        &fs::read_to_string(root.join("data/ci/validation-catalog.v1.json")).unwrap(),
+    )
+    .unwrap();
+    let validator = catalog["validators"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|validator| validator["id"] == "reference-host-default")
+        .expect("default Host configuration must have a distinct owner");
+    assert_eq!(validator["gate"], "required");
+    assert_eq!(validator["command_id"], "check-reference-host");
+    assert_eq!(
+        validator["workflow_jobs"],
+        serde_json::json!(["reference-host-default"])
+    );
+    assert_eq!(
+        validator["platforms"],
+        serde_json::json!(["ubuntu-22.04", "windows"])
+    );
+    for profile in catalog["profiles"].as_array().unwrap() {
+        let validators = profile["validators"].as_array().unwrap();
+        if validators.iter().any(|id| id == "rust-workspace") {
+            assert!(
+                validators.iter().any(|id| id == "reference-host-default"),
+                "{}",
+                profile["id"]
+            );
+        }
+    }
+    let workflow = fs::read_to_string(root.join(".github/workflows/ci.yml")).unwrap();
+    let default = workflow_job_block(&workflow, "reference-host-default");
+    assert!(default.contains("os: [ubuntu-22.04, windows-latest]"));
+    assert!(default.contains("node scripts/check-reference-host.mjs"));
+    assert!(default.contains("node --test scripts/check-reference-host.test.mjs"));
+    for forbidden in [
+        "npm ci",
+        "npm run build",
+        "bundle-kernel",
+        "apt-get",
+        "--all-features",
+        "OCLIVE_HTTP_API_MOCK_LLM",
+    ] {
+        assert!(
+            !default.contains(forbidden),
+            "default Host configuration must not include {forbidden}"
+        );
+    }
+    // Byte preservation is checked locally; this regression also runs on clean clones.
+    let remaining = workflow_job_block(&workflow, "rust");
+    assert!(remaining.contains("cargo clippy --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types --all-targets --all-features --no-deps -- -D warnings"));
+    assert!(remaining.contains("cargo test --locked --workspace --exclude oclive-cli --exclude oclive_kernel_contracts --exclude oclive_kernel_types"));
+    assert!(workflow_job_block(&workflow, "ci-gate")
+        .lines()
+        .any(|line| line == "      - reference-host-default"));
 }
 
 #[test]

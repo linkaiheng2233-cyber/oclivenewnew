@@ -24,8 +24,8 @@
       "expected": {
         "direct_modules": ["oclive.shared"],
         "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -38,8 +38,8 @@
       "expected": {
         "direct_modules": ["oclive.chat-pro", "oclive.roles"],
         "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -52,8 +52,8 @@
       "expected": {
         "direct_modules": ["oclive.chat-pro", "oclive.plugins"],
         "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -66,8 +66,8 @@
       "expected": {
         "direct_modules": ["oclive.kernel-contracts"],
         "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -80,8 +80,8 @@
       "expected": {
         "direct_modules": ["oclive.scaffold"],
         "affected_modules": ["oclive.cli", "oclive.scaffold"],
-        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust-workspace"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -94,8 +94,8 @@
       "expected": {
         "direct_modules": ["oclive.examples"],
         "affected_modules": ["oclive.examples"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -108,8 +108,8 @@
       "expected": {
         "direct_modules": ["oclive.kernel-runtime"],
         "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-contracts", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-arm64-cross", "rust-workspace", "visual-presentation-smoke"],
-        "workflow_jobs": ["cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-contracts", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "rust-arm64-cross", "visual-presentation-smoke"],
+        "selected_validators": ["cargo-audit", "cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-contracts", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-arm64-cross", "rust-workspace", "visual-presentation-smoke"],
+        "workflow_jobs": ["cli", "cli-bench", "cross-host-e2e", "dimension5-acceptance", "e2e-tauri", "frontend", "fuzz", "kernel-contracts", "kernel-host-dual-core", "layering-ratchet", "loom", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "rust-arm64-cross", "visual-presentation-smoke"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -123,8 +123,8 @@
       "expected": {
         "direct_modules": ["oclive.chat-pro", "oclive.roles"],
         "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -137,8 +137,8 @@
       "expected": {
         "direct_modules": ["oclive.docs", "oclive.scaffold"],
         "affected_modules": ["oclive.cli", "oclive.docs", "oclive.scaffold"],
-        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust-workspace", "stale-paths"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust", "stale-paths"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust", "stale-paths"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -151,8 +151,8 @@
       "expected": {
         "direct_modules": ["oclive.docs", "oclive.examples"],
         "affected_modules": ["oclive.docs", "oclive.examples"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "remote-plugin-demo", "rust-workspace", "stale-paths"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "remote-plugin-demo", "rust", "stale-paths"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "oocp-test-suite", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -165,8 +165,8 @@
       "expected": {
         "direct_modules": ["oclive.cli"],
         "affected_modules": ["oclive.cli"],
-        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust-workspace"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -179,8 +179,8 @@
       "expected": {
         "direct_modules": ["oclive.desktop"],
         "affected_modules": ["oclive.chat-pro", "oclive.desktop", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -207,8 +207,8 @@
       "expected": {
         "direct_modules": ["oclive.kernel-runtime", "oclive.shared"],
         "affected_modules": ["oclive.chat-pro", "oclive.cli", "oclive.desktop", "oclive.examples", "oclive.kernel-runtime", "oclive.plugins", "oclive.roles", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -235,8 +235,8 @@
       "expected": {
         "direct_modules": ["oclive.scaffold"],
         "affected_modules": ["oclive.cli", "oclive.scaffold"],
-        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust-workspace"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "rust"],
+        "selected_validators": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust-workspace"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "kernel-contracts", "reference-host-default", "rust"],
         "fallback_full": false,
         "fallback_reason_prefixes": []
       },
@@ -263,8 +263,8 @@
       "expected": {
         "direct_modules": ["oclive.repo-tooling"],
         "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,
         "fallback_reason_prefixes": ["risk_override:ci-control-plane:"]
       },
@@ -277,8 +277,8 @@
       "expected": {
         "direct_modules": ["oclive.repo-tooling"],
         "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,
         "fallback_reason_prefixes": ["risk_override:workspace-dependencies:"]
       },
@@ -291,8 +291,8 @@
       "expected": {
         "direct_modules": [],
         "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
-        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust-workspace", "stale-paths"],
-        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "remote-plugin-demo", "rust", "stale-paths"],
+        "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
+        "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,
         "fallback_reason_prefixes": ["unmapped_changed_path:"]
       },

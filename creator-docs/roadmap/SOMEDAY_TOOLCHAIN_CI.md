@@ -63,7 +63,7 @@ Stage 1 先为仓内领域模块建立描述；既有模块允许渐进迁移，
 
 ### 2.4 主工作流的执行所有权
 
-影响规划回答“应验证什么”，但不能用重复执行换取表面安全。主工作流为高成本验证分配唯一所有者：通用 Rust job 覆盖非 CLI workspace，CLI job 独占需要嵌套 Cargo build 的串行 E2E，Dimension 5 独占 `cargo audit`，前端 job 显式持有 lint、Vue/TypeScript 类型检查、单测与构建。验证目录可以让多个验证器坐标映射到同一个受信 job，但不得为了坐标一一对应而重复运行同一命令。
+影响规划回答“应验证什么”，但不能用重复执行换取表面安全。主工作流为高成本验证分配明确所有者：公共组独占contracts/types完整检查，默认Host组验未启可选feature的实际配置，通用Rust组保留非CLI/两公共根包的workspace及桌面feature组合，CLI独占嵌套Cargo串行E2E，Dimension5独占 `cargo audit`，前端组持有lint、类型、单测与构建。不同feature条件分别验；同一条件下不得为坐标一一对应而重复运行同一检查。目录可将多个validator坐标映射到同一受信job。
 
 这项去重与选择性执行仍是两层控制：Stage 3.1 允许安全的草稿 PR 按计划选择责任组，用于开发反馈；ready PR 只有纯文档 Canary 可以继续选择性执行，其他 ready PR 与所有 Push 都运行全部主 CI 责任组。规划器 warning/full fallback/异常在任何状态都强制全量。目录中 `tier=nightly` 的责任组继续进入独立 Nightly/手动通道。每次调整执行所有权都必须同时更新工作流、验证目录、本地复现命令和仓库契约测试；在远端证据确认前，不以本地冷/热缓存耗时推断最终收益。
 
@@ -132,25 +132,26 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | 推送main/master，或手动运行主workflow | 全部主CI责任组 | `ci-gate`；普通备份分支push本身不触发此workflow |
 | 规划warning、未知/高风险回退或规划失败 | 全量；规划失败仍使最终gate失败 | 不允许全量检查的通过掩盖规划失败 |
 
-上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。所有权首片的主workflow有14个验证责任job定义；公共契约、剩余Rust和前端各展开两平台，加上规划与gate，全量配置为19个实际job。2026-10-12已集成并推送main `12bc7dc8`；正式结论须绑定该SHA的实际CI结果，不借旧17-job基线的绿灯。数量描述结构，不能作为质量或性能目标。
+上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。已推送main `12bc7dc8` 的公共所有权首片为14个验证责任job定义、19个实际job，正式 [38156014581](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581) 已19/19及ci-gate通过。本地后续默认Host组使配置成为15个验证job；公共契约、默认Host、剩余Rust、前端四组各展开两平台，加上规划与gate为21个实际job，正式结论待该后续冻结SHA的实际CI。数量描述结构，不能作为质量或性能目标。
 
 **已集成首片：公共契约与兼容检查执行所有权。** 已同步catalog、完整本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context，具体集合与迁移规则见[下方责任对照](#ci-responsibility-map)。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读；新增责任组不等于全部CI分层完成。
 
-**后续单独评估：选择范围。** 执行归属稳定后，才依据目标SHA的真实Compare与契约回归讨论某类ready PR能否选择性执行。不因本地窄测更快、一次主CI通过或四层分责表就移除影响边。缓存、性能矩阵和未判定的细粒度归属不是首片前置调查；开发切片定向验证，同主题里程碑才做适用完整验收。
+**后续单独评估：选择范围。** 执行归属稳定后，才依据目标SHA的真实Compare与契约回归讨论某类ready PR能否选择性执行。不因本地窄测更快、一次主CI通过或责任对照表就移除影响边。缓存、性能矩阵和未判定的细粒度归属不是首片前置调查；开发切片定向验证，同主题里程碑才做适用完整验收。
 
-历史分类提交与正式基线见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；所有权实施和当时的适用本地验证见[首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。该首片现已合入/推送main `12bc7dc8`，具体集成范围见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)，正式CI结果在最终交付中单独绑定。下方参考Host默认反馈入口仍是后续本地片，不与main的验收混算；K-CI-IMPACT-01仍为In progress。
+历史分类提交与正式基线见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；所有权实施和当时的适用本地验证见[首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。该首片现已合入/推送main `12bc7dc8`，具体集成范围见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。默认Host入口和新CI所有者作为后续同主题批次，见[本片报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，不与main的正式验收混算；K-CI-IMPACT-01仍为In progress。
 
 <a id="ci-responsibility-map"></a>
 
 #### 维护者对接：现有检查的责任归属（2026-10-11首片；2026-10-12已集成）
 
-架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与当时正式main `24f62303` 相同；下表更新为已集成首片的[主workflow](../../.github/workflows/ci.yml)14个验证job。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
+架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与当时正式main `24f62303` 相同；已集成公共首片为14个验证job，下表包含后续默认Host片的[主workflow](../../.github/workflows/ci.yml)15个验证job配置。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
 
 2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链并集成/推送 `12bc7dc8`，正式CI只认冻结目标SHA；详细结果在[三层集成交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
 
 | 现有验证job | 责任归属 | 实际检查与不能外推的范围 |
 |---|---|---|
 | `kernel-contracts`（Linux/Windows） | 公共契约与既有兼容面 | 两crate的all-targets/all-features Clippy（`--no-deps`）及全部默认测试/适用doctest；包含rich/Stream等兼容面，不称两crate整体都是小Kernel。无需前端/Tauri资源准备。 |
+| `reference-host-default`（Linux/Windows） | 参考Host已支持的默认配置 | 沿既有 `check:reference-host` 运行完整默认Clippy/tests；不准备前端/Tauri、不启用可选features。与workspace里的桌面feature组合不同，后者原样保留，不将默认通过外推为全部Host或发行版已验。 |
 | `rust`（Linux/Windows） | **MIXED：共享接入、参考Host、桌面及治理** | 前端构建/桌面资源准备、workspace fmt保留；Clippy/tests只排除CLI及迁移的contracts/types根包，剩余检查及平台不变。Clippy `--no-deps` 将lint归给被选择的根包；依赖仍需编译。公共变更仍会选中相关下游回归。 |
 | `layering-ratchet` | 跨层治理 | domain分层棘轮；不是完整架构合规证明。 |
 | `dimension5-acceptance` | **MIXED：跨层治理＋已有工具/Host/产品约束** | `dimension5 --ci` 包含依赖/文档/分层等与已有定向检查，sample lib按此模式跳过；不是单一Kernel能力。 |
@@ -165,7 +166,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | `oocp-test-suite` | 既有桌面/参考Host协议组合 | mock LLM下OOCP和重启检查，不证明真实模型语义质量或所有崩溃窗口。 |
 | `remote-plugin-demo` | 参考插件/传输适配案例 | loopback Python `memory.rank` RPC案例，不等同Rust `MemoryBase` 或任意插件/网络验收。 |
 
-公共契约检查已有独立执行出口，共享消费者仍由剩余workspace及既有案例覆盖，尚未另拆job。`ci-impact-plan` 属受信选择控制面，`ci-gate` 属最终聚合，不与14个验证job混计；三组两平台矩阵展开后配置全量19个job。目录里的 `kernel-contracts` / `kernel-runtime` profile用于影响传播，不能因为下游测试归Host就删掉公共变更到它的边。
+公共契约及默认Host配置各有独立执行出口，共享消费者仍由剩余workspace及既有案例覆盖，尚未另拆job。`ci-impact-plan` 属受信选择控制面，`ci-gate` 属最终聚合，不与15个验证job混计；四组两平台矩阵展开后配置全量21个job。目录里的 `kernel-contracts` / `kernel-runtime` profile用于影响传播，不能因为下游测试归Host就删掉公共变更到它的边。
 
 | 其它现有workflow | 执行责任与证据边界 |
 |---|---|
@@ -174,7 +175,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | [CI rerun](../../.github/workflows/ci-rerun-flake.yml) | 限定失败集合的一次人工重跑设施，非通用自动重试或验证责任。 |
 | [Kernel checksums](../../.github/workflows/release-kernel-checksums.yml) | server发布构建、版本manifest、校验和及Actions artifact；不是全部发行版发布、签名或公开发布验收。 |
 
-**第一批已在本地实施：公共契约与兼容检查执行所有权。** 范围只含现有 `oclive_kernel_contracts` / `oclive_kernel_types` 的完整检查，不称两个crate都是小Kernel。已有 `check:kernel-base` 四步保持为有限开发反馈；新入口 **`npm run check:kernel-contracts`** 在源码根目录依次运行：
+**第一批已集成：公共契约与兼容检查执行所有权。** 范围只含现有 `oclive_kernel_contracts` / `oclive_kernel_types` 的完整检查，不称两个crate都是小Kernel。已有 `check:kernel-base` 四步保持为有限开发反馈；完整入口 **`npm run check:kernel-contracts`** 在源码根目录依次运行：
 
 ```sh
 cargo clippy --locked -p oclive_kernel_contracts -p oclive_kernel_types --all-targets --all-features --no-deps -- -D warnings
@@ -202,7 +203,13 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types
 
 该入口选择Host当前默认feature（`default=[]`），Clippy不加 `--all-features`，测试不筛选lib或集成目标。`tauri-commands`、`dual_core`、`test-faults`与桌面依赖的feature组合未由它验收；manifest的 `doctest=false` 保持，不把默认测试说成含Host doctest。依赖仍可能编译，不能称为独立部署的纯净Host或整个发行版验收。
 
-例如只改参考Host的会话材料绑定，先运行此入口取得默认配置反馈，再按实际影响补HTTP、持久化、桌面或产品回归。现有 `rust` all-feature/桌面组合和dual_core job继续保留，新本地命令没有接入workflow/catalog或授予少跑权限。直接将Host从原workspace迁走会影响桌面依赖带来的feature条件，因此本片停在明确的本地出口；相关耦合由[本轮报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)登记，不先假定可无损拆分。
+例如只改参考Host的会话材料绑定，先运行此入口取得默认配置反馈，再按实际影响补HTTP、持久化、桌面或产品回归。[入口首片](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)只交付本地反馈并登记feature耦合；下述后续片将原命令接入CI。现有 `rust` all-feature/桌面组合和dual_core job继续保留，未因新组获得少跑权限。
+
+<a id="reference-host-default-owner"></a>
+
+**默认Host执行所有权（后续本地配置）**：真实Cargo tree显示独立Host是 `default`，workspace默认测试是 `default,tauri-commands`；默认分支是已支持的无桌面使用路径，需以自己的配置验证。新 `reference-host-default` 组调用原样本地入口，旧workspace命令/资源前置逐字保留。两种feature条件分别验，不再为证明可机械迁移而穷尽cfg；多配置回归与相同条件下重复执行同一检查分别判读。
+
+catalog新增validator和有限command ID，五个原workspace profile保守携带它；gate选中/全量时要求成功。受信comparison base中任一新所有者缺失、映射混合/种类错误或JSON损坏时，走原 `trusted_policy_bootstrap` 全量，不允许PR目录批准少跑。影子21样本只增加对应坐标，现有docs选择、影响图和ready晋升类别不变。本片结果及未验边界见[默认Host所有者报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，新21-job配置仍须冻结目标SHA正式CI，不以父提交19/19盖章。
 
 第三层的前端开发反馈已有 **`npm run check:frontend`**，直接复用：lint、typecheck、shared/ChatPro单测、Theater smoke及ChatPro E2E构建。它不调用Cargo或替代桌面Rust/IPC、Linux预览E2E、打包及真实音频验收；不是完整发行版验收。此处只把既有入口与三层责任对齐，不新增第二个前端执行器。发行版若使用自有Host，仍需对自己的产品和实际组合另定义检查。
 
@@ -234,7 +241,7 @@ Stage 1/2 的成功条件不是“CI 变快”，而是规划结果确定、可�
 
 - **规划模拟**：`data/ci/shadow-scenarios.v1.json` 固定代表性 changed paths、期望模块闭包、validator/job 坐标和 fail-safe 原因；`npm run ci:shadow-samples` 生成 JSON + Markdown 到 `target/oclive-ci/shadow-samples/`，但不执行任何 validator。
 - **真实 Compare**：把某次实际 diff 的 `plan.json`、`execution.json` 与同一 workflow SHA 的全部远端 job 终态绑定，才可记录漏选/过选；全量 run 自动上传 `oclive-ci-compare-*` JSON/Markdown（90 天），为“本会跳过但实际失败”的 job 标记 false-negative candidate，仍须维护者裁决。快照缺失、job 未终态、SHA 不一致或结果不完整时只能记为 observational；失败后修复重跑不能被合并成“从未失败”。
-- **当前模拟集合**：沿用2026-08-21的 **21** 场景（**18** 个靶向、**3** 个 fail-safe），2026-10-11首片仅更新完整公共检查的执行坐标；除既有 docs、shared、角色包、目录插件、内核、脚手架、examples、Nightly、控制面、锁文件与未知路径外，覆盖中文角色路径的 NUL 文件输入、docs+scaffold、docs+examples、CLI、Desktop、Theater、跨域 reply-mode、docs/scaffold merge 与 Dependabot 节奏。shared / 角色包 / 目录插件仍因当前前端影响环选中9个validator（原8个加新公共所有者，含Rust），仍保留过选候选，不能仅凭模拟擅自删边。
+- **当前模拟集合**：沿用2026-08-21的 **21** 场景（**18** 个靶向、**3** 个 fail-safe），公共首片及默认Host后续片仅更新相应检查坐标；除既有 docs、shared、角色包、目录插件、内核、脚手架、examples、Nightly、控制面、锁文件与未知路径外，覆盖中文角色路径的 NUL 文件输入、docs+scaffold、docs+examples、CLI、Desktop、Theater、跨域 reply-mode、docs/scaffold merge 与 Dependabot 节奏。shared / 角色包 / 目录插件仍因当前前端影响环选中10个validator（原8个加公共和默认Host所有者，含Rust），仍保留过选候选，不能仅凭模拟擅自删边。
 - **纯文档真实对照（2026-08-15）**：PR #159 只改 `handoff/TECHNICAL_DEBT_INVENTORY.md`；计划为 targeted docs、2 个 validator，旧主 CI [`31828405121`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/31828405121) 全量 **16/16** 成功、墙钟约 **48 分钟**，未观察到漏选。该证据只授权纯文档 Canary。
 
 模拟通过只能证明规划器按**当前规则**稳定工作；它不能证明规则本身没有遗漏，也不能替代真实进程、硬件或远端平台证据。

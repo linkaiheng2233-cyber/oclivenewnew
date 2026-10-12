@@ -11,7 +11,7 @@
 | **两公共 crate 的完整契约与兼容检查** | `npm run check:kernel-contracts`（源码仓库根目录） | 不代替共享消费者/Host/发行版回归；公共改动的下游影响仍须验证 |
 | **参考 Host 默认配置开发反馈** | `npm run check:reference-host`（源码仓库根目录） | 默认feature的Clippy/tests；可选feature、桌面组合及HTTP/持久化影响另按实际变更验证 |
 | **仅前端** (`distros/shared/`, `distros/chat-pro/`, `distros/chat-pro/e2e/`, `distros/chat-pro/vite.config.ts`) | `npm run check:frontend`（现有lint/类型/单测/Theater smoke/E2E构建组合）· `npm run build`（保留原生产构建要求） | Linux/macOS：`npm run test:e2e:preview`；桌面/IPC与发布按实际影响另验 |
-| **内核 / 编排** (`kernel/crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
+| **参考 Host 编排 / 组合影响** (`kernel/crates/oclive_kernel_host/`, `process_message`) | `npm run check` · 触及 HTTP/持久化 → `npm run check:release` | `node scripts/dimension5-acceptance.mjs --ci` |
 | **Tauri API** (`distros/desktop-tauri/src/api/`) | `cargo test -p oclivenewnew-tauri` · `npm run check` | `npm run test:e2e:core-api-restart` |
 | **Cargo.lock / 依赖** | `node scripts/dimension5-acceptance.mjs --ci` | `cargo audit` |
 | **发版 / 契约** | `npm run check:release` | OOCP：`examples/oocp-test-suite/run.mjs` |
@@ -60,6 +60,6 @@ npm run check:ci-local
 
 Windows 开发者：Playwright 见 [10_SETUP_WINDOWS.md](10_SETUP_WINDOWS.md) 与 CONTRIBUTING「Web 预览壳 E2E」。
 
-参考Host本地入口不要求先构建前端或准备Tauri资源；当前默认feature为空，Host doctest关闭，不能据此宣称可选feature或全部Host功能已验收。执行内容、失败停止及边界以[参考Host默认检查说明](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#reference-host-local-check)为准。这个入口不改变上表远端job的所有权或required检查。
+参考Host默认入口不要求先构建前端或准备Tauri资源；当前默认feature为空，Host doctest关闭，不能据此宣称可选feature或全部Host功能已验收。执行内容、失败停止及边界以[参考Host默认检查说明](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#reference-host-local-check)为准。后续CI配置中的[默认Host组](../creator-docs/roadmap/SOMEDAY_TOOLCHAIN_CI.md#reference-host-default-owner)运行同一入口，原workspace桌面条件保留；不授予少跑权限。
 
-上表的新公共所有者已集成/推送main `12bc7dc8`，正式结论单独绑定该SHA的CI结果；后续参考Host默认反馈入口仍为本地片。其余Host/组合检查保持。检查归属不授予少跑权限，required `ci-gate`及既有Push/ready策略未改变。
+公共所有者已集成/推送main `12bc7dc8`，正式CI 19/19及ci-gate通过；默认Host入口和新所有者组成后续同主题批次，新配置须另取得目标SHA正式结果。其余Host/组合检查保持。检查归属不授予少跑权限，required `ci-gate`及既有Push/ready策略未改变。

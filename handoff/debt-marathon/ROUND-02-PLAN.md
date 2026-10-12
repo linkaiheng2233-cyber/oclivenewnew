@@ -1112,3 +1112,13 @@
 **验收 / 续接**：入口缺失红保存；固定范围、native首步/次步失败、缺Cargo、未知参数负控；真实入口测试与Clippy；原helper及两公共入口回归、Dimension5 --ci及适用文档/编码/结构/写集/历史保全。未改Rust公共面，不额外workspace doctest；未影响集成链，不重复完整本地/远端矩阵。仅冻结本地提交，main正式CI按原冻结SHA另判；待下一批关联切片再合批验收推送，不用此本地切片冒充正式主树已验。达默认入口可用即停，有未判明的CI feature拆分继续保留。
 
 **第三层入口核对（同片、不新增脚本）**：现有 `check:frontend` 已组合lint/typecheck/unit/Theater smoke/E2E构建，package原件身份核对保持该命令。中英人类门禁与CI设计链接到此现成路径，真实执行一次验证其可用，不机械加同形runner；它不调用Cargo，也不代替桌面/IPC、Linux预览或发行版发布。前端入口不是完整发行版，适用 `npm run build` 发布构建仍按相关任务保留。
+
+### 参考 Host 默认配置的正式执行所有者（2026-10-12）
+
+**问题 / 基线 / 止点**：维护者要求继续推进三层CI。main `12bc7dc8243a2d3c3bf17f98306da1cf4cb8ca92` 已取得正式 [38156014581](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581) 19/19及ci-gate成功；接续本地 `f4f0ecdbf4165c1f5fa7ad87235919217b5922b8`。已有独立Host默认入口支持无桌面使用，而旧workspace默认通过桌面启用Host tauri-commands，dual_core另有检查；两条实际配置不能相互冒充。两次直接Cargo tree已足以定方案，停止逐cfg调查。本片L/CI控制面重风险，controller直接实施和语义自查 independent=false。
+
+**实施 / 精确写集 / 保全**：新增 `reference-host-default` Linux/Windows组，原样调用已冻结 `check-reference-host.mjs`，不移除workspace桌面组合中的Host检查。默认与桌面/dual配置分别验，既有测试条件和命令保持。catalog新增有限validator/command，五个旧workspace profile保守携带；旧受信目录缺新组或映射异常时沿原机制full bootstrap，gate列入新needs，影子21样本只同步预期坐标。12路径为ci.yml、catalog、shadow、repository_contract.rs、既有public Node回归、CI设计中英、人类矩阵中英、PLAN/DCL只追加和新Wave。11原件、14项不变源/控制/manifest先保存于ignored `.cursor/plans/ci-reference-host-owner-20261012-r0/`。不改Host/API/资源绑定、依赖/锁、影响图、执行策略、required context、选择晋升或冻结项；不新增runner/helper。
+
+**验收 / 节奏 / 出口**：先增真实仓库合同至旧配置红，再实现绿；真实Host默认入口，已有native/公共入口回归、trusted-base旧目录/错映射/损坏JSON负控、原gate对两组失败/缺失/取消/skip的关闭及合法docs skip、规划器合同与21路由模拟、Dimension5、fmt/文档/编码/结构/保全。与f4本地片合为同主题16路径批次，稳定后一次适用完整本地链，冻结SHA、复核干净main/远端后FF和一次push，等待该SHA正式CI。不是每片各推完整矩阵；不为绿灯回写提交。配置定义15验证job/21实际全量job，数量不是性能目标；默认组不承诺所有Host功能或真实模型验收。达到这两种配置责任明确及适用验收即停，后续物理/feature深拆和ready扩面另议。
+
+**本地出口结果（同片）**：25项Node回归、规划器11+8项、真实默认Host756/19及原 `check:ci-local` 完整链native exit0（700.89秒）。所有旧验证job的YAML执行配置、影响图和策略保持；两处旧断言及新增CRLF匹配缺陷按原失败修正，workflow只将报错新行改LF而保全原件。文档与源范围门禁完成后冻结提交，正式main证据绑定新SHA，状态不借父main绿灯。

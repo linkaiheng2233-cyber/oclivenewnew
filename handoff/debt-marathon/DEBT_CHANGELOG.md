@@ -1033,3 +1033,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **变动 / 边界**：固定Clippy/tests入口复用native helper、5项范围/失败负控、人类门禁和CI设计中英、计划/本事件/新Wave；只加一个npm命令。不改Rust/API/manifest/锁文件/workflow/catalog/影响图/required gate；不启用Host可选feature，不将default成功写成全Host或发行版验收，不解冻其它方向。
 - **既有第三层入口**：核发现成 `check:frontend` 并保持原命令逐字不变；人类矩阵改为直接使用此lint/类型/单测/Theater smoke/E2E构建组合，真实执行验证，不新增第二个前端runner。发布构建、桌面IPC及Linux预览等仍按实际影响补验。
 - **验证 / 出口**：[本轮Wave](waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)登记真实默认执行、脚本回归、适用治理/编码/保全与未验边界。独立开发分支保存本地提交，受验main `12bc7dc8`保持；正式CI与本片本地状态分开报告，不为每个小片推全矩阵，K-CI-IMPACT-01继续In progress。controller实施及语义自查 independent=false。
+
+### DCL-20261012-101 · 默认Host配置接入正式检查责任
+
+- **原因 / 例子**：独立Host默认不启用tauri-commands，旧workspace经桌面依赖启用它；无桌面嵌入开发不能借桌面配置的通过。[本片计划](ROUND-02-PLAN.md#参考-host-默认配置的正式执行所有者2026-10-12)接续f4默认入口，controller实施及自查 independent=false。父main `12bc7dc8` 的公共首片已正式 [19/19](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581)；随本次实质改动登记，不产生纯绿灯回写提交。
+- **变动 / 边界**：新两平台默认Host组沿用原入口，旧workspace/桌面及dual_core条件、资源前置和命令不动；catalog五profile保守携带、gate要求新组、受信旧/坏映射沿原full bootstrap、21影子样本增坐标。本片12路径与f4关联合批16路径，不改API/Host语义/manifest/锁/影响图/执行策略/required context或冻结项，K-CI-IMPACT-01继续In progress。
+- **证据 / 节奏**：[本片Wave](waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)记录实际配置差异、旧配置红、绿回归、同条件/异条件覆盖和失败尝试。适用本地完整链后冻结SHA，一次FF/push及目标21-job正式CI另判；不借父SHA的正式结果，也不以新增job数宣称提速或完全分层。

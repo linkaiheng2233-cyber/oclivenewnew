@@ -83,6 +83,14 @@ test('the real workflow topology probe rejects a legacy or broken catalog', () =
     const wrongOwner = structuredClone(catalog);
     wrongOwner.validators.find(value => value.id === 'kernel-contracts').workflow_jobs = ['rust'];
     assert.equal(probe(wrongOwner), 1);
+    const beforeDefaultHost = structuredClone(catalog);
+    beforeDefaultHost.validators = beforeDefaultHost.validators.filter(value => value.id !== 'reference-host-default');
+    assert.equal(probe(beforeDefaultHost), 1);
+    for (const workflowJobs of [['rust'], ['reference-host-default', 'rust'], 'reference-host-default', null]) {
+      const malformed = structuredClone(catalog);
+      malformed.validators.find(value => value.id === 'reference-host-default').workflow_jobs = workflowJobs;
+      assert.equal(probe(malformed), 1, 'unknown, mixed or malformed ownership must stay full');
+    }
     assert.notEqual(probe('{invalid JSON'), 0);
     const resolve = workflow.slice(workflow.indexOf('      - name: Resolve execution policy'), workflow.indexOf('      - name: Upload impact evidence'));
     assert.equal(resolve.match(/--force-full-reason trusted_policy_bootstrap/g)?.length, 2);
@@ -91,7 +99,7 @@ test('the real workflow topology probe rejects a legacy or broken catalog', () =
   }
 });
 
-test('the unchanged gate verifier requires the new owner when selected or full', () => {
+test('the unchanged gate verifier requires both configured owners when selected or full', () => {
   const verify = needs => spawnSync(process.execPath, [
     path.join(root, 'scripts/ci-execution-policy.mjs'), 'verify', '--needs-env', 'CONTRACT_OWNER_NEEDS',
   ], {
@@ -99,28 +107,33 @@ test('the unchanged gate verifier requires the new owner when selected or full',
     encoding: 'utf8', windowsHide: true, timeout: 30000,
   });
   const selected = {
-    'ci-impact-plan': { result: 'success', outputs: { run_full: 'false', selected_jobs: '["kernel-contracts","rust"]' } },
-    'kernel-contracts': { result: 'success' }, rust: { result: 'success' },
+    'ci-impact-plan': { result: 'success', outputs: { run_full: 'false', selected_jobs: '["kernel-contracts","reference-host-default","rust"]' } },
+    'kernel-contracts': { result: 'success' }, 'reference-host-default': { result: 'success' }, rust: { result: 'success' },
   };
   assert.equal(verify(selected).status, 0);
-  for (const result of ['failure', 'skipped', 'cancelled']) {
-    const failed = structuredClone(selected);
-    failed['kernel-contracts'].result = result;
-    const rejected = verify(failed);
-    assert.equal(rejected.status, 1, rejected.stdout);
-    assert.match(rejected.stderr, /kernel-contracts result mismatch/);
+  for (const owner of ['kernel-contracts', 'reference-host-default']) {
+    for (const result of ['failure', 'skipped', 'cancelled']) {
+      const failed = structuredClone(selected);
+      failed[owner].result = result;
+      const rejected = verify(failed);
+      assert.equal(rejected.status, 1, rejected.stdout);
+      assert.ok(rejected.stderr.includes(`${owner} result mismatch`), rejected.stderr);
+    }
+    const omitted = structuredClone(selected);
+    delete omitted[owner];
+    assert.equal(verify(omitted).status, 1);
   }
-  const omitted = structuredClone(selected);
-  delete omitted['kernel-contracts'];
-  assert.equal(verify(omitted).status, 1);
   const full = structuredClone(selected);
   full['ci-impact-plan'].outputs.run_full = 'true';
   assert.equal(verify(full).status, 0);
-  full['kernel-contracts'].result = 'failure';
-  assert.equal(verify(full).status, 1);
+  for (const owner of ['kernel-contracts', 'reference-host-default']) {
+    const failed = structuredClone(full);
+    failed[owner].result = 'failure';
+    assert.equal(verify(failed).status, 1);
+  }
   const docs = {
     'ci-impact-plan': { result: 'success', outputs: { run_full: 'false', selected_jobs: '["stale-paths"]' } },
-    'kernel-contracts': { result: 'skipped' }, rust: { result: 'skipped' },
+    'kernel-contracts': { result: 'skipped' }, 'reference-host-default': { result: 'skipped' }, rust: { result: 'skipped' },
     'stale-paths': { result: 'success' },
   };
   assert.equal(verify(docs).status, 0, 'existing docs selection must remain legal');
