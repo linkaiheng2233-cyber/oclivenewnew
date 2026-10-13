@@ -4,6 +4,8 @@
 
 This path creates an author-owned Rust project outside OCLive, reuses the canonical Memory example and calls it through the existing shared consumer. Follow the same PowerShell blocks below. No new SDK crate or generator is required. Delivery scope: [中文 RFC](../../creator-docs/rfc/RFC_DEVELOPER_SDK_V0.md) / [English RFC](../../creator-docs-en/rfc/RFC_DEVELOPER_SDK_V0.md).
 
+**资料导航 / References**：本页拥有开发操作与案例；接口承诺、责任与兼容分别查[Base接入点](../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)、[Kernel/共享支持/Host边界](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)及[已采纳兼容审阅](../../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)（[English](../../creator-docs-en/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)）。选择模块/Host/发行版路径见[人类入口](../../human-docs/README.md#按角色选择路径)与[AI任务导航](../../handoff/AI_READING_INDEX.md#sdk-task-reading)；AI修改与核实继续沿原规则，不因本案例获得运行权限。The guide owns practical steps, while linked authorities own contracts/boundaries/compatibility; the human and AI entries select task-specific reading.
+
 ## 1. 准备 / Prepare
 
 - 使用包含 `kernel-base` 的**完整 OCLive 源码 checkout**，从它的根目录打开 PowerShell。同一会话执行下面步骤；不能只下载本 examples 目录。
