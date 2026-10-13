@@ -44,18 +44,18 @@
 
 ## 扩展条件与停止线
 
-### 下一片开发准备：配方自动回归（未实现）
+### 配方自动回归（有限）
 
-第一条源码接入路径已具备实际消费者案例；下一片优先降低维护这条路径的重复操作成本。准备将当前指南的生成、显式添加runtime、复制canonical示例、派生锁和check/test/run接入既有CLI集成测试设施。具体写集、验收与停止条件见[开发计划](../../handoff/debt-marathon/ROUND-02-PLAN.md#审查批完整交接与源码-sdk-开发准备2026-10-13)，当前冻结与证据边界见[收尾记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md)。这是一项尚未实施的回归计划，不是已经存在的新SDK命令。
+第一条源码接入路径已有实际消费者案例，现在通过[CLI集成回归](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs)重复检查生成、显式添加runtime、复制canonical示例、派生锁和check/test/run。维护者执行入口见[操作指南](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression)。实施写集与停止条件见[开发计划](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13)，本轮实际结果见[实施记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md)；[准备记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md)保留当时尚未实施的状态。这是现有Cargo测试入口，不是新SDK命令。
 
-| 准备项 | 下一片要求 |
+| 回归项 | 有限覆盖 |
 |---|---|
 | 交付对象 | 现有Memory源码工具包；独立作者工程真实编译、测试并经过现有消费者调用 |
 | 复用入口 | CLI原集成测试辅助设施及原Memory源码；不复制维护另一份模块、不新增公开SDK门面 |
-| 判断通过 | 独立workspace/派生锁与依赖边界成立，真实子命令成功且行为断言成立；声明视图与空测试不代替调用证据 |
+| 判断通过 | 独立workspace/派生锁与依赖边界成立，真实子命令成功且行为断言成立；临时副本变异必须使原消费者行为测试失败。声明视图与空测试不代替调用证据 |
 | 结束条件 | 一条上手路径可重复回归后冻结；Host接线、其它槽、平台、发布按实际需求另片 |
 
-源码工具包依旧使用现有crate与path依赖，不因增加回归而成为脱离完整checkout的可发布SDK包。新命令、额外包装与跨语言绑定不在这项准备的授权范围内。
+源码工具包依旧使用现有crate与path依赖，不因增加回归而成为脱离完整checkout的可发布SDK包。回归使用已准备的依赖缓存离线执行；新机器先准备工具链与依赖。新命令、额外包装与跨语言绑定不在本片范围内。
 
 开发者能按指南生成、跑通检查、定位自己的实现与消费者绑定，即冻结第一条路径。反馈优先提供失败命令、源码 SHA、工具版本和最小复现，沿 [CLI 反馈入口](../cli/OCLIVE_CLI_GUIDE.md) 处理。
 
