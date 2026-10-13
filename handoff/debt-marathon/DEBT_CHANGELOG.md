@@ -1087,3 +1087,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者要求持续开发、落实当前规划。按[七路径实施计划](ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13)接续 `aebe7c46`，controller实施与语义自查 independent=false。使用原CLI辅助函数和canonical Memory，不新增SDK门面或执行框架；升级后作者工程的组装路径由真实回归检查。
 - **交付 / 实例**：新CLI集成测试在临时独立工程中生成基础、显式添加runtime、复制示例与锁种子，核workspace/精确直接依赖/无Host桌面/第三方身份/派生锁稳定，再实际check/test/run。故意将临时Memory的取样数改为0，要求原消费者测试确切失败；原模块源码保持。SDK RFC中英更新已实施范围，指南增加现有Cargo维护者入口。
 - **验收 / 保持**：新外层集成1项通过（内含原binary三项与预期失败负控），CLI原100/8/7、runtime例子3项及实际run、Clippy/fmt/分层/module-compat均exit0；首次fmt失败及修复日志独立保留。适用文档、编码、七路径/历史/源码保全及diff之后本地提交/checkpoint，具体证据见[本片Wave](waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md)。未改生产源码、公共面、依赖锁、工作流/required、债状态或旧锚点；未推送/合main，不冒称新SHA远端CI或所有平台通过。
+
+### DCL-20261013-110 · 单个Memory案例可模仿教学收束
+
+- **原因 / 授权**：维护者确认一个完整Memory案例即可，下一片完善作者模仿路径与三种验证分责。按[五文计划](ROUND-02-PLAN.md#源码-sdk-单个-memory-案例教学收束2026-10-13)接续 `4107d52e`，controller实施与语义自查 independent=false。只完善指南/复制README与记录，不复制模块或增加其它槽案例。
+- **交付 / 练习**：指南定位Memory实现、retrieve绑定、main材料和tests断言；复用已有窗口配置，作者副本两处2改1，先观察旧断言确切失败，再按事先确定的最新一条承诺调整两处预期，保持其它测试/原文/零生成。明确官方配方回归、作者模块测试和目标Host验收的不同用途；doctor仍是声明视图，literal/calls不是Base义务。
+- **验收 / 保持**：新树外工程原三测/selected2通过，指定选取测试native101为预期失败，调整期望后三测/selected1通过，作者fmt/Clippy及官方回归1项通过；私有命令一次cwd路径误用已单独登记，不混入行为红证据。文档、编码、五路径/原件/历史/官方源码保全后本地提交/checkpoint，详见[教学Wave](waves/WAVE-20261013-SDK-MEMORY-TEACHING.md)。未改官方Rust/测试、模板、公共面、锁、CI/债状态，旧锚点/main保持；不推送或冒称目标Host/其它平台正式验收。

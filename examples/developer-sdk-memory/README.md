@@ -91,7 +91,7 @@ try {
 
 With prepared caches, add `--offline` to the Cargo command, before `--` where applicable, not to `init`. The recorded run passed three binary tests; the blank library and doctest each ran zero tests and are not functional proof.
 
-运行的第一行应是：
+未修改的案例运行第一行应是：
 
 ```text
 external memory: selected=2 baseline=3 memory_calls=1 llm_calls=0
@@ -106,7 +106,9 @@ Expect the first line above followed by the two unchanged selected materials, in
 | 文件 / File | 开发动作 / Action |
 |---|---|
 | `src/memory.rs` | 修改自己的 `MemoryBase` 实现及接受要求 / Edit your implementation and accepted requirements |
-| `src/main.rs` | 明确材料、查询、绑定与调用，调整对应测试期望 / Supply materials, query and bindings; update tests for the chosen behavior |
+| `src/main.rs` 的 `retrieve` | `MinimalRoleBaseBindings.memory` 借用传入的 `&dyn MemoryBase`，然后调用消费者 / Bind the supplied implementation and call the consumer |
+| `src/main.rs` 的 `main` | 作者实现的构造、材料、查询及运行结果检查 / Construct your implementation, supply inputs and check the run result |
+| `src/main.rs` 的 `tests` | 按自己的功能承诺编写正常结果、空结果和失败断言 / Assert normal, empty and failure behavior promised by your module |
 | `src/lib.rs` | 基础模板保留的作者库入口；本例 binary 不调用它 / Author library entry retained from the foundation; unused by this binary |
 | `Cargo.toml`、`Cargo.lock` | 维护源码 path 与实际依赖输入 / Maintain source paths and dependency inputs |
 
@@ -117,6 +119,28 @@ The author's agreement selects at most two latest literal matches from caller-or
 `main.rs` 的文件头保留原仓库 example 命令，说明源码来源；这个独立工程执行本页的本地 `cargo run` / `cargo test`。其中的 `immediate` helper 仅能驱动立即就绪的内存实现；真实异步实现由作者提供执行器。源码接入不提供隐式资源、存储、权限、重试、发现或丰富角色默认值。
 
 The copied file header retains the repository example command as provenance; this independent project uses local `cargo run`/`cargo test`. Its `immediate` helper only handles immediately ready in-memory implementations. Real async providers need the caller's executor. No implicit storage, permissions, retry, discovery or rich-role defaults are added.
+
+### 练习：作者窗口从两条改为一条 / Exercise: change the author's window
+
+只编辑按第2–3节生成的**作者工程**，不修改OCLive官方原件。本例的上限已参数化，练习修改作者的构造配置；更换算法或类型时，改自己的 `src/memory.rs`，同步 `main.rs` 的import/构造和 `retrieve` 所借用的实现。`calls()` 是本例观察调用的方法，不要求所有Memory实现提供它。
+
+1. 先按第4节运行，确认三项binary测试通过、输出 `selected=2`。
+2. 在 `main` 和 `tests::public_consumer_calls_the_external_selection_without_rewriting_material` **这两个位置**，将 `RecentLiteralMemory::new(2)` 改为 `RecentLiteralMemory::new(1)`。此时保留旧期望；另外两项测试不改。
+3. 在作者工程运行下面命令，应该看到这个行为测试 **FAILED**；若是编译或依赖错误，先解决那个错误，不能算作断言发现了行为变化。`sdk-memory-caller` 是本配方的binary名称，自己的工程名称不同则替换它。
+
+```sh
+cargo test --locked --bin sdk-memory-caller tests::public_consumer_calls_the_external_selection_without_rewriting_material -- --exact
+```
+
+4. 按新承诺“保留最新一条原文”调整这两个位置的期望：`main` 的 `selected != materials[2..]` 改成 `selected != materials[3..]`；该测试的 `assert_eq!(selected, materials[2..]);` 改成 `assert_eq!(selected, materials[3..]);`。保留baseline、调用计数、零生成、其它测试及原错误处理，再运行自己的 `cargo test --locked` 和 `cargo run --locked`。应三测通过，运行第一行变为：
+
+```text
+external memory: selected=1 baseline=3 memory_calls=1 llm_calls=0
+```
+
+随后只输出Dave那条原文。这表示通过现有消费者调用的选取行为已改变，不代表目标Host已经采用它。期望由作者事先决定；不能根据实际输出自动改期望或删除失败断言来保绿。
+
+Edit only your generated project. First confirm the original three tests and `selected=2`. In `main` and the named selection test, change the constructor's limit from 2 to 1 and leave expectations unchanged; the command above must fail that test, not compilation. Then change those two expected slices from `materials[2..]` to `materials[3..]`, preserving the other assertions and tests. Your own test/run commands should pass and print `selected=1` plus only Dave's unchanged material. This exercises an existing author configuration; a different implementation needs its own promised behavior and meaningful assertions. The example's literal syntax and call counter are not universal Base requirements.
 
 ### 可选：看工程接线声明 / Optional: view project wiring declarations
 
@@ -147,6 +171,16 @@ Expect the declared Memory edge and unknown unspecified implementations. The vie
 - 工程与有限契约测试通过、消费者实际调用成立，是这条路径的完成线。检索质量、性能、持久化、目标 Host 生命周期与发行版产品行为仍另验。
 
 Record source/tool/lock inputs, recheck path dependencies after moving either directory, and use Cargo metadata to inspect the actual graph. The first path establishes compilation, limited contract behavior and a real consumer call. Retrieval quality, persistence, performance, Host lifecycle and distribution behavior remain target-specific work.
+
+### 三种验证分别负责什么 / Three distinct checks
+
+| 验证 / Check | 执行位置与用途 / Where and why |
+|---|---|
+| 官方配方回归 / Official recipe regression | OCLive checkout中维护官方上手路径，使用下面的 `e2e_source_sdk`；不自动发现、加载或验收任意作者模块 / Maintain this official recipe, not arbitrary modules |
+| 作者模块测试 / Author module tests | 自己工程的 `cargo test` / `cargo run`，按自己的承诺检查真实调用、结果与失败；上面的窗口练习属于这里 / Verify your own promises and actual calls |
+| 目标Host场景验收 / Target Host acceptance | 按目标Host的实际接线与场景检查主流程是否使用该实现及功能是否满足要求；独立工程通过不代替这一层 / Verify adoption and behavior in the chosen Host |
+
+`doctor wiring` 只显示作者声明，不能作为上述实际调用或功能通过的证据。The declaration view establishes none of these runtime or target-functionality results.
 
 ### 维护者回归入口 / Maintainer regression
 

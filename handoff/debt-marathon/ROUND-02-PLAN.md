@@ -1194,3 +1194,11 @@
 **真实失败验证 / 边界**：现有组件已经足够，不为编译红删旧API或假造公共能力缺失。临时作者副本中把Memory取样数改为0，执行原消费者行为测试，必须出现该测试失败而非编译/前提失败；canonical源码不改，负控是预期子命令非零，外层回归通过必须确认这一事实。输出与依赖检查不mock Cargo，不仅核文件存在。测试进程使用已有缓存/offline和已有target，临时目录明确close；无模型/Host/真实网络/用户DB。
 
 **验收 / 收口**：新目标及原基础E2E串行、CLI bin/接线回归、原runtime例子测试与真实run、CLI all-targets Clippy/fmt、分层/module-compat和适用链接/镜像/登记/旧路径/债结构/编码/七路径/历史保全。只有测试与文档，无公共API、生成器、依赖、workspace锁、工作流或必需门禁改变；不额外workspace doctest、Dimension5或完整发行版CI。默认Cargo发现此集成目标，现有CLI --tests路径能够选择它；通过后本地提交/newcheckpoint，旧锚点/main保持，不push或改变债状态。碰到新契约/权限/执行选择才问维护者。
+
+### 源码 SDK 单个 Memory 案例教学收束（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者明确只保留一个完整Memory案例，完善可模仿的教学路径与三种验证用途。干净 `4107d52e5a50c9a7eabb8f0c86f15576b8c9bff5`；M/有限文档与树外练习，controller实施与语义自查 independent=false。五直接入口/60分钟；已有实现/绑定说明复用，练习实际显出行为变化即停，不补其它槽、通用验收器或Host目标。
+
+**五文写集 / 闭环**：SDK Memory指南补符号级实现/绑定/材料/断言位置、一条作者副本练习和三类验证分责；复制用project README只指向此说明，不双写练习。PLAN/DCL只追加、新教学Wave。四原件先保全。现有官方Rust、集成测试、模板/公共面、manifest/锁、CI/债状态和旧报告/tag保持；小Kernel/共享消费者/Host责任不改。Memory的literal语法与calls观察都属示例，不新增Base义务。
+
+**练习 / 验收 / 收口**：本机新树外作者工程按既有生成/add/复制/锁配方真实check/test/run；先在main和首个选取测试的构造处把窗口2改1，保留旧断言观测确切测试失败；再把这两个使用点的预期末尾区间2..改3..，保留原文、baseline及零生成等断言，三测通过并实际run显示selected=1。其它测试不变，源码副本及各阶段前后摘要/原生退出件保留；官方原件逐字不变。重跑原SDK目标核新增project README的配方仍可用；其它不变的Rust/Clippy/fmt不重复。文档链接/登记/旧路径/债结构/编码/五路径/历史与原件保全/diff之后本地提交、新 `checkpoint/source-sdk-memory-teaching-20261013-r0`，不合main/push、不宣称远端/目标Host/其它平台通过。无契约或执行选择的新障碍即可完成本片。
