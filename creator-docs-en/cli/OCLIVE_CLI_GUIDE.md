@@ -410,6 +410,8 @@ Non-interactive mode does **not** require any `--backend-*` flags; if passed, th
 - **End of `init --help`**: preset matrix, **`--monolith`**, pointer to [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md).
 - **Generated README**: pointers to `oclive_kernel_server`, OOCP, and directory plugins based on project shape/toggles; a linked `library` separately documents the legacy `load_role → process_message` path and converter-prepared `PreparedMinimalRole → process_minimal_message`. Minimal-role handles, requests, results, extension status, and typed errors re-export the original types. The basic result explicitly reports unavailable product extensions without storing chat or constructing a rich `Role`; see [ROLE_PACK_BOUNDARY §0.9](../../handoff/ROLE_PACK_BOUNDARY.md#09-参考-rust-host-的增量基础文本入口). `library-embed --kernel-source <repo root>` generates no role pack by default; developers supply converters. Without `--kernel-source`, the library remains a serde stub.
 
+**Current language of generated notes:** `_comment_*` text in the legacy settings above is Chinese, with no English variant. English CLI help does not automatically translate these generated fields. This describes current output, without a new language policy or localization guarantee. `kernel-base` is a separate foundation recipe and does not emit this legacy settings file; read its own template contents separately.
+
 ---
 
 ## High-coupling compile mode (Monolith)
