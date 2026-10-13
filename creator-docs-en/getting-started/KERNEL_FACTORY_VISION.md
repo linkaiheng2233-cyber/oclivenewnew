@@ -6,6 +6,8 @@
 
 [中文](../../creator-docs/getting-started/KERNEL_FACTORY_VISION.md)
 
+**Source toolkit for module authors**: [first SDK path](../rfc/RFC_DEVELOPER_SDK_V0.md), reusing the foundation and current consumer without a new facade or default Host.
+
 ---
 
 ## Single-kernel, dual-mode build architecture
