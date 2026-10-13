@@ -345,6 +345,8 @@ Scaffold Package 仍**不**联网安装、不执行 `commands[].entry`、脚本�
 
 在包含此命令的 OCLive 源码根执行：
 
+先用 `cargo run --locked -p oclive-cli -- doctor wiring --help` 确认当前源码/二进制含该入口。旧CLI报 `unrecognized subcommand 'wiring'` 只表示命令版本不匹配，不表示模块或Base契约不可用；取得包含该入口的源码后再编译CLI。单看包版本号不足以区分本地开发提交，反馈时同时记录源码SHA。
+
 ```bash
 cargo run --locked -p oclive-cli -- doctor wiring --manifest-path ../my-capabilities/Cargo.toml
 ```
@@ -386,6 +388,18 @@ scope = "project"
 输出区分 `MemoryBase -- declared --> RecentLiteralMemory`、公共契约入口和接入声明；未填写的其它 Base 显示 `implementation not provided`。顶部始终标明作者声明来源、`Host verification: not connected` 及 `Binding / call / target functionality: not verified`。连线表示关系，六槽排列不是执行顺序。
 
 更换实现后要同步自己的元数据，再执行命令才能看见声明更新；仅改 Rust 不会自动同步。声明可供理解工程，不负责加载、替换、注册、调度或取得权限，不要求任何 Host 实现诊断接口。第一片仅终端快照，不接受环境域的 `--fix/--yes/--watch/--sbom`、`-o` 路径或 `--json`；选输入用该子命令的 `--manifest-path`，不提供新导出格式。
+
+**遇到问题先定位哪一步**：
+
+| 现象 | 优先处理 |
+|---|---|
+| 不认识 `wiring` | 核对当前CLI来源与上述帮助命令；不要为此改模块接口 |
+| 读取清单失败 / 缺 `[package].name` | 指定作者package的Cargo.toml；带空格路径加引号，不要选只有workspace的源码根清单 |
+| Rust已有实现，视图仍未提供或显示旧名 | 更新所选清单的作者声明；该视图不扫描源码，不能据此判实现不存在 |
+| 粘贴示例后提示TOML或字段错误 | 检查是否重复根表、版本/字段类型及公开标识；错误不会回显原文，应在本机检查清单，不贴凭据 |
+| 声明有名称，仍标绑定/调用/功能未核实 | 这是本片的准确状态；运行模块测试或目标Host验收，声明不能替代它们 |
+
+无法按上表解决时，沿[已有反馈入口](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues)提供CLI源码SHA、执行目录、命令、预期/实际输出和去敏最小声明。缺少运行报告、声明便利性与公共契约问题分别说明，不提交令牌或用户材料。
 
 ### 原环境诊断
 
