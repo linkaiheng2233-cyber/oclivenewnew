@@ -2,7 +2,7 @@
 
 **读者**：准备修改 OCLive 主仓代码，或从公共 Base 开始写模块的 Rust / Vue 开发者。
 **目标**：30 分钟跑起来，1 小时找到所属模块，随后只读与任务有关的文档。
-**最后更新**：2026-10-11。
+**最后更新**：2026-10-13。
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
 
@@ -13,7 +13,7 @@
 
 ## 先选开工范围
 
-只写 Rust Base 模块，先走 [Kernel 基础工程：首次准备与生成](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 开工包](modules/slots/memory.md)，即可生成、测试、修改自己的实现，再查现有消费者。该路径不要求先启动桌面、准备模型或通读学习阶梯。准备修改主仓或参考 Host 时，再走下方环境与贡献路径；RPC / UI 插件仍走插件作者入口。
+只写 Rust Base 模块，先走[源码 SDK Memory 指南](../examples/developer-sdk-memory/README.md)：生成自己的工程，定位实现/绑定/断言，并完成一次行为修改练习；接口依据查[Base接入点](../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，改公共面时查[兼容审阅](../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft)。只需要空契约工程时走[基础脚手架](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start)，进一步定位Memory或参考后端时查[Memory开工包](modules/slots/memory.md)。这条模块路径不要求先启动桌面、准备模型或通读学习阶梯。准备修改主仓或参考Host时再走下方贡献路径；RPC/UI插件仍走插件作者入口。
 
 ## 主仓贡献：30 分钟开始工作
 
@@ -28,10 +28,11 @@
 |------------|----------|
 | Vue / Chat Pro 界面 | [02 跑通](02_THIRTY_MINUTE_START.md) → [前端路径](paths/frontend.md) → [Chat Pro 开工包](modules/surfaces/frontend-chat-pro.md) |
 | Kernel 契约 / Rust 参考 Host | [01 简架构](01_ARCHITECTURE_SIMPLE.md) → [MODULE_MAP 权责与源码对照](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) → [06 参考主链路径](06_KERNEL_LEARNING_PATH.md) |
-| 从公共 Base 写 Rust 模块 | [Kernel 基础工程](../creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 首例](modules/slots/memory.md) → 按需选其它 [模块](modules/README.md) |
+| 从公共 Base 写 Rust 模块 | [SDK Memory操作与测试](../examples/developer-sdk-memory/README.md) → [Base接入点](../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) → 按需查 [Memory开工包](modules/slots/memory.md) |
+| 编写自己的 Host | [集成指南的Base起点](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md#从六槽-base-出发约-10-分钟) → [Kernel/共享支持/Host责任](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)；参考Host仅在选择复用它时继续读 |
 | 维护主仓六槽实现 | [03 术语](03_GLOSSARY.md) → [模块选择器](modules/README.md) → 对应 `modules/slots/*.md` |
 | 参考 Host 的 RPC / UI 插件 | [插件作者路径](paths/plugin-author.md) → [插件契约](../creator-docs/plugin-and-architecture/PLUGIN_V1.md) |
-| 硬件 / 无头 / 新发行版 | [集成路径](paths/integrator.md) → [HostProfile](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
+| 硬件 / 无头 / 新发行版 | 先确定所选Host；相关参考路径走[集成路径](paths/integrator.md) → [HostProfile](../creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)，目标场景另验 |
 | 第一个小 PR | [07 常见任务](07_COMMON_TASKS.md) → [PR 门禁](08_PR_GATE_MATRIX.md) → [Good First Issues](../handoff/GOOD_FIRST_ISSUES.md) |
 
 ## 学习阶梯

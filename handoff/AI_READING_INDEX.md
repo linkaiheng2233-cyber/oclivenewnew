@@ -1,7 +1,7 @@
 # AI 深读索引（Agent Reading Index）
 
 > **SSOT 范围**：**分类目录与阅读路径**；各主题事实以链出文档为准。  
-> **最后更新**：2026-09-28
+> **最后更新**：2026-10-13
 > **读者**：Cursor / Codex / 自动化 Agent / 维护者用 AI 改代码。  
 > **GitHub 首页 [`README.md`](../README.md) 面向人类**；文档分工见 [`handoff/README.md`](./README.md) §文档分层。\
 > **快速约束**：[`AGENTS.md`](../AGENTS.md) · **人类阶梯**：[`human-docs/README.md`](../human-docs/README.md)
@@ -181,6 +181,26 @@ Vue invoke / HTTP --api
 ---
 
 ## 9. 按任务选阅读路径
+
+<a id="sdk-task-reading"></a>
+
+### 源码 SDK：模块 / Host / 发行版作者
+
+沿用§0与[AI修改边界](AI_CHANGE_BOUNDARIES.md)；只选当前任务的一行，按需读其权威资料，不把三条路径或主仓全流程作为每次必读。SDK当前优先服务模块作者；后两行只是已有入口，没有新增Host/发行版验收。
+
+| 当前任务 | 操作与案例入口 | 接口、责任及后续依据 |
+|---|---|---|
+| 实现并测试一个Base模块 | [源码SDK Memory指南](../examples/developer-sdk-memory/README.md)：实现/绑定/输入/断言、作者副本练习和三种验证；其它槽仅遇具体不同障碍再补案例 | [Base接入点](MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) → 当前[Base trait](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)与[请求/失败类型](../kernel/crates/oclive_kernel_types/src/slot_base.rs)；改公共面时查[已采纳兼容审阅](../creator-docs/COMPATIBILITY.md#six-slot-minimal-compatibility-draft) |
+| 编写自己的Host，选能力和资源 | [集成学习路径的Base起点](../creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md#从六槽-base-出发约-10-分钟)与其已有Host例子 | [Kernel/共享支持/Host职责](MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)、同一Base及兼容依据；若选择复用参考Host，再读该指南的参考路径 |
+| 在所选Host上开发发行版 | 先明确所选Host；相关参考路径读[发行版开工包](../human-docs/modules/surfaces/distro-hostprofile.md)及[生命周期](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md) | 同一职责边界与目标Host自己的接线/场景；参考Host的profile与策略不成为自有Host的通用义务 |
+
+| 材料性质 | 如何使用 |
+|---|---|
+| 现行规范与接口 | 上述已确认职责、已采纳兼容范围、当前源码及AI规则；MODULE_MAP内部的候选仍按其状态阅读，不能整篇升级为已发布接口 |
+| 可运行案例 | Memory指南及集成指南的例子是一种合法用法；literal语法、窗口、calls计数或示例调度不成为Base义务，官方回归不自动验收任意模块 |
+| 历史报告与草案 | 按[文档状态](README.md#documentation-status)和记录的SHA/范围判读，提供背景与当时证据，不替当前源码执行或验收 |
+
+实际源码与测试由指南链接；`doctor wiring`仍只是声明。找到当前任务的操作、对应契约与足够证据后，按[核实协议的调查预算与停止线](AI_VERIFICATION_PROTOCOL.md#29-document--code-支撑调查预算与停止线)停止，不因SDK导航重做全仓证明。本节是开发辅助导航，不是运行Agent协议或权限入口。
 
 ### 只改角色包（G1：不动六槽）
 
