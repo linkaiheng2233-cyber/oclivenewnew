@@ -1142,3 +1142,11 @@
 **十五路径 / 保全**：CLI main/doctor_cmd、新doctor_wiring、基础Cargo/README模板、新doctor_wiring集成测试、原e2e_kernel_base、CLI指南中英、SDK指南/项目README、CLI crate README、本计划/DCL追加、新Wave；12份原件先保存字节/hash。根manifest/锁、公共types/contracts/runtime及原Memory源码、其它模板/工作流/影响图/选择策略、债务状态和已冻结旧报告保持。显示格式归CLI指南，SDK/模板只写使用入口；可选标签不是模块注册或真实运行报告。
 
 **验收 / 出口**：先新CLI/生成断言旧代码红，再实现绿；实际CLI集成、doctor相关unit、原基础E2E串行、CLI默认all-target Clippy、fmt、分层/module-compat、适用文档/镜像/登记/旧路径/债结构/编码/diff及精确写集和历史字节保全。真实新工程一次生成→查看空声明→添加Memory声明→查看→改名称再查看，保存退出码/stdout及前后文件摘要；私有数据/未知字段不能被原文打印，环境探测及产品回合不参与。无公开Rust签名/re-export、CI控制面或发版/Done变化，workspace doctest/完整发行版链/远端CI不适用。达到声明视图可靠且定向验收通过即本地冻结，不合入/推送main；实际绑定、调用记录和功能质量保持未核实，后续有具体Host来源再另片。
+
+### 源码 SDK 与接线视图 · 文档及工程收尾（2026-10-13）
+
+**目标 / 基线 / 预算**：维护者要求文档整理、工程收尾与冻结基线。接续干净 `abf2f8a5074e863289af94cb2993d3733cfda0f7`，SDK父 `9c0ce96f`、main `08348f31`保留。M/纯文档收尾，controller实施与语义自查 independent=false；只审三个上手入口到足以交接，不扩查全部文档、其它槽或发行版。SDK“我改哪里”主路径被可选查看插在前面、旧CLI缺命令的排查缺口已可直接修，无新架构决策。
+
+**六路径 / 保全 / 闭环**：CLI指南中英补命令版本前提、未知状态与典型错误定位；SDK指南先实现/测试再可选查看，链接原格式SSOT；PLAN/DCL只追加、新收尾Wave。五份原件先保全字节/hash。CLI Rust/两基础模板/测试、公共契约/Host/runtime、manifest/锁/CI、SDK及接线原Wave、债/队列状态和旧证据不改；不是新功能或元数据格式迁移。
+
+**验收 / 冻结出口**：同字节CLI的wiring帮助实读、SDK五段PowerShell语法与CLI示例TOML按现有解析器检查；默认及六文链接、镜像、登记、docs-only旧路径、债结构、UTF-8/汉字、六路径/原件/历史前缀和源码复用摘要/diff。按实际字节不变沿用abf的115项、Clippy/fmt和真实重读示范，不冒称重跑；不重复Rust/业务/完整CI。文档与代码关联通过后本地提交，并新增本地 `checkpoint/source-sdk-wiring-20261013-r0` 注释tag，既不覆盖旧锚点也不发布SemVer或推送main。最终SHA/tag/clean状态在交付记录，状态Locally verified；达到可接手即停止主动扩面，后续实际问题或可靠Host报告另片。

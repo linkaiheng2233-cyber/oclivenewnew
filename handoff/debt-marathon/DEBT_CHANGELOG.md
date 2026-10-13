@@ -1051,3 +1051,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者确认终端视图、Base与实现分开，随后采纳“脚手架提供可选Cargo元数据，作者工程维护，CLI只读展示”。按[十五路径计划](ROUND-02-PLAN.md#终端接线声明视图--脚手架中的可选元数据2026-10-13)承接SDK `9c0ce96f`，controller实施与语义自查 independent=false；Memory直接绑定代码没有现成报告，Host后端配置值也不能被猜成Base具体类型，所以选可选工程声明，不扩为源码扫描或统一注册表。
 - **交付 / 例子**：`doctor wiring --manifest-path` 每次读取一个package清单；基础模板只写schema_version=1，含教学测试时也不自动登记运行实现。作者填写Memory实现/接入/用途及调用范围，视图显示独立Base边、来源、未提供信息及绑定/调用/功能未核实；修改作者声明后重读更新。CLI指南中英拥有格式与状态语义，模板/SDK/CLI crate README只提供动作和链接；其它工程完全无声明仍可查看未知。
 - **验证 / 边界**：[本批Wave](waves/WAVE-20261013-WIRING-DECLARATION-VIEW.md)记录旧命令/模板红、8项新CLI测试、100项bin单测、7项原基础E2E、Clippy/fmt、实际生成/空声明/两次名称变更与前后清单摘要，再走适用治理和源码/历史保全。本片不动Base/公共DTO/Host/runtime/原Memory/依赖锁/CI/债状态；不新增执行、权限、Host强制接口或导出格式。仅本地冻结，不合入/推送main，不借父main正式CI；实际运行绑定、调用记录及功能验收不因声明视图转绿。
+
+### DCL-20261013-104 · SDK与接线视图文档、工程收尾
+
+- **原因 / 授权**：维护者要求整理文档并形成冻结基线。按[六文收尾计划](ROUND-02-PLAN.md#源码-sdk-与接线视图--文档及工程收尾2026-10-13)接续干净 `abf2f8a5`；controller实施与语义自查 independent=false。SDK“我改哪里”先讲实现和测试，再讲可选查看；CLI指南中英解释旧CLI缺命令、选错workspace清单、重复表和声明未核实等实际排查，避免把工具版本误解成模块契约缺口。
+- **变化 / 保持**：三个上手文、计划/本事件追加及[冻结交接快照](waves/WAVE-20261013-SDK-WIRING-CLOSEOUT.md)，不新建规则或格式SSOT。Rust/模板/测试/manifest/锁/CI/债状态与旧Wave/证据保持；现有SDK `9c0ce96f` 与接线 `abf2f8a5` 分别沿用其实际范围证据，不混成新运行验收。
+- **验收 / 出口**：实际同字节CLI帮助、SDK五段PowerShell语法及CLI中英TOML示例核对，适用文档/编码/六路径/原件/历史/源码复用/diff后本地提交及注释checkpoint tag；最终完整SHA/tag与clean状态在交付记录，不回写另造提交。只形成Locally verified可接手基线，不合入/推送main或宣称远端正式通过；第一阶段停止主动扩面，后续按实际反馈或具体Host报告来源处理。
