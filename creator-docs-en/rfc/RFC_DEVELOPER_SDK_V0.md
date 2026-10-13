@@ -44,18 +44,18 @@ Windows PowerShell probes used source input `08348f31b8f3459537c13227302bf4b8e27
 
 ## Stop and expand deliberately
 
-### Next slice preparation: recipe regression (not implemented)
+### Recipe regression (limited)
 
-The first source path already has a real consumer example. The next slice should reduce the repeated work of maintaining that path: exercise generation, explicit runtime addition, canonical source copies, a derived lock and check/test/run through the existing CLI integration-test facilities. See the [development plan](../../handoff/debt-marathon/ROUND-02-PLAN.md#审查批完整交接与源码-sdk-开发准备2026-10-13) for scope and acceptance, and the [closeout record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md) for the frozen inputs and evidence boundaries. This regression is planned, not implemented; it is not a new SDK command.
+The first source path already has a real consumer example. A [CLI integration regression](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs) now exercises generation, explicit runtime addition, canonical source copies, a derived lock and check/test/run. See the [maintainer command](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression), [implementation plan](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13) and [execution record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md). The earlier [preparation record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md) preserves its not-yet-implemented state. This is an existing Cargo test entry, not a new SDK command.
 
-| Preparation | Next slice requirement |
+| Regression | Limited coverage |
 |---|---|
 | Delivery target | The current Memory source toolkit; a separate author project really compiles, tests and calls the existing consumer |
 | Reuse | Existing CLI integration helpers and canonical Memory sources; no second maintained module implementation or public SDK facade |
-| Passing result | Independent workspace/derived lock and dependency boundaries, successful native commands and actual behavior assertions; declaration views and empty tests do not replace consumer evidence |
+| Passing result | Independent workspace/derived lock and dependency boundaries, successful native commands and behavior assertions; a mutation of the temporary author copy must fail the original consumer test. Declaration views and empty tests do not replace consumer evidence |
 | Stop condition | Freeze once this one onboarding path is repeatable; Host wiring, other slots, platforms and publication follow concrete needs |
 
-The toolkit continues to use existing crates and source path dependencies. A regression does not turn it into a published SDK package independent of a full checkout. New commands, additional wrappers and language bindings are outside this preparation's authorization.
+The toolkit continues to use existing crates and source path dependencies. A regression does not turn it into a published SDK package independent of a full checkout. It runs offline with prepared dependencies; a new machine must first prepare its tools and dependencies. New commands, additional wrappers and language bindings are outside this slice.
 
 Freeze the first path once an author can generate the project, run checks and locate their implementation and consumer binding. Reports should include a failing command, source SHA, tools and minimal reproduction; use the existing [CLI feedback entry](../cli/OCLIVE_CLI_GUIDE.md).
 

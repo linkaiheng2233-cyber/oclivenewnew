@@ -1184,3 +1184,13 @@
 **下一实施片 / 具体对象**：现有源码SDK Memory配方的自动回归，改善升级后的重复验收成本。优先在 `kernel/crates/oclive-cli/tests/e2e_source_sdk.rs` 复用原 `tests/common` 与TempDir/真实CLI调用，使用当前checkout的canonical Memory两源、项目README、许可证及锁种子；不维护第二份模块实现、不新增SDK门面或通用runner。作者独立工程在临时新目录生成，显式加runtime后派生自己的锁；metadata检查独立workspace、直接依赖及无Host/Tauri，真实check/test/run核三项binary行为与消费者输出。数量是原案例事实，不是包数量上限；零library/doctest不算功能证据。
 
 **下一片验收 / 停止线（尚未执行）**：该集成目标与CLI原E2E串行；runtime原Memory例子、CLI Clippy/fmt、分层与module-compat及适用文档/编码/债结构按实际改动选择。坏目录/缺源优先沿用原生成器回归，不机械复制全部负例；新回归须拒绝子命令非零或真实输出/依赖身份不符，不能只数文件或mock所有Cargo。只读view不是消费者调用证据。记录当前源码/tool/派生锁，缓存缺失明确归工程前提，不冒称产品故障或自动联网安装。实施不改公开Rust面则无需额外workspace doctest，不改变CI job/filter/required；同主题最终批次再按集成范围定完整链及目标SHA正式CI，不为每个测试重复全量。能重复验证此一条路径即停，不扩其余五槽或目标Host。出现契约表达障碍、资源/调度权或公共强制义务才回问维护者。
+
+### 源码 SDK Memory 配方自动回归实施（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者要求持续开发、落实当前规划。干净 `aebe7c466bfc316951529c2664bdd56083a82c23`；M/常规，controller实施与语义自查 independent=false。按上片准备范围施工；约七直接入口/90分钟，真实生成/调用和负控足以支撑该配方回归即停止，不为寻找通用SDK缺口扩查全仓。
+
+**七路径 / 闭环**：新增 `kernel/crates/oclive-cli/tests/e2e_source_sdk.rs`，SDK RFC中英由未实施改为实际交付，Memory SDK指南只加维护者回归入口，PLAN/DCL只追加、新实施Wave。五旧文先保全；复用原tests/common与当前Cargo构建的CLI，在新TempDir中生成作者独立工程，显式Cargo add runtime、原Memory两源/README/LICENSE复制、根锁只作种子，真实metadata/check/test/run。元数据核独立workspace、精确三个直接依赖、无Host/Tauri和第三方身份沿原锁；锁不要求与种子逐字相同，只要求后续locked命令不改派生锁。坏目录/缺源沿用原E2E，不新增第二套设施。
+
+**真实失败验证 / 边界**：现有组件已经足够，不为编译红删旧API或假造公共能力缺失。临时作者副本中把Memory取样数改为0，执行原消费者行为测试，必须出现该测试失败而非编译/前提失败；canonical源码不改，负控是预期子命令非零，外层回归通过必须确认这一事实。输出与依赖检查不mock Cargo，不仅核文件存在。测试进程使用已有缓存/offline和已有target，临时目录明确close；无模型/Host/真实网络/用户DB。
+
+**验收 / 收口**：新目标及原基础E2E串行、CLI bin/接线回归、原runtime例子测试与真实run、CLI all-targets Clippy/fmt、分层/module-compat和适用链接/镜像/登记/旧路径/债结构/编码/七路径/历史保全。只有测试与文档，无公共API、生成器、依赖、workspace锁、工作流或必需门禁改变；不额外workspace doctest、Dimension5或完整发行版CI。默认Cargo发现此集成目标，现有CLI --tests路径能够选择它；通过后本地提交/newcheckpoint，旧锚点/main保持，不push或改变债状态。碰到新契约/权限/执行选择才问维护者。
