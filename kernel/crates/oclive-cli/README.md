@@ -16,6 +16,7 @@
 | 编译检查 | `cargo check` | 生成工程根 |
 | 测试 | `cargo test` | 生成工程根 |
 | 格式检查 | `cargo fmt -- --check`；修正格式用 `cargo fmt` | 生成工程根 |
+| 看接线声明 | `cargo run -p oclive-cli -- doctor wiring --manifest-path <工程>/Cargo.toml`；[字段与未核实标签](../../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring) | OCLive 源码根；单独CLI可在作者工程使用默认清单 |
 | 查参数 | 下方 `init --help` | OCLive 源码根 |
 
 ```bash

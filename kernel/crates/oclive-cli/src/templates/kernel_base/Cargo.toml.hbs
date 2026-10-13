@@ -16,3 +16,7 @@ description = "{{ cargo_description }}"
 [dependencies]
 oclive_kernel_contracts = { path = "{{ path_contracts }}" }
 oclive_kernel_types = { path = "{{ path_types }}" }
+
+# Optional CLI view only; does not register or bind any implementation.
+[package.metadata.oclive.wiring]
+schema_version = 1

@@ -44,6 +44,8 @@ pub struct DoctorArgs {
 
 #[derive(clap::Subcommand, Debug)]
 pub enum DoctorSubcommand {
+    /// View optional Cargo project wiring declarations without running the project
+    Wiring(crate::doctor_wiring::WiringArgs),
     /// Print effective six-slot backend resolution for a role/session
     #[command(name = "config-resolve")]
     ConfigResolve(crate::doctor_config_resolve::ConfigResolveArgs),
@@ -110,6 +112,19 @@ impl DoctorCheck {
 pub fn run(args: DoctorArgs) -> Result<()> {
     if let Some(sub) = args.subcommand {
         match sub {
+            DoctorSubcommand::Wiring(view) => {
+                anyhow::ensure!(
+                    !args.fix
+                        && !args.yes
+                        && !args.watch
+                        && !args.sbom
+                        && !args.json
+                        && args.path == Path::new(".")
+                        && args.sbom_format == "cyclonedx",
+                    "doctor wiring is a read-only terminal view; use wiring --manifest-path without environment, fix, watch, SBOM or JSON options"
+                );
+                crate::doctor_wiring::run(view)
+            }
             DoctorSubcommand::ConfigResolve(cfg) => {
                 let rt = tokio::runtime::Runtime::new().context("tokio runtime")?;
                 rt.block_on(crate::doctor_config_resolve::run(cfg))

@@ -1132,3 +1132,13 @@
 **十二路径 / 保全**：SDK RFC中英、`examples/developer-sdk-memory/{README,project-README}.md`、工厂愿景中英的一行入口、Memory人类指南中英的SDK路由、handoff索引、本计划/DCL只追加、新Wave。七份旧文先保全；CLI、原Memory源码/测试、契约/Host/runtime、manifest/锁、CI控制面和债/队列状态不改。SDK不取得发现、授权、重试、状态应用或外部硬件权力。
 
 **验收 / 出口**：本机主仓外两个独立工程的offline metadata/check/test/run；官方基础生成和Cargo显式添加已实跑，依赖无Host/Tauri且第三方身份为原锁子集，已有用例实际调用消费者、typed失败和零生成保持。源码输入/副本hash、主树状态及实际stdout/native exit留于 `_recovery/SDK-SOURCE-KIT-PROBE-20261012-R0/`，本机证据不随Git携带。落文执行适用链接、镜像、登记、docs-only旧路径、债结构、编码、diff及精确纯文档/历史保全。无公开代码变化，不额外workspace doctest或完整CI；达到指南可复现与门禁通过后本地提交/交接，状态Locally verified，不借083正式CI替新文档SHA盖章，不为补绿灯再造提交。注册表发布、统一门面、Host/硬件目标与更广平台另外开片。
+
+### 终端接线声明视图 · 脚手架中的可选元数据（2026-10-13）
+
+**授权 / 基线 / 预算**：维护者确认由脚手架初始提供、作者工程维护可选Cargo元数据、CLI只读展示。SDK冻结 `9c0ce96f13b7804c288783537143b760c89a35b5` 和main `08348f31` 都保持；新 `codex/wiring-view-20261013-r0` 承接SDK。M/常规，controller实施与语义自查 independent=false；有限核对doctor、config-resolve、基础模板及Memory直接消费者已足够，不继续全仓测绘。
+
+**闭环 / 有限形状**：基础模板写 `[package.metadata.oclive.wiring] schema_version=1` 空声明，不把测试例子冒充运行绑定 → 作者可选声明六槽实现名/接入名/用途、调用范围 → `doctor wiring --manifest-path` 每次读一份Cargo.toml → Base与实现分开、来源和绑定/调用/功能未核实标签 → 真CLI输入/重读/错误/只读/敏感内容负例及原生成回归。复用现有TOML和六槽键常量，不扫描Rust或解析第二套蓝图，不启动环境探测、Cargo/Host/模型。不新增导出格式、GUI、常驻监控、发现/授权/执行器/公共Base或Host强制接口。
+
+**十五路径 / 保全**：CLI main/doctor_cmd、新doctor_wiring、基础Cargo/README模板、新doctor_wiring集成测试、原e2e_kernel_base、CLI指南中英、SDK指南/项目README、CLI crate README、本计划/DCL追加、新Wave；12份原件先保存字节/hash。根manifest/锁、公共types/contracts/runtime及原Memory源码、其它模板/工作流/影响图/选择策略、债务状态和已冻结旧报告保持。显示格式归CLI指南，SDK/模板只写使用入口；可选标签不是模块注册或真实运行报告。
+
+**验收 / 出口**：先新CLI/生成断言旧代码红，再实现绿；实际CLI集成、doctor相关unit、原基础E2E串行、CLI默认all-target Clippy、fmt、分层/module-compat、适用文档/镜像/登记/旧路径/债结构/编码/diff及精确写集和历史字节保全。真实新工程一次生成→查看空声明→添加Memory声明→查看→改名称再查看，保存退出码/stdout及前后文件摘要；私有数据/未知字段不能被原文打印，环境探测及产品回合不参与。无公开Rust签名/re-export、CI控制面或发版/Done变化，workspace doctest/完整发行版链/远端CI不适用。达到声明视图可靠且定向验收通过即本地冻结，不合入/推送main；实际绑定、调用记录和功能质量保持未核实，后续有具体Host来源再另片。
