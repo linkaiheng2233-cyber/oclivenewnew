@@ -73,6 +73,32 @@ test('native nonzero exit preserves its exit code and stderr', () => {
     error instanceof GateToolchainError && error.code === 'EXIT' && error.exitCode === 7 && error.stderr === 'injected failure');
 });
 
+test('failure diagnostics show stdout assertions even when stderr contains compiler progress', t => {
+  const source = 'process.stderr.write("Compiling fixtures"); process.stdout.write("tests::important_case ... FAILED"); process.exit(101)';
+  const script = path.join(fixture(t), 'failed-command.mjs');
+  fs.writeFileSync(script, source);
+  assert.throws(() => runRequiredCommand(process.execPath, [script]), error =>
+    error instanceof GateToolchainError && error.exitCode === 101
+      && error.message.includes('tests::important_case ... FAILED')
+      && error.message.includes('Compiling fixtures')
+      && error.stdout === 'tests::important_case ... FAILED'
+      && error.stderr === 'Compiling fixtures');
+});
+
+test('long failure diagnostics retain both streams and their tails within a bounded message', t => {
+  const stdout = `stdout-start\n${'progress\n'.repeat(1000)}stdout-failure-tail`;
+  const stderr = `stderr-start\n${'compiling\n'.repeat(1000)}stderr-error-tail`;
+  const source = `process.stdout.write(${JSON.stringify(stdout)}); process.stderr.write(${JSON.stringify(stderr)}); process.exit(9)`;
+  const script = path.join(fixture(t), 'long-failed-command.mjs');
+  fs.writeFileSync(script, source);
+  assert.throws(() => runRequiredCommand(process.execPath, [script]), error =>
+    error instanceof GateToolchainError && error.exitCode === 9
+      && ['stdout-start', 'stdout-failure-tail', 'stderr-start', 'stderr-error-tail']
+        .every(marker => error.message.includes(marker))
+      && error.message.length < 8500
+      && error.stdout === stdout && error.stderr === stderr);
+});
+
 test('native timeout cannot pass as an empty successful command', () => {
   assert.throws(() => runRequiredCommand(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { timeout: 100 }), error =>
     error instanceof GateToolchainError && error.code === 'TIMEOUT');
