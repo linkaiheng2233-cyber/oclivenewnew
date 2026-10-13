@@ -58,3 +58,19 @@ G1–G8/G17：未改角色/蓝图/契约、运行编排、权限、错误码、�
 旧 `checkpoint/source-sdk-wiring-20261013-r0` 保持指向 `2d36bb01`，当前main `08348f31`和独立SDK `9c0ce96f`保持；本轮不合main/push，不移动标签。通过文档门禁后可提交本地审查报告；最终SHA和clean状态在交付记录，不为回写CI绿灯造第二提交。
 
 下一步可沿既有有限成果准备正式集成，届时目标SHA的适用完整链/CI另判；或接受具体使用反馈。当前没有新增需维护者决策的问题，不自动开发SDK门面、注册系统或运行追踪。
+
+## 二次复核回传核对（2026-10-13）
+
+维护者转来DeepSeek二次审核：自报窗口 `566a8a69..08348f31`、只读，独立AI主体但非人类审查。该窗口不包含本地SDK/接线新提交；其P4的 `cargo test … -- --list` 是目标选择级证据，105项列举不等于测试正文通过，也不替本地新SHA出CI结论。本轮按[有限计划](../ROUND-02-PLAN.md#二次复核回传的有限澄清2026-10-13)接续 `9c2f142a`，controller核对 independent=false，未重新逐项执行其全部P1–P8。原审查正文与结论保持。
+
+| 候选 | 核对事实与本轮处置 |
+|---|---|
+| T1入口样板重复 | 三脚本的入口守卫规范化脚本/runner名后相同，接受这个局部观察；固定链仍复用gate-toolchain，当前没有共同行为要改，本批不新建runEntry或改脚本。后续实际同类改动可再评估一个有限helper，不把第四个脚本的出现自动升级成新框架或门禁。 |
+| T2Host等价重复/缺出口 | A1实际 `cargo tree --locked --offline -p oclive_kernel_host --depth 0 --format …` 得 `features=default`；A2 `--workspace` 得Host `features=default,tauri-commands`，两native exit0。**等价重复的归因不成立**；接受具体出口说明缺口。CI中英已补先保留拟迁出feature/目标条件的执行责任、catalog/trusted/gate核对再改排除项；当前CI命令/策略不动。 |
+| T3材料路径 | 新位置18326 B/SHA相符；旧Wave是历史来源说明，未承诺路径永久固定。只追加hash为身份、当前原件与保全副本位置，不重写旧正文或把本机目录当可携带产物。 |
+| T4生成说明语言 | 定义与直接生产者为 `kernel/crates/oclive-cli/src/generator.rs:172–203` 的中文COMMENT常量→legacy settings `_comment_*`；不是违规Rust源码注释。CLI中英已说明当前无英文变体、help不代表产物翻译、kernel-base另行判读；不新增locale开关、翻译实现或语言政策。 |
+| T5候选原字节 | `_recovery/AI-GUARDRAILS-20261009-R0/candidate-manifest.json` 四原件全部bytes/hash相符，旧脚本原键仍在。**原件未保全的疑点不成立**；接受保全与最终改写须分开读的提醒，旧Wave只追加解释及位置，保全原件不动。 |
+
+对方W1–W3的更正保留其归属：跨错提交窗口、不同SHA的旧否定、以栅栏估doctest均不当作现行事实。其实际列举/测试/日志未全部另行取得或复跑，本轮只对上述五候选给出自己的有限核对，不借“另一AI已通过”扩大审查标签。
+
+本机A1/A2及原件/材料/入口比对在 `.cursor/plans/secondary-review-followup-20261013-r0/`。A4八原件/精确八文/四历史前缀/编码及候选核对、G1–G7默认及八文链接/镜像/登记/旧路径/债结构/diff均exit0；最终正文更新仅复查受影响链接、最终范围与暂存diff。完整SHA/clean状态在交付记录。本补充为Locally verified，controller核对 independent=false。没有Rust、模板、脚本、锁、CI或债状态变动，不重跑Rust/Clippy/Dimension5/远端CI；原checkpoint保持，不合main/push。文案澄清足以结束本片，没有新增待决架构事项。
