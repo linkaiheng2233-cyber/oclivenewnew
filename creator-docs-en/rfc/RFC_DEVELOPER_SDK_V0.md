@@ -44,6 +44,19 @@ Windows PowerShell probes used source input `08348f31b8f3459537c13227302bf4b8e27
 
 ## Stop and expand deliberately
 
+### Next slice preparation: recipe regression (not implemented)
+
+The first source path already has a real consumer example. The next slice should reduce the repeated work of maintaining that path: exercise generation, explicit runtime addition, canonical source copies, a derived lock and check/test/run through the existing CLI integration-test facilities. See the [development plan](../../handoff/debt-marathon/ROUND-02-PLAN.md#审查批完整交接与源码-sdk-开发准备2026-10-13) for scope and acceptance, and the [closeout record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md) for the frozen inputs and evidence boundaries. This regression is planned, not implemented; it is not a new SDK command.
+
+| Preparation | Next slice requirement |
+|---|---|
+| Delivery target | The current Memory source toolkit; a separate author project really compiles, tests and calls the existing consumer |
+| Reuse | Existing CLI integration helpers and canonical Memory sources; no second maintained module implementation or public SDK facade |
+| Passing result | Independent workspace/derived lock and dependency boundaries, successful native commands and actual behavior assertions; declaration views and empty tests do not replace consumer evidence |
+| Stop condition | Freeze once this one onboarding path is repeatable; Host wiring, other slots, platforms and publication follow concrete needs |
+
+The toolkit continues to use existing crates and source path dependencies. A regression does not turn it into a published SDK package independent of a full checkout. New commands, additional wrappers and language bindings are outside this preparation's authorization.
+
 Freeze the first path once an author can generate the project, run checks and locate their implementation and consumer binding. Reports should include a failing command, source SHA, tools and minimal reproduction; use the existing [CLI feedback entry](../cli/OCLIVE_CLI_GUIDE.md).
 
 Consider packaging, other slot examples, Host presets, language bindings or publication only when a concrete development task is blocked. Do not mechanically add six identical examples, discovery, a generic executor or SDK traits. A reproducible contract limitation needs old/new cases; permissions, scheduling authority and mandatory obligations require maintainer agreement. Hardware, real models/TTS, standalone browsers and untested crash windows receive no new acceptance claim from this guide.
