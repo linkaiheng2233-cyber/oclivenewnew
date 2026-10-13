@@ -33,6 +33,10 @@ README.md                 当前说明
 | 运行测试 | `cargo test` |
 | 检查格式 | `cargo fmt -- --check`；修正格式用 `cargo fmt` |
 
+查看接线时，从包含本命令的 OCLive 源码根运行 `cargo run -p oclive-cli -- doctor wiring --manifest-path <本工程>/Cargo.toml`；若已编译/安装当前 CLI，可在本工程运行 `oclive-cli doctor wiring`。初始 `Cargo.toml` 的可选 `package.metadata.oclive.wiring` 只有版本，六个实现都显示未提供，测试示例不自动成为运行绑定。填写格式与标签见 [CLI 接线说明](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring)。
+
+更换实现后同步自己的声明再查看；命令每次只读清单，不扫描Rust、不调用模块或启动Host。声明既不注册模块，也不证明已绑定/已调用或功能通过；资源、权限与调度仍由作者/Host明确。
+
 生成参数不记得时，在 OCLive 源码根执行 `cargo run -p oclive-cli -- init --help`。完整生成与 [常用 / 不常用指令分类](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/OCLIVE_CLI_GUIDE.md#cli-common-commands) 在 CLI 指南中。
 
 ### 不常用指令

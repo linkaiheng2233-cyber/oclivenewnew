@@ -70,6 +70,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | [THREE_DISTRO_KERNEL_CLOSURE.md](THREE_DISTRO_KERNEL_CLOSURE.md) | 三发行版内核结项约束；新能力以 HostProfile SSOT 为准 |
 | [EVENT_RING.md](../creator-docs/plugin-and-architecture/EVENT_RING.md) | Event Ring wire、注册、权威边界与主动回合授权公开契约 |
 | [RFC_RUNTIME_EVENT_STREAM.md](../creator-docs/rfc/RFC_RUNTIME_EVENT_STREAM.md) | 外围 Runtime Event Stream 的分层与分阶段实验边界；已实现切片、暂停项和 Production 缺口按 RFC 与技术债判断，不把 trace/shadow 当正式 Stream |
+| [RFC_DEVELOPER_SDK_V0.md](../creator-docs/rfc/RFC_DEVELOPER_SDK_V0.md) | 源码接入工具包的交付形态与扩展停止线；实际配方指向独立 Memory 工程指南，不新增公共门面或重定义六槽 |
 
 ### 关键路径与验证
 

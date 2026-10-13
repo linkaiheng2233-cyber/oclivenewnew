@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const remediation = {
   rg: 'Install ripgrep or expose its native executable on PATH; verify rg --version, then rerun npm run check:toolchain.',
@@ -9,11 +10,21 @@ const remediation = {
   node: 'Use the Node version required by package.json; verify node --version, then rerun npm run check:toolchain.',
 };
 
+function commandOutputSnippet(output) {
+  const text = output?.trim();
+  if (!text) return '';
+  return text.length <= 4000 ? text
+    : `${text.slice(0, 1800)}\n[... output truncated; tail follows ...]\n${text.slice(-1800)}`;
+}
+
 export class GateToolchainError extends Error {
   constructor(code, command, message, result = {}) {
     const tool = path.basename(command).replace(/\.exe$/i, '');
-    const detail = result.stderr?.trim() || result.stdout?.trim();
-    super(`[toolchain:${code}] ${message}${detail ? `\n${detail.slice(0, 4000)}` : ''}\n${remediation[tool] ?? 'Verify the command and rerun the failed gate.'}`);
+    const detail = ['stdout', 'stderr'].map(stream => {
+      const snippet = commandOutputSnippet(result[stream]);
+      return snippet ? `[${stream}]\n${snippet}` : '';
+    }).filter(Boolean).join('\n');
+    super(`[toolchain:${code}] ${message}${detail ? `\n${detail}` : ''}\n${remediation[tool] ?? 'Verify the command and rerun the failed gate.'}`);
     this.name = 'GateToolchainError';
     this.code = code;
     this.command = command;
@@ -112,4 +123,18 @@ export function runGate(main) {
     console.error(error.message);
     process.exitCode = 1;
   }
+}
+
+// Importing a fixed gate must not execute it or consume the importer's arguments.
+export function runGateEntry(moduleUrl, main, usage) {
+  const entryPath = process.argv[1] && path.resolve(process.argv[1]);
+  const scriptPath = fileURLToPath(moduleUrl);
+  if (!entryPath || (process.platform === 'win32'
+    ? entryPath.toLowerCase() !== scriptPath.toLowerCase() : entryPath !== scriptPath)) return;
+  if (process.argv.length > 2) {
+    console.error(usage);
+    process.exitCode = 1;
+    return;
+  }
+  runGate(main);
 }
