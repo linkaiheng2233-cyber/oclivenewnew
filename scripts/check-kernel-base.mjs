@@ -2,7 +2,7 @@
 /** Existing public Base/minimal-role checks; does not prepare or start a Host. */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runGate, runRequiredCommand } from './lib/gate-toolchain.mjs';
+import { runGateEntry, runRequiredCommand } from './lib/gate-toolchain.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const commands = [
@@ -23,14 +23,4 @@ export function runKernelBaseChecks(runCommand = runRequiredCommand) {
   console.log('[kernel-base] PASS (Base/minimal-role checks only; Host and distro checks not run)');
 }
 
-const entryPath = process.argv[1] && path.resolve(process.argv[1]);
-const scriptPath = fileURLToPath(import.meta.url);
-if (entryPath && (process.platform === 'win32'
-  ? entryPath.toLowerCase() === scriptPath.toLowerCase() : entryPath === scriptPath)) {
-  if (process.argv.length > 2) {
-    console.error('Usage: node scripts/check-kernel-base.mjs');
-    process.exitCode = 1;
-  } else {
-    runGate(() => runKernelBaseChecks());
-  }
-}
+runGateEntry(import.meta.url, runKernelBaseChecks, 'Usage: node scripts/check-kernel-base.mjs');

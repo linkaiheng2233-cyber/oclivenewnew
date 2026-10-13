@@ -74,3 +74,20 @@ G1–G8/G17：未改角色/蓝图/契约、运行编排、权限、错误码、�
 对方W1–W3的更正保留其归属：跨错提交窗口、不同SHA的旧否定、以栅栏估doctest均不当作现行事实。其实际列举/测试/日志未全部另行取得或复跑，本轮只对上述五候选给出自己的有限核对，不借“另一AI已通过”扩大审查标签。
 
 本机A1/A2及原件/材料/入口比对在 `.cursor/plans/secondary-review-followup-20261013-r0/`。A4八原件/精确八文/四历史前缀/编码及候选核对、G1–G7默认及八文链接/镜像/登记/旧路径/债结构/diff均exit0；最终正文更新仅复查受影响链接、最终范围与暂存diff。完整SHA/clean状态在交付记录。本补充为Locally verified，controller核对 independent=false。没有Rust、模板、脚本、锁、CI或债状态变动，不重跑Rust/Clippy/Dimension5/远端CI；原checkpoint保持，不合main/push。文案澄清足以结束本片，没有新增待决架构事项。
+
+## 审查后入口样板收敛（2026-10-13）
+
+维护者随后要求修复整理审查问题并确认基线。本片从干净 `072fa31bc11ed55fb76a4e3a93d9532a8a464cc4` 按[有限计划](../ROUND-02-PLAN.md#审查后检查入口样板收敛与基线确认2026-10-13)处理T1；上节暂不抽取是当时片的止点，历史正文不改。T2–T5已明确的文案问题已处理，不再次改CI选择或翻译产物。controller实施与语义自查 independent=false。
+
+`scripts/lib/gate-toolchain.mjs` 新增同步 `runGateEntry(moduleUrl, main, usage)`，只负责“直接执行还是导入、拒绝多余参数、转入原runGate”；三个实际入口各用一行调用，原固定commands/cwd/20分钟timeout、Usage、PASS及错误处理保持。没有参数发现、注册、权限或通用命令框架，也未统一不同Host feature配置。
+
+| 本机记录 | 实测与含义 |
+|---|---|
+| R1-shared-entry-red | 原helper上旧10项通过、新3项失败，native exit1；新符号缺失为首因，原日志保留，不是Kernel/Host回合失败。 |
+| G1-node-entry-and-chain-regressions | 28/28、exit0：原工具链与三入口回归，加正常直接执行一次、被导入时不执行/不消费调用者参数、坏参数先拒绝且保留Usage。子进程夹具不调用Cargo或模型；原链回归继续核固定范围与native失败/缺工具。 |
+| G3-syntax-1..5 | 五个修改脚本均 `node --check` exit0。 |
+| G2-dimension5 | 真实 `node scripts/dimension5-acceptance.mjs --ci` native exit0，PASS (31 checks)，360.65秒；sample workspace lib按原模式skip。它是本地治理链，不等于完整远端CI/真实产品验收。 |
+
+Dimension5在验证子进程绑定既有Cargo target、jobs=1、`CARGO_NET_OFFLINE=true` 和portable Python 3.12，finally恢复环境；本工作树新增指向主树既有node_modules的Junction，不安装或升级依赖。该链产生正常本机测试/构建产物，未以名字结束任何进程。原日志在 `.cursor/plans/review-entry-fix-20261013-r0/`，不随Git携带；新回归在原测试文件内可复现。
+
+本片精确八路径（五脚本/测试＋三份报告/记录），三历史前缀保留；G4–G10默认及三文链接、登记、docs+code旧路径、债结构、严格编码、八原件/写集、原固定验证链/原工具链正文/原十测保持、main/SDK及旧tag/diff均exit0。最终文案只补受影响链接/最终范围/暂存diff检查，不重复已经通过的代码与Dimension5。SDK/接线Rust、模板、依赖、Host/CI及债状态不改。本片Locally verified，最终SHA/clean状态在交付记录；新增本地 `checkpoint/source-sdk-wiring-reviewfix-20261013-r0`，旧checkpoint仍指向 `2d36bb01`。不合main/push、无新远端CI，不为本次等价入口整理重复Rust全测/check:ci-local或真实业务矩阵。当前没有新增需要维护者裁定的事项。
