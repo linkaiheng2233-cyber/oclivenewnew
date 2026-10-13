@@ -833,6 +833,8 @@ cargo run -p oclive-cli -- --experimental debug -o . --step build_prompt --json
 - **`init --help` 末尾**：含预设矩阵、**`--monolith`** 说明，指向 [RFC_OCLIVE_MONOLITH_MODE.md](../rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
 - **README（生成）**：根据项目类型与插件勾选，写入 `oclive_kernel_server` / OOCP / 目录插件指引；已链接的 `library` 分列旧 `load_role → process_message` 与开发者转换后 `PreparedMinimalRole → process_minimal_message` 用法。最小角色句柄、请求、结果、扩展状态和 typed error 直接重导出原类型；基础结果明确产品扩展不可用，不保存聊天或构造完整 `Role`，具体范围见 [ROLE_PACK_BOUNDARY §0.9](../../handoff/ROLE_PACK_BOUNDARY.md#09-参考-rust-host-的增量基础文本入口)。`library-embed --kernel-source <主仓根>` 默认不生成角色包，转换器由开发者提供；无 `--kernel-source` 仍是 serde 占位库。
 
+**当前生成说明的语言**：上述legacy `settings.json` 的 `_comment_*` 说明文本目前为中文，没有英文变体；英文CLI帮助不表示这些生成字段会自动翻译。这是当前产物范围说明，不新增语言政策或本地化保证。`kernel-base` 是另一基础配方，不生成这份legacy settings；它的模板说明按自身文件内容判读。
+
 ---
 
 ## 高耦合编译模式（Monolith）
