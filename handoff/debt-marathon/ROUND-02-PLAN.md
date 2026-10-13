@@ -1236,3 +1236,13 @@
 **五路径 / 语义**：现有gate-toolchain lib与原测试各补少量代码，PLAN/DCL及原安全Wave只追加。错误消息分开标stdout/stderr，每流长输出保留首尾并明确省略；错误code/native exit、完整stdout/stderr属性、命令/cwd/超时/接受码和三个固定检查脚本保持。两项真实子进程输出负控先红再绿；初版node -e把故障串带入命令头导致一项假通过，先改fixture文件控制再确认红，不删除断言。不是新日志框架、持续监控或Host实现改动。
 
 **验收 / 冻结**：Node工具链与三个固定入口回归、最终helper下Dimension5、脚本语法及三文门禁/diff；不为不变SDK/Host重复整仓Rust。五路径检查后单独工具诊断提交；随后合并两个分类提交的冻结点到新r1 tag，一次push草稿分支，最后转ready仅启动一次新SHA正式CI。已知失败旧SHA的草稿自动run取消以免重复浪费；旧正式run按实际完成/取消状态保留。只有重新出现的真实Host失败且有效日志给出首因时才定点修复，不靠同SHA rerun赌博。
+
+### SDK收尾Windows夹具释放等待（2026-10-13）
+
+**基线 / 实测阻碍**：冻结 `27c514bc` 的正式CI补跑（38381090607 attempt2）19项成功，Windows默认Host在 `minimal_role_public_api` 的2秒DB独占探测超时，总门禁失败；新双流诊断实际保留了该失败。原2秒上限只属于测试夹具，生产shutdown、SQLite选项与公共API不改。当前证据证明探测超时，不证明占用者或所有SQLx worker已join；本机先前通过不能消除远端事实。controller定点实施与自查 independent=false。
+
+**四路径 / 最小修补**：本测试文件提取既有Windows独占探测，仍只重试共享冲突32，其它错误直接失败；测试夹具释放上限2→10秒，成功条件仍为真实独占打开及TempDir删除。用真实文件句柄分别证明：释放晚于旧2秒时旧等待失败、新等待成功；始终占用在短测试上限内必须失败，释放后可成功。只改该测试、PLAN/DCL及原安全Wave追加，不扩大Host生命周期或调整工作流/required/测试选择。
+
+**验收 / 冻结**：先保全原件和原生失败，定向Windows释放正负控先红后绿，完整本测试目标、默认Host测试与all-target Clippy/fmt/分层，三文门禁/diff；不重复不变SDK、前端或全部workspace本地链。已失败的ready PR只做这项有限返修，完成本地验收并冻结新r2 checkpoint后单次推送，synchronize在ready状态验证新SHA正式ci-gate，避免push与ready事件同秒交错。旧r0/r1标签保留；不再对失败输入无变化rerun，不为绿灯另造提交。
+
+**执行偏差更正**：r1的同步/ready事件顺序未核准，较晚run38381090723实际是draft；此前将它当正式运行的判断撤回。正式90607的plan已被取消，其余19项通过；为补取消计划执行 `--failed`，GitHub实际重跑了所有下游，不能说只补两个job。attempt2真实Windows失败现在用于本片定点修补，草稿绿灯不替正式结果。未改任何架构冻结或技术债状态。

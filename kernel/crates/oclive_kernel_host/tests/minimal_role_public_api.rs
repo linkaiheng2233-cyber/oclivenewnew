@@ -141,6 +141,38 @@ async fn kernel(
     (kernel, llm)
 }
 
+#[cfg(windows)]
+const FIXTURE_DB_RELEASE_DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+
+#[cfg(windows)]
+async fn wait_for_fixture_db_release(
+    db_path: &std::path::Path,
+    deadline: std::time::Duration,
+) -> std::result::Result<(), tokio::time::error::Elapsed> {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    tokio::time::timeout(deadline, async {
+        loop {
+            match std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .share_mode(0)
+                .open(db_path)
+            {
+                Ok(file) => {
+                    drop(file);
+                    break;
+                }
+                Err(error) if error.raw_os_error() == Some(32) => {
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+                Err(error) => panic!("fixture DB release probe failed: {error}"),
+            }
+        }
+    })
+    .await
+}
+
 async fn close_fixture(kernel: OcliveKernel, temp: tempfile::TempDir) {
     let db_path = kernel.config().database_path().to_owned();
     kernel.shutdown().await;
@@ -148,34 +180,58 @@ async fn close_fixture(kernel: OcliveKernel, temp: tempfile::TempDir) {
     // after the pool has acknowledged close. Observe release, with a hard bound;
     // never turn a permanent cleanup failure into a passing test.
     #[cfg(windows)]
-    {
-        use std::os::windows::fs::OpenOptionsExt;
-        tokio::time::timeout(std::time::Duration::from_secs(2), async {
-            loop {
-                match std::fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .share_mode(0)
-                    .open(&db_path)
-                {
-                    Ok(file) => {
-                        drop(file);
-                        break;
-                    }
-                    Err(error) if error.raw_os_error() == Some(32) => {
-                        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
-                    }
-                    Err(error) => panic!("fixture DB release probe failed: {error}"),
-                }
-            }
-        })
+    wait_for_fixture_db_release(&db_path, FIXTURE_DB_RELEASE_DEADLINE)
         .await
         .expect("fixture DB handle released within cleanup deadline");
-    }
     #[cfg(not(windows))]
     let _ = db_path;
     temp.close()
         .expect("fixture directory removed after shutdown");
+}
+
+#[cfg(windows)]
+fn held_fixture_db(root: &std::path::Path) -> (std::path::PathBuf, std::fs::File) {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    let path = root.join("controlled-handle.db");
+    let held = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create_new(true)
+        .share_mode(0)
+        .open(&path)
+        .unwrap();
+    (path, held)
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn fixture_release_accepts_a_delayed_handle_close() {
+    let temp = tempfile::tempdir().unwrap();
+    let (path, held) = held_fixture_db(temp.path());
+    let release = tokio::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(2200)).await;
+        drop(held);
+    });
+    let outcome = wait_for_fixture_db_release(&path, FIXTURE_DB_RELEASE_DEADLINE).await;
+    release.await.unwrap();
+    temp.close().unwrap();
+    assert!(
+        outcome.is_ok(),
+        "a delayed close must fit the fixture budget"
+    );
+}
+
+#[cfg(windows)]
+#[tokio::test]
+async fn fixture_release_rejects_a_handle_held_past_the_deadline() {
+    let temp = tempfile::tempdir().unwrap();
+    let (path, held) = held_fixture_db(temp.path());
+    let deadline = std::time::Duration::from_millis(50);
+    assert!(wait_for_fixture_db_release(&path, deadline).await.is_err());
+    drop(held);
+    assert!(wait_for_fixture_db_release(&path, deadline).await.is_ok());
+    temp.close().unwrap();
 }
 
 #[tokio::test]

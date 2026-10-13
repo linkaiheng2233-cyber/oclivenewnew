@@ -1117,3 +1117,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **问题 / 不确定边界**：首轮Windows reference-host-default报native101，但原工具错误显示丢弃stdout并截取编译stderr前段；有效首因unknown。本机相同default Cargo命令native0，不据此否定远端失败或猜根因；不改Host生产代码或测试。
 - **修改 / 回归**：按[五路径计划](ROUND-02-PLAN.md#sdk收尾ci失败诊断输出保真2026-10-13)只改现有工具链错误显示，stdout/stderr分流保留有界首尾，native/code与完整流属性不变。新增真实子脚本两负控，旧helper13过/2败，新helper与三入口合并30/30；初版node -e负控命令头混入故障串的假通过已纠正并保留输出。
 - **验收 / 止点**：最终helper下Dimension5、脚本/三文门禁与范围自查后独立工具修补提交；原SDK/锁安全补丁事实和未覆盖项保持。两个分类提交一次冻结/push/r1 tag，再ready的目标SHA正式CI；不在旧失败SHA上反复rerun。[原Wave追加](waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md#ci失败诊断输出保真续片)拥有实际日志与未知事项。
+
+### DCL-20261013-115 · SDK收尾Windows夹具释放等待
+
+- **实际问题**：新诊断在r1正式CI attempt2保留下 `minimal_role_public_api` 的2秒独占打开超时。19项成功，Windows默认Host及总门禁失败；此前草稿全绿和本机default通过不替代正式结果。只据此判断等待预算过窄的可复现条件，不宣称已定位CI占用者。
+- **有限返修**：按[四路径计划](ROUND-02-PLAN.md#sdk收尾windows夹具释放等待2026-10-13)，测试夹具Windows释放上限2→10秒，原探测提取供真实文件句柄正负控调用。共享冲突32才等待；其它错误、超时及TempDir删除失败仍非零。生产Host/关池、公共接口、SDK、依赖锁和CI策略均不改。
+- **验证 / 续接**：旧2秒控制1过/1败，10秒后两控制通过，默认Host完整测试native0（lib637、该目标Windows16）；all-target Clippy/fmt/分层及三文门禁另核。[原Wave追加](waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md#windows测试夹具释放等待续片)记录CI事件误判和补跑范围的更正。新的单独测试提交与r2 checkpoint冻结后只推送一次ready分支，用新SHA正式门禁收口；不回写绿灯新提交，不移动旧标签或改变债状态。
