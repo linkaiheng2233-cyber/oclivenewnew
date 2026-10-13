@@ -148,6 +148,18 @@ Expect the declared Memory edge and unknown unspecified implementations. The vie
 
 Record source/tool/lock inputs, recheck path dependencies after moving either directory, and use Cargo metadata to inspect the actual graph. The first path establishes compilation, limited contract behavior and a real consumer call. Retrieval quality, persistence, performance, Host lifecycle and distribution behavior remain target-specific work.
 
+### 维护者回归入口 / Maintainer regression
+
+从完整OCLive checkout的根目录执行，预先准备Cargo依赖缓存：
+
+```sh
+cargo test --locked -p oclive-cli --test e2e_source_sdk -- --test-threads=1
+```
+
+一个外层集成测试会在临时独立工程中生成基础、添加runtime、复制原例子并真实check/test/run。它核对三项binary行为、消费者输出、workspace/依赖与派生锁稳定性；还会改坏临时Memory副本，要求原消费者测试真正失败，然后清理临时目录。该负控的子命令非零是预期，外层测试只有确认失败原因符合断言才通过。查看声明不代替此回归；这是维护者验配方的入口，作者日常开发仍使用第4节的Cargo命令。
+
+Run from a full OCLive checkout with prepared Cargo dependencies. One outer integration test creates a temporary author workspace and really checks/tests/runs the copied example. It checks three binary behaviors, consumer output, dependency boundaries and derived-lock stability, then deliberately breaks the temporary Memory copy and requires the original consumer test to fail. That negative child's nonzero exit is expected and verified before the outer test passes and cleans up. This maintainer regression does not replace the author's ordinary commands or target-specific acceptance.
+
 后续入口 / Continue with:
 
 - [六槽 Base 接入点 / Base entry points](../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)：请求、返回、失败、绑定和 Host 接线位置。
