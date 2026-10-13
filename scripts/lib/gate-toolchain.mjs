@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const remediation = {
   rg: 'Install ripgrep or expose its native executable on PATH; verify rg --version, then rerun npm run check:toolchain.',
@@ -112,4 +113,18 @@ export function runGate(main) {
     console.error(error.message);
     process.exitCode = 1;
   }
+}
+
+// Importing a fixed gate must not execute it or consume the importer's arguments.
+export function runGateEntry(moduleUrl, main, usage) {
+  const entryPath = process.argv[1] && path.resolve(process.argv[1]);
+  const scriptPath = fileURLToPath(moduleUrl);
+  if (!entryPath || (process.platform === 'win32'
+    ? entryPath.toLowerCase() !== scriptPath.toLowerCase() : entryPath !== scriptPath)) return;
+  if (process.argv.length > 2) {
+    console.error(usage);
+    process.exitCode = 1;
+    return;
+  }
+  runGate(main);
 }

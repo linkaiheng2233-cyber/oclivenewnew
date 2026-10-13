@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 import { countMatchingLines, findNativeExecutable, GateToolchainError, parseRipgrepCounts, runRequiredCommand } from './gate-toolchain.mjs';
 
 function fixture(t) {
@@ -90,4 +91,37 @@ test('malformed or overflowing count output fails closed', () => {
   for (const output of ['file.rs:4\n', 'file.rs\0oops\n', 'file.rs\0' + '0\n', '\0' + '1\n', 'file.rs\0' + '1', 'file.rs\0' + '9007199254740992\n', 'a.rs\0' + '9007199254740991\nb.rs\0' + '1\n']) {
     assert.throws(() => parseRipgrepCounts(output), error => error instanceof GateToolchainError && error.code === 'OUTPUT');
   }
+});
+
+function gateEntryFixture(t) {
+  const directory = fixture(t);
+  const entry = path.join(directory, 'gate entry.mjs');
+  const helperUrl = new URL('./gate-toolchain.mjs', import.meta.url).href;
+  fs.writeFileSync(entry, `
+    import { runGateEntry } from ${JSON.stringify(helperUrl)};
+    runGateEntry(import.meta.url, () => console.log('gate ran'), 'Usage: node gate-entry.mjs');
+  `);
+  return { directory, entry };
+}
+
+test('the shared entry runs its synchronous gate exactly once when executed directly', t => {
+  const { directory, entry } = gateEntryFixture(t);
+  const result = runRequiredCommand(process.execPath, [entry], { cwd: directory });
+  assert.equal(result.stdout, 'gate ran\n');
+  assert.equal(result.stderr, '');
+});
+
+test('importing a gate entry does not run the gate or reject the importing process arguments', t => {
+  const { directory, entry } = gateEntryFixture(t);
+  const source = `await import(${JSON.stringify(pathToFileURL(entry).href)}); console.log('imported');`;
+  const result = runRequiredCommand(process.execPath, ['--input-type=module', '-e', source, 'unrelated', '--other'], { cwd: directory });
+  assert.equal(result.stdout, 'imported\n');
+  assert.equal(result.stderr, '');
+});
+
+test('unsupported direct-entry arguments fail before the gate runs and retain the supplied usage', t => {
+  const { directory, entry } = gateEntryFixture(t);
+  assert.throws(() => runRequiredCommand(process.execPath, [entry, '--skip'], { cwd: directory }), error =>
+    error instanceof GateToolchainError && error.exitCode === 1
+      && error.stdout === '' && error.stderr.trim() === 'Usage: node gate-entry.mjs');
 });
