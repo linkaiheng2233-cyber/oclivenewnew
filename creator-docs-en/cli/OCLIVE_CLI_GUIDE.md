@@ -144,6 +144,8 @@ For what to edit, how to observe changed behavior and where to find consumer bin
 
 From an OCLive checkout containing this command:
 
+First use `cargo run --locked -p oclive-cli -- doctor wiring --help` to confirm that the selected source/binary contains the entry. An old CLI's `unrecognized subcommand 'wiring'` indicates a command-version mismatch, not an unusable module or Base contract. Build from source containing the entry; a package version alone does not distinguish local development commits, so record the source SHA too.
+
 ```bash
 cargo run --locked -p oclive-cli -- doctor wiring --manifest-path ../my-capabilities/Cargo.toml
 ```
@@ -185,6 +187,18 @@ Keys reuse the existing six `memory/emotion/event/prompt/llm/agent` names; no re
 Output separates `MemoryBase -- declared --> RecentLiteralMemory`, its public contract path and its entry declaration; unspecified implementations remain unknown. It always says `Host verification: not connected` and `Binding / call / target functionality: not verified`. Edges express relationships, not a six-slot turn order.
 
 After changing an implementation, update its metadata and rerun the command; editing Rust alone does not synchronize declarations. No loading, replacement, registration, scheduling, authority or mandatory Host report is added. The first slice is terminal snapshots only. Environment-domain `--fix/--yes/--watch/--sbom`, `-o` paths and `--json` do not apply; select input with `wiring --manifest-path`. No new export format.
+
+**Locate the failed step first**:
+
+| Symptom | First action |
+|---|---|
+| Unknown `wiring` command | Check CLI provenance and the help command above; do not change module interfaces |
+| Manifest unreadable / no `[package].name` | Select the author's package Cargo.toml, quote paths with spaces and avoid a workspace-only source root |
+| Rust has an implementation but the view is missing it or shows an old name | Update the selected manifest's declaration; the view does not scan source and does not prove an implementation is absent |
+| TOML/field error after pasting the example | Check duplicate tables, versions/types and identifier labels locally; errors omit input contents, so never post credentials |
+| A name is declared but binding/call/functionality remain unverified | Correct for this slice; use module tests or target Host acceptance for those separate claims |
+
+If this does not resolve the problem, use the [existing issue tracker](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) with CLI source SHA, working directory, command, expected/actual output and a sanitized minimal declaration. Distinguish absent runtime reports, declaration usability and public-contract limitations; omit tokens and user materials.
 
 ### Existing environment diagnostics
 

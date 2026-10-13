@@ -103,7 +103,26 @@ Expect the first line above followed by the two unchanged selected materials, in
 
 ## 5. 我改哪里 / What to edit
 
+| 文件 / File | 开发动作 / Action |
+|---|---|
+| `src/memory.rs` | 修改自己的 `MemoryBase` 实现及接受要求 / Edit your implementation and accepted requirements |
+| `src/main.rs` | 明确材料、查询、绑定与调用，调整对应测试期望 / Supply materials, query and bindings; update tests for the chosen behavior |
+| `src/lib.rs` | 基础模板保留的作者库入口；本例 binary 不调用它 / Author library entry retained from the foundation; unused by this binary |
+| `Cargo.toml`、`Cargo.lock` | 维护源码 path 与实际依赖输入 / Maintain source paths and dependency inputs |
+
+本例按调用方给出的从旧到新材料，以大小写敏感的 `literal:<exact substring>` 选择最近最多两条，原文不改。`literal:` 是作者协议，不是 Base 新要求。三个测试分别核对消费者选择/原文、正常空结果与完整 `Unsupported` 失败、当前调用的材料范围与窗口；改变实现后用这些明确期望观察差异，不通过删断言或吞失败来让绿灯保持。
+
+The author's agreement selects at most two latest literal matches from caller-ordered materials, preserving text. Three tests check consumer selection/text, empty success versus complete Unsupported failure, and caller scope/window. Update explicit expectations when intentionally changing behavior; do not remove assertions or hide failures to preserve a green result.
+
+`main.rs` 的文件头保留原仓库 example 命令，说明源码来源；这个独立工程执行本页的本地 `cargo run` / `cargo test`。其中的 `immediate` helper 仅能驱动立即就绪的内存实现；真实异步实现由作者提供执行器。源码接入不提供隐式资源、存储、权限、重试、发现或丰富角色默认值。
+
+The copied file header retains the repository example command as provenance; this independent project uses local `cargo run`/`cargo test`. Its `immediate` helper only handles immediately ready in-memory implementations. Real async providers need the caller's executor. No implicit storage, permissions, retry, discovery or rich-role defaults are added.
+
 ### 可选：看工程接线声明 / Optional: view project wiring declarations
+
+先按上表实现、测试模块，再按需查看声明。此可选步骤要求使用含 `doctor wiring` 的CLI源码/二进制；旧版本不认识命令时先核对 [CLI版本前提与排查](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring)，不因此改动Base接口或否定前面已经通过的消费者测试。
+
+Implement and test first, then optionally view declarations. This step needs a CLI containing `doctor wiring`; see [version prerequisites and troubleshooting](../../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring). An older CLI does not invalidate a passing consumer test.
 
 基础脚手架现在初始提供空的 `package.metadata.oclive.wiring`。按 [CLI 接线字段与 Memory 示例](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring) 填写自己的声明：例如本路径的 Memory 实现为 `RecentLiteralMemory`、接入为 `MinimalRoleBaseConsumer`、用途为 `project`，调用范围声明只含 `memory`。已生成空块时补字段或替换它，不重复同名表；旧工程没有该块时可自行添加。
 
@@ -119,21 +138,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Wiring declaration view failed.' }
 应看到 `MemoryBase -- declared --> RecentLiteralMemory`，其余未填写的实现保持未知；绑定、调用与功能均未由视图核实。更换 Rust 实现时同步作者声明，再运行命令查看变化。它不修改项目，也不运行本例；实际调用和3项测试仍用前面的 Cargo 命令验证。
 
 Expect the declared Memory edge and unknown unspecified implementations. The view does not verify binding, calls or functionality. Synchronize metadata when editing an implementation; the command rereads it without changing or running the project. The real consumer call and three tests remain separate checks.
-
-| 文件 / File | 开发动作 / Action |
-|---|---|
-| `src/memory.rs` | 修改自己的 `MemoryBase` 实现及接受要求 / Edit your implementation and accepted requirements |
-| `src/main.rs` | 明确材料、查询、绑定与调用，调整对应测试期望 / Supply materials, query and bindings; update tests for the chosen behavior |
-| `src/lib.rs` | 基础模板保留的作者库入口；本例 binary 不调用它 / Author library entry retained from the foundation; unused by this binary |
-| `Cargo.toml`、`Cargo.lock` | 维护源码 path 与实际依赖输入 / Maintain source paths and dependency inputs |
-
-本例按调用方给出的从旧到新材料，以大小写敏感的 `literal:<exact substring>` 选择最近最多两条，原文不改。`literal:` 是作者协议，不是 Base 新要求。三个测试分别核对消费者选择/原文、正常空结果与完整 `Unsupported` 失败、当前调用的材料范围与窗口；改变实现后用这些明确期望观察差异，不通过删断言或吞失败来让绿灯保持。
-
-The author's agreement selects at most two latest literal matches from caller-ordered materials, preserving text. Three tests check consumer selection/text, empty success versus complete Unsupported failure, and caller scope/window. Update explicit expectations when intentionally changing behavior; do not remove assertions or hide failures to preserve a green result.
-
-`main.rs` 的文件头保留原仓库 example 命令，说明源码来源；这个独立工程执行本页的本地 `cargo run` / `cargo test`。其中的 `immediate` helper 仅能驱动立即就绪的内存实现；真实异步实现由作者提供执行器。源码接入不提供隐式资源、存储、权限、重试、发现或丰富角色默认值。
-
-The copied file header retains the repository example command as provenance; this independent project uses local `cargo run`/`cargo test`. Its `immediate` helper only handles immediately ready in-memory implementations. Real async providers need the caller's executor. No implicit storage, permissions, retry, discovery or rich-role defaults are added.
 
 ## 6. 保存与继续接入 / Preserve and continue
 
