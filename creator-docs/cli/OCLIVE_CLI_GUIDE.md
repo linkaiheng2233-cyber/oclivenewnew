@@ -12,7 +12,7 @@
 
 ## 常用指令：基础模块开发
 
-先了解这五个动作即可开始 Rust Base 模块开发。生成与查询 CLI 帮助在 **OCLive 源码根**执行；生成后的编译、测试与格式检查在**自己的工程根**执行。
+先了解下面几个动作即可开始 Rust Base 模块开发。生成、查看接线与查询 CLI 帮助在 **OCLive 源码根**执行；生成后的编译、测试与格式检查在**自己的工程根**执行。
 
 | 动作 | 常用指令 | 使用时机 |
 |---|---|---|
@@ -20,6 +20,7 @@
 | 编译检查 | `cargo check` | 修改实现后，先核编译 |
 | 运行测试 | `cargo test` | 核对模块自己的请求、结果与失败约定 |
 | 检查格式 | `cargo fmt -- --check`；需要格式化时用 `cargo fmt` | 提交前 |
+| 看接线声明 | `cargo run -p oclive-cli -- doctor wiring --manifest-path <自己的工程>/Cargo.toml`；[状态与字段](#doctor-wiring) | 修改实现或接线声明后，查看最新声明快照 |
 | 查参数 | `cargo run -p oclive-cli -- init --help` | 忘记生成选项时 |
 
 日常通常只反复使用 `cargo check`、`cargo test`、`cargo fmt -- --check`。它们是 Cargo 指令，不是 `oclive test/build` 的别名；无需为基础模块进入试验命令。生成后从 [Memory 开工包](../../human-docs/modules/slots/memory.md) 与生成 README 开始。
@@ -336,7 +337,57 @@ Scaffold Package 仍**不**联网安装、不执行 `commands[].entry`、脚本�
 
 ---
 
-## `doctor`：环境诊断
+## `doctor`：环境诊断与只读查看
+
+<a id="doctor-wiring"></a>
+
+### `doctor wiring`：工程接线声明视图
+
+在包含此命令的 OCLive 源码根执行：
+
+```bash
+cargo run --locked -p oclive-cli -- doctor wiring --manifest-path ../my-capabilities/Cargo.toml
+```
+
+若已单独编译或安装当前 CLI，在作者工程根可用 `oclive-cli doctor wiring`，默认读取当前目录的 `Cargo.toml`。它只读所选文件，每次重新读取；不调用 Cargo metadata、不扫描 Rust/import、不读蓝图或猜实现、不做环境可写/网络/模型探测。基础脚手架初始写空的可选声明：
+
+```toml
+[package.metadata.oclive.wiring]
+schema_version = 1
+```
+
+所以初始六个 Base 都显示实现未提供；即使默认生成了 `TestMemory` 教学测试，也不据此宣称工程已绑定模块。旧工程完全没有该块时同样显示未知，不要求迁移。缺版本、错误类型、未知字段或不支持版本会非零退出；`[package].name` 必须存在，只有 `[workspace]` 的根清单须改选某个 package 的清单。
+
+下面是作者在 **SDK Memory 案例**中明确填写的声明，不是工具自动发现的运行事实：
+
+```toml
+[package.metadata.oclive.wiring]
+schema_version = 1
+call_scope = ["memory"]
+
+[package.metadata.oclive.wiring.slots.memory]
+implementation = "RecentLiteralMemory"
+via = "MinimalRoleBaseConsumer"
+scope = "project"
+```
+
+只保留一份根表：已生成空块时替换该块或向其中补字段，不重复粘贴同名表。字段说明只在本节维护：
+
+| 字段 | 含义与限制 |
+|---|---|
+| `schema_version` | 存在声明块时必填，当前为整数 `1`；不是 Base / Host 协议版本 |
+| `call_scope` | 可选、不重复的六槽键数组；描述预期调用范围，空数组表示未声明调用任何槽，缺失为未提供；不是调用日志或执行顺序 |
+| `slots.<槽键>.implementation` | 可选实现标识；缺失显示未提供，不代表没有实现 |
+| `slots.<槽键>.via` | 可选接入标识，例如消费者名；是作者声明，不是实际绑定证明 |
+| `slots.<槽键>.scope` | 可选 `project` 或 `example-test`；后者明确为测试示例，不是运行绑定 |
+
+槽键复用现有六种 `memory/emotion/event/prompt/llm/agent`，不是新注册表，不接受 voice/复杂情绪等其它键。项目名、实现名和接入名只接受1–128字节的ASCII字母、数字及 `_ : - .` 标识字符；不用它们存说明文、凭据、URL或用户材料。版本、来源和资源摘要本片不推断。其它 Cargo 元数据不显示；非法输入错误不回显原 TOML 或字段值。标识本身由作者提供，作者仍不得把秘密填成“模块名”。
+
+输出区分 `MemoryBase -- declared --> RecentLiteralMemory`、公共契约入口和接入声明；未填写的其它 Base 显示 `implementation not provided`。顶部始终标明作者声明来源、`Host verification: not connected` 及 `Binding / call / target functionality: not verified`。连线表示关系，六槽排列不是执行顺序。
+
+更换实现后要同步自己的元数据，再执行命令才能看见声明更新；仅改 Rust 不会自动同步。声明可供理解工程，不负责加载、替换、注册、调度或取得权限，不要求任何 Host 实现诊断接口。第一片仅终端快照，不接受环境域的 `--fix/--yes/--watch/--sbom`、`-o` 路径或 `--json`；选输入用该子命令的 `--manifest-path`，不提供新导出格式。
+
+### 原环境诊断
 
 ```bash
 cargo run -p oclive-cli -- doctor
