@@ -1166,3 +1166,11 @@
 **裁定 / 八路径**：T1确认局部样板形状，但当前不改共享helper/执行语义；后续有实际同类改动时再定范围。T2等价重复归因不成立（default vs default,tauri-commands），接受补迁移出口条件；CI指南中英补覆盖条件、catalog/gate对齐与独立片验证后才可迁出的说明，不现在删Host。T3旧“桌面提供”是历史描述，补hash身份/当前位置非固定；T5在_recovery核四原件完整，旧Wave只追加保全与最终候选改写的区别。T4在CLI指南中英写清legacy settings中文说明的现状及help不代表生成物英文化，不新增locale政策或翻译实现。已有近期报告追加复核范围/五裁定，本PLAN/DCL追加；八份原件/hash先保全，四份历史前缀保持，不另建报告/规则SSOT或改债状态。
 
 **验收 / 出口**：两实际Cargo tree原生exit、四原件manifest/材料hash、入口样板同源比对；默认及八文链接、镜像、登记、docs-only旧路径、债结构、严格编码、精确八文/历史前缀与源/CI/锁不变/diff。报告所述105为复核方的测试目标列举，不冒称本轮运行或测试通过。适用文档通过后本地提交，旧checkpoint/main/SDK工作树保持，不push、不修改脚本/CI选择/required gate；没有新增架构问题，文案澄清够用即结束。
+
+### 审查后检查入口样板收敛与基线确认（2026-10-13）
+
+**授权 / 基线 / 目标**：维护者要求修复整理审查问题并确认基线。接续干净 `072fa31bc11ed55fb76a4e3a93d9532a8a464cc4`；M/常规、controller实施与语义自查 independent=false。T2–T5明确文案问题已处理；本片收敛T1三个固定检查脚本相同的入口判断/参数拒绝逻辑，足以减少一处真实维护重复即停，不扩到其它check脚本或通用命令框架。
+
+**八路径 / 闭环**：现有 `scripts/lib/gate-toolchain.mjs` 添加同步入口helper，原同文件测试加三类真实子进程回归；kernel-base/kernel-contracts/reference-host三个入口改调用helper，各自固定commands/20分钟timeout/native错误/Usage字符串不变。PLAN/DCL与原审查报告只追加，八原件先保全。模块/API/Host/SDK/模板/锁/CI/catalog/选择/门禁和债状态不改，不新增注册/权限/参数发现。共同行为归原工具链lib，不新建runEntry框架。
+
+**验收 / CI节奏**：新入口helper回归先在旧实现下红，再最小实现；Node工具链/三个入口/原控制面回归、脚本语法、Dimension5 --ci、适用三文链接/登记/旧路径/债结构/严格编码/八路径与历史前缀/原固定链/diff。Dimension5只在子进程使用已有Cargo target/jobs、portable Python及主树现有node_modules挂接，不安装或升级依赖，记录环境前提/首次失败。fixed chain/集成命令与workflow不变，因此不重复check:ci-local/Rust全测或完整远端矩阵；若实际控制流/验证链改变则重新定范围。通过后本地提交并新建本地 `checkpoint/source-sdk-wiring-reviewfix-20261013-r0`，旧tag保持，不合main/push、不冒称主树正式验收；最终SHA/clean状态在交付记录。

@@ -1069,3 +1069,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 边界**：维护者转来截止 `08348f31` 的DeepSeek二次复核；按[五项计划](ROUND-02-PLAN.md#二次复核回传的有限澄清2026-10-13)核候选，不将对方的旧main窗口、目标列举或AI身份混成本地SDK/接线正式验收。接续 `9c2f142a`，controller核对 independent=false。
 - **变化 / 例子**：CI说明中英补workspace Host的条件迁移出口；CLI说明中英补legacy settings `_comment_*` 当前中文、help不代表生成物翻译。旧AI Wave追加材料按hash寻址、四原件位置与保全/最终改写的区别；[近期报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md#二次复核回传核对2026-10-13)追加五项裁定。两真实Cargo tree显示default vs default,tauri-commands，故不按“等价重复”删检查；四原件与旧manifest匹配，未找到不被写成不存在。三个入口样板本片不抽helper。
 - **验收 / 保持**：八文原件及四历史前缀保全，按文档门禁/编码/精确写集及源、锁、CI不变核验后本地提交。没有代码/翻译/公共API/执行选择/债状态变化，不复跑Rust/业务/完整CI，不推送或覆盖旧tag。当前说明已够用，没有新的维护者决策点。
+
+### DCL-20261013-107 · 审查后入口样板实际收敛
+
+- **原因 / 授权**：维护者进一步要求修复整理审查问题并确认基线。接续 `072fa31b`，按[八路径计划](ROUND-02-PLAN.md#审查后检查入口样板收敛与基线确认2026-10-13)处理此前仅记录的T1；controller实施/语义自查 independent=false。共同行为已有三个消费者，在原gate-toolchain内提取，不扩到全仓入口框架。
+- **改动 / 保持**：新增 `runGateEntry(moduleUrl, main, usage)`，三个固定检查入口调用它；保留各自commands、cwd、timeout、Usage、PASS和原native错误处理。原工具链测试新增正常/导入/坏参数三类真实子进程回归。T2–T5前片说明继续有效，Host配置/覆盖、SDK、模板、公共面、锁、workflow/catalog/选择/required与债状态保持。
+- **验证 / 收口**：新三测在旧helper上红（原10通过、新3失败，exit1）后绿；合并Node回归28/28、五脚本语法、Dimension5 31项均exit0，失败原日志保留。文档/编码/八路径/历史前缀/固定链原件/diff通过后本地提交及新reviewfix checkpoint，旧tag/main/SDK保持。实际日志与边界追加[原审查报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md#审查后入口样板收敛2026-10-13)，不重复全量CI或借旧CI为新SHA盖章。
