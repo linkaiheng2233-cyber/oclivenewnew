@@ -2,13 +2,14 @@
 
 > Full checklist (ZH): [`human-docs/modules/slots/memory.md`](../../../human-docs/modules/slots/memory.md)
 > Scope: developer entry points and checklist. Public entry points: [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页); reference Host definitions: [§4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory).
-> Updated: 2026-10-11.
+> Updated: 2026-10-13.
 
 ## Choose your entry point
 
 | Your task | Start here |
 |---|---|
 | Start a Rust Base implementation in an empty project | **Start from the foundation** below; existing contracts only, without a Host |
+| Own a project outside OCLive and call through shared support | [Source SDK Memory path](../../../examples/developer-sdk-memory/README.md); explicitly add runtime after generation and maintain your own dependencies/lock |
 | Implement basic retrieval called through the current public interface | The **MemoryBase example** below; use caller-supplied materials and resources |
 | Maintain the reference Host's rich backend, storage or recollection policy | **Reference Host** below; follow existing `MemoryRetrieval`, configuration and storage wiring |
 

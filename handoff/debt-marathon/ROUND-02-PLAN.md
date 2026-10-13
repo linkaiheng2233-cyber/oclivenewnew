@@ -1122,3 +1122,13 @@
 **验收 / 节奏 / 出口**：先增真实仓库合同至旧配置红，再实现绿；真实Host默认入口，已有native/公共入口回归、trusted-base旧目录/错映射/损坏JSON负控、原gate对两组失败/缺失/取消/skip的关闭及合法docs skip、规划器合同与21路由模拟、Dimension5、fmt/文档/编码/结构/保全。与f4本地片合为同主题16路径批次，稳定后一次适用完整本地链，冻结SHA、复核干净main/远端后FF和一次push，等待该SHA正式CI。不是每片各推完整矩阵；不为绿灯回写提交。配置定义15验证job/21实际全量job，数量不是性能目标；默认组不承诺所有Host功能或真实模型验收。达到这两种配置责任明确及适用验收即停，后续物理/feature深拆和ready扩面另议。
 
 **本地出口结果（同片）**：25项Node回归、规划器11+8项、真实默认Host756/19及原 `check:ci-local` 完整链native exit0（700.89秒）。所有旧验证job的YAML执行配置、影响图和策略保持；两处旧断言及新增CRLF匹配缺陷按原失败修正，workflow只将报错新行改LF而保全原件。文档与源范围门禁完成后冻结提交，正式main证据绑定新SHA，状态不借父main绿灯。
+
+### 源码 SDK 首片 · 复用基础工程与共享消费（2026-10-12）
+
+**决策 / 基线 / 预算**：维护者选择源码接入工具包：现有crate、独立消费工程、依赖和验证说明，不新增公开SDK门面。main `08348f31b8f3459537c13227302bf4b8e273baa8` 已正式21/21、ci-gate成功（[38199557652](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38199557652)）。在新隔离分支承接旧SDK草案 `3884cf19`，不直接合入其过期计划/事件或器灵授权表述。M/有限文档交付，controller实施与语义自查 independent=false；四组直接入口、树外试验约30分钟，到可复现消费即停。
+
+**闭环 / 实施**：现有 `init --template kernel-base --base-example none` → 作者显式添加runtime → 复制原Memory示例及许可证 → 独立manifest/锁/依赖身份 → 原三项测试和真实消费者调用。原源文件逐字复用，先证明现有组件足够；不新增生成器、SDK crate、公共re-export、六槽默认模块或调度。源码路径和移动限制、作者改哪里及检查含义由SDK示例指南拥有，RFC定义交付形态、其他主题链接其SSOT。
+
+**十二路径 / 保全**：SDK RFC中英、`examples/developer-sdk-memory/{README,project-README}.md`、工厂愿景中英的一行入口、Memory人类指南中英的SDK路由、handoff索引、本计划/DCL只追加、新Wave。七份旧文先保全；CLI、原Memory源码/测试、契约/Host/runtime、manifest/锁、CI控制面和债/队列状态不改。SDK不取得发现、授权、重试、状态应用或外部硬件权力。
+
+**验收 / 出口**：本机主仓外两个独立工程的offline metadata/check/test/run；官方基础生成和Cargo显式添加已实跑，依赖无Host/Tauri且第三方身份为原锁子集，已有用例实际调用消费者、typed失败和零生成保持。源码输入/副本hash、主树状态及实际stdout/native exit留于 `_recovery/SDK-SOURCE-KIT-PROBE-20261012-R0/`，本机证据不随Git携带。落文执行适用链接、镜像、登记、docs-only旧路径、债结构、编码、diff及精确纯文档/历史保全。无公开代码变化，不额外workspace doctest或完整CI；达到指南可复现与门禁通过后本地提交/交接，状态Locally verified，不借083正式CI替新文档SHA盖章，不为补绿灯再造提交。注册表发布、统一门面、Host/硬件目标与更广平台另外开片。

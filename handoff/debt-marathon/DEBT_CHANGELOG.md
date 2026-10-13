@@ -1039,3 +1039,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：独立Host默认不启用tauri-commands，旧workspace经桌面依赖启用它；无桌面嵌入开发不能借桌面配置的通过。[本片计划](ROUND-02-PLAN.md#参考-host-默认配置的正式执行所有者2026-10-12)接续f4默认入口，controller实施及自查 independent=false。父main `12bc7dc8` 的公共首片已正式 [19/19](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581)；随本次实质改动登记，不产生纯绿灯回写提交。
 - **变动 / 边界**：新两平台默认Host组沿用原入口，旧workspace/桌面及dual_core条件、资源前置和命令不动；catalog五profile保守携带、gate要求新组、受信旧/坏映射沿原full bootstrap、21影子样本增坐标。本片12路径与f4关联合批16路径，不改API/Host语义/manifest/锁/影响图/执行策略/required context或冻结项，K-CI-IMPACT-01继续In progress。
 - **证据 / 节奏**：[本片Wave](waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)记录实际配置差异、旧配置红、绿回归、同条件/异条件覆盖和失败尝试。适用本地完整链后冻结SHA，一次FF/push及目标21-job正式CI另判；不借父SHA的正式结果，也不以新增job数宣称提速或完全分层。
+
+### DCL-20261013-102 · 源码 SDK 第一条树外消费路径
+
+- **原因 / 授权**：维护者选择源码接入工具包：现有 crate、独立消费工程、依赖与验证说明，不新增公开 SDK 门面。按[十二路径计划](ROUND-02-PLAN.md#源码-sdk-首片--复用基础工程与共享消费2026-10-12)从干净 main `08348f31b8f3459537c13227302bf4b8e273baa8` 的隔离分支接续，controller 实施与语义自查 independent=false。基础工程能写 Base，但消费者调用需要作者显式添加共享支持；把这一步写成可复现路径，比另造 SDK 接口更直接。
+- **交付 / 例子**：SDK RFC 中英拥有形态与停止线，[Memory 配方](../../examples/developer-sdk-memory/README.md)拥有生成、添加、复制、锁与修改动作；生成工程 README 随配方替换，其它五处入口只加链接。示例源与原三项测试逐字复用；基础模板继续仅依赖 contracts/types，本路径才显式加 runtime。`literal:` 属于作者约定，只调用 Memory、无模型生成，不注册丰富 Host 后端。
+- **验证 / 出口**：[本批 Wave](waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md)区分两条真实树外工程、十个 native 退出码、独立依赖图和适用文档门禁。源码输入 `08348f31` 正式21/21是父基线证据，不证明新文档 SHA；本片没有 Rust/API/锁/CI/债状态变化，按文档与交付面验收后保存本地提交，不重复完整 CI，不推送 main。锁种子会派生，path 不锁 Git 内容；其它平台、模型/TTS、发行版产品与硬件仍单独验收。达到现有组件可复现消费即停止，不机械补五槽案例。
