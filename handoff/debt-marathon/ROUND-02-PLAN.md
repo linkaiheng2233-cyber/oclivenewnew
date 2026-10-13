@@ -1174,3 +1174,13 @@
 **八路径 / 闭环**：现有 `scripts/lib/gate-toolchain.mjs` 添加同步入口helper，原同文件测试加三类真实子进程回归；kernel-base/kernel-contracts/reference-host三个入口改调用helper，各自固定commands/20分钟timeout/native错误/Usage字符串不变。PLAN/DCL与原审查报告只追加，八原件先保全。模块/API/Host/SDK/模板/锁/CI/catalog/选择/门禁和债状态不改，不新增注册/权限/参数发现。共同行为归原工具链lib，不新建runEntry框架。
 
 **验收 / CI节奏**：新入口helper回归先在旧实现下红，再最小实现；Node工具链/三个入口/原控制面回归、脚本语法、Dimension5 --ci、适用三文链接/登记/旧路径/债结构/严格编码/八路径与历史前缀/原固定链/diff。Dimension5只在子进程使用已有Cargo target/jobs、portable Python及主树现有node_modules挂接，不安装或升级依赖，记录环境前提/首次失败。fixed chain/集成命令与workflow不变，因此不重复check:ci-local/Rust全测或完整远端矩阵；若实际控制流/验证链改变则重新定范围。通过后本地提交并新建本地 `checkpoint/source-sdk-wiring-reviewfix-20261013-r0`，旧tag保持，不合main/push、不冒称主树正式验收；最终SHA/clean状态在交付记录。
+
+### 审查批完整交接与源码 SDK 开发准备（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者要求完整收尾，然后准备SDK开发。接续干净 `6947c48a2afa4dafc7adcd72c4183f71348fc64f`；M/有限文档，controller实施与语义自查 independent=false。复用已经完成的SDK、接线、审查及入口修补，不重新调查全仓或重复验证不变的实现。本片只把既有冻结成果、可转让与本机证据的区别、下一片实施范围写清；约五个直接入口/60分钟，达到能开工即停。
+
+**五文写集 / 验收**：SDK RFC中英补尚未实施的下一片；本计划/DCL只追加、新收尾与准备Wave。四份原件先保全。源码/模板/测试/manifest/锁/CI控制面、债状态及旧报告/tag不改；适用默认与五文链接、镜像、登记、docs-only旧路径、债结构、严格编码/精确写集/历史前缀/源码不变与diff，核对原证明身份。通过后本地提交及新 `checkpoint/source-sdk-ready-20261013-r0` 注释tag；main/远端不动，不把本地冻结写成正式CI或发版完成。原日志仍存保全位置；Git只转让源码、测试、操作配方与报告。
+
+**下一实施片 / 具体对象**：现有源码SDK Memory配方的自动回归，改善升级后的重复验收成本。优先在 `kernel/crates/oclive-cli/tests/e2e_source_sdk.rs` 复用原 `tests/common` 与TempDir/真实CLI调用，使用当前checkout的canonical Memory两源、项目README、许可证及锁种子；不维护第二份模块实现、不新增SDK门面或通用runner。作者独立工程在临时新目录生成，显式加runtime后派生自己的锁；metadata检查独立workspace、直接依赖及无Host/Tauri，真实check/test/run核三项binary行为与消费者输出。数量是原案例事实，不是包数量上限；零library/doctest不算功能证据。
+
+**下一片验收 / 停止线（尚未执行）**：该集成目标与CLI原E2E串行；runtime原Memory例子、CLI Clippy/fmt、分层与module-compat及适用文档/编码/债结构按实际改动选择。坏目录/缺源优先沿用原生成器回归，不机械复制全部负例；新回归须拒绝子命令非零或真实输出/依赖身份不符，不能只数文件或mock所有Cargo。只读view不是消费者调用证据。记录当前源码/tool/派生锁，缓存缺失明确归工程前提，不冒称产品故障或自动联网安装。实施不改公开Rust面则无需额外workspace doctest，不改变CI job/filter/required；同主题最终批次再按集成范围定完整链及目标SHA正式CI，不为每个测试重复全量。能重复验证此一条路径即停，不扩其余五槽或目标Host。出现契约表达障碍、资源/调度权或公共强制义务才回问维护者。

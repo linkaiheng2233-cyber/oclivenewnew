@@ -1075,3 +1075,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者进一步要求修复整理审查问题并确认基线。接续 `072fa31b`，按[八路径计划](ROUND-02-PLAN.md#审查后检查入口样板收敛与基线确认2026-10-13)处理此前仅记录的T1；controller实施/语义自查 independent=false。共同行为已有三个消费者，在原gate-toolchain内提取，不扩到全仓入口框架。
 - **改动 / 保持**：新增 `runGateEntry(moduleUrl, main, usage)`，三个固定检查入口调用它；保留各自commands、cwd、timeout、Usage、PASS和原native错误处理。原工具链测试新增正常/导入/坏参数三类真实子进程回归。T2–T5前片说明继续有效，Host配置/覆盖、SDK、模板、公共面、锁、workflow/catalog/选择/required与债状态保持。
 - **验证 / 收口**：新三测在旧helper上红（原10通过、新3失败，exit1）后绿；合并Node回归28/28、五脚本语法、Dimension5 31项均exit0，失败原日志保留。文档/编码/八路径/历史前缀/固定链原件/diff通过后本地提交及新reviewfix checkpoint，旧tag/main/SDK保持。实际日志与边界追加[原审查报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md#审查后入口样板收敛2026-10-13)，不重复全量CI或借旧CI为新SHA盖章。
+
+### DCL-20261013-108 · 当前批完整交接与SDK开发准备
+
+- **原因 / 授权**：维护者要求完整收尾后准备SDK开发。接续干净 `6947c48a`，按[五文计划](ROUND-02-PLAN.md#审查批完整交接与源码-sdk-开发准备2026-10-13)把已修审查、当前源码工具包和只读视图整理成可接手记录；controller自查 independent=false，不重复全仓调查。
+- **变化 / 下一步**：SDK RFC中英明确下一片尚未实施的配方自动回归；优先使用现有CLI集成测试设施、原Memory源及真实生成/编译/消费者调用，减少升级时手工复走命令。不另建SDK门面、执行框架或五套同形示例；具体实施写集与验收由计划拥有，[收尾记录](waves/WAVE-20261013-SDK-READINESS.md)拥有当前交接。
+- **验证 / 保持**：本片只改五文，四原件与历史前缀保全；适用文档、编码、精确范围、原证据及源码不变核对通过再本地提交/新ready checkpoint。未实施自动回归、未改技术债状态、公共面、模板或CI；旧tag/工作树/main及日志保持。不推送或借旧SHA正式CI，把当前可用、下一片计划和目标发行版验收分开。
