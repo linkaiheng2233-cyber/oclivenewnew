@@ -10,11 +10,21 @@ const remediation = {
   node: 'Use the Node version required by package.json; verify node --version, then rerun npm run check:toolchain.',
 };
 
+function commandOutputSnippet(output) {
+  const text = output?.trim();
+  if (!text) return '';
+  return text.length <= 4000 ? text
+    : `${text.slice(0, 1800)}\n[... output truncated; tail follows ...]\n${text.slice(-1800)}`;
+}
+
 export class GateToolchainError extends Error {
   constructor(code, command, message, result = {}) {
     const tool = path.basename(command).replace(/\.exe$/i, '');
-    const detail = result.stderr?.trim() || result.stdout?.trim();
-    super(`[toolchain:${code}] ${message}${detail ? `\n${detail.slice(0, 4000)}` : ''}\n${remediation[tool] ?? 'Verify the command and rerun the failed gate.'}`);
+    const detail = ['stdout', 'stderr'].map(stream => {
+      const snippet = commandOutputSnippet(result[stream]);
+      return snippet ? `[${stream}]\n${snippet}` : '';
+    }).filter(Boolean).join('\n');
+    super(`[toolchain:${code}] ${message}${detail ? `\n${detail}` : ''}\n${remediation[tool] ?? 'Verify the command and rerun the failed gate.'}`);
     this.name = 'GateToolchainError';
     this.code = code;
     this.command = command;

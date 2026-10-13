@@ -38,3 +38,15 @@ R9当前数据库下Dimension5实际PASS31、native0（含cargo-deny；sample li
 适用验收后以单独的供应链修补提交分类，新增注释tag `checkpoint/source-sdk-final-20261013-r1`；旧r0 tag和失败记录保留。精确推送同一PR分支与新tag，再转ready触发新SHA正式CI；未成功前仅称Locally verified。绿灯之后只在交付报告核对最终SHA、run与门禁，不为回写编号制造新提交；不自动合入受保护main。
 
 达到兼容补丁、三公告消除、锁范围准确和相关配方通过即停止；不为此研究整个QUIC协议、扩展SDK案例或迁移YAML警告依赖。本片未出现需要维护者选择的新契约、权限或架构事项。
+
+## CI失败诊断输出保真续片
+
+Quinn六路径独立提交 `134f19a6` 后，续接首轮Windows参考Host默认job的native101。GitHub原始job日志已保全，但旧 `GateToolchainError`消息只选stderr前4000字符，编译进度遮住尾部错误，stdout断言也丢失；现有原始流属性却是完整的。因此远端有效首因unknown，不能用臆测修Host。R12直接默认Host Cargo命令在本机native0，也不能替代远端失败事实。
+
+只修工具链lib的错误显示：分别标stdout/stderr，短流保留全文，长流保留有界首尾并标记省略，完整属性不截断。code/native exit、超时、cwd、命令和接受码不改，三固定检查脚本不改。两项实际子进程负控检查stderr编译输出不能遮住stdout断言，以及双流尾部故障必须可见；不是第二套日志或诊断协议。
+
+R13初版负控用node -e把故障串放在命令参数中，错误头本就能看到该串，导致一项假通过（14/15）。发现后改为真实fixture脚本，让参数不含预期故障文字；R14旧helper13过/2败，R15新helper与三入口30/30 native0。两个红日志及原件保全，正确负控的红/绿才用于验收；没有为了通过弱化断言。
+
+本续片五路径包括两脚本和PLAN/DCL/本Wave追加。最终helper下Dimension5及适用三文门禁后单独工具提交，再与供应链提交一起冻结r1。取消旧SHA因转draft自动排队的草稿run `38377361736`，避免已知失败输入重复耗时；原正式run的两个失败job及其它结果按最终状态记录，不借取消改成通过。新SHA正式CI负责重新验证：若WindowsHost仍失败，保留有效首因再定点处理；没有same-SHA rerun或无界Host调查。
+
+R24在最终helper下实际Dimension5 PASS31、native0；与R15的30项回归共同验收这次错误显示变化。R12默认Host完整默认测试native0的事实保留，不写成远端问题已经修复。后续只核脚本语法/三文门禁、精确diff及冻结身份，不再添加测试或推导缺失的远端首因。

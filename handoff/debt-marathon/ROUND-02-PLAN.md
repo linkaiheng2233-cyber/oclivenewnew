@@ -1228,3 +1228,11 @@
 **六路径 / 边界**：仅Cargo.lock的quinn-proto兼容补丁、KNOWN_VULNERABILITIES中英、PLAN/DCL追加与新的安全修补Wave。优先精确锁0.11.18；先核上游修复、可用版本及实际锁delta，若有额外边/版本变化再判断，不盲更新全部依赖。不改变manifest/API/feature、TLS配置/信任与验证策略、审计ignore、SDK/Host实现或CI组合。SDK Memory没有Quinn依赖，仍真实重跑其配方以检查新锁种子；不将锁里的依赖自动视为默认执行路径暴露。
 
 **验收 / 停止线**：先保留当前库下原锁审计红，再精确更新并审计绿，保存数据库commit/JSON及警告；比较锁中所有包/依赖边和SDK原件。cargo-deny、Dimension5、SDK树外配方及相关编译/静态检查、五文链接/镜像/登记/编码/债结构/diff按实际影响执行；不为已有不变代码重复前端或全workspace集成。达到可兼容升级、三公告消除及受影响路径通过即停，不深挖QUIC协议或自动开新供应链债。最终冻结新commit/r1 tag再一次推送，转ready触发该SHA正式CI；当前首轮其它检查可复用其具体范围，不能代替新SHA正式CI。权限/契约或不兼容公开变化才问维护者。
+
+### SDK收尾CI失败诊断输出保真（2026-10-13）
+
+**具体问题 / 基线**：Quinn补丁本地提交 `134f19a6` 尚未推送；首轮Windows参考Host default job另报cargo101，但 `GateToolchainError`只取stderr前4000字符，编译进度遮住首因，stdout里的断言会被丢弃。本机直接 `cargo test -p oclive_kernel_host` 默认配置native0；远端首因保持unknown，不猜产品故障或宣称解决。普通工具诊断修补，controller independent=false，原件保全。
+
+**五路径 / 语义**：现有gate-toolchain lib与原测试各补少量代码，PLAN/DCL及原安全Wave只追加。错误消息分开标stdout/stderr，每流长输出保留首尾并明确省略；错误code/native exit、完整stdout/stderr属性、命令/cwd/超时/接受码和三个固定检查脚本保持。两项真实子进程输出负控先红再绿；初版node -e把故障串带入命令头导致一项假通过，先改fixture文件控制再确认红，不删除断言。不是新日志框架、持续监控或Host实现改动。
+
+**验收 / 冻结**：Node工具链与三个固定入口回归、最终helper下Dimension5、脚本语法及三文门禁/diff；不为不变SDK/Host重复整仓Rust。五路径检查后单独工具诊断提交；随后合并两个分类提交的冻结点到新r1 tag，一次push草稿分支，最后转ready仅启动一次新SHA正式CI。已知失败旧SHA的草稿自动run取消以免重复浪费；旧正式run按实际完成/取消状态保留。只有重新出现的真实Host失败且有效日志给出首因时才定点修复，不靠同SHA rerun赌博。
