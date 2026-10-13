@@ -38,6 +38,7 @@ mod doctor_execution_plan;
 mod doctor_kernel_contracts;
 mod doctor_resource_plan;
 mod doctor_sbom;
+mod doctor_wiring;
 mod env_probe;
 mod explain_cmd;
 mod explain_dual_core;
@@ -130,7 +131,7 @@ enum Commands {
     /// [experimental/legacy] Validate pipeline.ocblueprint JSON
     #[command(hide = true)]
     Blueprint(blueprint_cmd::BlueprintCli),
-    /// Environment diagnostics (Rust, disk, Ollama, network)
+    /// Environment diagnostics and read-only project views
     Doctor(doctor_cmd::DoctorArgs),
     /// Plugin scaffolds (directory / remote)
     Plugin(plugin_cmd::PluginCli),

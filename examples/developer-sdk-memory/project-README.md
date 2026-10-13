@@ -24,6 +24,10 @@ Edit your implementation in `src/memory.rs`; caller inputs, consumer bindings an
 
 The full guide is `examples/developer-sdk-memory/README.md` in your OCLive checkout. Record source/tool inputs, keep the derived lock and recheck paths after relocation. Do not overwrite an existing project lock with the source workspace lock.
 
+可选接线查看：从所用OCLive源码根执行 `cargo run -p oclive-cli -- doctor wiring --manifest-path <本工程>/Cargo.toml`。声明格式查该checkout的 `creator-docs/cli/OCLIVE_CLI_GUIDE.md` 中 `doctor wiring`；初始空声明保持未知。更换实现后由作者同步元数据，不把声明边当成实际绑定或调用证据。
+
+Optional wiring view: run the command above from the OCLive checkout. Follow its CLI guide to maintain your own metadata. Empty declarations remain unknown; declared edges do not establish bindings or calls.
+
 消费者调用通过不能代替检索质量、持久化、性能或目标 Host/发行版验收。原源码来自 OCLive；同目录 LICENSE 随本配方复制，自己的变更由作者维护。
 
 A passing consumer call does not certify quality, storage, performance or a target distribution. The source came from OCLive and the recipe copies its LICENSE here; maintain your own subsequent changes.

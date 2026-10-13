@@ -13,7 +13,7 @@
 
 ## Common commands: foundation module development
 
-These five actions are enough to start a Rust Base module. Generate and query CLI help from the **OCLive source root**; compile, test and check formatting from **your generated project root**.
+These actions are enough to start a Rust Base module. Generate, view declarations and query CLI help from the **OCLive source root**; compile, test and check formatting from **your generated project root**.
 
 | Action | Common command | When |
 |---|---|---|
@@ -21,6 +21,7 @@ These five actions are enough to start a Rust Base module. Generate and query CL
 | Check compilation | `cargo check` | After changing an implementation |
 | Run tests | `cargo test` | Verify your module's request, result and failure agreement |
 | Check formatting | `cargo fmt -- --check`; use `cargo fmt` to format | Before a commit |
+| View wiring declarations | `cargo run -p oclive-cli -- doctor wiring --manifest-path <your project>/Cargo.toml`; [fields and status](#doctor-wiring) | After editing implementations and their declarations |
 | Look up parameters | `cargo run -p oclive-cli -- init --help` | Look up generation options |
 
 Daily work usually repeats only `cargo check`, `cargo test`, and `cargo fmt -- --check`. These are Cargo commands, not aliases for `oclive test/build`; foundation work does not need experimental commands. Start with the [Memory guide](../../human-docs-en/modules/slots/memory.md) and your generated README.
@@ -135,7 +136,57 @@ For what to edit, how to observe changed behavior and where to find consumer bin
 | `pack create` | The current reference role-pack format, not a generic minimal-role definition generator |
 | UI plugin placement | Frontend extension points; follow the [placement guide](../plugin-and-architecture/PLUGIN_PLACEMENT_GUIDE.md), separately from Kernel slot wiring |
 
-## `doctor`: environment diagnostics
+## `doctor`: environment diagnostics and read-only views
+
+<a id="doctor-wiring"></a>
+
+### `doctor wiring`: project declarations
+
+From an OCLive checkout containing this command:
+
+```bash
+cargo run --locked -p oclive-cli -- doctor wiring --manifest-path ../my-capabilities/Cargo.toml
+```
+
+With a compiled/installed current CLI, use `oclive-cli doctor wiring` from the author's project root; the default input is its `Cargo.toml`. Every invocation rereads only that file. It does not invoke Cargo metadata, scan Rust/imports, parse a blueprint, infer bindings, or probe writability, networking or models. The foundation scaffold initializes only:
+
+```toml
+[package.metadata.oclive.wiring]
+schema_version = 1
+```
+
+All six implementations initially remain unknown. Generating `TestMemory` in a teaching test does not establish a runtime binding. Old projects without the optional block also remain unknown and need no migration. Invalid versions/types/fields fail nonzero. Select a package manifest containing `[package].name`, not a workspace-only root.
+
+An author can explicitly describe the SDK Memory case as follows; this is not an automatically discovered runtime fact:
+
+```toml
+[package.metadata.oclive.wiring]
+schema_version = 1
+call_scope = ["memory"]
+
+[package.metadata.oclive.wiring.slots.memory]
+implementation = "RecentLiteralMemory"
+via = "MinimalRoleBaseConsumer"
+scope = "project"
+```
+
+Keep one root table: replace the generated empty block or add its fields, never paste the same table twice. This section owns the format:
+
+| Field | Meaning and limits |
+|---|---|
+| `schema_version` | Required when the block exists; integer `1`. Not a Base or Host protocol version |
+| `call_scope` | Optional unique six-slot key array; intended calls, not a log or execution order. Empty means none declared; absent means not provided |
+| `slots.<key>.implementation` | Optional implementation identifier; absent means not provided, not that an implementation does not exist |
+| `slots.<key>.via` | Optional entry identifier, such as a consumer; an author declaration, not binding evidence |
+| `slots.<key>.scope` | Optional `project` or `example-test`; the latter explicitly does not establish runtime binding |
+
+Keys reuse the existing six `memory/emotion/event/prompt/llm/agent` names; no registry or additional voice/complex-emotion slots are introduced. Project, implementation and entry labels accept 1–128 ASCII letters/digits or `_ : - .`; do not place prose, credentials, URLs or user materials there. This slice does not infer module versions/origins or resource summaries. Other Cargo metadata is not displayed, and invalid input errors omit raw TOML/values. Labels are author supplied and must not themselves contain secrets.
+
+Output separates `MemoryBase -- declared --> RecentLiteralMemory`, its public contract path and its entry declaration; unspecified implementations remain unknown. It always says `Host verification: not connected` and `Binding / call / target functionality: not verified`. Edges express relationships, not a six-slot turn order.
+
+After changing an implementation, update its metadata and rerun the command; editing Rust alone does not synchronize declarations. No loading, replacement, registration, scheduling, authority or mandatory Host report is added. The first slice is terminal snapshots only. Environment-domain `--fix/--yes/--watch/--sbom`, `-o` paths and `--json` do not apply; select input with `wiring --manifest-path`. No new export format.
+
+### Existing environment diagnostics
 
 ```bash
 cargo run -p oclive-cli -- doctor
