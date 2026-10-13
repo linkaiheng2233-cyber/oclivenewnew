@@ -1105,3 +1105,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者要求收尾、最后检查SDK可靠性与范围，再确认冻结基线并分类详实推送。按[最终计划](ROUND-02-PLAN.md#源码-sdk-最终范围审查集成冻结与远端交付2026-10-13)接续干净 `89590c0d`，整批从main `08348f31`起的十个分类提交保留；本轮controller实施与语义自查 independent=false，有限核八条直接声明，不重开全仓调查。
 - **交付 / 例子**：完整Memory作者路径、只读CLI声明视图、真实官方配方回归、两条改一条练习和人类/AI导航共同冻结；例子通过说明作者实现确被消费者调用，不将literal规则或示例行为变成Base义务。最终[交接Wave](waves/WAVE-20261013-SDK-FINAL-CLOSEOUT.md)拥有提交分类、适用检查与可携带边界，本PLAN/DCL只追加，无公共API、锁、CI组合/required或技术债状态改动。
 - **验收 / 推送纪律**：同主题里程碑的适用阶段全部完成，精确结果由Wave拥有：首跑缺少隔离Tauri资源，续跑又发现私有执行器target作用域与空值设置问题，三次native101分别保留；没有把分段通过写成完整首命令exit0。最终Rust、workspace集成和CLI全tests均通过，新SDK配方实际运行，脚本28/28及模块兼容/全部改文另核；未改产品断言或给SDK添加Host依赖。停止写入后精确推送本分支和新final checkpoint，由ready PR的目标SHA正式CI验收；旧本地tag/main/原证据保持，不绕过保护、不为远端绿灯回写另造提交。实际结果、最终SHA及远端状态分别查Wave与本次交付报告，不以计划或旧main绿灯冒充新提交验收。
+
+### DCL-20261013-113 · SDK正式CI暴露的Quinn兼容安全补丁
+
+- **问题 / 原因**：SDK冻结 `c42da06a` 的正式CI Dimension5命中锁内Quinn三条公告；刷新本机数据库后同锁复现三条/native1。原本地stale结果仅对应旧数据库，不把差异归因SDK实现，也不依据未激活的默认依赖树豁免锁审计。
+- **有限修改**：按[六路径计划](ROUND-02-PLAN.md#sdk正式ci暴露的quinn兼容安全补丁2026-10-13)精确锁0.11.18，中英安全文同步扫描/三ID与警告。本次最终锁只有该包version/checksum不同，698包及所有依赖边保持；Cargo初版附带的tempfile/getrandom重选保全后恢复原合法边，locked解析通过。SDK/Host、manifest/feature/TLS/ignore、CI组合和主债状态不改。
+- **验证 / 续接**：当前数据库后置audit native0、0漏洞/7警告；新锁SDK真实配方1 passed、Dimension5 PASS31及CLI all-target Clippy通过。五文门禁及范围自查后独立供应链提交，[本片Wave](waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md)拥有原始坐标和边界；原r0 tag/提交/失败记录保持，PR修补期转draft、后续冻结新r1 tag及目标SHA正式CI，不回写绿灯另造提交或借此关闭父债。

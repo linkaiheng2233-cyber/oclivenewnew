@@ -1220,3 +1220,11 @@
 **验收 / CI节奏**：同主题最终批次运行一次 `npm run check:ci-local`（Dimension5、前端lint/typecheck/build、workspace静态/lib与集成、CLI串行集成），覆盖放回当前工程后的兼容；另核固定入口Node自测与本批默认/全部改文链接、镜像、登记、docs-only旧路径、债结构、编码和diff。生产公共Rust面未变，G8额外workspace doctest不适用；不扩大到真实模型、TTS、发行版发布或平台实机。失败保留原生输出，按首因定点修补，受影响验证通过后冻结提交。最终停止写入检查三文与既有实现身份，新增注释checkpoint，明确不是SemVer发布。
 
 **远端 / 停止线**：先重核origin/main与当前工作树，精确推送本分支和本轮tag，不使用全量tags快捷脚本。main受 `ci-gate` 保护，建立ready PR触发一次正式 `ci.yml`，核目标head/检查SHA与门禁结果；不绕过保护、不开第二套CI。正式远端未通过前只称Locally verified，绿灯后不为回写编号另造提交。PR及最终交付报告保存远端身份与结果。公共契约、权限或Host强制义务取舍才询问维护者；普通修补在范围内继续。
+
+### SDK正式CI暴露的Quinn兼容安全补丁（2026-10-13）
+
+**首因 / 授权 / 基线**：SDK冻结提交 `c42da06af5c2a71bcc09850776ad38476cea26bc` 已推送并建立PR #188；正式CI `38375524660` 的Dimension5命中 `quinn-proto 0.11.17` 三条公告0338/0340/0343。刷新本地advisory-db后同锁也native1、三条命中，原stale扫描不能代替当前数据。本片是修复具体安全门禁阻碍，不是SDK架构扩面。L/有限兼容更新，controller实施与语义自查 independent=false；PR先转draft，原提交/tag、失败日志与原件保全，不移动旧冻结点。
+
+**六路径 / 边界**：仅Cargo.lock的quinn-proto兼容补丁、KNOWN_VULNERABILITIES中英、PLAN/DCL追加与新的安全修补Wave。优先精确锁0.11.18；先核上游修复、可用版本及实际锁delta，若有额外边/版本变化再判断，不盲更新全部依赖。不改变manifest/API/feature、TLS配置/信任与验证策略、审计ignore、SDK/Host实现或CI组合。SDK Memory没有Quinn依赖，仍真实重跑其配方以检查新锁种子；不将锁里的依赖自动视为默认执行路径暴露。
+
+**验收 / 停止线**：先保留当前库下原锁审计红，再精确更新并审计绿，保存数据库commit/JSON及警告；比较锁中所有包/依赖边和SDK原件。cargo-deny、Dimension5、SDK树外配方及相关编译/静态检查、五文链接/镜像/登记/编码/债结构/diff按实际影响执行；不为已有不变代码重复前端或全workspace集成。达到可兼容升级、三公告消除及受影响路径通过即停，不深挖QUIC协议或自动开新供应链债。最终冻结新commit/r1 tag再一次推送，转ready触发该SHA正式CI；当前首轮其它检查可复用其具体范围，不能代替新SHA正式CI。权限/契约或不兼容公开变化才问维护者。
