@@ -6,6 +6,8 @@
 
 [English](../../creator-docs-en/getting-started/KERNEL_FACTORY_VISION.md)
 
+**模块作者的源码接入工具包**：[SDK 第一条路径](../rfc/RFC_DEVELOPER_SDK_V0.md)，复用基础工程与现有消费者，不新增门面或默认 Host。
+
 ---
 
 ## 单核双态构建架构

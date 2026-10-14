@@ -12,12 +12,18 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-07** (local `cargo audit --no-fetch --stale --json`; the DB was fetched earlier in this batch: 1,290 advisories, 698 dependency entries scanned) |
+| **Last scan date** | **2026-10-14** (Base immutable Git-source transition: `cargo audit --no-fetch --stale --json`; 1,308 cached advisories, 699 locked dependencies; DB Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`; no refresh this round) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **6** (`glib` · five `unic-*` entries; the `chacha20` yanked warning is removed, with the ignore policy unchanged) |
+| **Warning-level count** | **7** (six unmaintained entries: five `unic-*` and `unsafe-libyaml`; one unsound entry: `glib`; ignore policy unchanged) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+The 2026-10-14 Base compatibility preparation adds only the `oclive_kernel_base 0.1.0` path package and related edges in three compatibility crates. Existing registry versions, checksums and dependencies are unchanged. Its machine-local path is temporary, not a distribution source. Cached audit: native 0, zero vulnerabilities and seven existing warnings; ignore and TLS semantics are unchanged. Scope and the required immutable-source transition are recorded in the [preparation report](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-COMPAT-PREPARATION.md).
+
+Later that day, the source moves to the maintainer's independent `linkaiheng2233-cyber/oclive-kernel` repository at fixed revision `60c6cc0bb911bf8e15efd4352f00561da6a6ee4f`. Against the preparation lock, only the Base package gains a Git source field; all 684 registry records remain identical, with no dependency upgrades. The post-transition cached audit exits 0 with zero vulnerabilities and seven warnings. Independent-library Windows/Linux CI does not replace original-workspace migration acceptance; see the [remote-source delivery record](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-REMOTE.md).
+
+On 2026-10-13, formal SDK [CI 38375524660](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38375524660) hit three Quinn vulnerabilities at frozen commit `c42da06a`. Its lock matches main, so the SDK implementation did not introduce them. Refreshing the local DB reproduced three hits/exit 1; the precise `quinn-proto 0.11.17 → 0.11.18` patch removes them/exit 0. The [upstream 0.11.18 release](https://github.com/quinn-rs/quinn/releases/tag/quinn-proto-0.11.18) explicitly fixes this group. The final lock changes only that package's version/checksum; all dependency edges, manifests, TLS configuration and ignores stay unchanged. Default and all-target/all-feature workspace reverse trees printed no Quinn path; this is limited to those configurations. The patch is locally verified, with formal CI on the patch SHA pending. Preserve the older stale scan and failed evidence; see the [slice record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md).
 
 The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
 
@@ -34,7 +40,10 @@ The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` t
 | [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099) | rustls-webpki 0.101 | **Cleared** | |
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **Cleared** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **Cleared** — upgraded to **0.8.6** | |
-| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **Fixed** — lockfile **0.11.17** (2026-08-21) | Compatible-range lockfile refresh |
+| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **Fixed** — current lock **0.11.18** | Fixed with 0.11.17 on 2026-08-21; compatible patch on 2026-10-13 |
+| [RUSTSEC-2026-0338](https://rustsec.org/advisories/RUSTSEC-2026-0338) | quinn-proto 0.11.17 | **Locally patched; formal CI pending** — **0.11.18** | Zero-length STREAM frames can panic unordered reads |
+| [RUSTSEC-2026-0340](https://rustsec.org/advisories/RUSTSEC-2026-0340) | quinn-proto 0.11.17 | **Locally patched; formal CI pending** — **0.11.18** | Peer minimum ACK delay can panic ACK_FREQUENCY transmission |
+| [RUSTSEC-2026-0343](https://rustsec.org/advisories/RUSTSEC-2026-0343) | quinn-proto 0.11.17 | **Locally patched; formal CI pending** — **0.11.18** | Outgoing datagram accounting can panic the sender |
 | [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **Fixed** — **0.9.20** | 2026-07-09 PR #101 CI supply chain |
 | [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **Fixed** — lockfile **0.23.45** | Compatible patch update on 2026-09-27; TLS 1.3 handshake encryption-level boundary |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **Fixed** — **0.41.0** (via plist 1.10) | same |
@@ -69,6 +78,7 @@ The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` t
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| **RUSTSEC-2024-0449** | `unsafe-libyaml` | **Open · unmaintained** | Existing YAML dependency in this lock; recorded without expanding into YAML migration |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |

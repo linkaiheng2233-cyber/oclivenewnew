@@ -168,6 +168,8 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 公共契约及默认Host配置各有独立执行出口，共享消费者仍由剩余workspace及既有案例覆盖，尚未另拆job。`ci-impact-plan` 属受信选择控制面，`ci-gate` 属最终聚合，不与15个验证job混计；四组两平台矩阵展开后配置全量21个job。目录里的 `kernel-contracts` / `kernel-runtime` profile用于影响传播，不能因为下游测试归Host就删掉公共变更到它的边。
 
+**`rust` 内参考Host的迁移出口**：只有先列明原Clippy/tests的feature与目标条件，为拟移出的条件保留明确执行出口，并核对catalog、受信拓扑与gate覆盖后，才另片调整workspace排除项。当前独立Host为 `default`，workspace测试中的Host为 `default,tauri-commands`；原workspace Clippy的all-features范围也须保留。默认Host通过不能替代桌面组合，不能仅因两条命令都包含Host就将其排除；本轮仍保留现有命令与选择策略，不预设拆成多少job。
+
 | 其它现有workflow | 执行责任与证据边界 |
 |---|---|
 | [Nightly](../../.github/workflows/nightly-advisory.yml) | Loom为具体并发路径；fuzz有公共校验和兼容解析；CLI bench属工具；visual/native Tauri属发行版/桌面。五类按各自责任读，nightly是节奏而非架构层。 |

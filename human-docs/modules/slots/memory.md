@@ -4,7 +4,7 @@
 > **读完能做什么**：选择自己的接入路径；基础实现者能运行已有消费者案例，参考 Host 维护者能区分聊天日志/STM/LTM 与回想流程。
 > **耗时**：基础案例约 **5–10 min**；参考 Host 开工包约 **50 min**
 > **SSOT 范围**：人类开工路由与 checklist；公共接入点见 [MODULE_MAP §3.1.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页)，参考 Host 定义见 [§4](../../../handoff/MODULE_MAP_AND_HANDOFF.md#4-第-1-模块--memory)
-> **最后更新**：2026-10-11
+> **最后更新**：2026-10-13
 > **下一篇**：[chat-storage](../side-channels/chat-storage.md) · [side-channels 索引](../side-channels/)
 
 ---
@@ -14,6 +14,7 @@
 | 你要做什么 | 从哪里开工 |
 |---|---|
 | 从空工程编写 Rust Base 实现 | 下方 **从基础工程开工**；只引用现有契约，不带 Host |
+| 在仓库外拥有自己的工程，并通过共享消费者调用 | [源码 SDK Memory 路径](../../../examples/developer-sdk-memory/README.md)；基础工程后显式添加 runtime，维护自己的依赖与锁 |
 | 写一个通过现有公共接口被调用的基础检索实现 | 下方 **MemoryBase 案例**；按调用方提供的材料和资源运行 |
 | 改参考 Host 的丰富记忆后端、持久化或回想策略 | **§1–§6**；沿已有 `MemoryRetrieval`、配置和存储接线 |
 

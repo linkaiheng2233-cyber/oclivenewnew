@@ -43,6 +43,15 @@ fn generated_blank_foundation_keeps_all_six_contracts_available() {
     assert!(init.status.success(), "blank init: {init:?}");
     assert_eq!(fs::read_dir(&project).unwrap().count(), 4);
     assert!(!project.join("tests").exists());
+    let manifest: toml::Value =
+        toml::from_str(&fs::read_to_string(project.join("Cargo.toml")).unwrap()).unwrap();
+    assert_eq!(
+        manifest["package"]["metadata"]["oclive"]["wiring"]["schema_version"].as_integer(),
+        Some(1)
+    );
+    assert!(manifest["package"]["metadata"]["oclive"]["wiring"]
+        .get("slots")
+        .is_none());
     let readme = fs::read_to_string(project.join("README.md")).unwrap();
     assert!(readme.contains("空白契约工程"));
     assert!(!readme.contains("## 第一条开发练习"));

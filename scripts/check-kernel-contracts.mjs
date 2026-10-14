@@ -2,7 +2,7 @@
 /** Full contracts/types lint and tests, including their existing compatibility surface. */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runGate, runRequiredCommand } from './lib/gate-toolchain.mjs';
+import { runGateEntry, runRequiredCommand } from './lib/gate-toolchain.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packages = ['-p', 'oclive_kernel_contracts', '-p', 'oclive_kernel_types'];
@@ -21,14 +21,4 @@ export function runKernelContractChecks(runCommand = runRequiredCommand) {
   console.log('[kernel-contracts] PASS (contracts/types and compatibility only; shared runtime, Host and distro checks not run)');
 }
 
-const entryPath = process.argv[1] && path.resolve(process.argv[1]);
-const scriptPath = fileURLToPath(import.meta.url);
-if (entryPath && (process.platform === 'win32'
-  ? entryPath.toLowerCase() === scriptPath.toLowerCase() : entryPath === scriptPath)) {
-  if (process.argv.length > 2) {
-    console.error('Usage: node scripts/check-kernel-contracts.mjs');
-    process.exitCode = 1;
-  } else {
-    runGate(() => runKernelContractChecks());
-  }
-}
+runGateEntry(import.meta.url, runKernelContractChecks, 'Usage: node scripts/check-kernel-contracts.mjs');

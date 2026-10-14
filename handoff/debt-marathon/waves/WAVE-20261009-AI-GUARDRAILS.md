@@ -49,3 +49,9 @@ Dimension 5 与 doctest 仅在子进程绑定本机已有 Cargo target；Dimensi
 ## 接手与停止
 
 规则已有明确修复方案，不需要维护者再裁定产品/架构取舍。完成适用门禁与十二路径/历史/原件核验即结束本批；未来是否把观察器升级为硬门禁须另定可靠度、范围和合理的准入条件，不能只套四个总量上限。后续开发继续按实际目标，不再扩大“证明没有过度设计”的调查。
+
+## 2026-10-13 后续复核补充（历史正文保留）
+
+材料按上述SHA256识别，位置不是身份：原“桌面提供”描述当时来源，并非永久路径。当前本机原件在 `C:/Users/13603/Desktop/个人文档/杂项/OCLive-gpt6.1复核缺陷与限制优化-20261009.md`，18326 B/hash相符；此前保全副本 `E:/OCLive/_recovery/AI-GUARDRAILS-20261009-R0/DeepSeek-review-original.md` 同样相符。位置可变，接手者先按身份核实，不假定能从其他机器访问本机目录。
+
+“四项未提交候选已逐字节保全”指隔离施工前的四份原件，**不是最终实现继续保留候选行为或字节**。原件位于同一保全根的 `handoff/AI_CHANGE_BOUNDARIES.md`、`handoff/LAYERING_BASELINE.json`、`package.json`、`scripts/check-abstraction-ratchet.mjs`；`candidate-manifest.json` 登记各自bytes/hash，本次逐项核4/4相符。旧脚本仍含 `contract_traits` / `single_impl_traits` 原键；主树最终版本按已采纳取舍改成OBSERVATION_ONLY。找不到仓库/worktree内副本不能否定ignored保全区的这些原件。核对与裁定见[近期审查补充](WAVE-20261013-RECENT-QUALITY-REVIEW.md#二次复核回传核对2026-10-13)，不回写旧数字或验收。

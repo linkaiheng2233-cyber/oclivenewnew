@@ -4,13 +4,13 @@
 
 **Readers**: Rust / Vue contributors working on the main repository, or authors starting a module from a public Base trait.
 **Goal**: start with the thirty-minute setup guide, locate your module, then read only task-relevant references.
-**Updated**: 2026-10-11.
+**Updated**: 2026-10-13.
 
 This is a learning guide, not another architecture contract. Creators should use the [creator golden path](../creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md); AI agents start with [AGENTS](../AGENTS.md). For a conceptual introduction, read 00 → 01 → a module's current source; use technical debt for completion status. Distinguish [current implementation, candidates, prepared work, and pauses](../handoff/README.md#documentation-status).
 
 ## Choose the work scope first
 
-For a Rust Base module, follow [Kernel foundation setup and generation](../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory start pack](modules/slots/memory.md): generate, test, change your implementation, then find the existing consumer. This path does not require starting the desktop, preparing a model, or reading the whole ladder. Use the setup and contribution path below when changing the main repository or reference Host; RPC / UI plugins retain their plugin-author entry.
+For a Rust Base module, start with the bilingual [source SDK Memory guide](../examples/developer-sdk-memory/README.md): create your project, locate implementation/bindings/assertions and try a behavior change. Use the [Base entry points](../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) for interfaces and the [compatibility review](../creator-docs-en/COMPATIBILITY.md#six-slot-minimal-compatibility-draft) when changing public surfaces. A blank contract project can use the [foundation scaffold](../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start); the [Memory pack](modules/slots/memory.md) provides deeper source and reference-backend pointers. This module path needs no desktop, model or full learning ladder. Use the contribution path below for repository/reference Host changes; RPC/UI plugins retain their own entry.
 
 ## Main-repository contribution: start working
 
@@ -25,10 +25,11 @@ For a Rust Base module, follow [Kernel foundation setup and generation](../creat
 |---|---|
 | Vue / Chat Pro | [Frontend path](paths/frontend.md) → [module packs](modules/README.md) |
 | Kernel contracts / Rust reference Host | [01 Architecture](01_ARCHITECTURE_SIMPLE.md) → [responsibility/source map](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-source-map) → [06 Reference main chain](06_KERNEL_LEARNING_PATH.md) |
-| Write a Rust module against public Base | [Kernel foundation](../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory first example](modules/slots/memory.md) → other [module packs](modules/README.md) as needed |
+| Write a Rust module against public Base | [SDK Memory operations/tests](../examples/developer-sdk-memory/README.md) → [Base entry points](../handoff/MODULE_MAP_AND_HANDOFF.md#311-base-实现者接入点清单一页) → [Memory pack](modules/slots/memory.md) as needed |
+| Write your own Host | [Base-first integrator entry](../creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md#start-with-the-six-base-slots-10-min) → [Kernel/shared support/Host responsibilities](../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries); continue to reference Host sections only if selecting that path |
 | Maintain repository slot implementations | [03 Glossary](03_GLOSSARY.md) → [module packs](modules/README.md) |
 | Reference Host RPC / UI plugin | [Plugin author path](paths/plugin-author.md) → [current plugin contract](../creator-docs-en/plugin-and-architecture/PLUGIN_V1.md) |
-| Hardware / headless / new distro | [Integrator path](paths/integrator.md) → [HostProfile](../creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md) |
+| Hardware / headless / new distro | Choose the Host first; for related reference paths use [Integrator path](paths/integrator.md) → [HostProfile](../creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md); verify target scenarios separately |
 | First small PR | [07 Common tasks](07_COMMON_TASKS.md) → [PR gates](08_PR_GATE_MATRIX.md) |
 
 ## Learning ladder

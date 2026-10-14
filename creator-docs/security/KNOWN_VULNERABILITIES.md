@@ -12,12 +12,18 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-07**（本地 `cargo audit --no-fetch --stale --json`；此前同轮已 fetch advisory-db，共 1290 条，扫描 698 个依赖条目） |
+| **最近扫描日期** | **2026-10-14**（Base固定Git来源迁移：`cargo audit --no-fetch --stale --json`；沿用缓存1308条公告、699个锁依赖；数据库Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`，本轮未刷新） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **6**（`glib` · 5 个 `unic-*`；`chacha20` yanked 已消除，既有 ignore 策略不变） |
+| **警告级命中数** | **7**（6 条 unmaintained：5 个 `unic-*`及 `unsafe-libyaml`；1 条 unsound：`glib`；既有 ignore 策略不变） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+2026-10-14 独立Base库兼容准备仅新增 `oclive_kernel_base 0.1.0` path包及三个兼容crate的相关依赖边；原registry包版本、checksum和依赖保持。此时使用的是本机临时path，尚非正式分发来源。缓存扫描native0、漏洞0、既有警告7；未改变ignore或TLS语义。迁移范围和最终来源切换要求见[准备记录](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-COMPAT-PREPARATION.md)。
+
+同日来源切换为维护者指定的独立仓库 `linkaiheng2233-cyber/oclive-kernel`，固定rev `60c6cc0bb911bf8e15efd4352f00561da6a6ee4f`。相对临时准备锁，仅Base包新增Git来源字段；684个registry完整记录不变，没有依赖升级。后置缓存audit native0、漏洞0、警告7；独立库双平台CI不替代原工程迁移验收，见[远端来源交付记录](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-REMOTE.md)。
+
+2026-10-13 SDK正式CI [38375524660](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38375524660)在冻结提交 `c42da06a` 命中Quinn三条漏洞；该锁与main相同，不能归因SDK实现。更新本地数据库后复现三条/native1，精确补丁 `quinn-proto 0.11.17 → 0.11.18` 后三条消除/native0。[上游0.11.18发行说明](https://github.com/quinn-rs/quinn/releases/tag/quinn-proto-0.11.18)明确修复同组问题。最终锁仅改变该包version/checksum，所有依赖边、manifest、TLS配置及ignore保持；默认及all-target/all-feature workspace反向树未打印Quinn路径，仅限定当前配置，不能外推所有未来配置。当前为本地补丁通过，修补SHA正式CI另验；旧stale扫描及失败记录保留，见[本片记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md)。
 
 2026-09-27 锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；该轮没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
 
@@ -34,7 +40,10 @@
 | [RUSTSEC-2026-0099](https://rustsec.org/advisories/RUSTSEC-2026-0099) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2026-0104](https://rustsec.org/advisories/RUSTSEC-2026-0104) | rustls-webpki 0.101 | **已清零** | |
 | [RUSTSEC-2024-0363](https://rustsec.org/advisories/RUSTSEC-2024-0363) | sqlx 0.7.4 | **已清零** — 已升级至 **0.8.6** | |
-| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 锁文件 **0.11.17** | 2026-08-21 兼容范围锁文件更新 |
+| [RUSTSEC-2026-0185](https://rustsec.org/advisories/RUSTSEC-2026-0185) | quinn-proto &lt; 0.11.15 | **已修复** — 当前锁 **0.11.18** | 2026-08-21以0.11.17修复该ID；2026-10-13兼容补丁升级 |
+| [RUSTSEC-2026-0338](https://rustsec.org/advisories/RUSTSEC-2026-0338) | quinn-proto 0.11.17 | **本地补丁通过，正式CI待验** — **0.11.18** | 无序读取零长度STREAM可致panic |
+| [RUSTSEC-2026-0340](https://rustsec.org/advisories/RUSTSEC-2026-0340) | quinn-proto 0.11.17 | **本地补丁通过，正式CI待验** — **0.11.18** | ACK_FREQUENCY路径的peer最小ACK延迟可致panic |
+| [RUSTSEC-2026-0343](https://rustsec.org/advisories/RUSTSEC-2026-0343) | quinn-proto 0.11.17 | **本地补丁通过，正式CI待验** — **0.11.18** | 出站datagram缓冲计账可致发送侧panic |
 | [RUSTSEC-2026-0204](https://rustsec.org/advisories/RUSTSEC-2026-0204) | crossbeam-epoch 0.9.18 | **已修复** — **0.9.20** | 2026-07-09 PR #101 CI 供应链 |
 | [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **已修复** — 锁文件 **0.23.45** | 2026-09-27 兼容补丁更新；TLS 1.3 握手消息加密级别边界检查 |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **已修复** — **0.41.0**（经 plist 1.10） | 同上 |
@@ -71,6 +80,7 @@
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
+| **RUSTSEC-2024-0449** | `unsafe-libyaml` | **开放 · unmaintained** | 当前锁的既有YAML依赖；本轮只记录警告，不扩大为YAML迁移 |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
