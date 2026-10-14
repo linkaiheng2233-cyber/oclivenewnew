@@ -3400,6 +3400,7 @@ dependencies = [
 [[package]]
 name = "oclive_kernel_base"
 version = "0.1.0"
+source = "git+https://github.com/linkaiheng2233-cyber/oclive-kernel?rev=60c6cc0bb911bf8e15efd4352f00561da6a6ee4f#60c6cc0bb911bf8e15efd4352f00561da6a6ee4f"
 dependencies = [
  "serde",
  "serde_json",
