@@ -93,8 +93,8 @@ pub use resource_coordination::{
 };
 pub use slot_backend_factory::SlotBackendFactoryPort;
 // Independent six-slot Base traits (B1 binding: `handoff/MODULE_MAP_AND_HANDOFF.md` §0.4–§0.9).
-// Added alongside the reference ports above; not wired into the reference Host yet, and no
-// legacy implementation is claimed to satisfy them.
+// Compatibility re-exports of the independent library, alongside the reference ports.
+// The Host uses selected explicit bindings; legacy implementations do not satisfy them automatically.
 pub use slot_base::{
     AgentBase, BaseCallFuture, EmotionBase, EventBase, LlmBase, MemoryBase, PromptBase,
 };

@@ -12,6 +12,7 @@ categories = ["development-tools"]
 workspace = true
 
 [dependencies]
+oclive_kernel_base = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
