@@ -1,6 +1,6 @@
 # 模块注册表（Module Registry）
 
-**最后更新**：2026-10-11（§0.3.1 整理维护者确认的CI分责读图；候选与历史证据基线未重标）
+**最后更新**：2026-10-14（登记既有Base/最小角色的独立定义与旧路径re-export；候选与历史证据基线未重标）
 **SSOT 范围**：**模块定义 · 架构划分 · 槽位/设施/独立通道之间的联系 · Kernel/Host 权责候选及定点源码对照 · 在边界内如何改**。
 **非 SSOT**：发版进度 → [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) · 版本快照 → [`PROJECT_CURRENT_STATUS.md`](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · 关键文件路径 → [`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · 文档分责 → [`handoff/README.md`](./README.md) §文档分层。
 
@@ -119,7 +119,7 @@ flowchart LR
 
 | 责任位置 | 负责兑现的承诺 | 当前实现入口与阅读限制 |
 |---|---|---|
-| 公共Kernel | 六槽Base请求/返回/失败、最小逻辑角色及必要公共合法性、权限、因果和终态边界 | [`contracts/slot_base.rs`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)、[`types/slot_base.rs`](../kernel/crates/oclive_kernel_types/src/slot_base.rs)表达现有Base；[`validation/minimal_role.rs`](../kernel/crates/oclive_validation/src/minimal_role.rs)定义/校验最小角色，types重导出。有限接口/测试不证明所有硬边界；contracts/types/validation仍有旧rich或外围兼容面，整crate不等于小Kernel。 |
+| 公共Kernel | 六槽Base请求/返回/失败、最小逻辑角色及必要公共合法性、权限、因果和终态边界 | 已落地的Base与最小逻辑角色由独立 `oclive_kernel_base` 定义；本仓 [`contracts/slot_base.rs`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)、[`types/slot_base.rs`](../kernel/crates/oclive_kernel_types/src/slot_base.rs)、[`validation/minimal_role.rs`](../kernel/crates/oclive_validation/src/minimal_role.rs)保留旧路径并re-export同一份trait/类型/校验，来源由[workspace manifest](../Cargo.toml)声明。有限接口/测试不证明所有硬边界或新增统一执行层；contracts/types/validation仍有旧rich或外围兼容面，整crate不等于小Kernel。 |
 | 共享接入支持（小Kernel外） | 在Host明确绑定下准备最小角色、调用能力并保留实际结果/失败；可复用的参考实现与适配 | [`minimal_role_consumer.rs`](../kernel/crates/oclive_kernel_runtime/src/domain/minimal_role_consumer.rs)的Prompt消费者和六Base消费者；[`外部Memory案例`](../kernel/crates/oclive_kernel_runtime/examples/external_memory_base/main.rs)经现有消费者调用外部实现。调用方给材料、用途和实现；消费者不持有Host状态、不加载rich Role、不选资源或规定六槽每轮全跑。runtime内其它设施不因同crate而一律属于此层。 |
 | 7B参考Host | 将契约组织成当前运行环境，绑定模型/Prompt/记忆/情绪资源，管理状态、持久化、回合与既有故障策略 | [`role_kernel.rs`](../kernel/crates/oclive_kernel_host/src/role_kernel.rs)完整门面、[`state/mod.rs`](../kernel/crates/oclive_kernel_host/src/state/mod.rs)装配、[`process_message.rs`](../kernel/crates/oclive_kernel_host/src/domain/chat_engine/process_message.rs)运行接线、[`db/mod.rs`](../kernel/crates/oclive_kernel_host/src/infrastructure/db/mod.rs)持久化。模型特化Prompt、修复、调优不是所有Host的义务；OcliveKernel也不是已独立可启动的小core。 |
 | 具体Host/发行版 | 自己的资源/能力接线和产品规则；可复用参考Host或自建合法Host | 当前ChatPro的[`minimalRoleChatStore.ts`](../distros/shared/src/stores/minimalRoleChatStore.ts)管绑定/当前会话材料，[`chatStoreSend.ts`](../distros/shared/src/stores/chatStoreSend.ts)管产品发送/恢复，[`桌面ChatBackend`](../distros/desktop-tauri/src/api/chat_backend.rs)接线传输。前端目录名shared不使ChatPro产品规则成为通用共享运行契约。开发者自有Host是允许路径，此表不声称另有一个已验收的完整自有Host实现。 |
@@ -422,7 +422,7 @@ Host-facing 边界由这些合同共同限定：Host 准备所调用能力所需
 
 ### 3.1.1 Base 实现者接入点清单（一页）
 
-**读者与用途**：编写 Rust Base 实现或新 Host 的开发者；本清单定位现有公共调用面和装配点，不定义新合同，也不是角色包创作指南。规范含义仍见 §0.4–§0.9；当前 Rust 数据和方法分别以 [`types::slot_base`](../kernel/crates/oclive_kernel_types/src/slot_base.rs) 与 [`contracts::slot_base`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs) 为准。
+**读者与用途**：编写 Rust Base 实现或新 Host 的开发者；本清单定位现有公共调用面和装配点，不定义新合同，也不是角色包创作指南。规范含义仍见 §0.4–§0.9；当前 Rust 数据和方法由 `oclive_kernel_base` 定义，本仓 [`types::slot_base`](../kernel/crates/oclive_kernel_types/src/slot_base.rs) 与 [`contracts::slot_base`](../kernel/crates/oclive_kernel_contracts/src/slot_base.rs)保留同一公共面的兼容入口。
 
 六种方法均返回 `BaseCallFuture<'a, T>`，输出是 `Result<T, BaseCallError>`；共同失败载体保留 `kind` 与完整 `detail`，分类为 `Failed / Unavailable / Unsupported / Cancelled / TimedOut`，不能解析 detail 代替分类。正常空值不是失败，也不证明产品任务完成。future 不强制 `Send`；执行器、取消、重试、授权与资源生命周期由调用方决定。请求文本不授予资源权限。
 

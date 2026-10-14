@@ -3363,12 +3363,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "oclive_kernel_base"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "oclive_kernel_contracts"
 version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "oclive_kernel_base",
  "oclive_kernel_types",
+ "oclive_validation",
  "serde",
  "serde_json",
 ]
@@ -3452,6 +3462,7 @@ name = "oclive_kernel_types"
 version = "0.2.0"
 dependencies = [
  "chrono",
+ "oclive_kernel_base",
  "oclive_validation",
  "parking_lot",
  "serde",
@@ -3491,6 +3502,7 @@ dependencies = [
 name = "oclive_validation"
 version = "0.1.0"
 dependencies = [
+ "oclive_kernel_base",
  "png 0.18.1",
  "proptest",
  "semver",
