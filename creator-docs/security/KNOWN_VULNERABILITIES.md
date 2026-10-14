@@ -12,7 +12,7 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-14**（本地Base兼容迁移准备：`cargo audit --no-fetch --stale --json`；沿用缓存1308条公告、699个锁依赖；数据库Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`，本轮未刷新） |
+| **最近扫描日期** | **2026-10-14**（Base固定Git来源迁移：`cargo audit --no-fetch --stale --json`；沿用缓存1308条公告、699个锁依赖；数据库Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`，本轮未刷新） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
 | **警告级命中数** | **7**（6 条 unmaintained：5 个 `unic-*`及 `unsafe-libyaml`；1 条 unsound：`glib`；既有 ignore 策略不变） |
@@ -20,6 +20,8 @@
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
 2026-10-14 独立Base库兼容准备仅新增 `oclive_kernel_base 0.1.0` path包及三个兼容crate的相关依赖边；原registry包版本、checksum和依赖保持。此时使用的是本机临时path，尚非正式分发来源。缓存扫描native0、漏洞0、既有警告7；未改变ignore或TLS语义。迁移范围和最终来源切换要求见[准备记录](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-COMPAT-PREPARATION.md)。
+
+同日来源切换为维护者指定的独立仓库 `linkaiheng2233-cyber/oclive-kernel`，固定rev `60c6cc0bb911bf8e15efd4352f00561da6a6ee4f`。相对临时准备锁，仅Base包新增Git来源字段；684个registry完整记录不变，没有依赖升级。后置缓存audit native0、漏洞0、警告7；独立库双平台CI不替代原工程迁移验收，见[远端来源交付记录](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-REMOTE.md)。
 
 2026-10-13 SDK正式CI [38375524660](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38375524660)在冻结提交 `c42da06a` 命中Quinn三条漏洞；该锁与main相同，不能归因SDK实现。更新本地数据库后复现三条/native1，精确补丁 `quinn-proto 0.11.17 → 0.11.18` 后三条消除/native0。[上游0.11.18发行说明](https://github.com/quinn-rs/quinn/releases/tag/quinn-proto-0.11.18)明确修复同组问题。最终锁仅改变该包version/checksum，所有依赖边、manifest、TLS配置及ignore保持；默认及all-target/all-feature workspace反向树未打印Quinn路径，仅限定当前配置，不能外推所有未来配置。当前为本地补丁通过，修补SHA正式CI另验；旧stale扫描及失败记录保留，见[本片记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md)。
 

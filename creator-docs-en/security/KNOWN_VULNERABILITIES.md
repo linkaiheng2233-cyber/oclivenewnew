@@ -12,7 +12,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-14** (local Base compatibility preparation: `cargo audit --no-fetch --stale --json`; 1,308 cached advisories, 699 locked dependencies; DB Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`; no refresh this round) |
+| **Last scan date** | **2026-10-14** (Base immutable Git-source transition: `cargo audit --no-fetch --stale --json`; 1,308 cached advisories, 699 locked dependencies; DB Git HEAD `d5f46becf4d442d460e1fce5e12f2c0f00924868`; no refresh this round) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
 | **Warning-level count** | **7** (six unmaintained entries: five `unic-*` and `unsafe-libyaml`; one unsound entry: `glib`; ignore policy unchanged) |
@@ -20,6 +20,8 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
 The 2026-10-14 Base compatibility preparation adds only the `oclive_kernel_base 0.1.0` path package and related edges in three compatibility crates. Existing registry versions, checksums and dependencies are unchanged. Its machine-local path is temporary, not a distribution source. Cached audit: native 0, zero vulnerabilities and seven existing warnings; ignore and TLS semantics are unchanged. Scope and the required immutable-source transition are recorded in the [preparation report](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-COMPAT-PREPARATION.md).
+
+Later that day, the source moves to the maintainer's independent `linkaiheng2233-cyber/oclive-kernel` repository at fixed revision `60c6cc0bb911bf8e15efd4352f00561da6a6ee4f`. Against the preparation lock, only the Base package gains a Git source field; all 684 registry records remain identical, with no dependency upgrades. The post-transition cached audit exits 0 with zero vulnerabilities and seven warnings. Independent-library Windows/Linux CI does not replace original-workspace migration acceptance; see the [remote-source delivery record](../../handoff/debt-marathon/waves/WAVE-20261014-KERNEL-BASE-REMOTE.md).
 
 On 2026-10-13, formal SDK [CI 38375524660](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38375524660) hit three Quinn vulnerabilities at frozen commit `c42da06a`. Its lock matches main, so the SDK implementation did not introduce them. Refreshing the local DB reproduced three hits/exit 1; the precise `quinn-proto 0.11.17 → 0.11.18` patch removes them/exit 0. The [upstream 0.11.18 release](https://github.com/quinn-rs/quinn/releases/tag/quinn-proto-0.11.18) explicitly fixes this group. The final lock changes only that package's version/checksum; all dependency edges, manifests, TLS configuration and ignores stay unchanged. Default and all-target/all-feature workspace reverse trees printed no Quinn path; this is limited to those configurations. The patch is locally verified, with formal CI on the patch SHA pending. Preserve the older stale scan and failed evidence; see the [slice record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md).
 
