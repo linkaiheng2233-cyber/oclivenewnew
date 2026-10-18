@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- **供应链：清理 10 条新披露的漏洞级命中**：`quinn-proto` 0.11.17 → **0.11.19**（RUSTSEC-2026-0338 / 0340 / 0343）、`rustls` 0.23.45 → **0.23.46**（RUSTSEC-2026-0346 / 0347 / 0348 / 0349）、`zip` 2.4.2 → **9.0.5**（RUSTSEC-2026-0367 / 0368 / 0369，其中一条 9.1 critical），`cargo audit` 恢复为**漏洞级 0**、`cargo deny check licenses bans` 通过，**未新增任何 ignore**。`zip` 是 `oclive-cli` / `oclive_kernel_host` / `oclivenewnew-tauri` 的直接依赖；9.x 把 `ZipFile::name()` 从 `&str` 改为 `Result<Cow<'_, str>, ZipError>`（同为路径安全加固），`role_pack` 3 处与 `lora_adapters` 2 处读取改为把非法条目名映射到既有错误形态，未放宽任何路径校验。压缩后端保持 flate2 `rust_backend`（不引入 `zlib-rs`），因此 `oclive-cli` 的 gzip 发布产物与既有 zip 写入的压缩实现不变；代价是每个直接依赖 `zip` 的 crate 需同时声明 `flate2`，否则单独构建会因缺后端而失败。三条 `zip` 公告均针对本仓从未调用的 `extract()`。台账见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)。
 - **明确文本任务与防复读规则的冲突**：内置普通/分段 Prompt 的共用动态尾部明确允许用户主动要求的复述、总结、改写与引用，要求保留主体、否定、限定和条件；日常聊天仍避免机械复读，事实、权限与安全边界不变。同步收紧末尾的去重检查，不再一律禁止成品与原文相同。未新增任务识别器、模型调用或公共接口；模型实际遵循情况仍须真实复验。
 
 ### Added

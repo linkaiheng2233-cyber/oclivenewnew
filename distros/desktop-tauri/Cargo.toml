@@ -60,7 +60,9 @@ toml = { workspace = true }
 walkdir = { workspace = true }
 semver = { workspace = true }
 notify = { workspace = true }
-zip = { workspace = true, features = ["deflate"] }
+zip = { workspace = true }
+# 原因同 `oclive_kernel_host`：为 zip 9 的 `deflate-flate2` 提供 flate2 后端。
+flate2 = { workspace = true }
 axum = { workspace = true }
 tower-http = { workspace = true, features = ["cors"] }
 sha2 = { workspace = true }

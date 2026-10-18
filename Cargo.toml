@@ -53,7 +53,13 @@ toml = "1"
 walkdir = "2.5"
 semver = "1.0"
 notify = "6"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+# 9.x 起 `deflate` 元特性会把 flate2 后端切到 zlib-rs，那会连带改掉 `png` 与
+# `oclive-cli`（gzip 发布产物）的实际压缩实现；这里只取 flate2 后端，保持
+# `rust_backend` 不变（我们从不设置压缩等级，因此不依赖 zopfli 那部分）。
+# 注意：zip 的 `deflate-flate2` 只 `dep:flate2` 而**不选后端**，所以每个直接依赖
+# zip 的 crate 都必须同时声明 `flate2`（本文件下一行）才能在单独构建时通过。
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 axum = "0.7"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors"] }

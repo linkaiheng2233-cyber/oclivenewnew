@@ -51,7 +51,11 @@ toml = { workspace = true }
 walkdir = { workspace = true }
 semver = { workspace = true }
 notify = { workspace = true }
-zip = { workspace = true, features = ["deflate"] }
+zip = { workspace = true }
+# 直接使用方是本文件上方的 `zip`：zip 9 的 `deflate-flate2` 只 `dep:flate2` 而不选后端，
+# 因此必须在这里显式请求 `rust_backend`，否则单独构建本 crate 时 flate2 会因缺后端而
+# `compile_error!`。本 crate 自身不调用 flate2 API。
+flate2 = { workspace = true }
 axum = { workspace = true, features = ["macros"] }
 tower-http = { workspace = true, features = ["cors"] }
 futures-util = "0.3"

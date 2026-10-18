@@ -43,10 +43,10 @@ tracing-subscriber = { workspace = true, default-features = false, features = ["
 sysinfo = "0.33"
 fs2 = "0.4"
 reqwest = { workspace = true, default-features = false, features = ["blocking", "json", "rustls-tls"] }
-zip = { workspace = true, features = ["deflate"] }
+zip = { workspace = true }
 serde_yaml_ng = { workspace = true }
 tar = "0.4"
-flate2 = "1"
+flate2 = { workspace = true }
 tempfile = { workspace = true }
 uuid = { workspace = true }
 ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }

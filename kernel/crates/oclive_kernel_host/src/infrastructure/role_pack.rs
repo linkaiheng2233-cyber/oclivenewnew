@@ -157,7 +157,12 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
         let f = archive.by_index(i).map_err(|_| {
             AppError::InvalidParameter("Role pack format: archive is corrupted".into())
         })?;
-        let name = f.name().to_string();
+        let name = f
+            .name()
+            .map_err(|_| {
+                AppError::InvalidParameter("Role pack format: archive entry name is invalid".into())
+            })?
+            .to_string();
         if name.ends_with('/') {
             continue;
         }
@@ -174,7 +179,12 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
         let mut f = archive.by_index(i).map_err(|_| {
             AppError::InvalidParameter("Role pack format: archive is corrupted".into())
         })?;
-        let name = f.name().to_string();
+        let name = f
+            .name()
+            .map_err(|_| {
+                AppError::InvalidParameter("Role pack format: archive entry name is invalid".into())
+            })?
+            .to_string();
         let mut s = String::new();
         std::io::Read::read_to_string(&mut f, &mut s).map_err(|_| {
             AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into())
@@ -204,7 +214,10 @@ fn unzip_to(
         let mut file = archive
             .by_index(i)
             .map_err(|e| AppError::Unknown(e.to_string()))?;
-        let name = file.name().to_string();
+        let name = file
+            .name()
+            .map_err(|e| AppError::Unknown(e.to_string()))?
+            .to_string();
         let normalized_name = name.replace('\\', "/");
         if !safe_zip_path(&name) {
             on_entry(i + 1, total, None);

@@ -6,6 +6,25 @@ mod common;
 use std::fs;
 use std::process::Command;
 
+/// 当前宿主目标三元组。
+///
+/// `cargo metadata` 默认解析**全平台**依赖图，于是会要求本机永远不会构建的
+/// crate 也存在于本地缓存（例如 Linux 上的 `android_system_properties`，
+/// 由 `chrono` → `iana-time-zone` 引入，只对 Android 生效）。配合 `--offline`
+/// 时这类解析会直接失败。`--filter-platform` 把解析范围收敛到宿主平台，
+/// 既保留"生成项目不需要联网"的断言，又不再索要跨平台 crate。
+fn host_triple() -> String {
+    let out = Command::new("rustc").args(["-vV"]).output().unwrap();
+    assert!(out.status.success(), "rustc -vV: {out:?}");
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    stdout
+        .lines()
+        .find_map(|line| line.strip_prefix("host: "))
+        .expect("rustc -vV should report a host triple")
+        .trim()
+        .to_string()
+}
+
 #[test]
 fn generated_blank_foundation_keeps_all_six_contracts_available() {
     let temp = tempfile::tempdir().unwrap();
@@ -291,8 +310,10 @@ fn generated_kernel_base_is_a_host_free_contract_project() {
             "--offline",
             "--format-version",
             "1",
-            "--manifest-path",
+            "--filter-platform",
         ])
+        .arg(host_triple())
+        .arg("--manifest-path")
         .arg(&manifest)
         .output()
         .unwrap();

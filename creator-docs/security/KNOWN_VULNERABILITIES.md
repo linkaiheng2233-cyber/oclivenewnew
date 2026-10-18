@@ -12,16 +12,27 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-07**（本地 `cargo audit --no-fetch --stale --json`；此前同轮已 fetch advisory-db，共 1290 条，扫描 698 个依赖条目） |
+| **最近扫描日期** | **2026-10-18**（本地先 `cargo audit` 刷新 advisory-db，共 **1338** 条，再以 `cargo audit --no-fetch --stale` 复核；扫描 **697** 个依赖条目） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
-| **漏洞级命中数** | **0**（`cargo audit` 退出码 **0**） |
-| **警告级命中数** | **6**（`glib` · 5 个 `unic-*`；`chacha20` yanked 已消除，既有 ignore 策略不变） |
+| **漏洞级命中数** | **0**（`cargo audit --no-fetch --stale` 退出码 **0**） |
+| **警告级命中数** | **10**（`glib` · 5 个 `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`，均为 *unmaintained*/*unsound*，不计入漏洞数） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
 
 2026-09-27 锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；该轮没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
 
 2026-10-07 的独立维护片仅将已撤回的 `chacha20 0.10.1` 更新到 **0.10.2**，锁差量仅 version / checksum，依赖边及全部 manifest 保持；[上游变更记录](https://github.com/RustCrypto/stream-ciphers/blob/master/chacha20/CHANGELOG.md)说明修复 SSE2 后端误用 SSE4.1 指令。后置 audit native 0、漏洞级 0、警告 6，stderr 为空；前置 fetch/audit native 0 但部分 registry yanked 查询超时，原输出保留，不能凭其退出码声称所有 registry 查询完成。新版本未撤回另由 crates.io 元数据核对。此片与 selector parser 预备片合批，完整链及精确 SHA 正式 CI 待验，未放宽 ignore 或据此关闭 npm 父债。范围及原件见 [DCL-51](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-51--兼容-chacha20-补丁与供应链合批)。
+
+2026-10-18 上游新披露使库存量从 **0** 变为 **10 条漏洞级**（`dimension5-acceptance` 在 `main` 上实时暴露；该红与本仓当时的文档提交无关，是不带代码改动的锁文件存量问题）。本批按"能升就升、不为已知可修漏洞开 ignore"处理，**未新增任何 ignore 条目**：
+
+- `quinn-proto` **0.11.17 → 0.11.19**（RUSTSEC-2026-0338 / 0340 / 0343，两条 7.5 high），经 `quinn 0.11.11 → reqwest 0.12.28` 传递。
+- `rustls` **0.23.45 → 0.23.46**（RUSTSEC-2026-0346 / 0347 / 0348 / 0349，最高 4.0 medium），经 `hyper-rustls → reqwest` 传递。
+- `zip` **2.4.2 → 9.0.5**（RUSTSEC-2026-0367 / 0368 / 0369，其中 0369 为 9.1 critical），是 `oclive-cli` / `oclive_kernel_host` / `oclivenewnew-tauri` 的**直接**依赖。三条均针对 `ZipArchive::extract()` / `ZipStreamReader::extract()` 的符号链接与 SUID/SGID 处理；本仓从不调用 `extract()`（只在内存中经 `by_index` 读取并自行做路径校验），因此运行时暴露面本来就窄，但按"不留已知漏洞"原则仍升级而非记账。
+- 特性选择：9.x 的 `deflate` 元特性会把 `flate2` 后端切换到 `zlib-rs`，而 `png`/`oclive-cli` 已请求 `rust_backend`，两者叠加成双后端；故 workspace 声明改用 `deflate-flate2`，三个成员 crate 去掉与 workspace 重复的 `features = ["deflate"]`。我们从不设置压缩等级，因此不依赖 `deflate` 中的 `zopfli` 部分。
+- 代码适配：zip 9 把 `ZipFile::name()` 从返回 `&str` 改为 `Result<Cow<'_, str>, ZipError>`（同为路径安全加固的一部分）；`role_pack.rs` 3 处与 `lora_adapters.rs` 2 处改为把非法条目名映射为既有错误形态，未放宽任何路径校验。
+- 依赖图差量：移除 `zopfli 0.8.3` 与 `derive_arbitrary 1.4.2`，新增 `typed-path 0.12.3`；`flate2 1.1.9` 仍为 `rust_backend`（未引入 `zlib-rs`），依赖条目由 698 降至 **697**。
+- 验证：`cargo audit --no-fetch --stale` **0 漏洞 / 10 允许警告 / exit 0**；`cargo deny check licenses bans` → `bans ok, licenses ok`；`cargo check` 覆盖三个 zip 消费者全通过。
+- 警告级由 6 条增至 10 条是 advisory-db 由 1290 条扩充到 1338 条后既有图的新增登记（`zbus_names` / `zvariant` / `zvariant_derive` / `unsafe-libyaml`），**不是本次升级引入**，且均不阻断门禁。
 
 ---
 
@@ -39,6 +50,16 @@
 | [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **已修复** — 锁文件 **0.23.45** | 2026-09-27 兼容补丁更新；TLS 1.3 握手消息加密级别边界检查 |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **已修复** — **0.41.0**（经 plist 1.10） | 同上 |
 | [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **已修复** — **0.41.0** | 同上 |
+| [RUSTSEC-2026-0338](https://rustsec.org/advisories/RUSTSEC-2026-0338) | quinn-proto 0.11.17 | **已修复** — 锁文件 **0.11.19** | 2026-10-18 升级；零长度 STREAM 帧可致接收方 panic |
+| [RUSTSEC-2026-0340](https://rustsec.org/advisories/RUSTSEC-2026-0340) | quinn-proto 0.11.17 | **已修复** — 锁文件 **0.11.19** | 同上；ACK_FREQUENCY 传输时对端最小 ACK 延迟可致 panic（7.5 high） |
+| [RUSTSEC-2026-0343](https://rustsec.org/advisories/RUSTSEC-2026-0343) | quinn-proto 0.11.17 | **已修复** — 锁文件 **0.11.19** | 同上；出向数据报缓冲记账可致发送方 panic（7.5 high） |
+| [RUSTSEC-2026-0346](https://rustsec.org/advisories/RUSTSEC-2026-0346) | rustls 0.23.45 | **已修复** — 锁文件 **0.23.46** | 同上；客户端会话值的 `Debug` 实现泄露 TLS 密钥（4.0 medium） |
+| [RUSTSEC-2026-0347](https://rustsec.org/advisories/RUSTSEC-2026-0347) | rustls 0.23.45 | **已修复** — 锁文件 **0.23.46** | 同上；ECH 被拒后仍可向外部服务器发送缓冲应用数据（2.3 low） |
+| [RUSTSEC-2026-0348](https://rustsec.org/advisories/RUSTSEC-2026-0348) | rustls 0.23.45 | **已修复** — 锁文件 **0.23.46** | 同上；Brotli 证书解压可在认证前分配至多 1 GiB（3.7 low） |
+| [RUSTSEC-2026-0349](https://rustsec.org/advisories/RUSTSEC-2026-0349) | rustls 0.23.45 | **已修复** — 锁文件 **0.23.46** | 同上；未认证 ServerHello 可把后续连接降级为经典密钥交换（3.7 low） |
+| [RUSTSEC-2026-0367](https://rustsec.org/advisories/RUSTSEC-2026-0367) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；解压时不安全保留 SUID/SGID 位（7.3 high） |
+| [RUSTSEC-2026-0368](https://rustsec.org/advisories/RUSTSEC-2026-0368) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；`ZipArchive::extract` 创建的符号链接目标可越出目的目录 |
+| [RUSTSEC-2026-0369](https://rustsec.org/advisories/RUSTSEC-2026-0369) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；`extract()` 经符号链接应用 Unix 权限且不限制目标（9.1 critical）；本仓不调用 `extract()` |
 
 ---
 
@@ -75,6 +96,8 @@
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.104** | 2026-08-21 锁文件复核 |
+| **RUSTSEC-2024-0449** | `unsafe-libyaml` 0.2.11 | **开放** | 经 `serde_yaml_ng` 传递引入；上游无维护版本，替换需换 YAML 后端 |
+| **RUSTSEC-2026-0370 / 0371 / 0372** | `zvariant` / `zbus_names` / `zvariant_derive` 5.15.0 / 4.3.4 | **开放** | 经 zbus（Linux 侧 Tauri/wry 依赖链）传递引入；等待上游迁移到受维护的 D-Bus 绑定 |
 
 忽略列表与理由见 [`.cargo/audit.toml`](../../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 
@@ -91,7 +114,7 @@
 | `sha2`（`distros/desktop-tauri`） | `0.11.0`（crates.io 无稳定 0.11 线） | **`0.10`**（`sha2 0.10.9`） |
 | `@antfu/eslint-config` | `^9.0.0` | 当前解析版 9.1.0 的传递依赖已越过 ESLint 9 peer 范围；与上一行一起处理 |
 | `serde_yaml` | `0.9`（crate archived，维护停止） | **`serde_yaml_ng 0.10`**（workspace 全量替换 `use serde_yaml_ng::`） |
-| `zip`（`distros/desktop-tauri`） | `0.6`（RUSTSEC 跟踪中） | **`2.x`**（`role_pack` / `plugin_pack` API 已适配） |
+| `zip`（`distros/desktop-tauri`） | `0.6`（RUSTSEC 跟踪中） | **`2.x`**（`role_pack` / `plugin_pack` API 已适配）；2026-10-18 已升至 **9.0.5**（见上文 2026-10-18 批） |
 
 复核命令：`npm outdated`（根目录）、`cargo tree -p oclivenewnew-tauri -i sha2`、`cargo tree -p oclivenewnew-tauri -i serde_yaml`（应为空）。
 

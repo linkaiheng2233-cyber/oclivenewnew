@@ -487,7 +487,10 @@ fn package_manifest(archive: &mut ZipArchive<File>) -> Result<AdapterManifest> {
         let entry = archive
             .by_index(index)
             .map_err(|error| invalid(format!("read .ocadapter entry: {error}")))?;
-        if entry.name().replace('\\', "/") == ADAPTER_MANIFEST_FILE {
+        let name = entry
+            .name()
+            .map_err(|error| invalid(format!("read .ocadapter entry name: {error}")))?;
+        if name.replace('\\', "/") == ADAPTER_MANIFEST_FILE {
             manifest_indices.push(index);
         }
     }
@@ -599,7 +602,10 @@ pub fn import_local_lora_adapter(
             let entry = archive
                 .by_index(index)
                 .map_err(|error| invalid(format!("read .ocadapter entry: {error}")))?;
-            if entry.name().replace('\\', "/") == adapter_file {
+            let name = entry
+                .name()
+                .map_err(|error| invalid(format!("read .ocadapter entry name: {error}")))?;
+            if name.replace('\\', "/") == adapter_file {
                 adapter_entries += 1;
             }
         }

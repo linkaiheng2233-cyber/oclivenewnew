@@ -12,16 +12,27 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-07** (local `cargo audit --no-fetch --stale --json`; the DB was fetched earlier in this batch: 1,290 advisories, 698 dependency entries scanned) |
+| **Last scan date** | **2026-10-18** (local `cargo audit` refreshed advisory-db first: **1,338** advisories, then re-checked with `cargo audit --no-fetch --stale`; **697** dependency entries scanned) |
 | **Scan path** | Workspace root `Cargo.lock` |
-| **Vulnerability-level count** | **0** (`cargo audit` exit code **0**; `sqlx-mysql` / `rsa` removed from lockfile graph) |
-| **Warning-level count** | **6** (`glib` · five `unic-*` entries; the `chacha20` yanked warning is removed, with the ignore policy unchanged) |
+| **Vulnerability-level count** | **0** (`cargo audit --no-fetch --stale` exit code **0**) |
+| **Warning-level count** | **10** (`glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
 The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
 
 The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` to **0.10.2**, changing only version / checksum and preserving dependency edges and all manifests. The [upstream changelog](https://github.com/RustCrypto/stream-ciphers/blob/master/chacha20/CHANGELOG.md) describes the SSE4.1 intrinsic fix in the SSE2 backend. The post-update audit exits 0 with 0 vulnerabilities, 6 warnings, and empty stderr. The pre-update fetch/audit exits 0 but includes registry yanked-query timeouts; its original output is retained, and exit 0 does not prove every registry query completed. crates.io metadata separately confirms the new version is not yanked. This slice is batched with the selector-parser preparation; full-local and exact-SHA formal CI remain pending, with no relaxed ignore policy or npm parent-debt closure. Scope and original receipts: [DCL-51](../../handoff/debt-marathon/DEBT_CHANGELOG.md#dcl-20261007-51--兼容-chacha20-补丁与供应链合批).
+
+On 2026-10-18 newly published upstream advisories moved the inventory from **0** to **10 vulnerability-level hits** (`dimension5-acceptance` surfaced this live on `main`; the red was a pre-existing lockfile issue and unrelated to the documentation commits landing at the time). This batch follows "upgrade what can be upgraded, never open an ignore for a fixable known vulnerability" and **adds no ignore entries**:
+
+- `quinn-proto` **0.11.17 → 0.11.19** (RUSTSEC-2026-0338 / 0340 / 0343, two of them 7.5 high), transitive via `quinn 0.11.11 → reqwest 0.12.28`.
+- `rustls` **0.23.45 → 0.23.46** (RUSTSEC-2026-0346 / 0347 / 0348 / 0349, up to 4.0 medium), transitive via `hyper-rustls → reqwest`.
+- `zip` **2.4.2 → 9.0.5** (RUSTSEC-2026-0367 / 0368 / 0369, the last 9.1 critical) is a **direct** dependency of `oclive-cli` / `oclive_kernel_host` / `oclivenewnew-tauri`. All three advisories target symlink and SUID/SGID handling in `ZipArchive::extract()` / `ZipStreamReader::extract()`; this repository never calls `extract()` (it reads entries in memory via `by_index` and applies its own path check), so the runtime exposure was already narrow, but the batch upgrades instead of recording an exception.
+- Feature choice: the 9.x `deflate` meta-feature switches the `flate2` backend to `zlib-rs`, which would stack on top of the `rust_backend` already requested by `png`/`oclive-cli` and produce a double backend; the workspace declaration therefore uses `deflate-flate2`, and the three member crates drop their redundant `features = ["deflate"]`. We never set a compression level, so the `zopfli` half of `deflate` is unused.
+- Code adaptation: zip 9 changed `ZipFile::name()` from returning `&str` to `Result<Cow<'_, str>, ZipError>` (also part of the path-safety hardening); three sites in `role_pack.rs` and two in `lora_adapters.rs` now map invalid entry names onto the existing error shapes, without relaxing any path validation.
+- Dependency graph delta: `zopfli 0.8.3` and `derive_arbitrary 1.4.2` removed, `typed-path 0.12.3` added; `flate2 1.1.9` stays on `rust_backend` (no `zlib-rs`), and dependency entries drop from 698 to **697**.
+- Verification: `cargo audit --no-fetch --stale` gives **0 vulnerabilities / 10 allowed warnings / exit 0**; `cargo deny check licenses bans` reports `bans ok, licenses ok`; `cargo check` passes for all three zip consumers.
+- The warning count rising from 6 to 10 is new registration for the existing graph after advisory-db grew from 1,290 to 1,338 entries (`zbus_names` / `zvariant` / `zvariant_derive` / `unsafe-libyaml`), **not** something this upgrade introduced, and none of them blocks the gate.
 
 ---
 
@@ -39,6 +50,16 @@ The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` t
 | [RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) | rustls 0.23.43 | **Fixed** — lockfile **0.23.45** | Compatible patch update on 2026-09-27; TLS 1.3 handshake encryption-level boundary |
 | [RUSTSEC-2026-0194](https://rustsec.org/advisories/RUSTSEC-2026-0194) | quick-xml 0.39.4 | **Fixed** — **0.41.0** (via plist 1.10) | same |
 | [RUSTSEC-2026-0195](https://rustsec.org/advisories/RUSTSEC-2026-0195) | quick-xml 0.39.4 | **Fixed** — **0.41.0** | same |
+| [RUSTSEC-2026-0338](https://rustsec.org/advisories/RUSTSEC-2026-0338) | quinn-proto 0.11.17 | **Fixed** — lockfile **0.11.19** | 2026-10-18 upgrade; zero-length STREAM frames can panic the receiver |
+| [RUSTSEC-2026-0340](https://rustsec.org/advisories/RUSTSEC-2026-0340) | quinn-proto 0.11.17 | **Fixed** — lockfile **0.11.19** | same; peer minimum ACK delay can panic under ACK_FREQUENCY (7.5 high) |
+| [RUSTSEC-2026-0343](https://rustsec.org/advisories/RUSTSEC-2026-0343) | quinn-proto 0.11.17 | **Fixed** — lockfile **0.11.19** | same; outgoing datagram buffer accounting can panic the sender (7.5 high) |
+| [RUSTSEC-2026-0346](https://rustsec.org/advisories/RUSTSEC-2026-0346) | rustls 0.23.45 | **Fixed** — lockfile **0.23.46** | same; `Debug` impls for client session values expose TLS secrets (4.0 medium) |
+| [RUSTSEC-2026-0347](https://rustsec.org/advisories/RUSTSEC-2026-0347) | rustls 0.23.45 | **Fixed** — lockfile **0.23.46** | same; buffered application data still sent to the outer server after ECH rejection (2.3 low) |
+| [RUSTSEC-2026-0348](https://rustsec.org/advisories/RUSTSEC-2026-0348) | rustls 0.23.45 | **Fixed** — lockfile **0.23.46** | same; Brotli certificate decompression can allocate up to 1 GiB before authentication (3.7 low) |
+| [RUSTSEC-2026-0349](https://rustsec.org/advisories/RUSTSEC-2026-0349) | rustls 0.23.45 | **Fixed** — lockfile **0.23.46** | same; an unauthenticated ServerHello can downgrade later connections to classical key exchange (3.7 low) |
+| [RUSTSEC-2026-0367](https://rustsec.org/advisories/RUSTSEC-2026-0367) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; SUID/SGID bits preserved insecurely during extraction (7.3 high) |
+| [RUSTSEC-2026-0368](https://rustsec.org/advisories/RUSTSEC-2026-0368) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; `ZipArchive::extract` creates symlinks whose targets escape the destination directory |
+| [RUSTSEC-2026-0369](https://rustsec.org/advisories/RUSTSEC-2026-0369) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; `extract()` applies Unix permissions through symlinks without confining the target (9.1 critical); this repository never calls `extract()` |
 
 ---
 
@@ -73,6 +94,8 @@ The separate 2026-10-07 maintenance slice updates the yanked `chacha20 0.10.1` t
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.104** | 2026-08-21 lockfile verification |
+| **RUSTSEC-2024-0449** | `unsafe-libyaml` 0.2.11 | **Open** | Pulled in via `serde_yaml_ng`; no maintained upstream version, so removal needs a different YAML backend |
+| **RUSTSEC-2026-0370 / 0371 / 0372** | `zvariant` / `zbus_names` / `zvariant_derive` 5.15.0 / 4.3.4 | **Open** | Pulled in via zbus on the Linux Tauri/wry D-Bus path; upstream migration to a maintained binding is required |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
 
