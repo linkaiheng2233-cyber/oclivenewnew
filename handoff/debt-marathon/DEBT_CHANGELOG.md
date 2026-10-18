@@ -1,7 +1,7 @@
 # 技术债变动记录与 AI 接手协议
 
 **SSOT 范围**：技术债的依赖登记、变动事件、证据关联与安全续跑坐标；不维护第二份当前债务状态表。
-**最后更新**：2026-10-02。
+**最后更新**：2026-10-18。
 
 当前状态唯一以 [TECHNICAL_DEBT_INVENTORY](../TECHNICAL_DEBT_INVENTORY.md) 为准；执行准入以 [QUEUE](MARATHON_QUEUE.md)、对应 long-plan 和 [GATES](AI_AND_PIPELINE_GATES.md) 为准。通用过程以[仓库流水线](../workflows/dev-pipeline/SKILL.md)为准。本记录中的旧事件是当时快照，后续事件不能改写原始证据。依赖读下节，实际开工顺序及首批切片读 [第二轮计划](ROUND-02-PLAN.md#当前开工准备2026-09-28)。
 
@@ -1039,3 +1039,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：独立Host默认不启用tauri-commands，旧workspace经桌面依赖启用它；无桌面嵌入开发不能借桌面配置的通过。[本片计划](ROUND-02-PLAN.md#参考-host-默认配置的正式执行所有者2026-10-12)接续f4默认入口，controller实施及自查 independent=false。父main `12bc7dc8` 的公共首片已正式 [19/19](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581)；随本次实质改动登记，不产生纯绿灯回写提交。
 - **变动 / 边界**：新两平台默认Host组沿用原入口，旧workspace/桌面及dual_core条件、资源前置和命令不动；catalog五profile保守携带、gate要求新组、受信旧/坏映射沿原full bootstrap、21影子样本增坐标。本片12路径与f4关联合批16路径，不改API/Host语义/manifest/锁/影响图/执行策略/required context或冻结项，K-CI-IMPACT-01继续In progress。
 - **证据 / 节奏**：[本片Wave](waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)记录实际配置差异、旧配置红、绿回归、同条件/异条件覆盖和失败尝试。适用本地完整链后冻结SHA，一次FF/push及目标21-job正式CI另判；不借父SHA的正式结果，也不以新增job数宣称提速或完全分层。
+
+### DCL-20261018-102 · TTS棘轮解释器发现链
+
+- **原因 / 例子**：`main` 上两次纯文档提交（`afb86c5d`/`6b992b89`）CI红，与本片无关；但本机跑 `dimension5` 时 `voice TTS ratchet` 红，原因只是 Windows 分支固定调 `py -3` 而本机没有可选安装的 `py` launcher。同类情况此前已三次记录为“环境前提 + `OCLIVE_VOICE_PYTHON` 临时指向”（DCL-2026-10-04、`WAVE-20261011-CI-CONTRACT-OWNER`、§本文件831行），说明“只记录前提”没有消除复发。维护者本轮要求处理该环境问题，选择改脚本自动发现解释器，而不是继续逐次手设环境变量。
+- **变动 / 边界**：`scripts/check-voice-tts-ratchet.mjs` 改为显式发现链——优先 `OCLIVE_VOICE_PYTHON`（显式设置后必须可用，不回退），否则扫 PATH 的 `python.exe`/`python3.exe`/`py.exe -3`/`python.cmd`/`python3.cmd`（POSIX 为 `python3`/`python`），并校验 **≥3.10**。两个实现约束：Node `spawnSync` 不能直执行 `.cmd`/`.bat`，Win32 侧经 `cmd.exe /d /s /c` 调用；经 `cmd.exe` 传长内联 `-c` 会被引号/`%`/`^` 解析破坏，故 Python 代码统一写成临时 `.py` 文件执行（片段自身已 `sys.path.insert` 了 `voiceLoop`，不依赖 `-c` 的 `sys.path[0]==cwd`）。失败路径在 `fail()` 里显式删临时目录，因为 `process.exit()` 不执行 `finally`。不改检查内容、`MIN_ENGINES`、ratchet 阈值、其它门禁步骤或 CI workflow；不新增依赖。
+- **验证 / 出口**：无环境变量时自动命中 `python.cmd`（3.12）PASS；`OCLIVE_VOICE_PYTHON` 指向 `.exe` 与 `.cmd` 均 PASS；指向不存在路径或非 Python 可执行文件时给出可操作报错并 exit 1；临时目录在成功与失败路径均零残留。`node scripts/dimension5-acceptance.mjs --ci` 在**不设任何环境变量**下 **PASS (31 checks)**；`cargo audit --no-fetch --stale` 与 `cargo deny check licenses bans` 同轮通过。关联文档：[playbook §2 环境核对](../RECURRING_OPTIMIZATION_PLAYBOOK.md)、[DEV_ENVIRONMENT](../../human-docs/team/DEV_ENVIRONMENT.md)。本片属门禁改动，按分级策略走 PR，不直推 `main`；正式 CI 结论另判，不以本地绿替代。
