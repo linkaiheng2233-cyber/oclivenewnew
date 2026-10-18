@@ -6,6 +6,9 @@
 
 创作者不需要读本包，请直接走 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。AI Agent 从 [AGENTS.md](../AGENTS.md) 开始。
 
+> **第一次来？先读 [OCLive 是什么（5 分钟）](START_HERE.md)。**
+> 那一页讲清项目是什么、四层怎么分、四件最容易混的事；读完再回到本页选路径。
+
 **本包是学习导览，不是第二份架构契约。** 想先理解项目：读 00 定位 → 01 的 Kernel / Host 分层 → 选模块看当前源码；想判断“已经做到哪里”，再查技术债。候选、已准备、已实现和暂停的区别见 [文档状态](../handoff/README.md#documentation-status)。不必先通读全部工程交接。
 
 ## 先选开工范围
