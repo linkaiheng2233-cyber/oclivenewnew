@@ -87,9 +87,9 @@
 |----------------|-------|------|------|
 | **RUSTSEC-2026-0002** | `lru` | **已修复** | `oclive-cli` 升级 **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **已修复** | `reqwest` **0.12** 链不再依赖该 crate |
-| gtk-rs GTK3 簇（RUSTSEC-2024-0411…0420，10 ID） | `gtk`/`gdk`/`atk`/`gdkx11`/… | **上游已全部撤回 → 当前不命中** | 2026-10-19 复核：10 条公告均带 `withdrawn = 2026-08-14`，`cargo audit` 不再报出；`audit.toml` 中对应 9 条 ignore 已不抑制任何输出，属无害残留，可随下次 policy 变更清理。Linux WebView（wry/webkit2gtk）仍拉 GTK3，此前"上游无维护版本"的保留理由已由撤回解除 |
+| gtk-rs GTK3 簇（RUSTSEC-2024-0411…0420，10 ID） | `gtk`/`gdk`/`atk`/`gdkx11`/… | **已从 allowlist 移除** | 2026-10-19 复核：10 条公告均带 `withdrawn = 2026-08-14`，`cargo audit` 不再报出；`audit.toml` 中对应 9 条 ignore 已于 2026-10-19 清理提交中移除（移除后 `cargo audit --no-fetch` 仍为 `0 vulnerabilities` 与 `warning: 10 allowed warnings found`）。Linux WebView（wry/webkit2gtk）仍拉 GTK3，此前"上游无维护版本"的保留理由已由撤回解除 |
 | **RUSTSEC-2024-0370** | `proc-macro-error` 1.0.4 | **开放 · allowlist 抑制（有效）** | 经 `tauri 2.11.5 → muda → gtk → glib → glib-macros` 传递引入（与 GTK3 簇同一 Linux 链）；上游无维护版本，故显式 allowlist 以保持门禁可读。解除条件：Tauri/wry 迁到不再依赖 `glib-macros` 的 GTK 绑定 |
-| **RUSTSEC-2024-0384** | `instant`（**已不在依赖图**） | **allowlist 已失效 · 可清理** | 2026-10-19 复核：`instant` 不在 `Cargo.lock`，该条目不抑制任何输出；保留不改变门禁结果，建议随下次 `audit.toml` 变更一并移除 |
+| **RUSTSEC-2024-0384** | `instant`（**已不在依赖图**） | **已从 allowlist 移除** | 2026-10-19 复核：`instant` 不在 `Cargo.lock`，该条目不抑制任何输出；已于 2026-10-19 清理提交中从 `audit.toml` 移除 |
 | **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **开放** | 经 Tauri `urlpattern` 传递引入；等待上游移除未维护依赖 |
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
@@ -103,7 +103,7 @@
 
 忽略列表与理由见 [`.cargo/audit.toml`](../../.cargo/audit.toml) 与 [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md)。
 
-**allowlist 现状复核（2026-10-19）**：受检基线 `f8026855`（工作树仅含本批文档改动），`cargo-audit` **0.22.2**，advisory-db 位于 `E:\Env\state\cargo-home\advisory-db`（**962** 个 crate 目录，刷新后使用）。`cargo audit` 报 `0 vulnerabilities` 与 `warning: 10 allowed warnings found`，退出码 **0**。为区分「抑制有效」与「残留条目」，临时清空 `audit.toml` 全部 **11** 条 `ignore` 后以 `cargo audit --no-fetch` 重跑：报出数量变为 **11**，唯一新增项是 `proc-macro-error` 的 **RUSTSEC-2024-0370**；9 条 GTK3 簇公告与 `instant` 的 **0384** 均未出现，即上表所列失效原因可由实验直接复现。复核结束后 `audit.toml` 已按原字节恢复（SHA256 `534DCC2A5491296480D7F5B121A27B11A2D749337A07D03C02A71A7EAFACF64D`），**本批未提交任何策略变更**。
+**allowlist 现状复核（2026-10-19）**：受检基线 `f8026855`（工作树仅含本批文档改动），`cargo-audit` **0.22.2**，advisory-db 位于 `E:\Env\state\cargo-home\advisory-db`（**962** 个 crate 目录，刷新后使用）。`cargo audit` 报 `0 vulnerabilities` 与 `warning: 10 allowed warnings found`，退出码 **0**。为区分「抑制有效」与「残留条目」，临时清空 `audit.toml` 全部 **11** 条 `ignore` 后以 `cargo audit --no-fetch` 重跑：报出数量变为 **11**，唯一新增项是 `proc-macro-error` 的 **RUSTSEC-2024-0370**；9 条 GTK3 簇公告与 `instant` 的 **0384** 均未出现，即上表所列失效原因可由实验直接复现。复核结束后 `audit.toml` 已按原字节恢复（SHA256 `534DCC2A5491296480D7F5B121A27B11A2D749337A07D03C02A71A7EAFACF64D`），本条记录复核时的状态；失效条目的移除见同日的清理提交。
 
 ---
 
