@@ -1,9 +1,9 @@
 # Bus Factor：关键路径交接笔记
 
-**SSOT 范围**：主编排、数据库、错误码与高风险源码锚点；模块定义见 MODULE_MAP，公开 wire 见 creator-docs。
-**最后更新**：2026-08-31。
+**SSOT 范围**：主编排、数据库、错误码、高风险源码锚点，以及 **§11 不变量表**（「什么不许改坏」）。模块定义见 MODULE_MAP，公开 wire 见 creator-docs，待办状态见 TECHNICAL_DEBT。
+**最后更新**：2026-10-15（新增 §11 不变量表）。
 **读者**：有经验的 Rust / Vue 工程师。  
-**目标**：在 **约半天** 内能定位任意主路径模块的 **入口文件**、**核心类型/函数**，并理解 **为何这样设计**（意图级，非逐行教程）。
+**目标**：在 **约半天** 内能定位任意主路径模块的 **入口文件**、**核心类型/函数**，并理解 **为何这样设计**（意图级，非逐行教程）。**改动前先看 §11。**
 
 **模块关系与进度总览（先扫一眼）**：[`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) — **模块注册表**（定义 · 六槽/设施关系 · 改动约束；进度 → TECHNICAL_DEBT）。
 
@@ -201,7 +201,41 @@ Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creato
 
 ---
 
-## 11. 维护说明
+## 11. 不变量表（违反后会发生什么）
+
+**用途**：改表内任一处代码之前先扫一眼右列。若「一旦违反会怎样」这句让你停了一下，说明这条不变量对当前改动有约束。
+**性质**：只收**非显然**的不变量——即「常规做法在这里是错的」那一类。常规的输入校验、边界检查、错误处理不进此表。
+**与债务台账的分工**：`TECHNICAL_DEBT_INVENTORY` 记「什么还没做完」；本表记「什么不许改坏」。两者不混写。
+**新增条件**：须同时满足「有具体失败模式」+「解法非显然」+「有代码锚点」。措辞保持**反事实句式**（若……则……），勿改成口号。
+
+| 不变量 | 一旦违反会怎样 | 代码锚点 |
+|---|---|---|
+| **请求回执永不回收**（无 TTL / 无租约接管 / 无超时重跑） | 崩溃或取消后的重发会把同一轮**完整再跑一遍**：LLM 二次计费、好感二次累加、记忆二次写入、TTS 说两遍。`running` 状态本身不可分辨，回收即等于赌它没执行 | `domain/chat_engine/request_receipt.rs:119`；`migrations/040_chat_request_receipts.sql:1`；测试 `request_receipt/tests/mod.rs` `cancelled_owner_is_never_taken_over` |
+| **回执指纹 = 剔除 `client_request_id` 后的 payload 哈希**；`scope` 走 JSON 序列化 | 客户端复用同一 id 换内容会被当成重放、直接返回旧响应，用户看到答非所问；`scope` 若用字符串拼接，id 含分隔符时会碰撞 | `request_receipt.rs:103-109` |
+| **staged 节拍不得持久化用户状态**（`persist_user_state = origin.persists_user_state() && !staged`） | 角色被自己台词推着走：演一场争吵 → 事件判定 Quarrel → 好感下降 → 下一拍更凶 → 再判定争吵。几拍内关系被自己的输出打穿，全程无用户参与 | `domain/chat_engine/process_message.rs:664`；`turn_pipeline/post/post_llm.rs:541-552` |
+| **跨存储提交不得依赖事务**（三态 + 序号门 + 幂等键） | 短期记忆与 chat 历史可能不同库、无法原子；崩在中间会得到「角色记得自己说过、用户没看到」，或同一拍出现两次 | `infrastructure/db/adult_stage.rs:170-199,334-359`；`domain/adult_stage.rs:249`（`"{generation_id}:{sequence}"`） |
+| **Fast 轮无 `[EMO]` 必须衰减到 `Neutral`** | Fast 轮不跑 Deep 复杂情绪分析，没有任何东西刷新已存情绪 → **一次生气被永久锁存**，角色此后一直愤怒 | `post_llm.rs:86-92`；测试 `fast_turn_without_marker_does_not_latch_previous_emotion` |
+| **降级 Deep 轮无 `[EMO]` 必须保留上次情绪** | 与上一条**方向相反且必须相反**：分析器故障时凭空造中性会把本来有效的情绪抹掉，情绪连续性断裂 | `post_llm.rs:95-99` |
+| **`reply_mode` 须在任何策略/档案/记忆消费者之前剥离** | 分段协议标记会被写进 `memory_line` → **永久残留**于记忆内容 → 此后每轮 prompt 被当作用户说过的话再次注入。一次污染、永久传播 | `post_llm.rs:471-484`（`semantic_reply_for_state` 与 `joined` 分离） |
+| **记忆只保留用户侧证据，助手侧整段丢弃** | 模型自己的旧输出（可能含编造/投毒）以记忆通道最高优先级重新注入，幻觉自我强化；形成「写入方=读取方=模型自己」的跨轮注入通道 | `oclive_kernel_runtime/src/domain/prompt_builder/mod.rs:36-45`；测试 `event_ring/memory_recollection.rs` |
+| **七维数值 / 重要性分数不得渲染进 prompt** | 小模型会把分数原样念出来（「你现在对我的好感度是 72.5」），沉浸感当场崩塌 | `prompt_builder/sections.rs:66-69,114-117`；`build_authenticity_constraint` |
+| **主动回合只接受 `ProactiveTurnPermit`，不接受公开 DTO** | wire DTO 可序列化即可伪造：任何调用方能凭空让角色自说话并把影响权重填满；另一失败是伪造用户发言 | `domain/event_ring/proactive_turn.rs:23-31`；兑换须校验 `source` 与 `causation_id`（`:128-132`） |
+| **主动回合的 `user_message` 必须显式为空** | 观察文本若走用户通道，主动轮次就能冒充「用户说了 X」 | `process_message.rs:374-375`；观察走 `TurnInput::ExternalObservation` |
+| **抢占授权必须成对**（抢占操作 + 其逆操作同时授权） | 只授「可以停」不授「可以启」，等于允许把常驻 LLM 卸掉再也装不回来，角色永久哑 | `domain/resource_coordinator/transition.rs:389-393` |
+| **抢占失败必须回滚；回滚失败必须显式上报** | 抢完仍被拒会留下「什么都没加载」的永久退化且不自愈；回滚失败若被当成功，系统带未知资源状态继续跑 | `transition.rs:77-79`；`admission.rs:346-359`（`resource_preemption_rollback_failed`） |
+| **抢占路径不得递归锁「请求方」的 adapter 锁** | 语音路径在 admission 期间持有自己的 adapter 锁；若顺手把请求方也锁上（对称写法）→ 自锁 → 该轮语音永久挂起并堵死后续所有 transition | `transition.rs:39-45` |
+| **`origin` 由传输通道决定，不由 payload 决定** | 外部 payload 若能自选 origin，就能把外部轮次伪装成低持久化来源（sensor/system），绕开用户状态写入规则 | `process_message.rs:303-305,406-466`；非 User 轮次强制 `user_message: ""`，携带 `client_request_id` 直接报错 |
+| **非可信事件模块首次失败即永久隔离**（`Isolate`） | 目录插件是第三方代码；失败后重试会让坏插件反复污染事件流，且每次都要重新处理其非法输出 | `domain/event_ring/mod.rs:440-495`；`infrastructure/directory_plugins/event_ring.rs:179-182` |
+
+**已知未覆盖的面（存量缺口，非本表遗漏）**：
+
+- `domain/turn_thinking.rs` 的 latch 只有 `enter_on` / `exit_on`，**未定义「未配置 `exit_on` 时如何退出」**——编排配置写错时会话可能永久停留在 Deep 模式。当前无注释、无测试覆盖该面。
+- 回执表按设计**无 TTL、无清理**，随请求数单调增长。这是「永不回收」的已知代价（有意识取舍）；将来若要加清理，必须先证明删除不会把不确定的旧请求变成第二次执行。
+
+---
+
+## 12. 维护说明
 
 - 本文 **不替代** PLUGIN_V1 / ERROR_CODES / ROLE_PACK_SPEC；契约以那些文档 + 代码为准。  
 - 大重构后若入口搬迁：请更新本节路径并提 PR 链到 **`DOCUMENTATION_INDEX`**「工程纪律」小节。
+- **§11 不变量表**新增前先读该节表头约束；条目须带代码锚点与反事实句，不得改成口号。
