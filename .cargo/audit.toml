@@ -1,17 +1,10 @@
 # Documented warning-level advisories (see creator-docs/security/KNOWN_VULNERABILITIES.md).
-# gtk-rs GTK3 bindings: still pulled by wry/webkit2gtk on Linux under Tauri 2; keep ignored until upstream migrates.
+# The only remaining ignore is RUSTSEC-2024-0370 (proc-macro-error), pulled in transitively via
+# tauri -> muda -> gtk -> glib -> glib-macros; upstream ships no maintained version.
+# The gtk-rs GTK3 cluster (RUSTSEC-2024-0411..0420) was withdrawn upstream on 2026-08-14 and
+# `instant` (RUSTSEC-2024-0384) is no longer in Cargo.lock, so those ignores were removed 2026-10-19.
 
 [advisories]
 ignore = [
-  "RUSTSEC-2024-0413",
-  "RUSTSEC-2024-0416",
-  "RUSTSEC-2024-0412",
-  "RUSTSEC-2024-0418",
-  "RUSTSEC-2024-0411",
-  "RUSTSEC-2024-0414",
-  "RUSTSEC-2024-0415",
-  "RUSTSEC-2024-0419",
-  "RUSTSEC-2024-0420",
   "RUSTSEC-2024-0370",
-  "RUSTSEC-2024-0384",
 ]
