@@ -6,6 +6,7 @@
  */
 import { spawnSync } from 'child_process'
 import fs from 'fs'
+import os from 'os'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -29,7 +30,18 @@ const kernelHttpClient = path.join(
 )
 const MIN_ENGINES = 9
 
+// Python 临时工作目录；`fail()` 里显式清理，因为 `process.exit()` 不会执行 finally。
+let pythonTempRoot = null
+
 function fail(msg) {
+  if (pythonTempRoot) {
+    try {
+      fs.rmSync(pythonTempRoot, { recursive: true, force: true })
+    } catch {
+      // 清理失败不应掩盖原始错误
+    }
+    pythonTempRoot = null
+  }
   console.error(`[voice-tts-ratchet] ${msg}`)
   process.exit(1)
 }
@@ -641,24 +653,158 @@ with tempfile.TemporaryDirectory() as temp_dir:
     assert checkpoint['latest']['voice_timings_ms']['first_token2wav'] == 900
 print('engines', n, 'prime-safe', ok)
 `
-const customPy = process.env.OCLIVE_VOICE_PYTHON?.trim()
-const pyCmd = customPy || (process.platform === 'win32' ? 'py' : 'python3')
-const pyArgs = customPy
-  ? ['-c', pySnippet]
-  : process.platform === 'win32'
-    ? ['-3', '-c', pySnippet]
-    : ['-c', pySnippet]
+const MIN_PYTHON = [3, 10]
+const MIN_PYTHON_LABEL = MIN_PYTHON.join('.')
+const PROBE_SOURCE = 'import sys\nsys.stdout.write(f"{sys.version_info[0]}.{sys.version_info[1]}")\n'
 
-const registry = spawnSync(pyCmd, pyArgs, {
-  cwd: voiceLoop,
-  encoding: 'utf8',
-  env: { ...process.env, PYTHONPATH: voiceLoop },
-})
-if (registry.status !== 0) {
+/**
+ * 解析可用的 Python 解释器。
+ *
+ * 历史：Windows 分支原先固定调用 `py -3`，而 `py` 是安装 Python 时**可选**的
+ * launcher。多次本地全量门禁失败都只是缺它（见
+ * `handoff/RECURRING_OPTIMIZATION_PLAYBOOK.md` §环境核对），却报成语音产品失败。
+ * 这里改为显式发现链并校验版本下限，缺启动器不再冒充产品回归：
+ *
+ *   1. `OCLIVE_VOICE_PYTHON`（显式覆盖：必须可用，不做回退，避免掩盖配置错误）
+ *   2. PATH 中的 `python.exe` / `python3.exe` / `py.exe -3` / `python.cmd` /
+ *      `python3.cmd`（Windows），或 `python3` / `python`（其他平台）
+ *
+ * 两个实现约束：
+ * - Node 的 `spawnSync` **不能**直接执行 `.cmd`/`.bat` 垫片，必须经 `cmd.exe`；
+ *   Windows 上这类垫片很常见（便携 Python、pyenv、conda 都会生成），所以显式支持。
+ * - 经 `cmd.exe` 传递长内联 `-c` 片段会被引号/`%`/`^` 解析破坏，因此统一把
+ *   Python 代码写成临时 `.py` 文件再执行。片段自身已 `sys.path.insert` 了
+ *   `voiceLoop`，不依赖 `-c` 的 `sys.path[0] == cwd` 语义。
+ */
+function pythonTempDir() {
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'oclive-voice-ratchet-'))
+}
+
+function buildPythonInvocation(interpreter, args, scriptFile) {
+  const isShim = /\.(cmd|bat)$/i.test(interpreter)
+  if (process.platform !== 'win32' || !isShim) {
+    return { cmd: interpreter, args: [...args, scriptFile], options: {} }
+  }
+  const command = [`"${interpreter}"`, ...args, `"${scriptFile}"`].join(' ')
+  return {
+    cmd: process.env.ComSpec || 'cmd.exe',
+    args: ['/d', '/s', '/c', `"${command}"`],
+    options: { windowsVerbatimArguments: true },
+  }
+}
+
+function runPython(interpreter, args, scriptFile, extraEnv = {}) {
+  const invocation = buildPythonInvocation(interpreter, args, scriptFile)
+  return spawnSync(invocation.cmd, invocation.args, {
+    cwd: voiceLoop,
+    encoding: 'utf8',
+    ...invocation.options,
+    env: { ...process.env, PYTHONPATH: voiceLoop, ...extraEnv },
+  })
+}
+
+function probePython(interpreter, args, tempDir) {
+  const probeFile = path.join(tempDir, `probe-${Math.random().toString(36).slice(2)}.py`)
+  fs.writeFileSync(probeFile, PROBE_SOURCE, 'utf8')
+  const probe = runPython(interpreter, args, probeFile)
+  fs.rmSync(probeFile, { force: true })
+  if (probe.status !== 0) {
+    return null
+  }
+  const matched = /^(\d+)\.(\d+)/m.exec((probe.stdout || '').trim())
+  if (!matched) {
+    return null
+  }
+  const version = [Number(matched[1]), Number(matched[2])]
+  const supported = version[0] > MIN_PYTHON[0]
+    || (version[0] === MIN_PYTHON[0] && version[1] >= MIN_PYTHON[1])
+  return { interpreter, args, version: `${version[0]}.${version[1]}`, supported }
+}
+
+function pathPythonCandidates() {
+  const pathDirs = (process.env.PATH || '').split(path.delimiter).filter(Boolean)
+  const names = process.platform === 'win32'
+    ? [
+        { name: 'python.exe', args: [] },
+        { name: 'python3.exe', args: [] },
+        { name: 'py.exe', args: ['-3'] },
+        { name: 'python.cmd', args: [] },
+        { name: 'python3.cmd', args: [] },
+      ]
+    : [
+        { name: 'python3', args: [] },
+        { name: 'python', args: [] },
+      ]
+  const candidates = []
+  const seen = new Set()
+  for (const dir of pathDirs) {
+    for (const { name, args } of names) {
+      const candidate = path.join(dir, name)
+      if (seen.has(candidate) || !fs.existsSync(candidate)) {
+        continue
+      }
+      seen.add(candidate)
+      candidates.push({ interpreter: candidate, args })
+    }
+  }
+  return candidates
+}
+
+function resolvePython(tempDir) {
+  const override = process.env.OCLIVE_VOICE_PYTHON?.trim()
+  if (override) {
+    const probed = probePython(override, [], tempDir)
+    if (!probed) {
+      fail(
+        `OCLIVE_VOICE_PYTHON=${override} cannot be executed as a Python interpreter `
+        + '(note: .cmd/.bat shims are supported; check the path and permissions)',
+      )
+    }
+    if (!probed.supported) {
+      fail(
+        `OCLIVE_VOICE_PYTHON=${override} reports Python ${probed.version}; `
+        + `>= ${MIN_PYTHON_LABEL} required`,
+      )
+    }
+    return { ...probed, source: 'OCLIVE_VOICE_PYTHON' }
+  }
+
+  const tried = []
+  for (const candidate of pathPythonCandidates()) {
+    const label = path.basename(candidate.interpreter)
+    const probed = probePython(candidate.interpreter, candidate.args, tempDir)
+    if (!probed) {
+      tried.push(`${label} (not executable)`)
+      continue
+    }
+    if (!probed.supported) {
+      tried.push(`${label} (Python ${probed.version} < ${MIN_PYTHON_LABEL})`)
+      continue
+    }
+    return { ...probed, source: label }
+  }
   fail(
-    [registry.stderr, registry.stdout].filter(Boolean).join('\n').trim()
-      || 'Python registry check failed (is Python 3.10+ available?)',
+    `no Python >= ${MIN_PYTHON_LABEL} found on PATH (tried: ${tried.join(', ') || 'no candidate interpreters'}). `
+    + 'Install Python 3.10+ or set OCLIVE_VOICE_PYTHON to its executable path.',
   )
 }
 
-console.log('[voice-tts-ratchet] PASS')
+pythonTempRoot = pythonTempDir()
+try {
+  const python = resolvePython(pythonTempRoot)
+  const snippetFile = path.join(pythonTempRoot, 'registry-check.py')
+  fs.writeFileSync(snippetFile, pySnippet, 'utf8')
+  const registry = runPython(python.interpreter, python.args, snippetFile)
+  if (registry.status !== 0) {
+    fail(
+      [registry.stderr, registry.stdout].filter(Boolean).join('\n').trim()
+        || `Python registry check failed (interpreter: ${python.source}, Python ${python.version})`,
+    )
+  }
+  console.log(`[voice-tts-ratchet] PASS (python: ${python.source}, ${python.version})`)
+} finally {
+  if (pythonTempRoot) {
+    fs.rmSync(pythonTempRoot, { recursive: true, force: true })
+    pythonTempRoot = null
+  }
+}

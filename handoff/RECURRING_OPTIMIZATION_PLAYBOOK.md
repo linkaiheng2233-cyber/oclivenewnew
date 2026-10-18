@@ -116,7 +116,7 @@ Rust workspace 成员、源码、迁移、测试和文档规模均以 `cargo met
 
 ## 2. 基线门禁（每轮核对；范围变化才重跑，首次 FAIL 先停查根因）
 
-先核对工具与环境：受检 SHA、dirty/untracked、`rg` 及实际被门禁调用的 Python 解释器。Windows 的 TTS ratchet 默认调用 `py -3`；若本机只有 Python 3.10+ 而没有 `py`，用脚本支持的 `OCLIVE_VOICE_PYTHON` 指向**实际解释器可执行文件**，记录该配置，不把缺启动器误报为 TTS 产品失败。PowerShell 下逐条跑（**不要用 `&&`**）：
+先核对工具与环境：受检 SHA、dirty/untracked、`rg` 及实际被门禁调用的 Python 解释器。TTS ratchet 自 2026-10-18 起自行发现解释器：优先 `OCLIVE_VOICE_PYTHON`，否则扫 PATH 里的 `python.exe` / `python3.exe` / `py.exe -3` / `python.cmd` / `python3.cmd`（POSIX 为 `python3` / `python`），并校验 **≥ 3.10**；Win32 的 `.cmd` 垫片经 `cmd.exe` 调用，不会因缺 `py` launcher 直接失败。脚本 PASS 行会回报实际解释器，需要固定某个解释器时仍可设 `OCLIVE_VOICE_PYTHON`（显式设置后必须可用，不做回退）。只有发现链整体找不到合格解释器时才 FAIL，此时才按环境前提记录，不误报为 TTS 产品失败。PowerShell 下逐条跑（**不要用 `&&`**）：
 
 ```powershell
 node scripts/dimension5-acceptance.mjs --ci   # 必须 PASS；项数以脚本结尾输出为准
