@@ -59,6 +59,12 @@ notify = "6"
 # 注意：zip 的 `deflate-flate2` 只 `dep:flate2` 而**不选后端**，所以每个直接依赖
 # zip 的 crate 都必须同时声明 `flate2`（本文件下一行）才能在单独构建时通过。
 zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+# 暂不提 flate2 1.1.10（2026-10-18 核查）：1.1.10 的依赖集合改为
+# `crc32fast + miniz_oxide 0.9 + zlib-rs`，会同时带来两个后果——
+# ① 与 `png 0.17.16` 仍要求的 `miniz_oxide 0.8` 形成双版本，撞上 deny.toml
+#    的 `multiple-versions = "deny"`；② 后端切到 zlib-rs，改掉 `oclive-cli`
+#    gzip 发布产物的压缩实现。解除条件：`png`（经 tauri-codegen/ico）迁到
+#    miniz_oxide 0.9，届时可一并升级并接受 zlib-rs 供应链。
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 axum = "0.7"
 tower = "0.5"
