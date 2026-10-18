@@ -212,12 +212,12 @@ Event Ring 的完整 wire、注册与权威边界见 [`EVENT_RING.md`](../creato
 |---|---|---|
 | **请求回执永不回收**（无 TTL / 无租约接管 / 无超时重跑） | 崩溃或取消后的重发会把同一轮**完整再跑一遍**：LLM 二次计费、好感二次累加、记忆二次写入、TTS 说两遍。`running` 状态本身不可分辨，回收即等于赌它没执行 | `domain/chat_engine/request_receipt.rs:119`；`migrations/040_chat_request_receipts.sql:1`；测试 `request_receipt/tests/mod.rs` `cancelled_owner_is_never_taken_over` |
 | **回执指纹 = 剔除 `client_request_id` 后的 payload 哈希**；`scope` 走 JSON 序列化 | 客户端复用同一 id 换内容会被当成重放、直接返回旧响应，用户看到答非所问；`scope` 若用字符串拼接，id 含分隔符时会碰撞 | `request_receipt.rs:103-109` |
-| **staged 节拍不得持久化用户状态**（`persist_user_state = origin.persists_user_state() && !staged`） | 角色被自己台词推着走：演一场争吵 → 事件判定 Quarrel → 好感下降 → 下一拍更凶 → 再判定争吵。几拍内关系被自己的输出打穿，全程无用户参与 | `domain/chat_engine/process_message.rs:664`；`turn_pipeline/post/post_llm.rs:541-552` |
+| **staged 节拍不得持久化用户状态**（`persist_user_state = origin.persists_user_state() && !staged`） | 角色被自己台词推着走：演一场争吵 → 事件判定 Quarrel → 好感下降 → 下一拍更凶 → 再判定争吵。几拍内关系被自己的输出打穿，全程无用户参与 | `domain/chat_engine/process_message.rs:664`；`turn_pipeline/post/post_llm.rs:541-552`。**参考 Host 现状 = 一律不写**；公共层 [`MODULE_MAP §0.5.1 H3`](./MODULE_MAP_AND_HANDOFF.md#host-behavior-commitments) 允许**显式开启 + 四护栏**的变体，以该节为准 |
 | **跨存储提交不得依赖事务**（三态 + 序号门 + 幂等键） | 短期记忆与 chat 历史可能不同库、无法原子；崩在中间会得到「角色记得自己说过、用户没看到」，或同一拍出现两次 | `infrastructure/db/adult_stage.rs:170-199,334-359`；`domain/adult_stage.rs:249`（`"{generation_id}:{sequence}"`） |
 | **Fast 轮无 `[EMO]` 必须衰减到 `Neutral`** | Fast 轮不跑 Deep 复杂情绪分析，没有任何东西刷新已存情绪 → **一次生气被永久锁存**，角色此后一直愤怒 | `post_llm.rs:86-92`；测试 `fast_turn_without_marker_does_not_latch_previous_emotion` |
 | **降级 Deep 轮无 `[EMO]` 必须保留上次情绪** | 与上一条**方向相反且必须相反**：分析器故障时凭空造中性会把本来有效的情绪抹掉，情绪连续性断裂 | `post_llm.rs:95-99` |
 | **`reply_mode` 须在任何策略/档案/记忆消费者之前剥离** | 分段协议标记会被写进 `memory_line` → **永久残留**于记忆内容 → 此后每轮 prompt 被当作用户说过的话再次注入。一次污染、永久传播 | `post_llm.rs:471-484`（`semantic_reply_for_state` 与 `joined` 分离） |
-| **记忆只保留用户侧证据，助手侧整段丢弃** | 模型自己的旧输出（可能含编造/投毒）以记忆通道最高优先级重新注入，幻觉自我强化；形成「写入方=读取方=模型自己」的跨轮注入通道 | `oclive_kernel_runtime/src/domain/prompt_builder/mod.rs:36-45`；测试 `event_ring/memory_recollection.rs` |
+| **记忆只保留用户侧证据，助手侧整段丢弃** | 模型自己的旧输出（可能含编造/投毒）以记忆通道最高优先级重新注入，幻觉自我强化；形成「写入方=读取方=模型自己」的跨轮注入通道 | `oclive_kernel_runtime/src/domain/prompt_builder/mod.rs:36-45`；测试 `event_ring/memory_recollection.rs`。**参考 Host 现状 = 剥离**；公共层 [`MODULE_MAP §0.5.1 H5`](./MODULE_MAP_AND_HANDOFF.md#host-behavior-commitments) 还允许**显式标注助手来源**的变体，以该节为准 |
 | **七维数值 / 重要性分数不得渲染进 prompt** | 小模型会把分数原样念出来（「你现在对我的好感度是 72.5」），沉浸感当场崩塌 | `prompt_builder/sections.rs:66-69,114-117`；`build_authenticity_constraint` |
 | **主动回合只接受 `ProactiveTurnPermit`，不接受公开 DTO** | wire DTO 可序列化即可伪造：任何调用方能凭空让角色自说话并把影响权重填满；另一失败是伪造用户发言 | `domain/event_ring/proactive_turn.rs:23-31`；兑换须校验 `source` 与 `causation_id`（`:128-132`） |
 | **主动回合的 `user_message` 必须显式为空** | 观察文本若走用户通道，主动轮次就能冒充「用户说了 X」 | `process_message.rs:374-375`；观察走 `TurnInput::ExternalObservation` |
