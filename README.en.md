@@ -10,8 +10,12 @@
 
 ## Start here
 
+> **New to the project? Read [What is OCLive (5 min)](human-docs/START_HERE.md) first** (Chinese).
+> That page covers what it is, who it is for, what it is not, and which path to take.
+
 | Reader | Entry |
 |---|---|
+| **First time here** | **[What is OCLive (5 min)](human-docs/START_HERE.md)** |
 | Human contributor | [Learning path](human-docs-en/README.md) |
 | Rust Base module author | [Kernel foundation setup](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory example](human-docs-en/modules/slots/memory.md) |
 | Role / plugin author or integrator | [Documentation index](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) |
@@ -98,75 +102,26 @@ Profile SSOT: [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSU
 
 ---
 
-## Why this is hard to clone as “just another chat UI”
 
-Cross-cutting engineering, not a single feature:
+## Architecture (one-paragraph version)
 
-| Asset | Meaning |
-|-------|---------|
-| **`oclive_validation`** | Same contract in runtime, editor WASM, CLI — no silent format drift |
-| **`process_message` + PluginHost** | Stable turn semantics; swap backends, not orchestration |
-| **Three memory stores** | Chat log / STM / LTM decoupled (deleting chat ≠ wiping AI memory) |
-| **Change boundaries + CI gates** | [G1–G17](handoff/AI_CHANGE_BOUNDARIES.md), [verification rules](handoff/AI_VERIFICATION_PROTOCOL.md), OOCP, layering ratchet, and doc registry; current scope follows topic contracts/scripts, not duplicated homepage counts |
-| **Role-content vs in-pack blueprint-config split** | Creators don’t touch `slot_registry`; admins don’t pollute character content |
-| **Side channels (e.g. voice.asr)** | Voice/TTS **outside six slots** — does not pollute `process_message` |
+OCLive optimizes for **orthogonal layers**, not for stuffing every capability into one app: swapping the LLM does not touch the persona, adding voice does not pollute the main chain, and freezing experimental features does not affect Stable releases.
 
-Details: [OCLIVE_ARCHITECTURE_OVERVIEW.md](creator-docs-en/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [MODULE_MAP_AND_HANDOFF.md](handoff/MODULE_MAP_AND_HANDOFF.md)
+The **kernel** specifies the shape of six capability ports plus a small set of baselines every Host must honour (how failures and errors are expressed, which combinations are illegal); the **Host** decides how to wire them into one turn; the **distro** decides what is installed and enabled by default. The six ports are `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` — **all optional capabilities, not a fixed six-step pipeline**.
 
----
+| For deeper reading | Read |
+|---|---|
+| How the four layers are cut, and why | [What is OCLive (5 min)](human-docs/START_HERE.md) (Chinese) |
+| How one turn runs in code | [human-docs/01 simple architecture](human-docs/01_ARCHITECTURE_SIMPLE.md) (Chinese) |
+| External architecture narrative, module numbering, facilities | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **Module definitions, slot relations, change constraints (single SSOT)** | [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md) |
+| Role content / blueprint / distro separation | [ROLE_PACK_BOUNDARY](handoff/ROLE_PACK_BOUNDARY.md) |
+| Single-kernel dual-mode (Monolith) | [RFC_OCLIVE_MONOLITH_MODE](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| Distribution mechanics (OOCP, signing, `oclive://` deep links, cross-host memory, kernel factory) | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [CROSS_HOST_MEMORY](creator-docs/role-pack/CROSS_HOST_MEMORY.md) |
+| Roadmap and vision | [VISION_ROADMAP_MONTHLY](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) · [VISION_OPEN_LAB](creator-docs/roadmap/VISION_OPEN_LAB.md) |
+| Current progress and outstanding work | [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · [TECHNICAL_DEBT_INVENTORY](handoff/TECHNICAL_DEBT_INVENTORY.md) |
 
-## Architecture (why assembly stays sane)
-
-Design goal: **orthogonal layers** — swap LLM without touching persona; add voice without polluting the main chain; freeze experimental cores without blocking Stable releases.
-
-**The categories below describe the complete reference runtime, not minimal-core contents or six fixed stages.** Kernel / slot / Host responsibilities follow [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities); Event Ring, facilities, persistence, and concrete implementations compose outside the small Kernel. Existing crates have not physically extracted that core, and candidate semantics do not mean a new API is frozen. The default runtime favors explicit assistance for local small models; strong-model assemblies may stay thinner.
-
-### Four module categories (map first)
-
-| Category | Relation to the six-field runtime `PluginBackends` fold | Examples |
-|----------|---------------------------------------------------------|----------|
-| **Backend modules (slots 1–6)** | Current blueprints declare `slot_registry.type`; the host folds those types into the compatibility view | memory · emotion · event · prompt · llm · agent |
-| **Facility submodules** | **Outside the six-field fold**; may own blueprint registry entries | complex emotion · expert routing · portrait · visual stage |
-| **Side channels** | **No** (own resolver) | user identity · reply post-process · **voice.asr** · theater director API |
-| **Backend plugins** | Attached to a slot | directory LLM plugin · remote sidecar |
-
-**Discipline**: plugins do **not** get a “slot 7” number; facilities do **not** become six-slot keys. Per-slot definitions → [MODULE_MAP §2–§10](handoff/MODULE_MAP_AND_HANDOFF.md).
-
-**Six-slot decoupling**: compile-time traits + `PluginHost` (`process_message` fixes stage/authority/commit order, **not** a linear slot-1→6 sequence) · config-time `slot_registry` multi-instance fold · runtime session override (not persisted).
-
-**Orthogonal config layers**: role-content surface → blueprint configuration inside the same role pack (`slot_registry`, **`steps[]` not on the Stable hot path**) → distro HostProfile → in-memory `SessionCache` slot override. Runtime role state such as relation, emotion, and memory follows separate persistence contracts; it is not a slot-config layer.
-
-**Single kernel, dual build modes**: **outer core** (default PluginHost, swappable backends) vs **Monolith macro core** (compile-time weld via `monolith.toml` for embedded/perf). Not runtime hot-switch.
-
-**Experimental core (`dual_core`)**: mechanism wired, **default off** — `dual_core` Cargo feature + frozen-v3 `runtime_config.dual_core.enabled`; expert routing frozen per [TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md).
-
-Human 45-min guide: [human-docs-en/01_ARCHITECTURE_SIMPLE.md](human-docs-en/01_ARCHITECTURE_SIMPLE.md)
-
----
-
-## Distribution · contracts · cross-host
-
-| Mechanism | Human-readable | Integration anchor |
-|-----------|----------------|-------------------|
-| **OOCP black-box** | Swap backend, same turn semantics | S0–S12 · `examples/oocp-test-suite/` |
-| **Pack signing** | Editor export zip / `.ocpak`, optional SHA-256 sidecar | `api/plugin_pack.rs` |
-| **Deep-link install** | Market → `oclive://` → host installs plugin/pack | [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) |
-| **Cross-host memory** | Same roles dir + shared `app.db` → desktop ↔ VS Code continuity | L1/L2/L3 · [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md) |
-| **Kernel factory** | `oclive-cli init` → standalone `cargo build` skeleton | `kernel/crates/oclive-cli` |
-
----
-
-## Roadmap · optional open experimentation tooling
-
-Stable ports can form an **open experiment harness**. Researchers and developers can write one new module, attach it to a slot, and compare it under the same role, turn loop, and tests while reusing reference persona, storage, and UI tooling. This is one use of the kernel, not a mandatory product form for every downstream.
-
-| Phase | Highlights |
-|-------|------------|
-| **Shipped** | Six slots + directory/Remote plugins · OOCP · three distro profiles · streaming `/chat/stream` · Turn Thinking Fast/Deep |
-| **In progress / wired** | Plugin market + launcher · Theater mode 2 · portrait/visual facility RFCs |
-| **Default off (not “shipping soon”)** | `dual_core` experimental core · expert routing · blueprint v3 |
-
-Vision: [VISION_OPEN_LAB.md](creator-docs-en/roadmap/VISION_OPEN_LAB.md) · monthly: [VISION_ROADMAP_MONTHLY.md](creator-docs-en/roadmap/VISION_ROADMAP_MONTHLY.md)
+**The front page carries positioning and entry points only; it does not restate architecture tables** (G14: link instead of copy). Module definitions live only in MODULE_MAP, public contracts only in creator-docs, progress only in the debt ledger.
 
 ---
 
@@ -201,33 +156,6 @@ Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_
 | [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | In-editor companion (penetration pluginized) |
 | [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) | Multi-distro entry · market integration (roadmap) |
 | [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) | Plugin/pack discovery · **`oclive://` deep links** |
-
----
-
-## Documentation by role
-
-| Who you are | Start here |
-|-------------|------------|
-| **End user** (install → import pack → chat) | [USER_MANUAL.md](creator-docs-en/getting-started/USER_MANUAL.md) |
-| **Human developer** (no Cursor) | **[human-docs-en/README.md](human-docs-en/README.md)** · L0–L2 ~1 hour |
-| **Role pack creator** | [CREATOR_LEARNING_PATH.md](creator-docs-en/role-pack/CREATOR_LEARNING_PATH.md) |
-| **Rust Base module author** | [Kernel foundation](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) · [Memory start pack](human-docs-en/modules/slots/memory.md) |
-| **Reference Host RPC / UI plugin author** | [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
-| **Kernel integrator** | [KERNEL_INTEGRATOR_LEARNING_PATH.md](creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) |
-| **Code contributor** | [CONTRIBUTING.en.md](CONTRIBUTING.en.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
-
-Full index: [DOCUMENTATION_INDEX.md](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md)
-
-### English mirror policy
-
-**Chinese (`creator-docs/`, `human-docs/`) is SSOT** for normative contracts. English trees are **hand-maintained mirrors** — not a second SSOT.
-
-| Tree | Role | When English is missing |
-|------|------|-------------------------|
-| [creator-docs-en/](creator-docs-en/) | Contracts, kernel, plugin, role-pack, testing | Follow each page's Chinese backlink or the [coverage matrix](creator-docs-en/README.md#mirror-coverage-matrix) |
-| [human-docs-en/](human-docs-en/) | Human learning ladder L0–L8 | Fall back to [human-docs/README.md](human-docs/README.md) |
-
-**Maintenance**: update the English mirror in the **same change-set** when you change a mirrored Chinese page. See [creator-docs-en/README.md § Sync rules](creator-docs-en/README.md#sync-rules).
 
 ---
 

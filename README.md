@@ -8,15 +8,24 @@
 
 **发版**：桌面宿主 **0.5.2** · 详见 [CHANGELOG.md](CHANGELOG.md)
 
+> **第一次听说这个项目？先读 [OCLive 是什么（5 分钟）](human-docs/START_HERE.md)。**
+> 那一页讲清它是什么、给谁用、不是什么，以及你该从哪条路进来。下面这页留着完整介绍。
+
 ## 从哪里开始
 
 | 你的身份 | 入口 | 多久可以开工 |
 |----------|------|----------------|
-| 角色包创作者 | [创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) | 约 30 分钟 |
+| **第一次听说这个项目** | **[OCLive 是什么（5 分钟）](human-docs/START_HERE.md)** | 5 分钟判断要不要继续 |
+| **普通用户**（安装 → 导入包 → 聊天） | [用户手册](creator-docs/getting-started/USER_MANUAL.md) | 15 分钟 |
+| 角色包创作者 | [创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) · [学习路径](creator-docs/role-pack/CREATOR_LEARNING_PATH.md) | 约 30 分钟 |
 | 主仓开发者 | [人类开发者接手包](human-docs/README.md) | 30 分钟跑通，再按模块开工 |
 | Rust Base 模块作者 | [Kernel 基础工程开工](creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 示例](human-docs/modules/slots/memory.md) | 先生成与测试，再按目标接入 |
-| 插件 / 集成开发者 | [文档索引](creator-docs/getting-started/DOCUMENTATION_INDEX.md) | 30–60 分钟 |
+| 插件 / UI 插件作者 | [插件作者学习路径](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) | 30–60 分钟 |
+| **内核集成方**（无头 / 嵌入式 / 新发行版） | [内核集成路径](creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | 约 1 小时 |
+| **贡献代码** | [CONTRIBUTING.md](CONTRIBUTING.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | — |
 | AI Agent | [AGENTS.md](AGENTS.md) | 按任务读取 SSOT |
+
+完整索引：[DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
 
 文档归属与“当前实现 / 候选 / 计划 / 历史”的区别见 [文档分责](handoff/README.md#documentation-status)。人类和 AI 使用不同阅读入口，但不维护两套架构事实。
 
@@ -104,150 +113,26 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 
 ---
 
-## 为什么这套东西难被闭源「抄一个 UI」复刻？
 
-不是某个单点功能，而是 **跨端一致的工程层** 叠在一起：
+## 架构（一句话版）
 
-| 资产 | 意义 |
-|------|------|
-| **`oclive_validation` 同源校验** | 同一契约在运行时、编写器 WASM、CLI 三处一致——改格式不会 silent 漂移 |
-| **`process_message` 主编排 + 六槽 `PluginHost`** | 回合语义稳定；换 backend 不换编排公式 |
-| **记忆三套存储解耦** | 聊天日志 / 短期 / 长期 职责分离（删聊天记录 ≠ 清空 AI 记忆） |
-| **改动边界 + CI 门禁** | [G1–G17](handoff/AI_CHANGE_BOUNDARIES.md)、[验证规则](handoff/AI_VERIFICATION_PROTOCOL.md)、OOCP、layering ratchet、doc registry；检查范围以对应契约和脚本为准，不在首页复制计数 |
-| **角色内容面 vs 包内蓝图配置面分责** | 创作者改人设不会误触 `slot_registry`；管理员改后端选择不会污染角色内容 |
-| **独立通道（如 voice.asr）** | 语音/TTS 等 **不进六槽**，不污染 `process_message` 主链 |
+OCLive 的优化目标不是「把所有能力塞进一个 App」，而是**正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
 
-闭源产品可以做一个好看的聊天窗，但很难同时复制：**可校验的分发包格式 + 可替换模块契约 + 四端共用 loader + 发版级测试矩阵**。详见 [架构总览](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md)。
+**内核**规定六个能力端口的形状，以及少量所有 Host 都必须遵守的底线（失败与错误怎么表达、哪些组合不合法）；**Host** 决定怎么接起来跑一轮对话；**发行版**决定默认装什么。六个端口是 `memory` / `emotion` / `event` / `prompt` / `llm` / `agent`——**都是可选能力，不是固定六步**。
 
----
+| 想深入了解 | 读 |
+|---|---|
+| 四层怎么切、为什么这样切（含生活化比喻） | [OCLive 是什么（5 分钟）](human-docs/START_HERE.md) |
+| 一轮对话在代码里怎么跑 | [human-docs/01 简架构](human-docs/01_ARCHITECTURE_SIMPLE.md) |
+| 对外架构叙述 · 模块编号 · 设施 | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
+| **模块定义 · 槽位关系 · 改动约束（唯一 SSOT）** | [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md) |
+| 角色内容 / 蓝图 / 发行版分责 | [ROLE_PACK_BOUNDARY](handoff/ROLE_PACK_BOUNDARY.md) |
+| 单核双态（Monolith 宏核） | [RFC_OCLIVE_MONOLITH_MODE](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
+| 分发机制（OOCP / 签名 / `oclive://` 深链 / 跨宿主记忆 / 内核工厂） | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [CROSS_HOST_MEMORY](creator-docs/role-pack/CROSS_HOST_MEMORY.md) |
+| 路线图与愿景 | [VISION_ROADMAP_MONTHLY](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) · [VISION_OPEN_LAB](creator-docs/roadmap/VISION_OPEN_LAB.md) |
+| 当前做到哪了 · 欠什么 | [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · [TECHNICAL_DEBT_INVENTORY](handoff/TECHNICAL_DEBT_INVENTORY.md) |
 
-## 架构设计（组装而不乱）
-
-OCLive 的优化目标不是「把所有能力塞进一个 App」，而是 **正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
-
-**这张分类表和下图描述当前完整参考运行时，不等于最小核心清单或固定六阶段。** 小 Kernel、六槽与 Host 的分责以 [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities) 为准；Event Ring、设施、存储与具体实现属于外围装配。现有 crate 尚未物理拆出这一小 Kernel；候选公共语义也不等于新的 API 已冻结。OCLive 不强制显式或隐式路线：默认实现偏向本地小模型的显式辅助，强模型装配可以更薄。
-
-### 模块四大类（先建立地图）
-
-| 大类 | 与运行时六字段 `PluginBackends` 折叠的关系 | 例子 |
-|------|--------------------------------------------|------|
-| **第 1–6 后端模块（六槽）** | 当前蓝图按 `slot_registry.type` 声明，宿主折叠为六字段兼容视图 | memory · emotion · event · prompt · llm · agent |
-| **第 N 设施子模块** | **不进入六字段折叠**；可有自己的蓝图注册项 | 复杂情感 hint · 专家路由 · 立绘 · 视觉舞台 |
-| **独立通道能力增强** | **否**（自有 Resolver） | 用户身份 · 回复后处理 · **voice.asr** · 剧场导演 API |
-| **后端模块插件** | 挂在某槽的 `backend` | 第 5 槽的 directory 插件、Remote 侧车 |
-
-**纪律**：插件实现 **不** 单独占「第 7 模块号」；设施 **不** 写进六槽键。逐槽定义 → [MODULE_MAP §2–§10](handoff/MODULE_MAP_AND_HANDOFF.md)。
-
-```mermaid
-flowchart TB
-  PM[process_message 主编排]
-  subgraph slots["六槽 · PluginHost"]
-    M1[memory]
-    M2[emotion]
-    M3[event]
-    M4[prompt]
-    M5[llm]
-    M6[agent]
-  end
-  subgraph fac["设施子模块 · 编排行内"]
-    F1[复杂情感] --- F2[专家路由]
-    F3[立绘] --- F4[视觉表现]
-  end
-  subgraph side["独立通道 · 不进六槽"]
-    S1[voice.asr]
-    S2[用户身份 / 后处理]
-  end
-  PM --> M1
-  PM --> M2
-  PM --> M3
-  PM --> M4
-  PM --> M5
-  PM --> M6
-  PM --> fac
-  side -.->|侧钩或圈外 API| PM
-```
-
-### 六槽解耦：换模块，不改主链
-
-| 层 | 做什么 |
-|----|--------|
-| **编译期** | 每槽 `trait` + `PluginHost`；`process_message` 的阶段、权威与提交顺序由 Rust 固定（**不是**按槽号 1→6 线性执行） |
-| **配置期** | 蓝图 `slot_registry` 声明多实例 → 折叠为 `PluginBackends`（memory 去重合并 · llm last-wins） |
-| **运行期** | 会话级 override 可临时换 backend（**不写盘**） |
-
-同一角色里可以把 **memory=builtin**、**llm=remote 侧车**、**emotion=directory 插件** 自由组合——编排公式仍在 `co_present`，不随厂商而变。
-
-### 角色内容 · 包内蓝图 · 发行版（正交四层）
-
-| 层 | 谁改 | 典型内容 |
-|----|------|----------|
-| **角色内容（角色包内容面）** | 创作者 | `prompts/`、`core_personality`、场景文案、`voice_profile.json` |
-| **包内蓝图配置** | 管理员 | 同一角色包内的 `pipeline.ocblueprint` → **`slot_registry`**、后端路由、`includes/` 卫星文件 |
-| **发行版** | 宿主 | `distro.oclive.toml` · HostProfile · Turn Thinking 持久化策略 |
-| **会话覆盖** | 运行时 | `SessionCache` 内的实例级 slot override（不写角色包、不写 SQLite） |
-
-**重要**：蓝图里的 **`steps[]` 不参与首轮调度**——回合顺序由 Rust `turn_pipeline` 保证，避免「JSON DSL 与代码双 SSOT」漂移。好感、情绪、关系和记忆等角色运行时状态另走各自持久化契约，不属于 slot override 配置层。
-分责 SSOT：[ROLE_PACK_BOUNDARY.md](handoff/ROLE_PACK_BOUNDARY.md) · 蓝图目录：[BLUEPRINT_FOLDER_LAYOUT.md](handoff/BLUEPRINT_FOLDER_LAYOUT.md)
-
-### 单核双态构建：外核 vs 宏核（Monolith）
-
-**同一套** `process_message` 语义，**两种构建档位**（非运行时热切换）：
-
-| | **外核态（默认）** | **宏核态（Monolith）** |
-|--|-------------------|------------------------|
-| 耦合 | 低 · 动态 `PluginHost` | 高 · `monolith.toml` **编译期焊接** |
-| 适用 | 桌面宿主、插件生态、日常开发 | 嵌入式/无头极致性能、工厂脚手架 |
-| 六槽 | v2/v3/v4 蓝图可换 backend；legacy `settings.json` 仅迁移兼容 | 静态焊死指定实现 |
-
-Monolith 演示 **七焊接键**（六槽 + `complex_emotion` 设施键）——与运行时六宿主槽 **不是同一计数概念**。详见 [RFC_OCLIVE_MONOLITH_MODE.md](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md)。
-
-### 实验核（dual_core）— 机制在，默认关
-
-| 项 | 状态 |
-|----|------|
-| **Stable 核** | 当前 Chat Pro 主路径；`co_present` 共景链 |
-| **Experimental 核** | 冻结 v3 蓝图 `runtime_config.dual_core.enabled` + **`expert_routing.json`** 条件触发子流程 |
-| **Cargo feature `dual_core`** | **默认不编译**；opt-in 解冻 |
-| **blueprint v3 / 专家路由 UI** | 机制已预埋；产品叙事 **勿暗示「即将默开」** |
-
-冻结登记：[TECHNICAL_DEBT_INVENTORY.md §2](handoff/TECHNICAL_DEBT_INVENTORY.md) · RFC：[RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md](creator-docs/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
-
-### 其它正交能力（易混 · 一句话）
-
-| 能力 | 与六槽关系 |
-|------|------------|
-| **Turn Thinking（Fast/Deep）** | 编排行策略 · **不是第七槽** |
-| **复杂情感 `narrative_hint`** | 第 1 设施子模块 · 主 LLM `[EMO]` 优先、插件降级；本轮结果跨轮保存，下一轮 Prompt 只见去内容余韵信号 |
-| **voice.asr / TTS 扩展** | 独立通道 · **不进** `process_message` 六槽链 |
-| **Kernel 工厂三层** | 配方 / 实现 / 代码 正交 · 双态只动实现层解析 |
-
-人类 45 分钟导读：[human-docs/01_ARCHITECTURE_SIMPLE.md](human-docs/01_ARCHITECTURE_SIMPLE.md)
-
----
-
-## 分发 · 契约 · 跨宿主
-
-| 机制 | 人类可读 | AI / 集成锚点 |
-|------|----------|---------------|
-| **OOCP 黑盒** | 换 backend 不换回合语义的可回归测试 | S0–S12 · `examples/oocp-test-suite/` |
-| **角色包签名** | 编写器导出 zip / `.ocpak`，可带 SHA-256 侧车 | `api/plugin_pack.rs` |
-| **深链安装** | 市场页 → `oclive://` → 宿主安装插件/包 | [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) |
-| **跨宿主记忆** | 同一角色包目录 + 共用 `app.db` → 桌面 ↔ VS Code 陪伴连续 | L1/L2/L3 · [CROSS_HOST_MEMORY.md](creator-docs/role-pack/CROSS_HOST_MEMORY.md) |
-| **内核工厂** | `oclive-cli init` 生成可独立 `cargo build` 的内核骨架 | `kernel/crates/oclive-cli` |
-
----
-
-## 路线图 · 可选的开放实验工具
-
-稳定端口可以组成 **开放实验 harness**：研究者/开发者只写新模块，接到对应槽后在同一角色、回合与测试基线上比较；人设、存储、UI 和回合循环可复用参考工具链。这是内核的一种用途，不要求所有下游都采用实验平台形态。
-
-| 阶段 | 要点 |
-|------|------|
-| **已落地** | 六槽 + 目录/Remote 插件 · OOCP · 三发行版 profile · 流式 `/chat/stream` · Turn Thinking Fast/Deep |
-| **进行中 / 预埋** | 插件市场 + 启动器联动 · Theater 模式 2 · 立绘/视觉设施 RFC |
-| **默认关（勿当即将发布）** | `dual_core` 实验核 · 专家路由 · blueprint v3 |
-
-愿景摘要：[VISION_OPEN_LAB.md](creator-docs/roadmap/VISION_OPEN_LAB.md) · 按月路线：[VISION_ROADMAP_MONTHLY.md](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md)
+**首页只放定位与入口，不复述架构长表**（G14 链接代替复制）。模块定义只查 MODULE_MAP，公开契约只查 creator-docs，进度只查技术债。
 
 ---
 
@@ -296,22 +181,6 @@ flowchart LR
 | [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 编辑器内角色陪伴（渗透能力插件化） |
 | [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) | 多发行版入口 · 与市场联动（路线图阶段） |
 | [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) | 插件/包发现 · **`oclive://` 深链** 安装 |
-
----
-
-## 按角色找文档
-
-| 你是谁 | 从这里开始 |
-|--------|------------|
-| **普通用户**（安装 → 导入包 → 聊天） | [用户手册](creator-docs/getting-started/USER_MANUAL.md) |
-| **人类开发者**（不用 Cursor） | **[human-docs/README.md](human-docs/README.md)** · L0–L2 约 1 小时 |
-| **角色包创作者** | [CREATOR_LEARNING_PATH](creator-docs/role-pack/CREATOR_LEARNING_PATH.md) |
-| **Rust Base 模块作者** | [Kernel 基础工程](creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) · [Memory 开工包](human-docs/modules/slots/memory.md) |
-| **参考 Host 的 RPC / UI 插件作者** | [PLUGIN_AUTHOR_LEARNING_PATH](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
-| **内核集成方** | [KERNEL_INTEGRATOR_LEARNING_PATH](creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) |
-| **贡献代码** | [CONTRIBUTING.md](CONTRIBUTING.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) |
-
-完整索引：[DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)
 
 ---
 
