@@ -15,7 +15,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | **Last scan date** | **2026-10-18** (local `cargo audit` refreshed advisory-db first: **1,338** advisories, then re-checked with `cargo audit --no-fetch --stale`; **697** dependency entries scanned) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --no-fetch --stale` exit code **0**) |
-| **Warning-level count** | **10** (`glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities) |
+| **Warning-level count** | **10 reported / 11 matched** (the 10 reported are `glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities; the 11th, `proc-macro-error` RUSTSEC-2024-0370, is suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
@@ -85,7 +85,9 @@ On 2026-10-18 newly published upstream advisories moved the inventory from **0**
 |--------------------|-------|--------|--------|
 | **RUSTSEC-2026-0002** | `lru` | **Fixed** | `oclive-cli` upgraded **ratatui 0.30** → `lru` ≥ 0.16 |
 | **RUSTSEC-2025-0134** | `rustls-pemfile` | **Fixed** | `reqwest` **0.12** chain no longer depends on this crate |
-| gtk-rs GTK3 cluster (10 IDs) | `gtk`/`gdk`/… | **Recorded; 9 audit.toml ignores, with `gdkx11` still reported as a warning** | Linux WebView (wry/webkit2gtk) still pulls GTK3; ignores remain after Tauri 2 until upstream shifts |
+| gtk-rs GTK3 cluster (RUSTSEC-2024-0411…0420, 10 IDs) | `gtk`/`gdk`/`atk`/`gdkx11`/… | **Withdrawn upstream → no longer matched** | Re-checked 2026-10-19: all 10 advisories carry `withdrawn = 2026-08-14`, so `cargo audit` no longer reports them and the 9 matching `audit.toml` ignores suppress nothing. They are inert leftovers, cleanable with the next policy change. Linux WebView (wry/webkit2gtk) still pulls GTK3, but the earlier "no maintained upstream" rationale is resolved by the withdrawal |
+| **RUSTSEC-2024-0370** | `proc-macro-error` 1.0.4 | **Open · allowlisted (effective)** | Pulled in via `tauri 2.11.5 → muda → gtk → glib → glib-macros` (the same Linux chain as the GTK3 cluster); no maintained upstream version, so an explicit allowlist keeps the gate readable. Exit condition: Tauri/wry moves to GTK bindings that no longer depend on `glib-macros` |
+| **RUSTSEC-2024-0384** | `instant` (**no longer in the dependency graph**) | **Allowlist inert · removable** | Re-checked 2026-10-19: `instant` is absent from `Cargo.lock`, so this entry suppresses nothing; keeping it changes no gate result and it should be dropped with the next `audit.toml` change |
 | **RUSTSEC-2025-0075 / 0080 / 0081 / 0098 / 0100** | `unic-*` 0.9 | **Open** | Transitively pulled by Tauri `urlpattern`; wait for upstream removal of the unmaintained family |
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
@@ -98,6 +100,8 @@ On 2026-10-18 newly published upstream advisories moved the inventory from **0**
 | **RUSTSEC-2026-0370 / 0371 / 0372** | `zvariant` / `zbus_names` / `zvariant_derive` 5.15.0 / 4.3.4 | **Open** | Pulled in via zbus on the Linux Tauri/wry D-Bus path; upstream migration to a maintained binding is required |
 
 See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md](./SECURITY_AUDIT_SCOPE.md).
+
+**Allowlist re-verification (2026-10-19)**: base `f8026855` (working tree carried only this documentation batch), `cargo-audit` **0.22.2**, advisory-db at `E:\Env\state\cargo-home\advisory-db` (**962** crate directories, freshly used). `cargo audit` reports `0 vulnerabilities` plus `warning: 10 allowed warnings found`, exit code **0**. To separate "suppression still effective" from "inert entry", all **11** `ignore` entries were temporarily cleared and `cargo audit --no-fetch` re-run: the reported count became **11**, and the only addition was **RUSTSEC-2024-0370** for `proc-macro-error`; none of the 9 GTK3-cluster advisories and not `instant` **0384** appeared, which reproduces the inert-entry reasons in the table above. `audit.toml` was then restored byte-for-byte (SHA256 `534DCC2A5491296480D7F5B121A27B11A2D749337A07D03C02A71A7EAFACF64D`); **this batch commits no policy change**.
 
 ---
 
