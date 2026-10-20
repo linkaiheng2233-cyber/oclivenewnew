@@ -130,9 +130,13 @@ function repository(root) {
 }
 
 function validateCatalog(catalog, repo) {
-  keys(catalog, ['schema_version', 'records'], [], 'catalog');
+  keys(catalog, ['schema_version', 'records'], ['roots'], 'catalog');
   requireValue(catalog.schema_version === 1, 'unsupported catalog schema');
   requireValue(Array.isArray(catalog.records) && catalog.records.length > 0, 'catalog records required');
+  if (catalog.roots !== undefined) {
+    requireValue(Array.isArray(catalog.roots) && catalog.roots.length > 0
+      && catalog.roots.every(item => item === '.' || (nonempty(item) && !/[\\:\x00-\x1f\x7f]/u.test(item))), 'invalid catalog roots');
+  }
   const ids = new Set();
   const paths = new Set();
   for (const record of catalog.records) {
@@ -292,18 +296,19 @@ export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = 
       source_oid: record.source_ref.oid, observed_oid: oid, staged, unstaged, issues, entries };
   });
   return { mode, commit, coverage: records.length, scope: 'curated catalog; no semantic or runtime acceptance',
-    catalog_sha256: hash(bytes), fallback, records };
+    roots: catalog.roots ?? null, catalog_sha256: hash(bytes), fallback, records };
 }
 
 /** Derive navigation at read time. No generated card, summary or review is persisted. */
-export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev } = {}) {
+export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev, roots = ['.'] } = {}) {
   requireValue(['worktree', 'commit'].includes(mode), 'invalid mode');
   const repo = repository(root);
   requireValue(mode === 'commit' ? typeof rev === 'string' && repo.oidPattern.test(rev) : rev === undefined,
     'commit mode requires a full commit SHA; worktree mode rejects --rev');
   const commit = mode === 'commit' ? repo.git(['rev-parse', '--verify', `${rev}^{commit}`]).toString('utf8').trim() : repo.head;
   requireValue(mode !== 'commit' || commit === rev, 'revision must be a commit');
-  const roots = ['AGENTS.md', 'README.md', 'handoff', 'creator-docs', 'human-docs'];
+  requireValue(Array.isArray(roots) && roots.length > 0
+    && roots.every(item => item === '.' || (nonempty(item) && !/[\\:\x00-\x1f\x7f]/u.test(item))), 'invalid discovery roots');
   const head = new Map();
   for (const row of repo.git(['ls-tree', '-r', '-z', commit, '--', ...roots]).toString('utf8').split('\0').filter(Boolean)) {
     const match = /^(\d+) (?:blob|commit) ([a-f0-9]+)\t(.*)$/u.exec(row);
@@ -334,10 +339,20 @@ export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev }
   repo.prefetch(sources.flatMap(source => source.file ? [source.file.oid] : []));
   const records = sources.map(({ name, entries, file }) => {
     const bytes = mode === 'commit' ? (file ? repo.blob(file.oid) : null) : workingFile(repo.root, name);
-    const text = bytes === null ? '' : textOf(bytes, name);
     const issues = [];
+    let text = '';
+    let indexedText = null;
+    if (bytes !== null) {
+      try { text = textOf(bytes, name); }
+      catch { issues.push('source_encoding'); }
+    }
+    if (file && !issues.includes('source_encoding')) {
+      try { indexedText = textOf(repo.blob(file.oid), name); }
+      catch { indexedText = null; }
+    }
     const staged = mode === 'worktree' && (head.get(name)?.oid ?? null) !== (file?.oid ?? null);
-    const unstaged = mode === 'worktree' && (file ? bytes === null || text !== textOf(repo.blob(file.oid), name) : bytes !== null);
+    const unstaged = mode === 'worktree'
+      && (file ? bytes === null || indexedText === null || text !== indexedText : bytes !== null);
     if (entries.some(entry => entry.stage !== 0)) issues.push('unmerged_index');
     if (bytes === null) issues.push('source_missing');
     if (staged) issues.push('staged_change');
@@ -404,7 +419,7 @@ export function queryEntries(report, { task = '', query = '', limit = 8, select 
 function parseArgs(args) {
   requireValue(['query', 'check', 'boot'].includes(args[0]), usage);
   const options = { command: args[0] };
-  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope', '--select']);
+  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope', '--select', '--roots']);
   for (let i = 1; i < args.length; i += 1) {
     const flag = args[i];
     const key = flag.slice(2);
@@ -417,9 +432,13 @@ function parseArgs(args) {
       options[key] = args[++i];
     }
   }
-  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit && !options.select && !options.all && !options.count, usage);
+  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit && !options.select && !options.all && !options.count && !options.roots, usage);
   options.scope ??= options.command === 'query' ? 'documents' : 'catalog';
   options.select ??= 'documents';
+  if (options.roots !== undefined) {
+    options.roots = options.roots.split(',').map(item => item.trim()).filter(Boolean);
+    requireValue(options.roots.length > 0, usage);
+  }
   requireValue(['documents', 'entries'].includes(options.select), usage);
   requireValue(!(options.all && options.count), usage);
   requireValue(!options.all || options.select === 'documents', '--all requires --select documents');
@@ -467,11 +486,20 @@ function render(output, command) {
 
 export function main(args) {
   const options = parseArgs(args);
-  let report = inspectCatalog(options);
+  let curated = null;
+  try {
+    curated = inspectCatalog(options);
+  } catch (error) {
+    if (options.command === 'check' || !String(error.message).includes('catalog missing')) throw error;
+  }
+  if (!curated && options.scope === 'catalog') {
+    throw new Error(`${catalogPath}: catalog missing; use --scope documents or the existing reading index`);
+  }
+  let report = curated;
   if (options.scope === 'documents') {
-    const discovered = discoverDocuments(options);
-    requireValue(discovered.commit === report.commit, 'HEAD changed while reading; retry or use commit mode');
-    report = { ...discovered, records: [...report.records, ...discovered.records] };
+    const discovered = discoverDocuments({ ...options, roots: options.roots ?? curated?.roots ?? ['.'] });
+    requireValue(!curated || discovered.commit === curated.commit, 'HEAD changed while reading; retry or use commit mode');
+    report = { ...discovered, records: [...(curated?.records ?? []), ...discovered.records] };
   }
   const output = options.command === 'check' ? report : queryEntries(report, options);
   console.log(options.json ? JSON.stringify(output, null, 2) : render(output, options.command));

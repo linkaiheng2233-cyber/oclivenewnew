@@ -39,7 +39,7 @@ try {
   // No curated catalog is a supported mode; locate cases still run on discovery.
 }
 
-const discovered = discoverDocuments({ root });
+const discovered = discoverDocuments({ root, roots: curated.roots ?? ['.'] });
 const report = { ...discovered, records: [...curated.records, ...discovered.records] };
 
 const locate = limit => LOCATE.map(({ q, expect }) => {
@@ -48,9 +48,18 @@ const locate = limit => LOCATE.map(({ q, expect }) => {
   return expect.some(item => paths.includes(item));
 });
 
-const baseline = term => new Set(discovered.records
+/** The navigator drops a mirrored `*-en` document when its translated twin is also listed. */
+const dropMirrors = paths => {
+  const present = new Set(paths);
+  return paths.filter(item => {
+    const match = /(^|\/)([^/]+)-en\//.exec(item);
+    return match === null || !present.has(item.replace(`${match[2]}-en/`, `${match[2]}/`));
+  });
+};
+
+const baseline = term => new Set(dropMirrors(discovered.records
   .filter(record => record.entries.some(entry => entry.search_lines?.some(line => line.text.toLowerCase().includes(term.toLowerCase()))))
-  .map(record => record.path));
+  .map(record => record.path)));
 
 const coupling = term => {
   const truth = baseline(term);

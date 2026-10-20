@@ -266,6 +266,31 @@ test('count and exhaustive modes expose the window instead of hiding it', t => {
   assert.equal(child(f.root, 'query', '--query', 'marker_beta', '--all', '--select', 'entries').status, 2);
 });
 
+test('discovery roots are configurable, missing catalog still queries and bad encoding is skipped', t => {
+  const f = fixture(t);
+  write(f.root, 'human-docs/note.md', '# Note\n\nroots_marker\n');
+  f.commit();
+  assert.equal(discoverDocuments({ root: f.root, roots: ['human-docs'] }).coverage, 1);
+  assert.equal(discoverDocuments({ root: f.root, roots: ['handoff/source.md'] }).coverage, 1);
+
+  const bad = Buffer.concat([Buffer.from('# Bad\n\n'), Buffer.from([0xff, 0xfe]), Buffer.from('\n'), Buffer.from('encoding_marker\n')]);
+  fs.mkdirSync(path.join(f.root, 'human-docs'), { recursive: true });
+  fs.writeFileSync(path.join(f.root, 'human-docs/bad.md'), bad);
+  f.commit();
+  const after = discoverDocuments({ root: f.root });
+  const badRow = after.records.find(record => record.path === 'human-docs/bad.md');
+  assert.ok(badRow, 'invalid document is still listed');
+  assert.ok(badRow.issues.includes('source_encoding'));
+
+  fs.rmSync(path.join(f.root, 'handoff/catalog/records.json'));
+  const query = child(f.root, 'query', '--query', 'roots_marker');
+  assert.equal(query.status, 0, query.stderr);
+  assert.match(query.stdout, /human-docs\/note\.md/);
+  const check = child(f.root, 'check');
+  assert.equal(check.status, 2);
+  assert.match(check.stderr, /catalog missing/);
+});
+
 test('the document window caps curated rows and drops mirrored English twins', () => {
   const record = (id, path, origin) => ({ id, path, purpose: '', tags: [], origin,
     issues: [], source_oid: 'x', observed_oid: 'x', staged: false, unstaged: false,

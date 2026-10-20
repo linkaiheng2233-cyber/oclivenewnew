@@ -34,7 +34,7 @@ node scripts/ai-docs.mjs check
 
 | 来源 | 读取范围与使用方法 | 可以得出的结论 |
 |---|---|---|
-| `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、顶层 `*-en` 镜像树或其它工程文件（`creator-docs/architecture-en/` 这类嵌在已约定根目录内的子目录仍会被查询）。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
+| `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文（该列表来自 `records.json` 的 `roots`，可用 `--roots a,b` 覆盖；没有 catalog 时默认整仓已跟踪 Markdown）。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、顶层 `*-en` 镜像树或其它工程文件（`creator-docs/architecture-en/` 这类嵌在已约定根目录内的子目录仍会被查询）。单份文档编码异常时记 `source_encoding` 并跳过该篇，不中断本次查询。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
 | `curated`：精选入口 | `records.json` 登记的路径、用途、标签和章节。使用 `query --scope catalog` 限定查询；`boot`、`check` 默认只处理此层。 | 定位和版本是否符合登记；可选摘要另有明确核对范围，仍不等于内容或运行验收。 |
 
 两类入口可以同时出现，输出保留来源。即时导航不生成数百份卡片、摘要或审阅记录；每次读取当前版本，无需为每个正文维护另一份哈希。精选入口优先展示，其后按路径与行号排序，不表示规范权威排序。
@@ -53,6 +53,8 @@ node scripts/ai-docs.mjs query --task role --mode commit --rev FULL_SHA --json
 `--root PATH` 可明确指定具有本工具登记输入的另一 Git checkout 根目录，默认使用脚本所属仓库。提交检查不借用该 checkout 的现行记录。`--json` 输出结构化结果，不自动写文件。退出码：`0` 表示本次所列导航／结构检查无已发现问题，缺少查询结果也会以 `0` 给出回退；`1` 表示所列记录需要修复或核对（包括工作修改）；`2` 表示参数、登记输入、读取或 Git 工具故障。三者都不表示整份内容认证。截断输出不能证明未展示项无问题。
 
 `check` 只检查精选层的登记、定位及限定摘要，拒绝 `--scope documents`：即时读取没有预先核对基线，不能冒充全仓审查。`boot` 只列相关入口，不代替已有必读规则；本工具未安装或某项读取失败时，可以直接回到原有阅读索引。
+
+**没有 catalog 时**：`query` 与 `boot` 仍可用——精选层为空，只做即时导航（默认扫描整仓已跟踪 Markdown）。`check` 需要精选登记，缺 catalog 会以 exit 2 给出回退提示。这是把它用到陌生仓库的最小前提。
 
 ## 记录怎样维护
 
