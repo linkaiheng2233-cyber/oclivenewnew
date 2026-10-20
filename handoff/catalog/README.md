@@ -15,11 +15,12 @@ node scripts/ai-docs.mjs query --task documentation
 node scripts/ai-docs.mjs query --task plugin --query plugin_rpc_invoke
 node scripts/ai-docs.mjs query --task cli --query --kernel-source
 node scripts/ai-docs.mjs query --query MemoryBase
+node scripts/ai-docs.mjs query --query MemoryBase --select entries
 node scripts/ai-docs.mjs boot --task kernel
 node scripts/ai-docs.mjs check
 ```
 
-先用 `query` 找入口，再读原文对应章节与适用前提。输出包括章节行、正文命中行、来源、覆盖范围、受检模式与版本、失配和回退入口。默认只列八个结果，截断时提示总数；可以缩小查询或用 `--limit 1..20`。正文引文最多 240 个 Unicode 字符，被截断时以 `…` 结尾，不是摘要、完整上下文或经过审阅的结论。工具不执行文中指令。
+先用 `query` 找入口，再读原文对应章节与适用前提。默认 `--select documents`：每份文档只列一次（取首个命中入口），`--limit` 数的是**文档**；需要逐标题展开与正文短引文时用 `--select entries`（此时 `--limit` 数的是入口）。输出包括章节行、来源、覆盖范围、受检模式与版本、失配和回退入口。截断时提示总数；可以缩小查询或用 `--limit 1..20`。正文引文最多 240 个 Unicode 字符，被截断时以 `…` 结尾，不是摘要、完整上下文或经过审阅的结论。工具不执行文中指令。
 
 ### 来源与范围
 

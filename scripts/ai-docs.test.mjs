@@ -244,6 +244,22 @@ test('document discovery finds unregistered body text and excludes archive and h
   assert.equal(JSON.parse(actual.stdout).matches[0].matched_line, 5);
 });
 
+test('document selection lists one entry per document while entries selection keeps every heading', t => {
+  const f = fixture(t);
+  write(f.root, 'human-docs/a.md', '# A\n\n## One\nmarker_alpha\n\n## Two\nmarker_alpha\n');
+  write(f.root, 'human-docs/b.md', '# B\n\n## One\nmarker_alpha\n');
+  f.commit();
+  const report = discoverDocuments({ root: f.root });
+  const docs = queryEntries(report, { query: 'marker_alpha', select: 'documents', limit: 20 });
+  assert.equal(docs.matches.length, 2, 'one row per document');
+  assert.equal(new Set(docs.matches.map(row => row.path)).size, 2);
+  assert.equal(docs.unit, 'documents');
+  assert.equal(docs.total, 3);
+  assert.equal(docs.selected_total, 2);
+  const entries = queryEntries(report, { query: 'marker_alpha', select: 'entries', limit: 20 });
+  assert.equal(entries.matches.length, 3, 'one row per heading');
+});
+
 test('long source lines are quoted to 240 code points and marked when truncated', t => {
   const f = fixture(t);
   const longLine = `${'x'.repeat(240)} tail_marker_longline`;
