@@ -7,10 +7,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkDocumentBytes } from './check-doc-encoding.mjs';
 
-const catalogPath = 'handoff/catalog/records.json';
+const catalogCandidates = ['handoff/catalog/records.json', 'catalog/records.json'];
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
 const fallback = 'Read handoff/AI_READING_INDEX.md and handoff/README.md; missing coverage is not missing implementation or policy.';
-const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--all] [--count] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
+const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--all] [--count] [--catalog PATH] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--roots a,b] [--json]';
 const normalize = text => text.replace(/\r\n/g, '\n');
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
@@ -227,7 +227,7 @@ function locate(text, locator) {
 }
 
 /** Read one checkout or one complete commit; never mix current records with historical sources. */
-export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = {}) {
+export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev, catalog } = {}) {
   requireValue(['worktree', 'commit'].includes(mode), 'invalid mode');
   const repo = repository(root);
   requireValue(mode === 'commit' ? typeof rev === 'string' && repo.oidPattern.test(rev) : rev === undefined,
@@ -237,16 +237,23 @@ export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = 
     commit = repo.git(['rev-parse', '--verify', `${rev}^{commit}`]).toString('utf8').trim();
     requireValue(commit === rev, 'revision must be a commit, not a tag or tree');
   }
-  const bytes = mode === 'commit' ? repo.treeFile(commit, catalogPath)?.bytes : workingFile(repo.root, catalogPath);
-  requireValue(bytes, `${catalogPath}: catalog missing; use the existing reading index`);
+  const candidates = catalog ? [catalog] : catalogCandidates;
+  let catalogPath = null;
+  let bytes = null;
+  for (const candidate of candidates) {
+    relativePath(candidate);
+    const found = mode === 'commit' ? repo.treeFile(commit, candidate)?.bytes : workingFile(repo.root, candidate);
+    if (found) { catalogPath = candidate; bytes = found; break; }
+  }
+  requireValue(bytes, `${candidates.join(' or ')}: catalog missing; use the existing reading index`);
   const catalogText = textOf(bytes, catalogPath);
-  let catalog;
-  try { catalog = JSON.parse(catalogText); }
+  let parsedCatalog;
+  try { parsedCatalog = JSON.parse(catalogText); }
   catch { throw new Error(`${catalogPath}: invalid JSON`); }
-  validateCatalog(catalog, repo);
+  validateCatalog(parsedCatalog, repo);
   const index = new Map();
   if (mode === 'worktree') {
-    for (const row of repo.git(['ls-files', '--stage', '-z', '--', ...catalog.records.map(record => record.path)]).toString('utf8').split('\0').filter(Boolean)) {
+    for (const row of repo.git(['ls-files', '--stage', '-z', '--', ...parsedCatalog.records.map(record => record.path)]).toString('utf8').split('\0').filter(Boolean)) {
       const match = /^(\d+) ([a-f0-9]+) ([0-3])\t(.*)$/u.exec(row);
       requireValue(match, 'invalid Git index listing');
       const entries = index.get(match[4]) ?? [];
@@ -254,7 +261,7 @@ export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = 
       index.set(match[4], entries);
     }
   }
-  const records = catalog.records.map(record => {
+  const records = parsedCatalog.records.map(record => {
     const headFile = repo.treeFile(commit, record.path);
     const issues = [];
     let staged = false;
@@ -296,7 +303,7 @@ export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = 
       source_oid: record.source_ref.oid, observed_oid: oid, staged, unstaged, issues, entries };
   });
   return { mode, commit, coverage: records.length, scope: 'curated catalog; no semantic or runtime acceptance',
-    roots: catalog.roots ?? null, catalog_sha256: hash(bytes), fallback, records };
+    roots: parsedCatalog.roots ?? null, catalog_path: catalogPath, catalog_sha256: hash(bytes), fallback, records };
 }
 
 /** Derive navigation at read time. No generated card, summary or review is persisted. */
@@ -419,7 +426,7 @@ export function queryEntries(report, { task = '', query = '', limit = 8, select 
 function parseArgs(args) {
   requireValue(['query', 'check', 'boot'].includes(args[0]), usage);
   const options = { command: args[0] };
-  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope', '--select', '--roots']);
+  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope', '--select', '--roots', '--catalog']);
   for (let i = 1; i < args.length; i += 1) {
     const flag = args[i];
     const key = flag.slice(2);
@@ -498,7 +505,7 @@ export function main(args) {
   }
   if (!curated && options.scope === 'catalog' && options.command === 'boot') options.scope = 'documents';
   if (!curated && options.scope === 'catalog') {
-    throw new Error(`${catalogPath}: catalog missing; use --scope documents or the existing reading index`);
+    throw new Error(`${catalogCandidates.join(' or ')}: catalog missing; use --scope documents or the existing reading index`);
   }
   let report = curated;
   if (options.scope === 'documents') {

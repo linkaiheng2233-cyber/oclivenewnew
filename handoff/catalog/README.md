@@ -28,14 +28,14 @@ node scripts/ai-docs.mjs check
 
 ### 质量评测
 
-`node scripts/ai-docs.eval.mjs` 报告两组指标：8 个定位问题在 `limit 8/12/20` 下的召回，以及 3 个字面标记用 `--all` 穷举后与全文基线的完整性对比。默认只打印；`--gate` 在 `locate@20` 不足 8/8 或耦合不完整时退出 1。当前基线为 5/8、6/8、8/8，耦合 3/3 完整。它衡量本工具的定位与覆盖，不代表原文正确、实现符合或运行验收，也未接入必需 CI。
+`node scripts/ai-docs.eval.mjs` 报告两组指标：8 个定位问题在 `limit 8/12/20` 下的召回，以及 3 个字面标记用 `--all` 穷举后与全文基线的完整性对比。用例来自 [`eval.cases.json`](eval.cases.json)（可用 `--cases PATH` 指向别处），所以同一套评测器可以换仓库复用。默认只打印；`--gate` 在 `locate@20` 不足 8/8 或耦合不完整时退出 1。当前基线为 5/8、6/8、8/8，耦合 3/3 完整。它衡量本工具的定位与覆盖，不代表原文正确、实现符合或运行验收，也未接入必需 CI。
 
 ### 来源与范围
 
 | 来源 | 读取范围与使用方法 | 可以得出的结论 |
 |---|---|---|
 | `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文（该列表来自 `records.json` 的 `roots`，可用 `--roots a,b` 覆盖；没有 catalog 时默认整仓已跟踪 Markdown）。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、顶层 `*-en` 镜像树或其它工程文件（`creator-docs/architecture-en/` 这类嵌在已约定根目录内的子目录仍会被查询）。单份文档编码异常时记 `source_encoding` 并跳过该篇，不中断本次查询。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
-| `curated`：精选入口 | `records.json` 登记的路径、用途、标签和章节。使用 `query --scope catalog` 限定查询；`boot`、`check` 默认只处理此层。 | 定位和版本是否符合登记；可选摘要另有明确核对范围，仍不等于内容或运行验收。 |
+| `curated`：精选入口 | `records.json` 登记的路径、用途、标签和章节（默认依次尝试 `handoff/catalog/records.json` 与 `catalog/records.json`，可用 `--catalog PATH` 指定）。使用 `query --scope catalog` 限定查询；`boot`、`check` 默认只处理此层。 | 定位和版本是否符合登记；可选摘要另有明确核对范围，仍不等于内容或运行验收。 |
 
 两类入口可以同时出现，输出保留来源。即时导航不生成数百份卡片、摘要或审阅记录；每次读取当前版本，无需为每个正文维护另一份哈希。精选入口优先展示，其后按路径与行号排序，不表示规范权威排序。
 
