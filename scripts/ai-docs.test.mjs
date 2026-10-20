@@ -266,6 +266,27 @@ test('count and exhaustive modes expose the window instead of hiding it', t => {
   assert.equal(child(f.root, 'query', '--query', 'marker_beta', '--all', '--select', 'entries').status, 2);
 });
 
+test('the document window caps curated rows and drops mirrored English twins', () => {
+  const record = (id, path, origin) => ({ id, path, purpose: '', tags: [], origin,
+    issues: [], source_oid: 'x', observed_oid: 'x', staged: false, unstaged: false,
+    entries: [{ key: 'k', label: 'L', line: 1, locator: { kind: 'heading-path', value: [] }, issues: [], summary: null, review: null }] });
+  const records = [
+    ...[1, 2, 3, 4, 5].map(n => record(`c${n}`, `handoff/c${n}.md`, 'curated')),
+    record('d1', 'creator-docs/architecture/a.md', 'discovered'),
+    record('d2', 'creator-docs/architecture-en/a.md', 'discovered'),
+    record('d3', 'handoff/d3.md', 'discovered'),
+  ];
+  const report = { mode: 'worktree', commit: 'x', coverage: records.length, scope: '', records };
+  const capped = queryEntries(report, { select: 'documents', limit: 4, query: 'L' });
+  const cappedPaths = capped.matches.map(row => row.path);
+  assert.equal(cappedPaths.filter(item => item.startsWith('handoff/c')).length, 3, 'curated is capped at three');
+  assert.ok(cappedPaths.includes('creator-docs/architecture/a.md'), 'discovered fills the reserved slots');
+  const all = queryEntries(report, { select: 'documents', all: true, query: 'L' });
+  const allPaths = all.matches.map(row => row.path);
+  assert.ok(!allPaths.includes('creator-docs/architecture-en/a.md'), 'mirror twin is dropped');
+  assert.ok(allPaths.includes('handoff/c5.md'), 'capped curated rows stay enumerable');
+});
+
 test('document selection lists one entry per document while entries selection keeps every heading', t => {
   const f = fixture(t);
   write(f.root, 'human-docs/a.md', '# A\n\n## One\nmarker_alpha\n\n## Two\nmarker_alpha\n');
