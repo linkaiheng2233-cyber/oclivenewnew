@@ -15,7 +15,7 @@
       "path": "handoff/README.md",
       "purpose": "定位文档分责、现行与历史的判读入口",
       "tags": ["documentation", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "8328cee197a95b89aa8559c128885aaac14e28ca"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "bfc95b6bb3b3c0f8dd716d46cd46b72f219dc56b"},
       "entries": [
         {"key": "state", "label": "区别当前实现、候选、部分接线与历史", "locator": {"kind": "explicit-anchor", "value": "documentation-status"}},
         {"key": "maintenance", "label": "修改文档后如何维护关联入口", "locator": {"kind": "explicit-anchor", "value": "documentation-maintenance"}}
