@@ -16,6 +16,8 @@ const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
 const hash = text => createHash('sha256').update(text).digest('hex');
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+/** Curated records lead the document window, but must not consume it: three slots are reserved. */
+const curatedDocumentCap = 3;
 const excerptMax = 240;
 /** Quote at most `excerptMax` code points; mark truncation so a cut sentence cannot read as complete. */
 const excerptOf = text => {
@@ -382,7 +384,15 @@ export function queryEntries(report, { task = '', query = '', limit = 8, select 
   }));
   rows.sort((a, b) => (a.origin === 'curated' ? 0 : 1) - (b.origin === 'curated' ? 0 : 1)
     || compare(a.path, b.path) || a.line - b.line || compare(a.key, b.key));
-  const selected = select === 'entries' ? rows : rows.filter((row, index) => rows.findIndex(other => other.path === row.path) === index);
+  const documents = rows.filter((row, index) => rows.findIndex(other => other.path === row.path) === index);
+  const isMirrored = row => {
+    const match = /(^|\/)([^/]+)-en\//.exec(row.path);
+    return match !== null && documents.some(other => other.path === row.path.replace(`${match[2]}-en/`, `${match[2]}/`));
+  };
+  const kept = documents.filter(row => !isMirrored(row));
+  const curated = kept.filter(row => row.origin === 'curated');
+  const selected = select === 'entries' ? rows
+    : [...curated.slice(0, curatedDocumentCap), ...kept.filter(row => row.origin !== 'curated'), ...curated.slice(curatedDocumentCap)];
   const listed = count ? [] : (all ? selected : selected.slice(0, limit));
   return { mode: report.mode, commit: report.commit, coverage: report.coverage, scope: report.scope,
     excluded_documents: report.excluded_documents ?? 0, unit: select,
