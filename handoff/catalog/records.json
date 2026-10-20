@@ -7,7 +7,7 @@
       "path": "AGENTS.md",
       "purpose": "找到本仓修改前的已有阅读入口",
       "tags": ["documentation", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "415398a8ac73872d44eea74000eb1bdb9c380b24"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "b0ae0fd1703def910838bc8764df1c794e065d91"},
       "entries": [{"key": "before-change", "label": "改代码前先读哪些资料", "locator": {"kind": "heading-path", "value": ["Agent / AI 协作说明（A.I.Live · oclivenewnew）", "改代码前必读（AI · 精简索引）"]}}]
     },
     {
