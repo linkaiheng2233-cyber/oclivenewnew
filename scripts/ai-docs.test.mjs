@@ -244,6 +244,28 @@ test('document discovery finds unregistered body text and excludes archive and h
   assert.equal(JSON.parse(actual.stdout).matches[0].matched_line, 5);
 });
 
+test('count and exhaustive modes expose the window instead of hiding it', t => {
+  const f = fixture(t);
+  for (const name of ['a', 'b', 'c']) write(f.root, `human-docs/${name}.md`, `# ${name}\n\nmarker_beta\n`);
+  f.commit();
+  const report = discoverDocuments({ root: f.root });
+  const limited = queryEntries(report, { query: 'marker_beta', select: 'documents', limit: 2 });
+  assert.equal(limited.matches.length, 2);
+  assert.equal(limited.truncated, true);
+  assert.equal(limited.selected_total, 3);
+  const counted = queryEntries(report, { query: 'marker_beta', select: 'documents', count: true });
+  assert.deepEqual(counted.matches, []);
+  assert.equal(counted.selected_total, 3);
+  assert.equal(counted.total, 3);
+  assert.ok(counted.all_estimate > 0);
+  const exhaustive = queryEntries(report, { query: 'marker_beta', select: 'documents', all: true });
+  assert.equal(exhaustive.matches.length, 3);
+  assert.equal(exhaustive.truncated, false);
+  assert.throws(() => queryEntries(report, { query: 'marker_beta', select: 'entries', all: true }), /--all requires/);
+  assert.throws(() => queryEntries(report, { query: 'marker_beta', all: true, count: true }), /one of/);
+  assert.equal(child(f.root, 'query', '--query', 'marker_beta', '--all', '--select', 'entries').status, 2);
+});
+
 test('document selection lists one entry per document while entries selection keeps every heading', t => {
   const f = fixture(t);
   write(f.root, 'human-docs/a.md', '# A\n\n## One\nmarker_alpha\n\n## Two\nmarker_alpha\n');
