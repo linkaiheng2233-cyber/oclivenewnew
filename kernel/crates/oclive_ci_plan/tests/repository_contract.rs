@@ -458,6 +458,47 @@ fn repository_rules_cover_targeted_and_fail_safe_examples() {
 }
 
 #[test]
+fn workflow_files_outside_the_ci_control_plane_stay_targeted() {
+    let root = repo_root();
+    let planner = Planner::load(
+        &root,
+        "data/ci/impact-map.v1.json",
+        "data/ci/validation-catalog.v1.json",
+    )
+    .expect("load repository contracts");
+
+    let nightly = planner
+        .plan(request(
+            "pull_request",
+            ".github/workflows/nightly-advisory.yml",
+        ))
+        .expect("nightly workflow plan");
+    assert!(!nightly.fallback.full);
+    assert!(nightly
+        .direct_modules
+        .iter()
+        .any(|module| module.id == "oclive.repo-tooling"));
+
+    let ci = planner
+        .plan(request("pull_request", ".github/workflows/ci.yml"))
+        .expect("ci workflow plan");
+    assert!(ci.fallback.full);
+    assert!(ci
+        .fallback
+        .reasons
+        .iter()
+        .any(|reason| reason.starts_with("risk_override:ci-control-plane:")));
+
+    let rerun = planner
+        .plan(request(
+            "pull_request",
+            ".github/workflows/ci-rerun-flake.yml",
+        ))
+        .expect("rerun workflow plan");
+    assert!(rerun.fallback.full);
+}
+
+#[test]
 fn default_reference_host_has_its_own_configuration_without_removing_desktop_coverage() {
     let root = repo_root();
     let catalog: serde_json::Value = serde_json::from_str(

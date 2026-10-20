@@ -130,7 +130,8 @@
     {
       "id": "ci-control-plane",
       "selectors": [
-        { "kind": "prefix", "value": ".github/workflows" },
+        { "kind": "exact", "value": ".github/workflows/ci.yml" },
+        { "kind": "exact", "value": ".github/workflows/ci-rerun-flake.yml" },
         { "kind": "prefix", "value": "data/ci" },
         { "kind": "prefix", "value": "kernel/crates/oclive_ci_plan" },
         { "kind": "exact", "value": "kernel/crates/oclive-cli/src/ci_impact_cmd.rs" },
