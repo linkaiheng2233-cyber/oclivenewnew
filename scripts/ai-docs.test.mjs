@@ -244,6 +244,21 @@ test('document discovery finds unregistered body text and excludes archive and h
   assert.equal(JSON.parse(actual.stdout).matches[0].matched_line, 5);
 });
 
+test('long source lines are quoted to 240 code points and marked when truncated', t => {
+  const f = fixture(t);
+  const longLine = `${'x'.repeat(240)} tail_marker_longline`;
+  write(f.root, 'human-docs/long.md', `# Long\n\n${longLine}\n`);
+  write(f.root, 'human-docs/short.md', '# Short\n\nshort_marker_line\n');
+  f.commit();
+  const report = discoverDocuments({ root: f.root });
+  const longHit = queryEntries(report, { query: 'tail_marker_longline' }).matches[0];
+  assert.equal([...longHit.excerpt].length, 241);
+  assert.ok(longHit.excerpt.endsWith('…'), longHit.excerpt.slice(-8));
+  assert.ok(!longHit.excerpt.includes('tail_marker_longline'));
+  const shortHit = queryEntries(report, { query: 'short_marker_line' }).matches[0];
+  assert.ok(!shortHit.excerpt.endsWith('…'));
+});
+
 test('discovery keeps dirty current material distinct from a frozen commit and leaves untracked notes out', t => {
   const f = fixture(t);
   write(f.root, 'human-docs/start.md', '# Start\n\nOld material.\n');
