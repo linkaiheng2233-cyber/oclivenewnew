@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "roots": ["AGENTS.md", "README.md", "handoff", "creator-docs", "human-docs"],
   "records": [
     {
       "id": "agent-entry",
