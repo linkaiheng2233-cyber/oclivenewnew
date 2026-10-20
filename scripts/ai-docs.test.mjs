@@ -286,9 +286,25 @@ test('discovery roots are configurable, missing catalog still queries and bad en
   const query = child(f.root, 'query', '--query', 'roots_marker');
   assert.equal(query.status, 0, query.stderr);
   assert.match(query.stdout, /human-docs\/note\.md/);
+  const boot = child(f.root, 'boot', '--task', 'documentation');
+  assert.equal(boot.status, 0, boot.stderr);
   const check = child(f.root, 'check');
   assert.equal(check.status, 2);
   assert.match(check.stderr, /catalog missing/);
+  const badRoots = child(f.root, 'query', '--query', 'roots_marker', '--roots', '../etc');
+  assert.equal(badRoots.status, 2);
+  assert.match(badRoots.stderr, /invalid --roots/);
+});
+
+test('the CLI document window defaults to twenty documents', t => {
+  const f = fixture(t);
+  for (let index = 0; index < 12; index += 1) write(f.root, `human-docs/n${index}.md`, `# N${index}\n\nwindow_marker\n`);
+  f.commit();
+  const out = child(f.root, 'query', '--query', 'window_marker', '--json');
+  assert.equal(out.status, 0, out.stderr);
+  const parsed = JSON.parse(out.stdout);
+  assert.equal(parsed.unit, 'documents');
+  assert.equal(parsed.matches.length, 12);
 });
 
 test('the document window caps curated rows and drops mirrored English twins', () => {

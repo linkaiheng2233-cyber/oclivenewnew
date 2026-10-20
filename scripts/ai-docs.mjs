@@ -371,7 +371,7 @@ export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev, 
     };
   });
   return { mode, commit, coverage: records.length, excluded_documents: listed.length - selected.length,
-    scope: 'tracked Markdown in AGENTS/README/handoff/creator-docs/human-docs; archive and historical waves excluded; document status is not inferred',
+    scope: `tracked Markdown under ${roots.join(', ')}; archive and historical waves excluded; document status is not inferred`,
     fallback, records };
 }
 
@@ -437,16 +437,20 @@ function parseArgs(args) {
   options.select ??= 'documents';
   if (options.roots !== undefined) {
     options.roots = options.roots.split(',').map(item => item.trim()).filter(Boolean);
-    requireValue(options.roots.length > 0, usage);
+    requireValue(options.roots.length > 0
+      && options.roots.every(item => item === '.' || item.split('/').every(part => part !== '' && part !== '.' && part !== '..')),
+    'invalid --roots path: use repository-relative paths without . or ..');
   }
   requireValue(['documents', 'entries'].includes(options.select), usage);
-  requireValue(!(options.all && options.count), usage);
+  requireValue(!(options.all && options.count), 'use one of --all or --count');
   requireValue(!options.all || options.select === 'documents', '--all requires --select documents');
   requireValue(['catalog', 'documents'].includes(options.scope)
     && (options.command !== 'check' || options.scope === 'catalog'), usage);
   if (options.limit !== undefined) {
     requireValue(/^(?:[1-9]|1[0-9]|20)$/.test(options.limit), usage);
     options.limit = Number(options.limit);
+  } else if (options.command !== 'check') {
+    options.limit = options.select === 'documents' ? 20 : 8;
   }
   return options;
 }
@@ -492,6 +496,7 @@ export function main(args) {
   } catch (error) {
     if (options.command === 'check' || !String(error.message).includes('catalog missing')) throw error;
   }
+  if (!curated && options.scope === 'catalog' && options.command === 'boot') options.scope = 'documents';
   if (!curated && options.scope === 'catalog') {
     throw new Error(`${catalogPath}: catalog missing; use --scope documents or the existing reading index`);
   }
