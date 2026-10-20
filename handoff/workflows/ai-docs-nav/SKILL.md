@@ -12,6 +12,9 @@ description: >-
 **SSOT 范围**：本技能只说明"什么时候用、怎么用、什么时候停"；工具行为以
 [`handoff/catalog/README.md`](../../catalog/README.md) 为准，规范仍由各自 SSOT 拥有。
 
+**本文件只有文字约定，不含可执行逻辑。** 可执行部分是 `scripts/ai-docs.mjs`（工具）、
+`scripts/ai-docs.test.mjs`（行为测试）与 `scripts/ai-docs.eval.mjs`（质量评测）；技能里的命令只是要执行的文本。
+
 ## 何时用
 
 - 不知道某个概念 / 命令 / 错误码 / 债务 ID 落在哪份文档；
