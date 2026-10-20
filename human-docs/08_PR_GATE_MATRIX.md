@@ -7,6 +7,7 @@
 | 改动类型 | 必跑（本地） | 可选 / 条件 |
 |----------|--------------|-------------|
 | **仅文档** (`*.md`, `human-docs/`, `creator-docs/`) | 链接抽查；若动 `CHANGELOG.md` → `node scripts/check-changelog-parity.mjs` | — |
+| **文档导航工具** (`scripts/ai-docs*`, `scripts/vendor/stackmap/`, `handoff/catalog/`) | `npm run check:ai-docs`（vendor 哈希 + 20 项行为测试，约 30 秒） | `node scripts/ai-docs.eval.mjs`（定位/覆盖指标，不作门禁） |
 | **公共 Base / 最小角色开发反馈** | `npm run check:kernel-base`（源码仓库根目录） | 合批验收仍按实际影响选下列门禁；改公开 Rust API另跑 `cargo test --workspace --doc` |
 | **两公共 crate 的完整契约与兼容检查** | `npm run check:kernel-contracts`（源码仓库根目录） | 不代替共享消费者/Host/发行版回归；公共改动的下游影响仍须验证 |
 | **参考 Host 默认配置开发反馈** | `npm run check:reference-host`（源码仓库根目录） | 默认feature的Clippy/tests；可选feature、桌面组合及HTTP/持久化影响另按实际变更验证 |

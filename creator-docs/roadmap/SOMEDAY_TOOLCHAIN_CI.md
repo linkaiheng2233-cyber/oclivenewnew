@@ -153,7 +153,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | `kernel-contracts`（Linux/Windows） | 公共契约与既有兼容面 | 两crate的all-targets/all-features Clippy（`--no-deps`）及全部默认测试/适用doctest；包含rich/Stream等兼容面，不称两crate整体都是小Kernel。无需前端/Tauri资源准备。 |
 | `reference-host-default`（Linux/Windows） | 参考Host已支持的默认配置 | 沿既有 `check:reference-host` 运行完整默认Clippy/tests；不准备前端/Tauri、不启用可选features。与workspace里的桌面feature组合不同，后者原样保留，不将默认通过外推为全部Host或发行版已验。 |
 | `rust`（Linux/Windows） | **MIXED：共享接入、参考Host、桌面及治理** | 前端构建/桌面资源准备、workspace fmt保留；Clippy/tests只排除CLI及迁移的contracts/types根包，剩余检查及平台不变。Clippy `--no-deps` 将lint归给被选择的根包；依赖仍需编译。公共变更仍会选中相关下游回归。 |
-| `layering-ratchet` | 跨层治理 | domain分层棘轮；不是完整架构合规证明。 |
+| `layering-ratchet` | 跨层治理 | domain分层棘轮；同一job另跑文档导航工具的 vendor 哈希与行为测试（`npm run check:ai-docs`，约 30 秒），不是完整架构合规证明。 |
 | `dimension5-acceptance` | **MIXED：跨层治理＋已有工具/Host/产品约束** | `dimension5 --ci` 包含依赖/文档/分层等与已有定向检查，sample lib按此模式跳过；不是单一Kernel能力。 |
 | `npm-audit` | 跨层供应链治理 | npm生产与全依赖审计；不能代替Cargo或发布者身份验证。 |
 | `plugins-index` | 插件目录格式/仓库治理 | 插件索引一致性，不是全部模块功能或信任根验收。 |
