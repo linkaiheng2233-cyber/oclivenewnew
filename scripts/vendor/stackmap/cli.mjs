@@ -86,6 +86,14 @@ function workingFile(root, relative) {
   return fs.readFileSync(target);
 }
 
+function samePath(a, b) {
+  const normalise = value => {
+    const resolved = fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value);
+    return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  };
+  return normalise(a) === normalise(b);
+}
+
 function repository(root) {
   root = fs.realpathSync(root);
   function git(args, input) {
@@ -98,7 +106,7 @@ function repository(root) {
     return result.stdout;
   }
   const top = git(['rev-parse', '--show-toplevel']).toString('utf8').trim();
-  requireValue(fs.realpathSync(top) === root, '--root must be the repository checkout root');
+  requireValue(samePath(top, root), `--root must be the repository checkout root (git reports ${top}, received ${root})`);
   const format = git(['rev-parse', '--show-object-format']).toString('utf8').trim();
   requireValue(['sha1', 'sha256'].includes(format), 'unsupported Git object format');
   const oidPattern = new RegExp(`^[a-f0-9]{${format === 'sha1' ? 40 : 64}}$`);
