@@ -8,3 +8,5 @@ examples/scaffold-kernel-base-custom/package/** text eol=lf
 # Markdown is read by documentation tooling and hashed by content; keep LF in the working tree
 # so working-tree bytes match the index blob on every platform.
 *.md text eol=lf
+# The vendored navigator is hashed by VENDOR.json; keep it byte-stable across checkouts.
+scripts/vendor/stackmap/** text eol=lf

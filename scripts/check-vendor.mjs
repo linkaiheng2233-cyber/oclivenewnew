@@ -24,7 +24,9 @@ if (manifest) {
       ok = false;
       continue;
     }
-    const actual = createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    const actual = createHash('sha256')
+      .update(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n'))
+      .digest('hex');
     if (actual !== expected) {
       console.error(`check-vendor: mismatch ${name}`);
       ok = false;
