@@ -256,6 +256,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ripgrep
       - name: domain→infrastructure import ratchet
         run: node scripts/check-domain-layering.mjs
+      - name: AI documentation navigator (vendored sync + tests)
+        run: npm run check:ai-docs
 
   dimension5-acceptance:
     needs: ci-impact-plan
