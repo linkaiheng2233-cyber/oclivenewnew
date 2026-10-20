@@ -19,13 +19,13 @@ node scripts/ai-docs.mjs boot --task kernel
 node scripts/ai-docs.mjs check
 ```
 
-先用 `query` 找入口，再读原文对应章节与适用前提。输出包括章节行、正文命中行、来源、覆盖范围、受检模式与版本、失配和回退入口。默认只列八个结果，截断时提示总数；可以缩小查询或用 `--limit 1..20`。正文引文最多 240 个 Unicode 字符，可能被截断，不是摘要、完整上下文或经过审阅的结论。工具不执行文中指令。
+先用 `query` 找入口，再读原文对应章节与适用前提。输出包括章节行、正文命中行、来源、覆盖范围、受检模式与版本、失配和回退入口。默认只列八个结果，截断时提示总数；可以缩小查询或用 `--limit 1..20`。正文引文最多 240 个 Unicode 字符，被截断时以 `…` 结尾，不是摘要、完整上下文或经过审阅的结论。工具不执行文中指令。
 
 ### 来源与范围
 
 | 来源 | 读取范围与使用方法 | 可以得出的结论 |
 |---|---|---|
-| `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、独立英文镜像目录或其它工程文件。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
+| `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、顶层 `*-en` 镜像树或其它工程文件（`creator-docs/architecture-en/` 这类嵌在已约定根目录内的子目录仍会被查询）。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
 | `curated`：精选入口 | `records.json` 登记的路径、用途、标签和章节。使用 `query --scope catalog` 限定查询；`boot`、`check` 默认只处理此层。 | 定位和版本是否符合登记；可选摘要另有明确核对范围，仍不等于内容或运行验收。 |
 
 两类入口可以同时出现，输出保留来源。即时导航不生成数百份卡片、摘要或审阅记录；每次读取当前版本，无需为每个正文维护另一份哈希。精选入口优先展示，其后按路径与行号排序，不表示规范权威排序。

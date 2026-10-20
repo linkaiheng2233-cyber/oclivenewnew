@@ -16,6 +16,12 @@ const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
 const hash = text => createHash('sha256').update(text).digest('hex');
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+const excerptMax = 240;
+/** Quote at most `excerptMax` code points; mark truncation so a cut sentence cannot read as complete. */
+const excerptOf = text => {
+  const chars = [...text.trim()];
+  return chars.slice(0, excerptMax).join('') + (chars.length > excerptMax ? '…' : '');
+};
 
 function requireValue(ok, message) {
   if (!ok) throw new Error(message);
@@ -355,7 +361,7 @@ export function queryEntries(report, { task = '', query = '', limit = 8, now = D
       source_oid: record.source_oid,
       observed_oid: record.origin === 'discovered' ? record.source_oid : record.observed_oid,
       staged: record.staged, unstaged: record.unstaged,
-      matched_line: match?.line ?? null, excerpt: match ? [...match.text.trim()].slice(0, 240).join('') : null,
+      matched_line: match?.line ?? null, excerpt: match ? excerptOf(match.text) : null,
       review_age_days: entry.review ? Math.floor((now - Date.parse(`${entry.review.reviewed_on}T00:00:00Z`)) / 86400000) : null,
       issues: [...record.issues, ...entry.issues],
     }];
