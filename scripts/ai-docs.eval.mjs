@@ -2,90 +2,100 @@
 /**
  * Optional quality check for the documentation navigator.
  *
- * It measures two things against this checkout:
- *  - locate:   for a task question, does the expected original appear in the
- *              first 8 / 12 / 20 documents?
- *  - coupling: for a literal marker, is the returned document set complete
- *              compared with a full-text baseline over the same corpus?
+ * Cases live in a repository-owned JSON file so the same harness can run in any
+ * repository: `{ "locate": [{ "q", "expect": [paths] }], "coupling": [terms] }`.
+ *
+ * It measures:
+ *  - locate:   does the expected original appear in the first 8 / 12 / 20 documents?
+ *  - coupling: is the returned document set complete against a full-text baseline?
  *
  * Report only by default; `--gate` turns the thresholds into an exit code.
- * It never writes, never starts a service and never reads the network.
+ * Read-only: no writes, no service, no network.
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { discoverDocuments, inspectCatalog, queryEntries } from './ai-docs.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-const gate = process.argv.includes('--gate');
+const args = process.argv.slice(2);
+const value = flag => {
+  const index = args.indexOf(flag);
+  return index >= 0 ? args[index + 1] : undefined;
+};
+const gate = args.includes('--gate');
 
-const LOCATE = [
-  { q: 'build_prompt', expect: ['human-docs/modules/slots/prompt.md', 'handoff/MODULE_MAP_AND_HANDOFF.md'] },
-  { q: 'Done-eligible', expect: ['handoff/debt-marathon/AI_AND_PIPELINE_GATES.md', 'handoff/workflows/dev-pipeline/SKILL.md'] },
-  { q: 'fallback', expect: ['creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md', 'creator-docs/plugin-and-architecture/PLUGIN_V1.md'] },
-  { q: 'sandbox', expect: ['handoff/debt-marathon/long-plans/K-PLUGIN-SEC-01.md', 'creator-docs/security/SUPPLY_CHAIN.md'] },
-  { q: 'oclive.toml', expect: ['creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md', 'handoff/THREE_DISTRO_KERNEL_CLOSURE.md'] },
-  { q: 'ERROR_CODES', expect: ['creator-docs/getting-started/ERROR_CODES.md', 'creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md'] },
-  { q: 'MODULE_MAP', expect: ['handoff/MODULE_MAP_AND_HANDOFF.md'] },
-  { q: 'CHAT_STORAGE', expect: ['handoff/CHAT_STORAGE_ARCHITECTURE.md'] },
-];
-
-/** Literal markers used to check completeness. Fingerprint-like terms must be fully covered. */
-const COUPLING = ['module-compat', 'K-SUPPLY-12', 'check:module-compat'];
-
-let curated = { records: [] };
-try {
-  curated = inspectCatalog({ root });
-} catch {
-  // No curated catalog is a supported mode; locate cases still run on discovery.
+const caseCandidates = [
+  value('--cases'),
+  path.join(root, 'handoff/catalog/eval.cases.json'),
+  path.join(root, 'catalog/eval.cases.json'),
+].filter(Boolean);
+const casesPath = caseCandidates.find(candidate => fs.existsSync(candidate));
+if (!casesPath) {
+  console.error(`ai-docs eval: no cases file; looked for ${caseCandidates.join(' or ')}`);
+  process.exitCode = 2;
+} else {
+  run(JSON.parse(fs.readFileSync(casesPath, 'utf8')));
 }
 
-const discovered = discoverDocuments({ root, roots: curated.roots ?? ['.'] });
-const report = { ...discovered, records: [...curated.records, ...discovered.records] };
+function run(cases) {
+  const locate = Array.isArray(cases.locate) ? cases.locate : [];
+  const couplingTerms = Array.isArray(cases.coupling) ? cases.coupling : [];
 
-const locate = limit => LOCATE.map(({ q, expect }) => {
-  const out = queryEntries(report, { query: q, select: 'documents', limit });
-  const paths = out.matches.map(row => row.path);
-  return expect.some(item => paths.includes(item));
-});
+  let curated = { records: [] };
+  try {
+    curated = inspectCatalog({ root });
+  } catch {
+    // No curated catalog is a supported mode; locate cases still run on discovery.
+  }
 
-/** The navigator drops a mirrored `*-en` document when its translated twin is also listed. */
-const dropMirrors = paths => {
-  const present = new Set(paths);
-  return paths.filter(item => {
-    const match = /(^|\/)([^/]+)-en\//.exec(item);
-    return match === null || !present.has(item.replace(`${match[2]}-en/`, `${match[2]}/`));
+  const discovered = discoverDocuments({ root, roots: curated.roots ?? ['.'] });
+  const report = { ...discovered, records: [...curated.records, ...discovered.records] };
+
+  const hits = limit => locate.map(({ q, expect }) => {
+    const out = queryEntries(report, { query: q, select: 'documents', limit });
+    const paths = out.matches.map(row => row.path);
+    return expect.some(item => paths.includes(item));
   });
-};
 
-const baseline = term => new Set(dropMirrors(discovered.records
-  .filter(record => record.entries.some(entry => entry.search_lines?.some(line => line.text.toLowerCase().includes(term.toLowerCase()))))
-  .map(record => record.path)));
+  /** The navigator drops a mirrored `*-en` document when its translated twin is also listed. */
+  const dropMirrors = paths => {
+    const present = new Set(paths);
+    return paths.filter(item => {
+      const match = /(^|\/)([^/]+)-en\//.exec(item);
+      return match === null || !present.has(item.replace(`${match[2]}-en/`, `${match[2]}/`));
+    });
+  };
 
-const coupling = term => {
-  const truth = baseline(term);
-  const out = queryEntries(report, { query: term, select: 'documents', all: true });
-  const paths = out.matches.map(row => row.path);
-  const hit = [...truth].filter(item => paths.includes(item)).length;
-  return { term, truth: truth.size, returned: paths.length, hit, complete: hit === truth.size };
-};
+  const baseline = term => new Set(dropMirrors(discovered.records
+    .filter(record => record.entries.some(entry => entry.search_lines?.some(line => line.text.toLowerCase().includes(term.toLowerCase()))))
+    .map(record => record.path)));
 
-const rows = [8, 12, 20].map(limit => {
-  const hits = locate(limit);
-  return { limit, hits: hits.filter(Boolean).length, total: hits.length };
-});
+  const rows = [8, 12, 20].map(limit => {
+    const result = hits(limit);
+    return { limit, hits: result.filter(Boolean).length, total: result.length };
+  });
 
-console.log('locate recall (documents mode)');
-for (const row of rows) console.log(`  limit ${String(row.limit).padStart(2)}: ${row.hits}/${row.total}`);
+  console.log(`ai-docs eval: ${path.relative(root, casesPath)}`);
+  console.log('locate recall (documents mode)');
+  for (const row of rows) console.log(`  limit ${String(row.limit).padStart(2)}: ${row.hits}/${row.total}`);
 
-console.log('\ncoupling completeness (--all vs full-text baseline)');
-let complete = true;
-for (const term of COUPLING) {
-  const result = coupling(term);
-  if (!result.complete) complete = false;
-  console.log(`  ${term.padEnd(18)} baseline=${String(result.truth).padStart(3)} returned=${String(result.returned).padStart(3)} hit=${String(result.hit).padStart(3)} ${result.complete ? 'complete' : 'INCOMPLETE'}`);
+  let complete = true;
+  if (couplingTerms.length > 0) {
+    console.log('\ncoupling completeness (--all vs full-text baseline)');
+    for (const term of couplingTerms) {
+      const truth = baseline(term);
+      const out = queryEntries(report, { query: term, select: 'documents', all: true });
+      const paths = out.matches.map(row => row.path);
+      const hit = [...truth].filter(item => paths.includes(item)).length;
+      const ok = hit === truth.size;
+      if (!ok) complete = false;
+      console.log(`  ${term.padEnd(18)} baseline=${String(truth.size).padStart(3)} returned=${String(paths.length).padStart(3)} hit=${String(hit).padStart(3)} ${ok ? 'complete' : 'INCOMPLETE'}`);
+    }
+  }
+
+  const top = rows.find(row => row.limit === 20);
+  const locateOk = locate.length === 0 || top.hits === top.total;
+  console.log(`\nresult: locate@20 ${top.hits}/${top.total}; coupling ${complete ? 'complete' : 'INCOMPLETE'}`);
+  if (gate) process.exitCode = locateOk && complete ? 0 : 1;
 }
-
-const top = rows.find(row => row.limit === 20);
-const locateOk = top.hits === top.total;
-console.log(`\nresult: locate@20 ${top.hits}/${top.total}; coupling ${complete ? 'complete' : 'INCOMPLETE'}`);
-if (gate) process.exitCode = locateOk && complete ? 0 : 1;

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "locate": [
+    { "q": "build_prompt", "expect": ["human-docs/modules/slots/prompt.md", "handoff/MODULE_MAP_AND_HANDOFF.md"] },
+    { "q": "Done-eligible", "expect": ["handoff/debt-marathon/AI_AND_PIPELINE_GATES.md", "handoff/workflows/dev-pipeline/SKILL.md"] },
+    { "q": "fallback", "expect": ["creator-docs/plugin-and-architecture/AGENT_REMOTE_PROTOCOL.md", "creator-docs/plugin-and-architecture/PLUGIN_V1.md"] },
+    { "q": "sandbox", "expect": ["handoff/debt-marathon/long-plans/K-PLUGIN-SEC-01.md", "creator-docs/security/SUPPLY_CHAIN.md"] },
+    { "q": "oclive.toml", "expect": ["creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md", "handoff/THREE_DISTRO_KERNEL_CLOSURE.md"] },
+    { "q": "ERROR_CODES", "expect": ["creator-docs/getting-started/ERROR_CODES.md", "creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md"] },
+    { "q": "MODULE_MAP", "expect": ["handoff/MODULE_MAP_AND_HANDOFF.md"] },
+    { "q": "CHAT_STORAGE", "expect": ["handoff/CHAT_STORAGE_ARCHITECTURE.md"] }
+  ],
+  "coupling": ["module-compat", "K-SUPPLY-12", "check:module-compat"]
+}
