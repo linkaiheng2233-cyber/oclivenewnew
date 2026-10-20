@@ -25,7 +25,7 @@
       "path": "handoff/AI_READING_INDEX.md",
       "purpose": "沿已有路线选择任务所需原文",
       "tags": ["documentation", "kernel", "role", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "06d32d198de1e50d174ad1ab5384552b5131976f"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "d3dbd19c13c8d40c9d146d0f283b20e0cb12b4a4"},
       "entries": [
         {"key": "docs", "label": "文档任务怎样找 SSOT", "locator": {"kind": "heading-path", "value": ["AI 深读索引（Agent Reading Index）", "9. 按任务选阅读路径", "改文档"]}},
         {"key": "kernel", "label": "Kernel、六槽与 Host 权责的阅读路径", "locator": {"kind": "explicit-anchor", "value": "kernel-slot-reading"}}
