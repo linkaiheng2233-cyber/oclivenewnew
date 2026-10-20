@@ -220,7 +220,7 @@ Vue invoke / HTTP --api
 
 ### 改文档
 
-可选辅助：[八文档导航试点](catalog/README.md)（`node scripts/ai-docs.mjs query --task documentation`）；只提供原文入口与失配提示，覆盖不足或过期时继续走下方既有路线，不以卡片替代 SSOT。
+可选辅助：[文档导航](catalog/README.md)（`node scripts/ai-docs.mjs query --task documentation`）；查询可覆盖约定目录中的已跟踪原文，精选记录另有版本核对。覆盖不足或过期时继续走下方既有路线，不以卡片或命中片段替代 SSOT。
 
 1. [`handoff/README.md`](./README.md#documentation-status) — **先分清当前实现、候选、计划和历史，再查 owner**
 2. [`AI_CHANGE_BOUNDARIES.md`](./AI_CHANGE_BOUNDARIES.md) G10–G16  

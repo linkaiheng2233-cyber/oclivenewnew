@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { inspectCatalog, queryEntries, reviewDigest } from './ai-docs.mjs';
+import { discoverDocuments, inspectCatalog, queryEntries, reviewDigest } from './ai-docs.mjs';
 
 const script = fileURLToPath(new URL('./ai-docs.mjs', import.meta.url));
 const git = (root, ...args) => execFileSync('git', args, {
@@ -206,7 +206,8 @@ test('a junction or symbolic directory cannot redirect a working source, while o
 test('CLI modes, limits and native exits are explicit; repeated output is deterministic', t => {
   const f = fixture(t);
   for (const args of [[], ['--unknown'], ['check', '--json', '--json'], ['check', '--rev', f.sha],
-    ['check', '--mode', 'commit'], ['check', '--mode', 'commit', '--rev', 'HEAD'], ['query', '--limit', '0']]) {
+    ['check', '--mode', 'commit'], ['check', '--mode', 'commit', '--rev', 'HEAD'], ['query', '--limit', '0'],
+    ['check', '--scope', 'documents']]) {
     const result = child(f.root, ...args);
     assert.equal(result.status, 2, JSON.stringify(args));
   }
@@ -217,4 +218,62 @@ test('CLI modes, limits and native exits are explicit; repeated output is determ
   const result = queryEntries(report, { limit: 1 });
   assert.equal(result.total, 2);
   assert.equal(result.truncated, true);
+});
+
+test('document discovery finds unregistered body text and excludes archive and historical waves', t => {
+  const f = fixture(t);
+  write(f.root, 'creator-docs/plugin-and-architecture/RPC.md', '# Plugin guide\n\n## Transport\n\nThe searchable provider_marker is only source text.\n');
+  write(f.root, 'handoff/archive/old.md', '# provider_marker old archive\n');
+  write(f.root, 'handoff/debt-marathon/waves/old.md', '# provider_marker old wave\n');
+  f.commit();
+  const report = discoverDocuments({ root: f.root });
+  const result = queryEntries(report, { query: 'provider_marker' });
+  assert.equal(result.matches.length, 1);
+  assert.equal(result.matches[0].path, 'creator-docs/plugin-and-architecture/RPC.md');
+  assert.equal(result.matches[0].origin, 'discovered');
+  assert.equal(result.matches[0].source_oid, git(f.root, 'rev-parse', ':creator-docs/plugin-and-architecture/RPC.md'));
+  assert.equal(result.matches[0].observed_oid, result.matches[0].source_oid);
+  assert.equal(result.matches[0].matched_line, 5);
+  assert.match(result.matches[0].excerpt, /provider_marker/);
+  assert.equal(result.matches[0].summary, null);
+  assert.equal(result.matches[0].review, null);
+  assert.equal(report.excluded_documents, 2);
+  assert.ok(!JSON.stringify(result).includes('search_lines'));
+  const actual = child(f.root, 'query', '--query', 'provider_marker', '--json');
+  assert.equal(actual.status, 0, actual.stderr);
+  assert.equal(JSON.parse(actual.stdout).matches[0].matched_line, 5);
+});
+
+test('discovery keeps dirty current material distinct from a frozen commit and leaves untracked notes out', t => {
+  const f = fixture(t);
+  write(f.root, 'human-docs/start.md', '# Start\n\nOld material.\n');
+  const sha = f.commit();
+  write(f.root, 'human-docs/start.md', '# Start\n\nNew material.\n');
+  write(f.root, 'human-docs/untracked.md', '# Private local note\n');
+  const current = queryEntries(discoverDocuments({ root: f.root }), { query: 'New material' });
+  assert.equal(current.matches.length, 1);
+  assert.ok(current.matches[0].issues.includes('unstaged_change'));
+  const old = queryEntries(discoverDocuments({ root: f.root, mode: 'commit', rev: sha }), { query: 'Old material' });
+  assert.equal(old.matches.length, 1);
+  assert.deepEqual(old.matches[0].issues, []);
+  assert.equal(queryEntries(discoverDocuments({ root: f.root }), { query: 'Private local note' }).matches.length, 0);
+});
+
+test('literal CLI options are searchable without being parsed as navigation options', t => {
+  const f = fixture(t);
+  write(f.root, 'creator-docs/cli/guide.md', '# CLI\n\nUse --memory-example off when preparing this source example.\n');
+  f.commit();
+  const result = child(f.root, 'query', '--query', '--memory-example', '--json');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).matches[0].matched_line, 3);
+});
+
+test('an unavailable indexed blob fails batch discovery instead of silently omitting the document', t => {
+  const f = fixture(t);
+  write(f.root, 'human-docs/missing-object.md', '# Material that has no valid indexed object\n');
+  git(f.root, 'update-index', '--add', '--cacheinfo', `100644,${'1'.repeat(40)},human-docs/missing-object.md`);
+  assert.throws(() => discoverDocuments({ root: f.root }), /invalid or unavailable batch blob/);
+  const result = child(f.root, 'query', '--query', 'Material');
+  assert.equal(result.status, 2, result.stderr);
+  assert.doesNotMatch(result.stdout, /navigation located/);
 });

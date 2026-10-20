@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Optional, read-only navigation for eight pilot documents; never a rule or acceptance authority. */
+/** Optional, read-only document navigation; never a rule or acceptance authority. */
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
@@ -10,11 +10,12 @@ import { checkDocumentBytes } from './check-doc-encoding.mjs';
 const catalogPath = 'handoff/catalog/records.json';
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
 const fallback = 'Read handoff/AI_READING_INDEX.md and handoff/README.md; missing coverage is not missing implementation or policy.';
-const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--task TAG] [--query TEXT] [--limit 1..20] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
+const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--task TAG] [--query TEXT] [--limit 1..20] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
 const normalize = text => text.replace(/\r\n/g, '\n');
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
 const hash = text => createHash('sha256').update(text).digest('hex');
+const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 
 function requireValue(ok, message) {
   if (!ok) throw new Error(message);
@@ -59,10 +60,10 @@ function workingFile(root, relative) {
 
 function repository(root) {
   root = fs.realpathSync(root);
-  function git(args) {
+  function git(args, input) {
     const result = spawnSync('git', ['--no-pager', '--no-optional-locks', '--literal-pathspecs',
       '-c', 'core.fsmonitor=false', '-c', 'core.untrackedCache=false', ...args], {
-      cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 16 * 1024 * 1024,
+      cwd: root, input, windowsHide: true, timeout: 15000, maxBuffer: 16 * 1024 * 1024,
       env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0', GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_PAGER: 'cat' },
     });
     requireValue(!result.error && result.status === 0, `Git read failed (${args[0]})`);
@@ -79,6 +80,24 @@ function repository(root) {
     if (!blobs.has(oid)) blobs.set(oid, git(['cat-file', 'blob', oid]));
     return blobs.get(oid);
   }
+  function prefetch(oids) {
+    const unique = [...new Set(oids)].filter(oid => !blobs.has(oid));
+    if (unique.length === 0) return;
+    requireValue(unique.every(oid => oidPattern.test(oid)), 'invalid batch object id');
+    const bytes = git(['cat-file', '--batch'], `${unique.join('\n')}\n`);
+    let offset = 0;
+    for (const oid of unique) {
+      const newline = bytes.indexOf(10, offset);
+      const header = bytes.subarray(offset, newline).toString('ascii');
+      const match = /^([a-f0-9]+) blob (\d+)$/u.exec(header);
+      requireValue(newline >= offset && match && match[1] === oid, 'invalid or unavailable batch blob');
+      const end = newline + 1 + Number(match[2]);
+      requireValue(Number.isSafeInteger(end) && bytes[end] === 10, 'incomplete batch blob');
+      blobs.set(oid, bytes.subarray(newline + 1, end));
+      offset = end + 1;
+    }
+    requireValue(offset === bytes.length, 'unexpected trailing batch output');
+  }
   function treeFile(rev, relative) {
     relativePath(relative);
     const listing = git(['ls-tree', '-z', rev, '--', relative]).toString('utf8').split('\0').filter(Boolean);
@@ -88,14 +107,13 @@ function repository(root) {
     requireValue(match && match[3] === relative, `${relative}: non-regular Git source rejected`);
     return { oid: match[2], bytes: blob(match[2]) };
   }
-  return { root, git, format, oidPattern, head, blob, treeFile };
+  return { root, git, format, oidPattern, head, blob, prefetch, treeFile };
 }
 
 function validateCatalog(catalog, repo) {
   keys(catalog, ['schema_version', 'records'], [], 'catalog');
   requireValue(catalog.schema_version === 1, 'unsupported catalog schema');
-  requireValue(Array.isArray(catalog.records) && catalog.records.length > 0 && catalog.records.length <= 8,
-    'pilot catalog must contain one to eight records');
+  requireValue(Array.isArray(catalog.records) && catalog.records.length > 0, 'catalog records required');
   const ids = new Set();
   const paths = new Set();
   for (const record of catalog.records) {
@@ -149,7 +167,7 @@ export function reviewDigest(entry) {
   return hash(JSON.stringify([entry.key, entry.label, entry.locator.kind, entry.locator.value, entry.summary ?? null]));
 }
 
-function locate(text, locator) {
+function scanMarkdown(text) {
   const headings = [];
   const anchors = [];
   const stack = [];
@@ -174,6 +192,11 @@ function locate(text, locator) {
       headings.push({ value: stack.map(item => item.text), line: index + 1 });
     }
   }
+  return { anchors, headings };
+}
+
+function locate(text, locator) {
+  const { anchors, headings } = scanMarkdown(text);
   const matches = (locator.kind === 'explicit-anchor' ? anchors : headings)
     .filter(item => JSON.stringify(item.value) === JSON.stringify(locator.value));
   return { line: matches.length === 1 ? matches[0].line : null,
@@ -249,39 +272,120 @@ export function inspectCatalog({ root = defaultRoot, mode = 'worktree', rev } = 
     return { id: record.id, path: record.path, purpose: record.purpose, tags: record.tags,
       source_oid: record.source_ref.oid, observed_oid: oid, staged, unstaged, issues, entries };
   });
-  return { mode, commit, coverage: records.length, scope: 'pilot-only; no whole-repository coverage or semantic acceptance',
+  return { mode, commit, coverage: records.length, scope: 'curated catalog; no semantic or runtime acceptance',
     catalog_sha256: hash(bytes), fallback, records };
+}
+
+/** Derive navigation at read time. No generated card, summary or review is persisted. */
+export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev } = {}) {
+  requireValue(['worktree', 'commit'].includes(mode), 'invalid mode');
+  const repo = repository(root);
+  requireValue(mode === 'commit' ? typeof rev === 'string' && repo.oidPattern.test(rev) : rev === undefined,
+    'commit mode requires a full commit SHA; worktree mode rejects --rev');
+  const commit = mode === 'commit' ? repo.git(['rev-parse', '--verify', `${rev}^{commit}`]).toString('utf8').trim() : repo.head;
+  requireValue(mode !== 'commit' || commit === rev, 'revision must be a commit');
+  const roots = ['AGENTS.md', 'README.md', 'handoff', 'creator-docs', 'human-docs'];
+  const head = new Map();
+  for (const row of repo.git(['ls-tree', '-r', '-z', commit, '--', ...roots]).toString('utf8').split('\0').filter(Boolean)) {
+    const match = /^(\d+) (?:blob|commit) ([a-f0-9]+)\t(.*)$/u.exec(row);
+    requireValue(match, 'invalid Git tree listing');
+    if (match[3].endsWith('.md')) head.set(match[3], { mode: match[1], oid: match[2] });
+  }
+  const index = new Map();
+  if (mode === 'worktree') {
+    for (const row of repo.git(['ls-files', '--stage', '-z', '--', ...roots]).toString('utf8').split('\0').filter(Boolean)) {
+      const match = /^(\d+) ([a-f0-9]+) ([0-3])\t(.*)$/u.exec(row);
+      requireValue(match, 'invalid Git index listing');
+      if (!match[4].endsWith('.md')) continue;
+      const values = index.get(match[4]) ?? [];
+      values.push({ mode: match[1], oid: match[2], stage: Number(match[3]) });
+      index.set(match[4], values);
+    }
+  }
+  const listed = [...new Set([...head.keys(), ...index.keys()])].sort();
+  const selected = listed.filter(name => !name.split('/').includes('archive')
+    && !name.startsWith('handoff/debt-marathon/waves/'));
+  const sources = selected.map(name => {
+    relativePath(name);
+    const entries = index.get(name) ?? [];
+    const file = mode === 'commit' ? head.get(name) : entries.find(entry => entry.stage === 0);
+    if (file) requireValue(['100644', '100755'].includes(file.mode), `${name}: non-regular document rejected`);
+    return { name, entries, file };
+  });
+  repo.prefetch(sources.flatMap(source => source.file ? [source.file.oid] : []));
+  const records = sources.map(({ name, entries, file }) => {
+    const bytes = mode === 'commit' ? (file ? repo.blob(file.oid) : null) : workingFile(repo.root, name);
+    const text = bytes === null ? '' : textOf(bytes, name);
+    const issues = [];
+    const staged = mode === 'worktree' && (head.get(name)?.oid ?? null) !== (file?.oid ?? null);
+    const unstaged = mode === 'worktree' && (file ? bytes === null || text !== textOf(repo.blob(file.oid), name) : bytes !== null);
+    if (entries.some(entry => entry.stage !== 0)) issues.push('unmerged_index');
+    if (bytes === null) issues.push('source_missing');
+    if (staged) issues.push('staged_change');
+    if (unstaged) issues.push('unstaged_change');
+    const lines = text.split('\n');
+    const headings = scanMarkdown(text).headings;
+    if (headings.length === 0 || headings[0].line > 1) headings.unshift({ line: 1, value: [name] });
+    return { id: `document:${name}`, path: name, purpose: headings[0].value.at(-1),
+      tags: [...new Set([name.split('/')[0], ...name.toLowerCase().split(/[^a-z0-9]+/u).filter(identifier)])],
+      origin: 'discovered', source_oid: file?.oid ?? null, staged, unstaged, issues,
+      entries: headings.map((heading, i) => ({ key: `line-${heading.line}`, label: heading.value.join(' / '),
+        line: heading.line, locator: { kind: 'observed-heading', value: heading.value }, summary: null, review: null, issues: [],
+        search_lines: lines.slice(heading.line - 1, (headings[i + 1]?.line ?? lines.length + 1) - 1)
+          .map((line, j) => ({ line: heading.line + j, text: line })),
+      })),
+    };
+  });
+  return { mode, commit, coverage: records.length, excluded_documents: listed.length - selected.length,
+    scope: 'tracked Markdown in AGENTS/README/handoff/creator-docs/human-docs; archive and historical waves excluded; document status is not inferred',
+    fallback, records };
 }
 
 export function queryEntries(report, { task = '', query = '', limit = 8, now = Date.now() } = {}) {
   requireValue(Number.isInteger(limit) && limit >= 1 && limit <= 20, 'invalid result limit');
   requireValue(Number.isFinite(now), 'invalid observation clock');
-  const rows = report.records.flatMap(record => record.entries.map(entry => ({
-    id: record.id, path: record.path, purpose: record.purpose, tags: record.tags, ...entry,
-    review_age_days: entry.review ? Math.floor((now - Date.parse(`${entry.review.reviewed_on}T00:00:00Z`)) / 86400000) : null,
-    issues: [...record.issues, ...entry.issues],
-  }))).filter(row => (!task || row.tags.includes(task))
-    && (!query || `${row.id} ${row.key} ${row.path} ${row.purpose} ${row.tags.join(' ')} ${row.label}`.toLowerCase().includes(query.toLowerCase())));
-  rows.sort((a, b) => `${a.id}/${a.key}` < `${b.id}/${b.key}` ? -1 : `${a.id}/${a.key}` > `${b.id}/${b.key}` ? 1 : 0);
+  const rows = report.records.flatMap(record => record.entries.flatMap(entry => {
+    if (task && !record.tags.includes(task)) return [];
+    const haystack = `${record.id} ${entry.key} ${record.path} ${record.purpose} ${record.tags.join(' ')} ${entry.label}`;
+    const match = query ? entry.search_lines?.find(line => line.text.toLowerCase().includes(query.toLowerCase())) : null;
+    if (query && !haystack.toLowerCase().includes(query.toLowerCase()) && !match) return [];
+    const { search_lines, ...navigation } = entry;
+    return [{ id: record.id, path: record.path, purpose: record.purpose, tags: record.tags, ...navigation,
+      origin: record.origin ?? 'curated', reference: record.origin === 'discovered' ? 'read-time-only; not pre-reviewed' : 'recorded-source-reference',
+      source_oid: record.source_oid,
+      observed_oid: record.origin === 'discovered' ? record.source_oid : record.observed_oid,
+      staged: record.staged, unstaged: record.unstaged,
+      matched_line: match?.line ?? null, excerpt: match ? [...match.text.trim()].slice(0, 240).join('') : null,
+      review_age_days: entry.review ? Math.floor((now - Date.parse(`${entry.review.reviewed_on}T00:00:00Z`)) / 86400000) : null,
+      issues: [...record.issues, ...entry.issues],
+    }];
+  }));
+  rows.sort((a, b) => (a.origin === 'curated' ? 0 : 1) - (b.origin === 'curated' ? 0 : 1)
+    || compare(a.path, b.path) || a.line - b.line || compare(a.key, b.key));
   return { mode: report.mode, commit: report.commit, coverage: report.coverage, scope: report.scope,
+    excluded_documents: report.excluded_documents ?? 0,
     total: rows.length, truncated: rows.length > limit, matches: rows.slice(0, limit), fallback };
 }
 
 function parseArgs(args) {
   requireValue(['query', 'check', 'boot'].includes(args[0]), usage);
   const options = { command: args[0] };
-  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev']);
+  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope']);
   for (let i = 1; i < args.length; i += 1) {
     const flag = args[i];
     const key = flag.slice(2);
     requireValue(!Object.hasOwn(options, key), `duplicate option: ${flag}`);
     if (flag === '--json') options.json = true;
     else {
-      requireValue(allowed.has(flag) && nonempty(args[i + 1]) && !args[i + 1].startsWith('--'), usage);
+      requireValue(allowed.has(flag) && nonempty(args[i + 1])
+        && (flag === '--query' || !args[i + 1].startsWith('--')), usage);
       options[key] = args[++i];
     }
   }
   if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit, usage);
+  options.scope ??= options.command === 'query' ? 'documents' : 'catalog';
+  requireValue(['catalog', 'documents'].includes(options.scope)
+    && (options.command !== 'check' || options.scope === 'catalog'), usage);
   if (options.limit !== undefined) {
     requireValue(/^(?:[1-9]|1[0-9]|20)$/.test(options.limit), usage);
     options.limit = Number(options.limit);
@@ -292,7 +396,8 @@ function parseArgs(args) {
 function render(output, command) {
   const safe = value => JSON.stringify(value);
   const lines = [`AI docs (${command}): ${output.mode} @ ${output.commit}`,
-    `Coverage: ${output.coverage} pilot documents; version matching is not semantic or runtime acceptance.`];
+    `Coverage: ${output.coverage} documents; version matching is not semantic or runtime acceptance.`, `Scope: ${output.scope}`];
+  if (output.excluded_documents) lines.push(`Excluded from discovery: ${output.excluded_documents} archive / historical wave documents.`);
   if (command === 'check') {
     for (const record of output.records) {
       const issues = [...record.issues, ...record.entries.flatMap(entry => entry.issues.map(issue => `${entry.key}:${issue}`))];
@@ -301,7 +406,8 @@ function render(output, command) {
   } else {
     if (command === 'boot') lines.push('Rules stay in AGENTS.md and linked SSOT; open the relevant original before deciding a change.');
     for (const row of output.matches) {
-      lines.push(`${safe(row.label)} -> ${safe(row.path)}:${row.line ?? '?'} [${row.issues.join(', ') || 'navigation matched'}]`);
+      lines.push(`${safe(row.label)} -> ${safe(row.path)}:${row.line ?? '?'} [${row.origin}; ${row.issues.join(', ') || 'navigation located'}]`);
+      if (row.excerpt !== null) lines.push(`  Source line ${row.matched_line} (unreviewed quote, max 240 characters): ${safe(row.excerpt)}`);
       if (row.summary !== null) lines.push(`  Scoped summary (not acceptance): ${safe(row.summary)}`);
       if (row.review) lines.push(`  Review: ${safe(row.review.subject)} / ${safe(row.review.reviewer)}; independent=${row.review.independent}; date=${row.review.reviewed_on}; age_hint=${row.review_age_days}d (not validity)`);
     }
@@ -313,7 +419,12 @@ function render(output, command) {
 
 export function main(args) {
   const options = parseArgs(args);
-  const report = inspectCatalog(options);
+  let report = inspectCatalog(options);
+  if (options.scope === 'documents') {
+    const discovered = discoverDocuments(options);
+    requireValue(discovered.commit === report.commit, 'HEAD changed while reading; retry or use commit mode');
+    report = { ...discovered, records: [...report.records, ...discovered.records] };
+  }
   const output = options.command === 'check' ? report : queryEntries(report, options);
   console.log(options.json ? JSON.stringify(output, null, 2) : render(output, options.command));
   return options.command === 'check'

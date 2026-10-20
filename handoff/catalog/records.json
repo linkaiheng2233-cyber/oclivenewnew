@@ -14,7 +14,7 @@
       "path": "handoff/README.md",
       "purpose": "定位文档分责、现行与历史的判读入口",
       "tags": ["documentation", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "7bffd060df88c75c430afcf6efe2850d56f59278"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "bfc95b6bb3b3c0f8dd716d46cd46b72f219dc56b"},
       "entries": [
         {"key": "state", "label": "区别当前实现、候选、部分接线与历史", "locator": {"kind": "explicit-anchor", "value": "documentation-status"}},
         {"key": "maintenance", "label": "修改文档后如何维护关联入口", "locator": {"kind": "explicit-anchor", "value": "documentation-maintenance"}}
@@ -25,7 +25,7 @@
       "path": "handoff/AI_READING_INDEX.md",
       "purpose": "沿已有路线选择任务所需原文",
       "tags": ["documentation", "kernel", "role", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "120a572e904a134869ab2b7d19fbbe3f5232abb3"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "06d32d198de1e50d174ad1ab5384552b5131976f"},
       "entries": [
         {"key": "docs", "label": "文档任务怎样找 SSOT", "locator": {"kind": "heading-path", "value": ["AI 深读索引（Agent Reading Index）", "9. 按任务选阅读路径", "改文档"]}},
         {"key": "kernel", "label": "Kernel、六槽与 Host 权责的阅读路径", "locator": {"kind": "explicit-anchor", "value": "kernel-slot-reading"}}

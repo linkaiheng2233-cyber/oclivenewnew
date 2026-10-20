@@ -1,10 +1,10 @@
-# AI 文档导航试点
+# AI 文档导航
 
-**SSOT 范围**：本试点命令、登记格式与维护方式；不定义项目架构、规范权威、技术债状态或验收规则。
+**SSOT 范围**：本导航命令、登记格式与维护方式；不定义项目架构、规范权威、技术债状态或验收规则。
 
 **最后更新**：2026-10-20。
 
-这是可选的本地导航工具，只覆盖 [records.json](records.json) 登记的八份文档。现有 [AI 阅读索引](../AI_READING_INDEX.md) 和 [文档状态判读](../README.md#documentation-status) 继续适用；缺卡、失配和未知均可以回原文，不表示没有实现或没有规范。
+这是可选的本地导航工具。普通查询按次读取 Git 跟踪的文档，同时保留 [records.json](records.json) 的精选入口与限定摘要。现有 [AI 阅读索引](../AI_READING_INDEX.md) 和 [文档状态判读](../README.md#documentation-status) 继续适用；缺卡、失配和未知均可以回原文，不表示没有实现或没有规范。
 
 ## 使用
 
@@ -12,14 +12,27 @@
 
 ```sh
 node scripts/ai-docs.mjs query --task documentation
-node scripts/ai-docs.mjs query --query 关系
+node scripts/ai-docs.mjs query --task plugin --query plugin_rpc_invoke
+node scripts/ai-docs.mjs query --task cli --query --kernel-source
+node scripts/ai-docs.mjs query --query MemoryBase
 node scripts/ai-docs.mjs boot --task kernel
 node scripts/ai-docs.mjs check
 ```
 
-输出包括原文路径、真实定位行、试点覆盖、受检模式与版本、失配和回退入口。Base、规则、状态由原文解释；导航成功不代表实现或运行验收成功。默认只列八个结果，截断时提示总数；可以缩小查询或用 `--limit 1..20`。任务标签见登记输入，标签不表示架构层级。`query` 与 `boot` 不打印原文全文，不执行其中的指令。
+先用 `query` 找入口，再读原文对应章节与适用前提。输出包括章节行、正文命中行、来源、覆盖范围、受检模式与版本、失配和回退入口。默认只列八个结果，截断时提示总数；可以缩小查询或用 `--limit 1..20`。正文引文最多 240 个 Unicode 字符，可能被截断，不是摘要、完整上下文或经过审阅的结论。工具不执行文中指令。
 
-关键词只匹配登记身份、路径、用途、标签和入口标题，不搜索全仓原文。工作模式是逐项观察，不是跨并发编辑的原子快照；需要精确复现时使用提交模式。
+### 来源与范围
+
+| 来源 | 读取范围与使用方法 | 可以得出的结论 |
+|---|---|---|
+| `discovered`：即时原文导航 | `query` 默认在 `AGENTS.md`、根 `README.md`、`handoff/`、`creator-docs/`、`human-docs/` 的已跟踪 Markdown 中匹配路径、标题和正文。排除路径含 `archive` 的目录及 `handoff/debt-marathon/waves/`；不含未跟踪笔记、独立英文镜像目录或其它工程文件。 | 本次读取找到该位置；`read-time-only; not pre-reviewed`，不推断现行／草案／完成状态。 |
+| `curated`：精选入口 | `records.json` 登记的路径、用途、标签和章节。使用 `query --scope catalog` 限定查询；`boot`、`check` 默认只处理此层。 | 定位和版本是否符合登记；可选摘要另有明确核对范围，仍不等于内容或运行验收。 |
+
+两类入口可以同时出现，输出保留来源。即时导航不生成数百份卡片、摘要或审阅记录；每次读取当前版本，无需为每个正文维护另一份哈希。精选入口优先展示，其后按路径与行号排序，不表示规范权威排序。
+
+`--query` 是大小写不敏感的**字面匹配**，不是自然语言检索。即时导航的 `--task` 标签从路径词生成，例如 `cli`、`plugin`、`memory`、`catalog`；精选标签由记录维护。标签只是筛选条件，不能证明责任归属或状态；词形不同可能找不到，应去掉筛选或换关键词，不把零结果解释为能力不存在。引用代码块也可命中，不能把示例误当成生产接线。
+
+工作模式是逐项观察，不是跨并发编辑的原子快照；需要精确复现时使用提交模式。JSON 中 `source_oid` 对即时导航表示当前 index／提交的 blob，对精选入口表示登记版本；`observed_oid` 表示实际 index／提交版本。工作文件有 `unstaged_change` 时，正文还包含未暂存修改，OID **不代表这些未暂存字节**。`staged_change` 与 `unstaged_change` 分开报告，输出不是内容认证。
 
 固定提交复现使用完整 SHA；**记录与原文都从同一提交读取**。以下 `FULL_SHA` 是占位符，应替换为包含本试点的真实提交：
 
@@ -28,11 +41,13 @@ node scripts/ai-docs.mjs check --mode commit --rev FULL_SHA
 node scripts/ai-docs.mjs query --task role --mode commit --rev FULL_SHA --json
 ```
 
-`--root PATH` 可明确指定另一 Git checkout 根目录，默认使用脚本所属仓库。提交检查不借用该 checkout 的现行记录。`--json` 输出结构化结果，不自动写文件。退出码：`0` 表示本次选定导航／结构检查无已发现问题，缺少查询结果也会以 `0` 给出回退；`1` 表示选定记录需要修复或核对；`2` 表示参数、登记输入、读取或 Git 工具故障。三者都不表示整份内容认证。
+`--root PATH` 可明确指定具有本工具登记输入的另一 Git checkout 根目录，默认使用脚本所属仓库。提交检查不借用该 checkout 的现行记录。`--json` 输出结构化结果，不自动写文件。退出码：`0` 表示本次所列导航／结构检查无已发现问题，缺少查询结果也会以 `0` 给出回退；`1` 表示所列记录需要修复或核对（包括工作修改）；`2` 表示参数、登记输入、读取或 Git 工具故障。三者都不表示整份内容认证。截断输出不能证明未展示项无问题。
+
+`check` 只检查精选层的登记、定位及限定摘要，拒绝 `--scope documents`：即时读取没有预先核对基线，不能冒充全仓审查。`boot` 只列相关入口，不代替已有必读规则；本工具未安装或某项读取失败时，可以直接回到原有阅读索引。
 
 ## 记录怎样维护
 
-唯一输入是 `records.json`。每份入选文档一条记录，可有多个章节入口；不会按文件大小拆分文档，也不复制完整规则或债务状态表。
+精选层唯一登记输入是 `records.json`，初始保留八份文档；即时导航的输入则是上文范围内的 Git 跟踪原文。每份精选文档一条记录，可有多个章节入口；不按文件大小拆分文档，也不复制完整规则或债务状态表。普通原文新增、改名或编辑无需同步一份即时导航清单；新文档需正常暂存或提交后才进入发现范围。
 
 - `id` 是试点内唯一身份；`path` 是仓库内 Markdown；`purpose`、`tags`、`entries` 只用于定位。精确标题路径包含其上级标题，不使用推断的 GitHub slug；显式锚点和标题必须在非代码、非注释区域唯一。
 - `source_ref` 保存 Git blob OID 和对象格式。工作模式同时检查 HEAD／index／工作树；已暂存与未暂存分别报告。对受选 Markdown 的工作内容只归一 CRLF→LF 后与 index blob 比较，不丢弃空格、大小写或其它内容，也不修改换行或索引。
@@ -49,6 +64,8 @@ node --test scripts/ai-docs.test.mjs
 node scripts/ai-docs.mjs check
 ```
 
-动态夹具覆盖真实命令、缺卡回退、源／摘要变化、staged／unstaged、提交隔离、换行差异、定位失败／歧义、错误输入、目录链接和读取前后原件／索引不变。它们验证工具机制，不表示八份原文或全仓事实已通过审查。
+动态夹具覆盖真实命令、缺卡回退、源／摘要变化、staged／unstaged、提交隔离、换行差异、定位失败／歧义、错误输入、目录链接和读取前后原件／索引不变；扩面另覆盖正文匹配、历史目录排除、未跟踪笔记排除、以 `--` 开头的查询词和批量对象缺失。它们验证工具机制，不表示原文或全仓事实已通过审查。
 
-该命令没有加入 Dimension 5、required CI、自动启动规则或常驻进程。本片达到“找对原文、更新可见、失败可回退”后停止，后续按实际使用反馈决定是否扩面。执行证据见 [本批 Wave](../debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md)；该报告不拥有当前规范或债务状态。
+该命令没有加入 Dimension 5、required CI、自动启动规则或常驻进程。批量读取 Git 对象，不持久化搜索索引、缓存或锁文件。原文、Git index 与登记文件均只读。
+
+当前范围达到“实际任务能找对原文、更新可见、失败可回退”后冻结，后续使用中按具体障碍改进，不开展全仓穷尽审查。历史实施分别见 [初始试点](../debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md) 与 [扩面和实际使用](../debt-marathon/waves/WAVE-20261020-AI-DOCS-EXPANSION.md)；报告不拥有当前规范或债务状态。
