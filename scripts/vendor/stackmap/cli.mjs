@@ -18,7 +18,7 @@ function checkDocumentBytes(bytes) {
 
 const catalogCandidates = ['handoff/catalog/records.json', 'catalog/records.json'];
 const defaultRoot = fileURLToPath(new URL('./', import.meta.url));
-const fallback = 'Read the repository's own reading index; missing coverage is not missing implementation or policy.';
+const fallback = 'Read the repository reading index; missing coverage is not missing implementation or policy.';
 const usage = 'Usage: stackmap <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--all] [--count] [--catalog PATH] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--roots a,b] [--json]';
 const normalize = text => text.replace(/\r\n/g, '\n');
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
