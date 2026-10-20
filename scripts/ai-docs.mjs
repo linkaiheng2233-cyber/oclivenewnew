@@ -10,7 +10,7 @@ import { checkDocumentBytes } from './check-doc-encoding.mjs';
 const catalogPath = 'handoff/catalog/records.json';
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
 const fallback = 'Read handoff/AI_READING_INDEX.md and handoff/README.md; missing coverage is not missing implementation or policy.';
-const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--task TAG] [--query TEXT] [--limit 1..20] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
+const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
 const normalize = text => text.replace(/\r\n/g, '\n');
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
@@ -347,8 +347,9 @@ export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev }
     fallback, records };
 }
 
-export function queryEntries(report, { task = '', query = '', limit = 8, now = Date.now() } = {}) {
+export function queryEntries(report, { task = '', query = '', limit = 8, select = 'entries', now = Date.now() } = {}) {
   requireValue(Number.isInteger(limit) && limit >= 1 && limit <= 20, 'invalid result limit');
+  requireValue(['documents', 'entries'].includes(select), 'invalid selection unit');
   requireValue(Number.isFinite(now), 'invalid observation clock');
   const rows = report.records.flatMap(record => record.entries.flatMap(entry => {
     if (task && !record.tags.includes(task)) return [];
@@ -368,15 +369,17 @@ export function queryEntries(report, { task = '', query = '', limit = 8, now = D
   }));
   rows.sort((a, b) => (a.origin === 'curated' ? 0 : 1) - (b.origin === 'curated' ? 0 : 1)
     || compare(a.path, b.path) || a.line - b.line || compare(a.key, b.key));
+  const selected = select === 'entries' ? rows : rows.filter((row, index) => rows.findIndex(other => other.path === row.path) === index);
   return { mode: report.mode, commit: report.commit, coverage: report.coverage, scope: report.scope,
-    excluded_documents: report.excluded_documents ?? 0,
-    total: rows.length, truncated: rows.length > limit, matches: rows.slice(0, limit), fallback };
+    excluded_documents: report.excluded_documents ?? 0, unit: select,
+    total: rows.length, selected_total: selected.length,
+    truncated: selected.length > limit, matches: selected.slice(0, limit), fallback };
 }
 
 function parseArgs(args) {
   requireValue(['query', 'check', 'boot'].includes(args[0]), usage);
   const options = { command: args[0] };
-  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope']);
+  const allowed = new Set(['--root', '--task', '--query', '--limit', '--mode', '--rev', '--scope', '--select']);
   for (let i = 1; i < args.length; i += 1) {
     const flag = args[i];
     const key = flag.slice(2);
@@ -388,8 +391,10 @@ function parseArgs(args) {
       options[key] = args[++i];
     }
   }
-  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit, usage);
+  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit && !options.select, usage);
   options.scope ??= options.command === 'query' ? 'documents' : 'catalog';
+  options.select ??= 'documents';
+  requireValue(['documents', 'entries'].includes(options.select), usage);
   requireValue(['catalog', 'documents'].includes(options.scope)
     && (options.command !== 'check' || options.scope === 'catalog'), usage);
   if (options.limit !== undefined) {
@@ -411,13 +416,18 @@ function render(output, command) {
     }
   } else {
     if (command === 'boot') lines.push('Rules stay in AGENTS.md and linked SSOT; open the relevant original before deciding a change.');
+    const byDocument = output.unit === 'documents';
     for (const row of output.matches) {
       lines.push(`${safe(row.label)} -> ${safe(row.path)}:${row.line ?? '?'} [${row.origin}; ${row.issues.join(', ') || 'navigation located'}]`);
-      if (row.excerpt !== null) lines.push(`  Source line ${row.matched_line} (unreviewed quote, max 240 characters): ${safe(row.excerpt)}`);
+      if (!byDocument && row.excerpt !== null) lines.push(`  Source line ${row.matched_line} (unreviewed quote, max 240 characters): ${safe(row.excerpt)}`);
       if (row.summary !== null) lines.push(`  Scoped summary (not acceptance): ${safe(row.summary)}`);
       if (row.review) lines.push(`  Review: ${safe(row.review.subject)} / ${safe(row.review.reviewer)}; independent=${row.review.independent}; date=${row.review.reviewed_on}; age_hint=${row.review_age_days}d (not validity)`);
     }
-    if (output.truncated) lines.push(`Showing ${output.matches.length}/${output.total}; narrow --task or --query, or use --limit up to 20.`);
+    if (output.truncated) {
+      lines.push(byDocument
+        ? `Showing ${output.matches.length}/${output.selected_total} documents from ${output.total} matching entries; narrow --task or --query, or use --limit up to 20.`
+        : `Showing ${output.matches.length}/${output.total}; narrow --task or --query, or use --limit up to 20.`);
+    }
   }
   lines.push(`Fallback: ${output.fallback}`);
   return lines.join('\n');
