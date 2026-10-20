@@ -37,7 +37,7 @@ try {
 }
 
 const hashes = Object.fromEntries(files.map(name => [name,
-  createHash('sha256').update(fs.readFileSync(path.join(vendorDir, name))).digest('hex')]));
+  createHash('sha256').update(fs.readFileSync(path.join(vendorDir, name), 'utf8').replace(/\r\n/g, '\n')).digest('hex')]));
 const manifest = {
   source: 'https://github.com/linkaiheng2233-cyber/stackmap-check',
   commit,
