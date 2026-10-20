@@ -84,6 +84,7 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | [AI_VERIFICATION_PROTOCOL.md](AI_VERIFICATION_PROTOCOL.md) | 审查、带数字汇报与 Document → Code 支撑调查的证据/止点规则 |
 | [dev-pipeline/SKILL.md](workflows/dev-pipeline/SKILL.md) | 通用七阶段职责、尺寸与证据状态；仓库正式来源，本机用户级 Skill 仅安装副本；OCLive 增量见 [项目 Skill](../.cursor/skills/oclive-dev-pipeline/SKILL.md) |
 | [oclive-adaptive-pipeline/SKILL.md](workflows/oclive-adaptive-pipeline/SKILL.md) | 第二条自适应协作层：按风险规划、选择实施者与复核，不绑定型号（2026-10-01） |
+| [ai-docs-nav/SKILL.md](workflows/ai-docs-nav/SKILL.md) | 定位文档时的使用约定：先跑只读导航、何时穷举、何时回原文；工具行为见 [catalog README](catalog/README.md)，不承载规则或验收 |
 | [RECURRING_OPTIMIZATION_PLAYBOOK.md](RECURRING_OPTIMIZATION_PLAYBOOK.md) | 多轮巡检流程 |
 
 ### 状态、性能与专项执行
