@@ -22,6 +22,7 @@
 | 6 | [handoff/README.md](handoff/README.md) §文档分责 | 动文档前查 SSOT · **禁止冗余新建** |
 | 7 | [`.cursor/rules/oclivenewnew.mdc`](.cursor/rules/oclivenewnew.mdc) | 10 条硬约束镜像 |
 | — | [通用 dev-pipeline](handoff/workflows/dev-pipeline/SKILL.md) · [OCLive 定制层](.cursor/skills/oclive-dev-pipeline/SKILL.md) | **七阶段开发流水线**；仓库为准，`~/.cursor/skills/dev-pipeline/` 仅安装副本 |
+| — | [`handoff/catalog/README.md`](handoff/catalog/README.md) | **AI 文档导航工具**：`node scripts/ai-docs.mjs query --query <词>` 定位某概念／命令／债务 ID 落在哪份文档；可选、只读，不替代 SSOT、影响面分析或验收证据 |
 | — | [`.cursor/skills/oclive-debt-marathon/SKILL.md`](.cursor/skills/oclive-debt-marathon/SKILL.md) · [`handoff/debt-marathon/`](handoff/debt-marathon/README.md) | **债偿还马拉松**：长流程计划书 · 分阶段子 Agent · 波次日志 |
 
 **文档纪律摘要（G10–G16）**：模块关系 **只**改 MODULE_MAP；无 RFC/关键决策 **不新建**顶层 `.md`；**先读**关联 SSOT 再写（可以慢）；**链接代替复制**；人类长文在 `human-docs/` / `creator-docs/`，本文 **不**堆架构长节。
