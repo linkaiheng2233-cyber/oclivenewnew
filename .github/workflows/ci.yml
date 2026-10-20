@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main, master]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
     inputs:
       base_sha:
@@ -24,6 +26,7 @@ permissions:
 jobs:
   # Stage 3.1: safe draft PRs use the trusted plan for development feedback.
   # Ready docs-only PRs remain the promoted canary; every unsafe plan stays full.
+  # Stage 3.2: a merge-queue batch runs the full matrix once for the whole batch.
   ci-impact-plan:
     runs-on: ubuntu-latest
     outputs:
@@ -50,6 +53,7 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
           MANUAL_BASE_SHA: ${{ inputs.base_sha }}
         run: |
@@ -63,6 +67,8 @@ jobs:
             base="$(git rev-parse "$MANUAL_BASE_SHA")"
           elif [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_BASE_SHA" ]; then
             base="$PR_BASE_SHA"
+          elif [ "$EVENT_NAME" = "merge_group" ] && [ -n "$MERGE_GROUP_BASE_SHA" ]; then
+            base="$MERGE_GROUP_BASE_SHA"
           elif [ -n "$PUSH_BEFORE_SHA" ] && [ "$PUSH_BEFORE_SHA" != "0000000000000000000000000000000000000000" ] && git cat-file -e "${PUSH_BEFORE_SHA}^{commit}" 2>/dev/null; then
             base="$PUSH_BEFORE_SHA"
           elif git rev-parse --verify HEAD^ >/dev/null 2>&1; then

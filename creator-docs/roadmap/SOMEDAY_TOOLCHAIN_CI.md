@@ -129,6 +129,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | 安全草稿PR：非shadow、无warning/fallback且范围与job非空 | 受信计划选中的责任组 | `ci-draft-gate`，不能满足main的required check |
 | ready PR，直接模块仅为已晋升的 `oclive.docs` 且满足上述安全条件 | 文档Canary选择范围 | `ci-gate` |
 | 其它ready PR | 全部主CI责任组 | `ci-gate` |
+| merge queue 批次（`merge_group`） | 全部主CI责任组；一批 PR 只跑一次全量 | `ci-gate`（批次 SHA） |
 | 推送main/master，或手动运行主workflow | 全部主CI责任组 | `ci-gate`；普通备份分支push本身不触发此workflow |
 | 规划warning、未知/高风险回退或规划失败 | 全量；规划失败仍使最终gate失败 | 不允许全量检查的通过掩盖规划失败 |
 
