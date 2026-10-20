@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "records": [
+    {
+      "id": "agent-entry",
+      "path": "AGENTS.md",
+      "purpose": "找到本仓修改前的已有阅读入口",
+      "tags": ["documentation", "contribution"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "415398a8ac73872d44eea74000eb1bdb9c380b24"},
+      "entries": [{"key": "before-change", "label": "改代码前先读哪些资料", "locator": {"kind": "heading-path", "value": ["Agent / AI 协作说明（A.I.Live · oclivenewnew）", "改代码前必读（AI · 精简索引）"]}}]
+    },
+    {
+      "id": "handoff-entry",
+      "path": "handoff/README.md",
+      "purpose": "定位文档分责、现行与历史的判读入口",
+      "tags": ["documentation", "contribution"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "7bffd060df88c75c430afcf6efe2850d56f59278"},
+      "entries": [
+        {"key": "state", "label": "区别当前实现、候选、部分接线与历史", "locator": {"kind": "explicit-anchor", "value": "documentation-status"}},
+        {"key": "maintenance", "label": "修改文档后如何维护关联入口", "locator": {"kind": "explicit-anchor", "value": "documentation-maintenance"}}
+      ]
+    },
+    {
+      "id": "task-reading",
+      "path": "handoff/AI_READING_INDEX.md",
+      "purpose": "沿已有路线选择任务所需原文",
+      "tags": ["documentation", "kernel", "role", "contribution"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "120a572e904a134869ab2b7d19fbbe3f5232abb3"},
+      "entries": [
+        {"key": "docs", "label": "文档任务怎样找 SSOT", "locator": {"kind": "heading-path", "value": ["AI 深读索引（Agent Reading Index）", "9. 按任务选阅读路径", "改文档"]}},
+        {"key": "kernel", "label": "Kernel、六槽与 Host 权责的阅读路径", "locator": {"kind": "explicit-anchor", "value": "kernel-slot-reading"}}
+      ]
+    },
+    {
+      "id": "change-boundaries",
+      "path": "handoff/AI_CHANGE_BOUNDARIES.md",
+      "purpose": "定位现有修改约束，不在索引重写规则",
+      "tags": ["documentation", "contribution"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "667fb0a7685b0432903a50f803eb9ebea13abfd1"},
+      "entries": [{"key": "constraints", "label": "本仓全局改动约束在哪里", "locator": {"kind": "heading-path", "value": ["AI / Agent 改动边界（防脱轨 SSOT）", "全局硬约束"]}}]
+    },
+    {
+      "id": "verification",
+      "path": "handoff/AI_VERIFICATION_PROTOCOL.md",
+      "purpose": "定位证据要求与有限调查的停止条件",
+      "tags": ["documentation", "review", "debt"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "cf1773466a4205bfa385fd0539732ed7f1ed4119"},
+      "entries": [
+        {"key": "evidence", "label": "观察、事实、度量与入账建议怎样区分", "locator": {"kind": "heading-path", "value": ["AI 审查 / 汇报核实协议（Verification Protocol）", "1. 交付物分级"]}},
+        {"key": "stop", "label": "文档到代码调查何时停止", "locator": {"kind": "explicit-anchor", "value": "doc-code-support-audit"}}
+      ]
+    },
+    {
+      "id": "module-map",
+      "path": "handoff/MODULE_MAP_AND_HANDOFF.md",
+      "purpose": "定位模块职责、公共候选及当前实现对照",
+      "tags": ["kernel", "module", "review"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "c592835e865af07cb7fa485e47bf2dd6cdbf308a"},
+      "entries": [
+        {"key": "responsibility", "label": "Kernel、六槽、Host 与 Adapter 各负责什么", "locator": {"kind": "explicit-anchor", "value": "kernel-responsibilities"}},
+        {"key": "candidate", "label": "哪些公共语义仍需按候选范围阅读", "locator": {"kind": "explicit-anchor", "value": "kernel-semantics-candidate"}},
+        {"key": "source", "label": "在哪里查看职责与源码的限定对照", "locator": {"kind": "explicit-anchor", "value": "kernel-source-map"}}
+      ]
+    },
+    {
+      "id": "minimal-role",
+      "path": "handoff/ROLE_PACK_BOUNDARY.md",
+      "purpose": "区分最小角色定义、参考 Host 和产品角色扩展",
+      "tags": ["role", "kernel", "module"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "c80bd14f82de47fd1af6fd279bc05f4fd40c21ca"},
+      "entries": [{
+        "key": "minimum",
+        "label": "最小角色是否要求关系与好感度",
+        "locator": {"kind": "heading-path", "value": ["角色包与蓝图 · 职责边界（SSOT）", "0. 三层 contract，不得混称", "0.1 已确认的最小逻辑 contract"]},
+        "summary": "关系与好感度不属于最小角色契约；这不表示参考 Host 的既有丰富角色加载假设已经撤销。",
+        "review": {"source_oid": "c80bd14f82de47fd1af6fd279bc05f4fd40c21ca", "entry_sha256": "2eed103ebc10f783b5a981bcfbfa9d13a29c048e57c80f8b959a7319dd8b8ffd", "reviewed_on": "2026-10-20", "subject": "ai", "reviewer": "controller", "method": "summary-to-source", "independent": false}
+      }]
+    },
+    {
+      "id": "debt-owner",
+      "path": "handoff/TECHNICAL_DEBT_INVENTORY.md",
+      "purpose": "查看原台账与冻结范围，不复制债务当前状态",
+      "tags": ["debt", "review"],
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "93560721093b0399abe9dd3c4ce0d7882ecb99b3"},
+      "entries": [
+        {"key": "ledger", "label": "当前技术债状态由哪份台账拥有", "locator": {"kind": "heading-path", "value": ["Technical debt inventory", "§1 主台账（当前状态与已结案引用；不是自动开工清单）"]}},
+        {"key": "frozen", "label": "现有哪些冻结项需要先核对", "locator": {"kind": "heading-path", "value": ["Technical debt inventory", "§2 冻结 / registry（明确「不动」）"]}}
+      ]
+    }
+  ]
+}
