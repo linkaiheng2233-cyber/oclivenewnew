@@ -10,7 +10,7 @@ import { checkDocumentBytes } from './check-doc-encoding.mjs';
 const catalogPath = 'handoff/catalog/records.json';
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
 const fallback = 'Read handoff/AI_READING_INDEX.md and handoff/README.md; missing coverage is not missing implementation or policy.';
-const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
+const usage = 'Usage: node scripts/ai-docs.mjs <query|check|boot> [--scope catalog|documents] [--select documents|entries] [--task TAG] [--query TEXT] [--limit 1..20] [--all] [--count] [--mode worktree|commit] [--rev FULL_SHA] [--root PATH] [--json]';
 const normalize = text => text.replace(/\r\n/g, '\n');
 const nonempty = value => typeof value === 'string' && value.trim().length > 0;
 const identifier = value => typeof value === 'string' && /^[a-z][a-z0-9-]*$/.test(value);
@@ -21,6 +21,17 @@ const excerptMax = 240;
 const excerptOf = text => {
   const chars = [...text.trim()];
   return chars.slice(0, excerptMax).join('') + (chars.length > excerptMax ? '…' : '');
+};
+/** Rough output size of listing these rows, so a caller can price an exhaustive read before asking for it. */
+const estimateRows = rows => {
+  let cjk = 0, other = 0;
+  for (const row of rows) {
+    for (const ch of `${row.label} ${row.path}`) {
+      if (ch >= '\u3400' && ch <= '\u9fff') cjk += 1; else other += 1;
+    }
+    other += 40;
+  }
+  return Math.round(cjk + other / 3.5);
 };
 
 function requireValue(ok, message) {
@@ -347,9 +358,11 @@ export function discoverDocuments({ root = defaultRoot, mode = 'worktree', rev }
     fallback, records };
 }
 
-export function queryEntries(report, { task = '', query = '', limit = 8, select = 'entries', now = Date.now() } = {}) {
+export function queryEntries(report, { task = '', query = '', limit = 8, select = 'entries', all = false, count = false, now = Date.now() } = {}) {
   requireValue(Number.isInteger(limit) && limit >= 1 && limit <= 20, 'invalid result limit');
   requireValue(['documents', 'entries'].includes(select), 'invalid selection unit');
+  requireValue(!(all && count), 'use one of --all or --count');
+  requireValue(!all || select === 'documents', '--all requires --select documents');
   requireValue(Number.isFinite(now), 'invalid observation clock');
   const rows = report.records.flatMap(record => record.entries.flatMap(entry => {
     if (task && !record.tags.includes(task)) return [];
@@ -370,10 +383,12 @@ export function queryEntries(report, { task = '', query = '', limit = 8, select 
   rows.sort((a, b) => (a.origin === 'curated' ? 0 : 1) - (b.origin === 'curated' ? 0 : 1)
     || compare(a.path, b.path) || a.line - b.line || compare(a.key, b.key));
   const selected = select === 'entries' ? rows : rows.filter((row, index) => rows.findIndex(other => other.path === row.path) === index);
+  const listed = count ? [] : (all ? selected : selected.slice(0, limit));
   return { mode: report.mode, commit: report.commit, coverage: report.coverage, scope: report.scope,
     excluded_documents: report.excluded_documents ?? 0, unit: select,
     total: rows.length, selected_total: selected.length,
-    truncated: selected.length > limit, matches: selected.slice(0, limit), fallback };
+    all_estimate: estimateRows(selected), count_mode: count,
+    truncated: !count && !all && selected.length > limit, matches: listed, fallback };
 }
 
 function parseArgs(args) {
@@ -385,16 +400,19 @@ function parseArgs(args) {
     const key = flag.slice(2);
     requireValue(!Object.hasOwn(options, key), `duplicate option: ${flag}`);
     if (flag === '--json') options.json = true;
+    else if (flag === '--all' || flag === '--count') options[key] = true;
     else {
       requireValue(allowed.has(flag) && nonempty(args[i + 1])
         && (flag === '--query' || !args[i + 1].startsWith('--')), usage);
       options[key] = args[++i];
     }
   }
-  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit && !options.select, usage);
+  if (options.command === 'check') requireValue(!options.task && !options.query && !options.limit && !options.select && !options.all && !options.count, usage);
   options.scope ??= options.command === 'query' ? 'documents' : 'catalog';
   options.select ??= 'documents';
   requireValue(['documents', 'entries'].includes(options.select), usage);
+  requireValue(!(options.all && options.count), usage);
+  requireValue(!options.all || options.select === 'documents', '--all requires --select documents');
   requireValue(['catalog', 'documents'].includes(options.scope)
     && (options.command !== 'check' || options.scope === 'catalog'), usage);
   if (options.limit !== undefined) {
@@ -417,16 +435,20 @@ function render(output, command) {
   } else {
     if (command === 'boot') lines.push('Rules stay in AGENTS.md and linked SSOT; open the relevant original before deciding a change.');
     const byDocument = output.unit === 'documents';
-    for (const row of output.matches) {
-      lines.push(`${safe(row.label)} -> ${safe(row.path)}:${row.line ?? '?'} [${row.origin}; ${row.issues.join(', ') || 'navigation located'}]`);
-      if (!byDocument && row.excerpt !== null) lines.push(`  Source line ${row.matched_line} (unreviewed quote, max 240 characters): ${safe(row.excerpt)}`);
-      if (row.summary !== null) lines.push(`  Scoped summary (not acceptance): ${safe(row.summary)}`);
-      if (row.review) lines.push(`  Review: ${safe(row.review.subject)} / ${safe(row.review.reviewer)}; independent=${row.review.independent}; date=${row.review.reviewed_on}; age_hint=${row.review_age_days}d (not validity)`);
-    }
-    if (output.truncated) {
-      lines.push(byDocument
-        ? `Showing ${output.matches.length}/${output.selected_total} documents from ${output.total} matching entries; narrow --task or --query, or use --limit up to 20.`
-        : `Showing ${output.matches.length}/${output.total}; narrow --task or --query, or use --limit up to 20.`);
+    if (output.count_mode) {
+      lines.push(`${output.selected_total} ${output.unit} match from ${output.total} entries; use --all to list them (~${output.all_estimate} tokens).`);
+    } else {
+      for (const row of output.matches) {
+        lines.push(`${safe(row.label)} -> ${safe(row.path)}:${row.line ?? '?'} [${row.origin}; ${row.issues.join(', ') || 'navigation located'}]`);
+        if (!byDocument && row.excerpt !== null) lines.push(`  Source line ${row.matched_line} (unreviewed quote, max 240 characters): ${safe(row.excerpt)}`);
+        if (row.summary !== null) lines.push(`  Scoped summary (not acceptance): ${safe(row.summary)}`);
+        if (row.review) lines.push(`  Review: ${safe(row.review.subject)} / ${safe(row.review.reviewer)}; independent=${row.review.independent}; date=${row.review.reviewed_on}; age_hint=${row.review_age_days}d (not validity)`);
+      }
+      if (output.truncated) {
+        lines.push(byDocument
+          ? `Showing ${output.matches.length}/${output.selected_total} documents from ${output.total} matching entries; use --all to enumerate ${output.selected_total} documents (~${output.all_estimate} tokens), or narrow --task/--query.`
+          : `Showing ${output.matches.length}/${output.total}; narrow --task or --query, or use --limit up to 20.`);
+      }
     }
   }
   lines.push(`Fallback: ${output.fallback}`);
