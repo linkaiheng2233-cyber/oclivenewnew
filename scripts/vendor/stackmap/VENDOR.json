@@ -1,8 +1,8 @@
 {
   "source": "https://github.com/linkaiheng2233-cyber/stackmap-check",
-  "commit": "697e851b1d52ef0b15d0ee0677f954d1b617fa64",
+  "commit": "987adcc16c585eabe6a38a1eed8a1efe3443de96",
   "files": {
-    "cli.mjs": "50b5dd105ecf9ded59e73e3ca726050a1cdc35813275a983834e15eded41cefd",
+    "cli.mjs": "fe11090199e5042dc68201ab06c3a9bc180379ef3a8e17247e116daa7e805f35",
     "cli.test.mjs": "62d67e804197d1f3cec0cb780e14dbca3c019317a565c2d22936bfb1bc4cacd0",
     "eval.mjs": "30af8b2d0982a51cd7eaa74148f233ec4f00466fa175dfa913909347d3c075fe"
   }
