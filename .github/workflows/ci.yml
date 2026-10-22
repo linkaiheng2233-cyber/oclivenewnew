@@ -132,6 +132,10 @@ jobs:
             echo "Trusted base predates the current public/default-Host owners; bootstrap stays full."
             POLICY_ARGS=(--force-full-reason trusted_policy_bootstrap)
           fi
+          SCHEMES_DIR="$GITHUB_WORKSPACE/target/oclive-ci/trusted/data/ci/schemes"
+          if [ -d "$SCHEMES_DIR" ]; then
+            POLICY_ARGS+=(--schemes "$SCHEMES_DIR")
+          fi
           node "$POLICY_SCRIPT" resolve \
             --plan target/oclive-ci/plan.json \
             --event "$EVENT_NAME" \
