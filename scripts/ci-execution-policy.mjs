@@ -2,6 +2,7 @@
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 
 const POLICY_ID = 'domain-aware-pr-v2';
 const PLAN_JOB = 'ci-impact-plan';
@@ -9,7 +10,7 @@ const PROMOTED_READY_DIRECT_MODULES = new Set([
   'oclive.docs',
   'oclive.docs-tooling',
 ]);
-const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_domain_canary']);
+const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_domain_canary', 'promoted_scheme_canary']);
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
@@ -78,7 +79,26 @@ function isPromotedReadyScope(values) {
   return values.length > 0 && values.every((value) => PROMOTED_READY_DIRECT_MODULES.has(value));
 }
 
-function resolveExecution(plan, eventName, forceFullReason = null, prDraft = false) {
+/** Read `active` schemes from a directory; missing or malformed entries are ignored. */
+function loadActiveSchemes(directory) {
+  if (typeof directory !== 'string' || directory.length === 0 || !fs.existsSync(directory)) return [];
+  const schemes = [];
+  for (const name of fs.readdirSync(directory)) {
+    if (!name.endsWith('.json')) continue;
+    const scheme = JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8'));
+    if (scheme.status !== 'active' || !Array.isArray(scheme.jobs) || scheme.jobs.length === 0) continue;
+    schemes.push({ id: scheme.id, jobs: [...scheme.jobs].sort() });
+  }
+  return schemes;
+}
+
+function matchActiveScheme(selectedJobs, schemes) {
+  const sorted = [...new Set(selectedJobs)].sort();
+  return schemes.find(scheme => scheme.jobs.length === sorted.length
+    && scheme.jobs.every((job, index) => job === sorted[index])) ?? null;
+}
+
+function resolveExecution(plan, eventName, forceFullReason = null, prDraft = false, schemes = []) {
   if (!plan || typeof plan !== 'object') {
     throw new Error('plan must be an object');
   }
@@ -94,6 +114,7 @@ function resolveExecution(plan, eventName, forceFullReason = null, prDraft = fal
   const selectedJobs = selectedWorkflowJobs(plan);
 
   let reason = forceFullReason ?? 'promoted_domain_canary';
+  let matchedScheme = null;
   if (forceFullReason !== null) {
     if (!/^[a-z0-9_]+$/.test(forceFullReason)) {
       throw new Error('force-full reason must use lowercase snake_case');
@@ -114,8 +135,16 @@ function resolveExecution(plan, eventName, forceFullReason = null, prDraft = fal
     reason = 'planner_empty_module_scope';
   } else if (prDraft) {
     reason = 'draft_pr_selective';
-  } else if (!isPromotedReadyScope(directModules)) {
-    reason = 'ready_pr_domain_not_promoted';
+  } else if (isPromotedReadyScope(directModules)) {
+    reason = 'promoted_domain_canary';
+  } else {
+    const scheme = matchActiveScheme(selectedJobs, schemes);
+    if (scheme) {
+      reason = 'promoted_scheme_canary';
+      matchedScheme = scheme.id;
+    } else {
+      reason = 'ready_pr_domain_not_promoted';
+    }
   }
 
   const runFull = !SELECTIVE_REASONS.has(reason);
@@ -127,6 +156,7 @@ function resolveExecution(plan, eventName, forceFullReason = null, prDraft = fal
     mode: runFull ? 'full' : 'selective',
     run_full: runFull,
     reason,
+    scheme: matchedScheme,
     selected_jobs: selectedJobs,
   };
 }
@@ -263,6 +293,16 @@ function runSelfTest() {
   assert.equal(resolveExecution(readyCodePlan, 'pull_request', null, true).reason, 'draft_pr_selective');
   assert.equal(resolveExecution(readyCodePlan, 'pull_request', null, true).mode, 'selective');
 
+  const matchingScheme = { id: 'demo', jobs: ['dimension5-acceptance', 'stale-paths'] };
+  const viaScheme = resolveExecution(readyCodePlan, 'pull_request', null, false, [matchingScheme]);
+  assert.equal(viaScheme.reason, 'promoted_scheme_canary');
+  assert.equal(viaScheme.mode, 'selective');
+  assert.equal(viaScheme.scheme, 'demo');
+  assert.equal(
+    resolveExecution(readyCodePlan, 'pull_request', null, false, [{ id: 'other', jobs: ['cli'] }]).reason,
+    'ready_pr_domain_not_promoted',
+  );
+
   const unpromotedLowRiskPlan = basePlan({
     direct_modules: [{ id: 'oclive.docs' }, { id: 'oclive.scaffold' }],
     affected_modules: [
@@ -328,7 +368,13 @@ function runResolve(options) {
   if (prDraftValue !== 'true' && prDraftValue !== 'false') {
     throw new Error('--pr-draft must be true or false');
   }
-  const execution = resolveExecution(plan, eventName, forceFullReason, prDraftValue === 'true');
+  const execution = resolveExecution(
+    plan,
+    eventName,
+    forceFullReason,
+    prDraftValue === 'true',
+    loadActiveSchemes(options.get('--schemes')),
+  );
   fs.writeFileSync(outputPath, `${JSON.stringify(execution, null, 2)}\n`, 'utf8');
   writeExecutionOutputs(execution, githubOutputPath);
   const githubSummaryPath = options.get('--github-summary');
