@@ -292,6 +292,8 @@ jobs:
           git clone --depth 1 https://github.com/RustSec/advisory-db.git "$HOME/.cargo/advisory-db"
       - name: Dimension 5 acceptance gate (--ci)
         run: node scripts/dimension5-acceptance.mjs --ci
+      - name: CI scheme contracts
+        run: cargo test -p oclive_ci_plan --test scheme_contract
 
   npm-audit:
     needs: ci-impact-plan

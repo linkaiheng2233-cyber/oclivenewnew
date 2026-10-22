@@ -7,6 +7,7 @@ const POLICY_ID = 'domain-aware-pr-v2';
 const PLAN_JOB = 'ci-impact-plan';
 const PROMOTED_READY_DIRECT_MODULES = new Set([
   'oclive.docs',
+  'oclive.docs-tooling',
 ]);
 const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_domain_canary']);
 
