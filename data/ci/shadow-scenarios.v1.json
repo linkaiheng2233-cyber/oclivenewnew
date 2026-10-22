@@ -262,7 +262,7 @@
       "changed_files": [".github/workflows/ci.yml"],
       "expected": {
         "direct_modules": ["oclive.repo-tooling"],
-        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.docs-tooling", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
         "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
         "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,
@@ -276,7 +276,7 @@
       "changed_files": ["package-lock.json"],
       "expected": {
         "direct_modules": ["oclive.repo-tooling"],
-        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.docs-tooling", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
         "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
         "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,
@@ -290,7 +290,7 @@
       "changed_files": ["future-module/custom.txt"],
       "expected": {
         "direct_modules": [],
-        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
+        "affected_modules": ["oclive.chat-pro", "oclive.ci-planner", "oclive.cli", "oclive.desktop", "oclive.docs", "oclive.docs-tooling", "oclive.examples", "oclive.kernel-contracts", "oclive.kernel-runtime", "oclive.plugins", "oclive.repo-tooling", "oclive.roles", "oclive.scaffold", "oclive.shared", "oclive.theater"],
         "selected_validators": ["cargo-audit", "cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust-workspace", "stale-paths"],
         "workflow_jobs": ["cli", "cross-host-e2e", "dimension5-acceptance", "frontend", "kernel-contracts", "layering-ratchet", "npm-audit", "oocp-test-suite", "plugins-index", "reference-host-default", "remote-plugin-demo", "rust", "stale-paths"],
         "fallback_full": true,

@@ -11,7 +11,7 @@
         { "kind": "prefix", "value": ".github" }, { "kind": "prefix", "value": ".sqlx" },
         { "kind": "prefix", "value": ".vscode" }, { "kind": "prefix", "value": "crates" },
         { "kind": "prefix", "value": "data" }, { "kind": "prefix", "value": "distributions" },
-        { "kind": "prefix", "value": "e2e-mock" }, { "kind": "prefix", "value": "scripts" },
+        { "kind": "prefix", "value": "e2e-mock" },
         { "kind": "prefix", "value": "tools" },
         { "kind": "exact", "value": ".env.example" }, { "kind": "exact", "value": ".gitattributes" },
         { "kind": "exact", "value": ".gitignore" }, { "kind": "exact", "value": ".nvmrc" },
@@ -113,6 +113,19 @@
       "module_id": "oclive.examples",
       "descriptor": "data/ci/modules/examples.oclive.module.json",
       "selectors": [{ "kind": "prefix", "value": "examples" }]
+    },
+    {
+      "module_id": "oclive.docs-tooling",
+      "descriptor": "data/ci/modules/docs-tooling.oclive.module.json",
+      "selectors": [
+        { "kind": "exact", "value": "scripts/ai-docs.mjs" },
+        { "kind": "exact", "value": "scripts/ai-docs.test.mjs" },
+        { "kind": "exact", "value": "scripts/ai-docs.eval.mjs" },
+        { "kind": "exact", "value": "scripts/check-vendor.mjs" },
+        { "kind": "exact", "value": "scripts/sync-vendor.mjs" },
+        { "kind": "prefix", "value": "scripts/vendor/stackmap" },
+        { "kind": "prefix", "value": "handoff/catalog" }
+      ]
     }
   ],
   "policy_affects": {

@@ -16,6 +16,10 @@
       "validators": ["dimension5-acceptance", "stale-paths"]
     },
     {
+      "id": "docs-tooling",
+      "validators": ["dimension5-acceptance", "stale-paths", "layering-ratchet"]
+    },
+    {
       "id": "kernel-contracts",
       "validators": ["kernel-contracts", "reference-host-default", "rust-workspace", "layering-ratchet", "dimension5-acceptance", "cargo-audit", "kernel-host-dual-core", "rust-arm64-cross", "cross-host-e2e", "oocp-test-suite", "loom", "fuzz"]
     },
