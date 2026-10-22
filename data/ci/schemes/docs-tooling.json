@@ -1,0 +1,32 @@
+{
+  "id": "docs-tooling",
+  "title": "Documentation tooling (AI docs navigator, vendor sync, catalog data)",
+  "status": "draft",
+  "includes": [
+    "scripts/ai-docs.mjs",
+    "scripts/ai-docs.test.mjs",
+    "scripts/ai-docs.eval.mjs",
+    "scripts/check-vendor.mjs",
+    "scripts/sync-vendor.mjs",
+    "scripts/vendor/stackmap/**",
+    "handoff/catalog/**"
+  ],
+  "jobs": [
+    "dimension5-acceptance",
+    "stale-paths",
+    "layering-ratchet"
+  ],
+  "derived_from": {
+    "impact_map": "798664ea0a36b250f356216ba60e1a77e90bbc19",
+    "catalog": "3dbce845818bf83594a14a09f197714e0c851550",
+    "planner": "499d8f49d6157b3feb16bb36ecab6f231a239b40"
+  },
+  "evidence": {
+    "replay_commits": 0,
+    "divergences": 0,
+    "note": "planner-equality check and replay land in Phase B; draft schemes do not change selection"
+  },
+  "author": "ai",
+  "created_at": "2026-10-22T16:45:00+08:00",
+  "rationale": "The docs navigator and its vendored tool only need the documentation gates plus the layering job that runs npm run check:ai-docs; replay evidence is pending Phase B."
+}
