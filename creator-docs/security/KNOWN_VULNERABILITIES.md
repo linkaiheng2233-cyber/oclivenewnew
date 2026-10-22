@@ -12,7 +12,7 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-18**（本地先 `cargo audit` 刷新 advisory-db，共 **1338** 条，再以 `cargo audit --no-fetch --stale` 复核；扫描 **697** 个依赖条目） |
+| **最近扫描日期** | **2026-10-22**（本地 `cargo audit` 刷新 advisory-db，共 **1348** 条；扫描 **696** 个依赖条目；漏洞级 **0**、警告级 **10**） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit --no-fetch --stale` 退出码 **0**） |
 | **警告级命中数** | **报出 10 / 实际命中 11**（报出的 10 条为 `glib` · 5 个 `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`，均为 *unmaintained*/*unsound*，不计入漏洞数；第 11 条 `proc-macro-error` RUSTSEC-2024-0370 由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
@@ -33,6 +33,14 @@
 - 依赖图差量：移除 `zopfli 0.8.3` 与 `derive_arbitrary 1.4.2`，新增 `typed-path 0.12.3`；`flate2 1.1.9` 仍为 `rust_backend`（未引入 `zlib-rs`），依赖条目由 698 降至 **697**。
 - 验证：`cargo audit --no-fetch --stale` **0 漏洞 / 10 允许警告 / exit 0**；`cargo deny check licenses bans` → `bans ok, licenses ok`；`cargo check` 覆盖三个 zip 消费者全通过。
 - 警告级由 6 条增至 10 条是 advisory-db 由 1290 条扩充到 1338 条后既有图的新增登记（`zbus_names` / `zvariant` / `zvariant_derive` / `unsafe-libyaml`），**不是本次升级引入**，且均不阻断门禁。
+
+2026-10-20 上游再次披露两条漏洞（同一 CVE-2026-111943，emSign 根证书信任问题），`main` 的 `dimension5-acceptance` 与 `npm-audit` 同时变红；本批仍按“能升就升、不为已知可修漏洞开 ignore”处理，**未新增任何 ignore 条目**：
+
+- `rustls-webpki` **0.103.14 → 0.103.16**（RUSTSEC-2026-0382，证书校验可能接受被吊销的中间证书），经 `rustls → reqwest` 传递；修复版本要求 `>= 0.103.16`。
+- `webpki-roots` **1.0.9 → 1.0.10**（RUSTSEC-2026-0381，内置根证书含已吊销的 emSign 中间证书）；修复版本要求 `>= 1.0.10`。
+- 锁差量除上述两个 crate 的 version / checksum 外，仅 `tempfile` 的 `getrandom` 选择由 `0.4.3` 指回 `0.3.4`（Cargo 解析器产物；`getrandom` 0.2/0.3/0.4 三个版本本就共存，`cargo metadata --locked` 通过）。
+- npm 侧：`vite` 由 `^6.0.3` 解析到 **6.4.5**（修复 `<= 6.4.3` 的 high），`vitest` **4.1.11 → 4.1.12**（moderate）；`npm audit --audit-level=high` 退出码 **0**，剩余 4 low / 2 moderate 不阻断现有 `--audit-level=high` 门禁。
+- 验证：本地 `cargo audit` → **0 漏洞 / 10 允许警告 / exit 0**（1348 条公告、696 个依赖条目）；`npm audit --package-lock-only` → high **0**。本轮未改 Rust 源码与 manifest 依赖声明。
 
 ---
 
@@ -60,6 +68,8 @@
 | [RUSTSEC-2026-0367](https://rustsec.org/advisories/RUSTSEC-2026-0367) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；解压时不安全保留 SUID/SGID 位（7.3 high） |
 | [RUSTSEC-2026-0368](https://rustsec.org/advisories/RUSTSEC-2026-0368) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；`ZipArchive::extract` 创建的符号链接目标可越出目的目录 |
 | [RUSTSEC-2026-0369](https://rustsec.org/advisories/RUSTSEC-2026-0369) | zip 2.4.2 | **已修复** — 锁文件 **9.0.5** | 同上；`extract()` 经符号链接应用 Unix 权限且不限制目标（9.1 critical）；本仓不调用 `extract()` |
+| [RUSTSEC-2026-0381](https://rustsec.org/advisories/RUSTSEC-2026-0381) | webpki-roots 1.0.9 | **已修复** — 锁文件 **1.0.10** | 2026-10-22 升级；内置根证书含已吊销 emSign 中间证书 |
+| [RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382) | rustls-webpki 0.103.14 | **已修复** — 锁文件 **0.103.16** | 2026-10-22 升级；证书校验可接受被吊销的中间证书 |
 
 ---
 

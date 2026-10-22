@@ -12,7 +12,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-18** (local `cargo audit` refreshed advisory-db first: **1,338** advisories, then re-checked with `cargo audit --no-fetch --stale`; **697** dependency entries scanned) |
+| **Last scan date** | **2026-10-22** (local `cargo audit` against a refreshed advisory-db: **1,348** advisories; **696** dependency entries scanned; 0 vulnerabilities / 10 allowed warnings) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --no-fetch --stale` exit code **0**) |
 | **Warning-level count** | **10 reported / 11 matched** (the 10 reported are `glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities; the 11th, `proc-macro-error` RUSTSEC-2024-0370, is suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
@@ -33,6 +33,14 @@ On 2026-10-18 newly published upstream advisories moved the inventory from **0**
 - Dependency graph delta: `zopfli 0.8.3` and `derive_arbitrary 1.4.2` removed, `typed-path 0.12.3` added; `flate2 1.1.9` stays on `rust_backend` (no `zlib-rs`), and dependency entries drop from 698 to **697**.
 - Verification: `cargo audit --no-fetch --stale` gives **0 vulnerabilities / 10 allowed warnings / exit 0**; `cargo deny check licenses bans` reports `bans ok, licenses ok`; `cargo check` passes for all three zip consumers.
 - The warning count rising from 6 to 10 is new registration for the existing graph after advisory-db grew from 1,290 to 1,338 entries (`zbus_names` / `zvariant` / `zvariant_derive` / `unsafe-libyaml`), **not** something this upgrade introduced, and none of them blocks the gate.
+
+On 2026-10-20 two more upstream advisories (same CVE-2026-111943, emSign root trust) turned `main` red again on both `dimension5-acceptance` and `npm-audit`. This batch keeps the "upgrade what can be upgraded, never open an ignore for a fixable known vulnerability" rule and **adds no ignore entries**:
+
+- `rustls-webpki` **0.103.14 → 0.103.16** (RUSTSEC-2026-0382, certificate verification may accept distrusted intermediates), transitive via `rustls → reqwest`; the fix requires `>= 0.103.16`.
+- `webpki-roots` **1.0.9 → 1.0.10** (RUSTSEC-2026-0381, bundled roots trust distrusted emSign intermediates); the fix requires `>= 1.0.10`.
+- Lockfile delta beyond those two crates is one resolver choice: `tempfile` now points at `getrandom 0.3.4` instead of `0.4.3` (all three getrandom lines coexist; `cargo metadata --locked` passes).
+- npm: `vite` resolves to **6.4.5** (fixes the `<= 6.4.3` high) and `vitest` moves **4.1.11 → 4.1.12** (moderate); `npm audit --audit-level=high` exits **0**, leaving 4 low / 2 moderate that do not block the existing gate.
+- Verification: local `cargo audit` → **0 vulnerabilities / 10 allowed warnings / exit 0** (1,348 advisories, 696 entries); `npm audit --package-lock-only` → 0 high. No Rust source or manifest dependency declarations changed.
 
 ---
 
@@ -60,6 +68,8 @@ On 2026-10-18 newly published upstream advisories moved the inventory from **0**
 | [RUSTSEC-2026-0367](https://rustsec.org/advisories/RUSTSEC-2026-0367) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; SUID/SGID bits preserved insecurely during extraction (7.3 high) |
 | [RUSTSEC-2026-0368](https://rustsec.org/advisories/RUSTSEC-2026-0368) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; `ZipArchive::extract` creates symlinks whose targets escape the destination directory |
 | [RUSTSEC-2026-0369](https://rustsec.org/advisories/RUSTSEC-2026-0369) | zip 2.4.2 | **Fixed** — lockfile **9.0.5** | same; `extract()` applies Unix permissions through symlinks without confining the target (9.1 critical); this repository never calls `extract()` |
+| [RUSTSEC-2026-0381](https://rustsec.org/advisories/RUSTSEC-2026-0381) | webpki-roots 1.0.9 | **Fixed** — lockfile **1.0.10** | 2026-10-22 upgrade; bundled roots trust distrusted emSign intermediates |
+| [RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382) | rustls-webpki 0.103.14 | **Fixed** — lockfile **0.103.16** | 2026-10-22 upgrade; certificate verification may accept distrusted intermediates |
 
 ---
 
