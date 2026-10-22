@@ -132,6 +132,8 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 | 推送main/master，或手动运行主workflow | 全部主CI责任组 | `ci-gate`；普通备份分支push本身不触发此workflow |
 | 规划warning、未知/高风险回退或规划失败 | 全量；规划失败仍使最终gate失败 | 不允许全量检查的通过掩盖规划失败 |
 
+**merge queue（2026-10-22 评估）**：当前仓库属于个人账号，GitHub 的 merge queue 只在组织仓库（及特定计划）提供；经典分支保护与 Rulesets 页面都没有 "Require merge queue" 项，API 的 `mergeQueue` 字段返回 null。因此 `strict` 下的"合并后重跑"目前只能靠缩短单次运行时间缓解（schemes、收窄 override），不能消除。仓库迁入组织且计划支持后可重新评估：`merge_group` 触发 + 批次全量 + `ci-gate`，约 6 行 workflow 改动。
+
 上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。已推送main `12bc7dc8` 的公共所有权首片为14个验证责任job定义、19个实际job，正式 [38156014581](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581) 已19/19及ci-gate通过。本地后续默认Host组使配置成为15个验证job；公共契约、默认Host、剩余Rust、前端四组各展开两平台，加上规划与gate为21个实际job，正式结论待该后续冻结SHA的实际CI。数量描述结构，不能作为质量或性能目标。
 
 **已集成首片：公共契约与兼容检查执行所有权。** 已同步catalog、完整本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context，具体集合与迁移规则见[下方责任对照](#ci-responsibility-map)。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读；新增责任组不等于全部CI分层完成。
