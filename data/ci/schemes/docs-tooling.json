@@ -1,6 +1,6 @@
 {
   "id": "docs-tooling",
-  "title": "Documentation tooling (AI docs navigator, vendor sync, catalog data)",
+  "title": "Documentation tooling (AI docs navigator and vendor sync)",
   "status": "active",
   "includes": [
     "scripts/ai-docs.mjs",
@@ -8,8 +8,7 @@
     "scripts/ai-docs.eval.mjs",
     "scripts/check-vendor.mjs",
     "scripts/sync-vendor.mjs",
-    "scripts/vendor/stackmap/**",
-    "handoff/catalog/**"
+    "scripts/vendor/stackmap/**"
   ],
   "jobs": [
     "dimension5-acceptance",
@@ -17,12 +16,12 @@
     "layering-ratchet"
   ],
   "derived_from": {
-    "impact_map": "847ffcd124b343e592007f08ade3e21933c812f8",
+    "impact_map": "d0ba836bade3eb08e149ce1e0195e04981e1bc13",
     "catalog": "fd3391d698ea3eb1c7f71406cd2d8789c5f1804a",
-    "planner": "966e3b8db50a166f84a2dad376731eb9e27d5e9d"
+    "planner": "e2f44fe01c4c2df9ed426e24836637f26cd6a2ee"
   },
   "evidence": {
-    "replay_commits": 10,
+    "replay_commits": 2,
     "divergences": 0,
     "per_file_checks": true,
     "note": "10 eligible scheme-only commits in history; every include file also planned alone; both stay inside the 3-job scheme"

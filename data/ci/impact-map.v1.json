@@ -123,8 +123,7 @@
         { "kind": "exact", "value": "scripts/ai-docs.eval.mjs" },
         { "kind": "exact", "value": "scripts/check-vendor.mjs" },
         { "kind": "exact", "value": "scripts/sync-vendor.mjs" },
-        { "kind": "prefix", "value": "scripts/vendor/stackmap" },
-        { "kind": "prefix", "value": "handoff/catalog" }
+        { "kind": "prefix", "value": "scripts/vendor/stackmap" }
       ]
     }
   ],

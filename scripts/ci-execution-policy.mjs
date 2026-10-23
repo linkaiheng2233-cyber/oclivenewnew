@@ -6,11 +6,7 @@ import path from 'node:path';
 
 const POLICY_ID = 'domain-aware-pr-v2';
 const PLAN_JOB = 'ci-impact-plan';
-const PROMOTED_READY_DIRECT_MODULES = new Set([
-  'oclive.docs',
-  'oclive.docs-tooling',
-]);
-const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_domain_canary', 'promoted_scheme_canary']);
+const SELECTIVE_REASONS = new Set(['draft_pr_selective', 'promoted_scheme_canary']);
 
 function uniqueSorted(values) {
   return [...new Set(values)].sort();
@@ -75,11 +71,6 @@ function selectedWorkflowJobs(plan) {
   );
 }
 
-function isPromotedReadyScope(values) {
-  return values.length > 0 && values.every((value) => PROMOTED_READY_DIRECT_MODULES.has(value));
-}
-
-/** Read `active` schemes from a directory; missing or malformed entries are ignored. */
 function loadActiveSchemes(directory) {
   if (typeof directory !== 'string' || directory.length === 0 || !fs.existsSync(directory)) return [];
   const schemes = [];
@@ -113,7 +104,7 @@ function resolveExecution(plan, eventName, forceFullReason = null, prDraft = fal
   const affectedModules = moduleIds(plan.affected_modules, 'affected_modules');
   const selectedJobs = selectedWorkflowJobs(plan);
 
-  let reason = forceFullReason ?? 'promoted_domain_canary';
+  let reason = forceFullReason ?? 'promoted_scheme_canary';
   let matchedScheme = null;
   if (forceFullReason !== null) {
     if (!/^[a-z0-9_]+$/.test(forceFullReason)) {
@@ -135,8 +126,6 @@ function resolveExecution(plan, eventName, forceFullReason = null, prDraft = fal
     reason = 'planner_empty_module_scope';
   } else if (prDraft) {
     reason = 'draft_pr_selective';
-  } else if (isPromotedReadyScope(directModules)) {
-    reason = 'promoted_domain_canary';
   } else {
     const scheme = matchActiveScheme(selectedJobs, schemes);
     if (scheme) {
@@ -252,10 +241,13 @@ function basePlan(overrides = {}) {
 }
 
 function runSelfTest() {
-  const selective = resolveExecution(basePlan(), 'pull_request');
+  const docsScheme = { id: 'docs', jobs: ['dimension5-acceptance', 'stale-paths'] };
+  const selective = resolveExecution(basePlan(), 'pull_request', null, false, [docsScheme]);
   assert.equal(selective.mode, 'selective');
-  assert.equal(selective.reason, 'promoted_domain_canary');
+  assert.equal(selective.reason, 'promoted_scheme_canary');
+  assert.equal(selective.scheme, 'docs');
   assert.deepEqual(selective.selected_jobs, ['dimension5-acceptance', 'stale-paths']);
+  assert.equal(resolveExecution(basePlan(), 'pull_request', null, false, []).reason, 'ready_pr_domain_not_promoted');
 
   assert.equal(resolveExecution(basePlan(), 'push').reason, 'event_not_pull_request');
   assert.equal(
