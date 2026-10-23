@@ -198,7 +198,7 @@ fn docs_tooling_paths_are_scoped_and_unknown_scripts_stay_full() {
 }
 
 #[test]
-fn catalog_paths_join_docs_and_docs_tooling() {
+fn catalog_paths_stay_in_the_docs_scheme() {
     let root = repo_root();
     let plan = plan_files(&root, vec!["handoff/catalog/records.json".to_owned()]);
     assert!(!plan.fallback.full);
@@ -208,17 +208,10 @@ fn catalog_paths_join_docs_and_docs_tooling() {
         .map(|module| module.id.clone())
         .collect();
     modules.sort();
-    assert_eq!(
-        modules,
-        vec!["oclive.docs".to_owned(), "oclive.docs-tooling".to_owned()]
-    );
+    assert_eq!(modules, vec!["oclive.docs".to_owned()]);
     assert_eq!(
         selected_jobs(&plan),
-        vec![
-            "dimension5-acceptance".to_owned(),
-            "layering-ratchet".to_owned(),
-            "stale-paths".to_owned()
-        ]
+        vec!["dimension5-acceptance".to_owned(), "stale-paths".to_owned()]
     );
 }
 

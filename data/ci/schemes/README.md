@@ -57,6 +57,12 @@ is documentation only and must not change selection.
 - The plan currently running a PR is computed from the **base** commit's data, so a scheme
   added by a PR cannot shorten that same PR's checks.
 
+## Runtime authorisation
+
+A ready PR runs selectively only when the planner's selected workflow-job set **equals** an
+`active` scheme's `jobs`. The hard-coded module whitelist was removed in Phase C1: this list
+is now the single promotion source. A `draft` scheme is documentation only.
+
 ## Why subset use is safe
 
 The planner unions modules: adding paths only adds checks. A scheme derived from the full

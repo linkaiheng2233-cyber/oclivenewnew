@@ -1,0 +1,43 @@
+{
+  "id": "docs",
+  "title": "Documentation only (handoff, creator-docs, human-docs, root docs)",
+  "status": "active",
+  "includes": [
+    "creator-docs/**",
+    "creator-docs-en/**",
+    "dev-notes/**",
+    "docs/**",
+    "handoff/**",
+    "human-docs/**",
+    "human-docs-en/**",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "CHANGELOG.en.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "CONTRIBUTING.en.md",
+    "HARDWARE_INTEGRATION.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "README.en.md",
+    "SECURITY.md"
+  ],
+  "jobs": [
+    "dimension5-acceptance",
+    "stale-paths"
+  ],
+  "derived_from": {
+    "impact_map": "d0ba836bade3eb08e149ce1e0195e04981e1bc13",
+    "catalog": "fd3391d698ea3eb1c7f71406cd2d8789c5f1804a",
+    "planner": "e2f44fe01c4c2df9ed426e24836637f26cd6a2ee"
+  },
+  "evidence": {
+    "replay_commits": 204,
+    "divergences": 0,
+    "note": "replaces the hard-coded promoted module list; replay test covers the same documents"
+  },
+  "author": "ai",
+  "created_at": "2026-10-23T09:40:00+08:00",
+  "rationale": "Documentation paths only need the documentation gates; this scheme turns the previous hard-coded promotion into data."
+}
