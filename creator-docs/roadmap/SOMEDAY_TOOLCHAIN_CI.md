@@ -136,6 +136,27 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 **观测（Phase C3）**：`node scripts/ci-run-stats.mjs --days 30`（或 `npm run stats:ci`）按周输出主 CI 的运行数、成功/失败、平均/中位/最大墙钟，以及最慢 5 次运行；只读，需要 `gh` 已登录。用途：判断优化是否生效，并发现卡在长 job 上的基础设施问题。
 
+### 排障：长任务、并发组与 pending run（2026-10-23）
+
+主 CI 的 concurrency 组是 `ci-CI-<ref>`，且 `cancel-in-progress: true`。如果旧 run 卡在长 job（例如 `rust-arm64-cross` 的 `Install cross linker` 在 `azure.archive.ubuntu.com` 下载 45 MB），新 push 触发的 run 会一直 `pending`、0 个 job——这不是配置错误。
+
+处理：
+
+1. `gh run list --branch <branch> --limit 3` 确认旧 run 仍是 `in_progress`；
+2. `gh api -X POST repos/<owner>/<repo>/actions/runs/<old_run_id>/force-cancel`；
+3. 新 run 自动接手并发组，不需要重新触发。
+
+判断基础设施问题：
+
+- `Install cross linker` 停留超过 10 分钟；
+- 与改动无关的 job 长时间 `in_progress`，而其它 job 已绿；
+- `npm run stats:ci` 的最慢 run 明显异常（>60 分钟）。
+
+不要做：
+
+- 反复取消新 run（会让问题循环）；
+- 为了绕过而修改 required checks 或分支保护。
+
 上述表不代替Nightly通道，也不把所有仓库workflow归为同一required gate。已推送main `12bc7dc8` 的公共所有权首片为14个验证责任job定义、19个实际job，正式 [38156014581](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38156014581) 已19/19及ci-gate通过。本地后续默认Host组使配置成为15个验证job；公共契约、默认Host、剩余Rust、前端四组各展开两平台，加上规划与gate为21个实际job，正式结论待该后续冻结SHA的实际CI。数量描述结构，不能作为质量或性能目标。
 
 **已集成首片：公共契约与兼容检查执行所有权。** 已同步catalog、完整本地命令、workflow和[仓库合同](../../kernel/crates/oclive_ci_plan/tests/repository_contract.rs)，保留当前Push/ready策略与required context，具体集合与迁移规则见[下方责任对照](#ci-responsibility-map)。共有依赖可能仍需编译，编译复用与重复运行同一测试分别判读；新增责任组不等于全部CI分层完成。
