@@ -127,17 +127,17 @@ fn every_scheme_is_fresh_and_matches_the_planner() {
         );
         assert_eq!(
             scheme.derived_from.impact_map, impact_map,
-            "{}: stale impact_map",
+            "{}: stale impact_map (run: node scripts/check-ci-schemes.mjs --fix-hashes)",
             scheme.id
         );
         assert_eq!(
             scheme.derived_from.catalog, catalog,
-            "{}: stale catalog",
+            "{}: stale catalog (run: node scripts/check-ci-schemes.mjs --fix-hashes)",
             scheme.id
         );
         assert_eq!(
             scheme.derived_from.planner, planner,
-            "{}: stale planner",
+            "{}: stale planner (run: node scripts/check-ci-schemes.mjs --fix-hashes)",
             scheme.id
         );
 

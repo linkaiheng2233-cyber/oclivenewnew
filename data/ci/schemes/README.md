@@ -63,6 +63,10 @@ A ready PR runs selectively only when the planner's selected workflow-job set **
 `active` scheme's `jobs`. The hard-coded module whitelist was removed in Phase C1: this list
 is now the single promotion source. A `draft` scheme is documentation only.
 
+When the catalog, impact map or planner changes, every scheme's `derived_from` goes stale.
+Run `node scripts/check-ci-schemes.mjs --fix-hashes` to refresh the three hashes and the
+INDEX rows; the validator and the Rust contract test both print that command on failure.
+
 ## Why subset use is safe
 
 The planner unions modules: adding paths only adds checks. A scheme derived from the full

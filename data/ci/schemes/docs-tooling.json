@@ -18,7 +18,7 @@
   "derived_from": {
     "impact_map": "d0ba836bade3eb08e149ce1e0195e04981e1bc13",
     "catalog": "fd3391d698ea3eb1c7f71406cd2d8789c5f1804a",
-    "planner": "e2f44fe01c4c2df9ed426e24836637f26cd6a2ee"
+    "planner": "6623087a828e8459205c58f8d9a2cfdba23fdd24"
   },
   "evidence": {
     "replay_commits": 2,

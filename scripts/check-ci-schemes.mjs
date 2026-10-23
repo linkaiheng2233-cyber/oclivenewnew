@@ -90,7 +90,7 @@ export function validateScheme(scheme, ctx, indexText = '') {
   for (const [key, repoPath] of Object.entries(expected)) {
     let actual;
     try { actual = ctx.hashOf(repoPath); } catch { fail(`cannot read ${repoPath}`); continue; }
-    if (scheme.derived_from?.[key] !== actual) fail(`stale derived_from.${key}: ${scheme.derived_from?.[key]} != ${actual}`);
+    if (scheme.derived_from?.[key] !== actual) fail(`stale derived_from.${key}: ${scheme.derived_from?.[key]} != ${actual} (run: node scripts/check-ci-schemes.mjs --fix-hashes)`);
   }
   return problems;
 }
@@ -109,8 +109,60 @@ export function validateAll(root = defaultRoot) {
   return { problems, schemes };
 }
 
+export function applyHashes(text, hashes) {
+  let out = text;
+  for (const [key, value] of Object.entries(hashes)) {
+    const pattern = new RegExp(`("${key}"\\s*:\\s*")[0-9a-f]{40}(")`);
+    if (!pattern.test(out)) throw new Error(`missing derived_from.${key}`);
+    out = out.replace(pattern, `$1${value}$2`);
+  }
+  return out;
+}
+
+export function applyIndexHashes(indexText, schemes, hashes) {
+  let out = indexText;
+  for (const scheme of schemes) {
+    const short = [hashes.impact_map.slice(0, 8), hashes.catalog.slice(0, 8), hashes.planner.slice(0, 8)];
+    const pattern = new RegExp(`(\\| \`${scheme.id}\` \\|[^\\n]*?\`)[0-9a-f]{8}(\` / \`)[0-9a-f]{8}(\` / \`)[0-9a-f]{8}(\` \\|)`);
+    if (!pattern.test(out)) throw new Error(`missing INDEX row for ${scheme.id}`);
+    out = out.replace(pattern, `$1${short[0]}$2${short[1]}$3${short[2]}$4`);
+  }
+  return out;
+}
+
+function fixHashes(root) {
+  const git = args => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+  git(['add', '-A']);
+  const tree = git(['write-tree']);
+  const hashes = {
+    impact_map: git(['rev-parse', `${tree}:data/ci/impact-map.v1.json`]),
+    catalog: git(['rev-parse', `${tree}:data/ci/validation-catalog.v1.json`]),
+    planner: git(['rev-parse', `${tree}:kernel/crates/oclive_ci_plan`]),
+  };
+  const dir = path.join(root, SCHEME_DIR);
+  const schemes = [];
+  for (const name of fs.readdirSync(dir).filter(item => item.endsWith('.json'))) {
+    const file = path.join(dir, name);
+    const scheme = readJson(file);
+    fs.writeFileSync(file, applyHashes(fs.readFileSync(file, 'utf8'), hashes), 'utf8');
+    schemes.push(scheme);
+  }
+  const indexPath = path.join(dir, 'INDEX.md');
+  if (fs.existsSync(indexPath)) {
+    fs.writeFileSync(indexPath, applyIndexHashes(fs.readFileSync(indexPath, 'utf8'), schemes, hashes), 'utf8');
+  }
+  console.log(`check-ci-schemes: rewrote ${schemes.length} schemes (impact_map ${hashes.impact_map.slice(0, 8)}, catalog ${hashes.catalog.slice(0, 8)}, planner ${hashes.planner.slice(0, 8)})`);
+}
+
 function main() {
-  const root = process.argv[2] ? path.resolve(process.argv[2]) : defaultRoot;
+  const args = process.argv.slice(2);
+  const fix = args.includes('--fix-hashes');
+  const positional = args.filter(arg => arg !== '--fix-hashes');
+  const root = positional[0] ? path.resolve(positional[0]) : defaultRoot;
+  if (fix) {
+    fixHashes(root);
+    return;
+  }
   let result;
   try {
     result = validateAll(root);
