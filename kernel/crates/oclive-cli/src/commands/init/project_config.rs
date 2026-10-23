@@ -118,6 +118,9 @@ pub struct ProjectConfig {
     /// Teaching content only; false does not disable any public Base contract.
     #[serde(default)]
     pub base_memory_example: bool,
+    /// Consumer variant: copy the canonical Memory consumer sources and add the shared runtime.
+    #[serde(default)]
+    pub base_consumer_example: bool,
     /// Automatically run the Monolith benchmark after generation completes.
     pub run_monolith_bench_after_init: bool,
     /// Points to the oclivenewnew repo root; the generated project writes path dependencies and replaces the placeholder `main`/`lib`.
@@ -149,10 +152,19 @@ impl ProjectConfig {
                 "Contract-only Kernel development library: {}",
                 self.project_name
             );
-            println!("Dependencies: contracts + types; no Host, providers or turn scheduler.");
+            println!(
+                "Dependencies: contracts + types{}; no Host, providers or turn scheduler.",
+                if self.base_consumer_example {
+                    " + runtime (consumer path)"
+                } else {
+                    ""
+                }
+            );
             println!(
                 "Teaching example: {}",
-                if self.base_memory_example {
+                if self.base_consumer_example {
+                    "Memory consumer (canonical sources, runs through the shared runtime)"
+                } else if self.base_memory_example {
                     "Memory"
                 } else {
                     "none (blank foundation)"

@@ -529,3 +529,79 @@ fn the_readme_memory_exercise_observes_an_implementation_change() {
     assert!(accepted_stdout.contains("2 passed; 0 failed"));
     temp.close().unwrap();
 }
+
+#[test]
+fn consumer_example_copies_canonical_sources_and_runtime_dependency() {
+    let temp = tempfile::tempdir().unwrap();
+    let project = temp.path().join("sdk-consumer");
+    let root = common::repo_root();
+    let init = common::cli_command()
+        .env("OCLIVE_HOME", temp.path().join("registry-must-not-exist"))
+        .args([
+            "init",
+            "--non-interactive",
+            "--quiet",
+            "--template",
+            "kernel-base",
+            "--base-example",
+            "consumer",
+            "--project-name",
+            "sdk-memory-caller",
+            "--kernel-source",
+            root.to_str().unwrap(),
+            "-o",
+            project.to_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(init.status.success(), "init: {init:?}");
+    for relative in [
+        "src/main.rs",
+        "src/memory.rs",
+        "Cargo.lock",
+        "LICENSE",
+        "README.md",
+    ] {
+        assert!(project.join(relative).is_file(), "missing {relative}");
+    }
+    assert!(!project.join("tests/base_contracts.rs").exists());
+    let example = root.join("kernel/crates/oclive_kernel_runtime/examples/external_memory_base");
+    assert_eq!(
+        fs::read(project.join("src/main.rs")).unwrap(),
+        fs::read(example.join("main.rs")).unwrap()
+    );
+    assert_eq!(
+        fs::read(project.join("src/memory.rs")).unwrap(),
+        fs::read(example.join("memory.rs")).unwrap()
+    );
+    let manifest = fs::read_to_string(project.join("Cargo.toml")).unwrap();
+    assert!(manifest.contains("oclive_kernel_runtime"));
+    let metadata = Command::new("cargo")
+        .current_dir(&root)
+        .args([
+            "metadata",
+            "--offline",
+            "--no-deps",
+            "--format-version",
+            "1",
+            "--manifest-path",
+        ])
+        .arg(project.join("Cargo.toml"))
+        .output()
+        .unwrap();
+    assert!(metadata.status.success(), "metadata: {metadata:?}");
+    let graph: serde_json::Value = serde_json::from_slice(&metadata.stdout).unwrap();
+    let packages = graph["packages"].as_array().unwrap();
+    let generated = packages
+        .iter()
+        .find(|package| package["name"] == "sdk-memory-caller")
+        .unwrap();
+    let dependencies = generated["dependencies"].as_array().unwrap();
+    assert!(dependencies
+        .iter()
+        .any(|dependency| dependency["name"] == "oclive_kernel_runtime"));
+    assert!(!dependencies
+        .iter()
+        .any(|dependency| dependency["name"] == "oclive_kernel_host"));
+    temp.close().unwrap();
+}

@@ -27,9 +27,13 @@ pub const FILES: &[(&str, &str)] = &[
 pub fn selected_files(
     cfg: &ProjectConfig,
 ) -> impl Iterator<Item = &'static (&'static str, &'static str)> + '_ {
-    FILES
-        .iter()
-        .filter(|(path, _)| cfg.base_memory_example || *path != "tests/base_contracts.rs")
+    FILES.iter().filter(|(path, _)| {
+        if *path == "tests/base_contracts.rs" {
+            cfg.base_memory_example && !cfg.base_consumer_example
+        } else {
+            true
+        }
+    })
 }
 
 pub fn validate_options(args: &InitArgs) -> Result<()> {
@@ -77,6 +81,27 @@ pub fn validate_source(root: &Path) -> Result<()> {
     Ok(())
 }
 
+fn validate_consumer_source(root: &Path) -> Result<()> {
+    let example = root.join("kernel/crates/oclive_kernel_runtime/examples/external_memory_base");
+    for file in [example.join("main.rs"), example.join("memory.rs")] {
+        if !file.is_file() {
+            bail!(
+                "--base-example consumer needs the canonical Memory example at {}",
+                file.display()
+            );
+        }
+    }
+    for file in [root.join("LICENSE"), root.join("Cargo.lock")] {
+        if !file.is_file() {
+            bail!(
+                "--base-example consumer needs {} in the source checkout",
+                file.display()
+            );
+        }
+    }
+    Ok(())
+}
+
 pub fn build_config(args: &InitArgs) -> Result<ProjectConfig> {
     validate_options(args)?;
     let source = args.kernel_source.as_ref()
@@ -88,10 +113,18 @@ pub fn build_config(args: &InitArgs) -> Result<ProjectConfig> {
         InitTemplateArg::KernelBase,
     );
     cfg.kernel_source = Some(source);
-    cfg.base_memory_example = args
+    let example = args
         .base_example
-        .unwrap_or(crate::init::BaseExampleArg::Memory)
-        == crate::init::BaseExampleArg::Memory;
+        .unwrap_or(crate::init::BaseExampleArg::Memory);
+    cfg.base_consumer_example = example == crate::init::BaseExampleArg::Consumer;
+    cfg.base_memory_example = example == crate::init::BaseExampleArg::Memory;
+    if cfg.base_consumer_example {
+        validate_consumer_source(
+            cfg.kernel_source
+                .as_deref()
+                .expect("kernel source set above"),
+        )?;
+    }
     crate::init::apply_cargo_metadata_cli(&mut cfg, args);
     crate::init::ensure_cargo_license_default(&mut cfg);
     Ok(cfg)
@@ -122,6 +155,28 @@ pub fn write_project(cfg: &ProjectConfig, out: &Path, context: &serde_json::Valu
             fs::create_dir_all(parent)?;
         }
         fs::write(destination, contents)?;
+    }
+    if cfg.base_consumer_example {
+        let root = cfg
+            .kernel_source
+            .as_deref()
+            .context("kernel-base source missing")?;
+        let example =
+            root.join("kernel/crates/oclive_kernel_runtime/examples/external_memory_base");
+        let copies = [
+            (example.join("main.rs"), out.join("src/main.rs")),
+            (example.join("memory.rs"), out.join("src/memory.rs")),
+            (root.join("LICENSE"), out.join("LICENSE")),
+            (root.join("Cargo.lock"), out.join("Cargo.lock")),
+        ];
+        for (source, destination) in copies {
+            if destination.exists() {
+                bail!("refusing to overwrite {}", destination.display());
+            }
+            fs::copy(&source, &destination).with_context(|| {
+                format!("copy {} to {}", source.display(), destination.display())
+            })?;
+        }
     }
     Ok(())
 }
