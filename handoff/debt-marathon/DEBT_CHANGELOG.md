@@ -1045,3 +1045,69 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 例子**：`main` 上两次纯文档提交（`afb86c5d`/`6b992b89`）CI红，与本片无关；但本机跑 `dimension5` 时 `voice TTS ratchet` 红，原因只是 Windows 分支固定调 `py -3` 而本机没有可选安装的 `py` launcher。同类情况此前已三次记录为“环境前提 + `OCLIVE_VOICE_PYTHON` 临时指向”（DCL-2026-10-04、`WAVE-20261011-CI-CONTRACT-OWNER`、§本文件831行），说明“只记录前提”没有消除复发。维护者本轮要求处理该环境问题，选择改脚本自动发现解释器，而不是继续逐次手设环境变量。
 - **变动 / 边界**：`scripts/check-voice-tts-ratchet.mjs` 改为显式发现链——优先 `OCLIVE_VOICE_PYTHON`（显式设置后必须可用，不回退），否则扫 PATH 的 `python.exe`/`python3.exe`/`py.exe -3`/`python.cmd`/`python3.cmd`（POSIX 为 `python3`/`python`），并校验 **≥3.10**。两个实现约束：Node `spawnSync` 不能直执行 `.cmd`/`.bat`，Win32 侧经 `cmd.exe /d /s /c` 调用；经 `cmd.exe` 传长内联 `-c` 会被引号/`%`/`^` 解析破坏，故 Python 代码统一写成临时 `.py` 文件执行（片段自身已 `sys.path.insert` 了 `voiceLoop`，不依赖 `-c` 的 `sys.path[0]==cwd`）。失败路径在 `fail()` 里显式删临时目录，因为 `process.exit()` 不执行 `finally`。不改检查内容、`MIN_ENGINES`、ratchet 阈值、其它门禁步骤或 CI workflow；不新增依赖。
 - **验证 / 出口**：无环境变量时自动命中 `python.cmd`（3.12）PASS；`OCLIVE_VOICE_PYTHON` 指向 `.exe` 与 `.cmd` 均 PASS；指向不存在路径或非 Python 可执行文件时给出可操作报错并 exit 1；临时目录在成功与失败路径均零残留。`node scripts/dimension5-acceptance.mjs --ci` 在**不设任何环境变量**下 **PASS (31 checks)**；`cargo audit --no-fetch --stale` 与 `cargo deny check licenses bans` 同轮通过。关联文档：[playbook §2 环境核对](../RECURRING_OPTIMIZATION_PLAYBOOK.md)、[DEV_ENVIRONMENT](../../human-docs/team/DEV_ENVIRONMENT.md)。本片属门禁改动，按分级策略走 PR，不直推 `main`；正式 CI 结论另判，不以本地绿替代。
+
+### DCL-20261013-102 · 源码 SDK 第一条树外消费路径
+
+- **原因 / 授权**：维护者选择源码接入工具包：现有 crate、独立消费工程、依赖与验证说明，不新增公开 SDK 门面。按[十二路径计划](ROUND-02-PLAN.md#源码-sdk-首片--复用基础工程与共享消费2026-10-12)从干净 main `08348f31b8f3459537c13227302bf4b8e273baa8` 的隔离分支接续，controller 实施与语义自查 independent=false。基础工程能写 Base，但消费者调用需要作者显式添加共享支持；把这一步写成可复现路径，比另造 SDK 接口更直接。
+- **交付 / 例子**：SDK RFC 中英拥有形态与停止线，[Memory 配方](../../examples/developer-sdk-memory/README.md)拥有生成、添加、复制、锁与修改动作；生成工程 README 随配方替换，其它五处入口只加链接。示例源与原三项测试逐字复用；基础模板继续仅依赖 contracts/types，本路径才显式加 runtime。`literal:` 属于作者约定，只调用 Memory、无模型生成，不注册丰富 Host 后端。
+- **验证 / 出口**：[本批 Wave](waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md)区分两条真实树外工程、十个 native 退出码、独立依赖图和适用文档门禁。源码输入 `08348f31` 正式21/21是父基线证据，不证明新文档 SHA；本片没有 Rust/API/锁/CI/债状态变化，按文档与交付面验收后保存本地提交，不重复完整 CI，不推送 main。锁种子会派生，path 不锁 Git 内容；其它平台、模型/TTS、发行版产品与硬件仍单独验收。达到现有组件可复现消费即停止，不机械补五槽案例。
+
+### DCL-20261013-103 · 脚手架中的终端接线声明视图
+
+- **原因 / 授权**：维护者确认终端视图、Base与实现分开，随后采纳“脚手架提供可选Cargo元数据，作者工程维护，CLI只读展示”。按[十五路径计划](ROUND-02-PLAN.md#终端接线声明视图--脚手架中的可选元数据2026-10-13)承接SDK `9c0ce96f`，controller实施与语义自查 independent=false；Memory直接绑定代码没有现成报告，Host后端配置值也不能被猜成Base具体类型，所以选可选工程声明，不扩为源码扫描或统一注册表。
+- **交付 / 例子**：`doctor wiring --manifest-path` 每次读取一个package清单；基础模板只写schema_version=1，含教学测试时也不自动登记运行实现。作者填写Memory实现/接入/用途及调用范围，视图显示独立Base边、来源、未提供信息及绑定/调用/功能未核实；修改作者声明后重读更新。CLI指南中英拥有格式与状态语义，模板/SDK/CLI crate README只提供动作和链接；其它工程完全无声明仍可查看未知。
+- **验证 / 边界**：[本批Wave](waves/WAVE-20261013-WIRING-DECLARATION-VIEW.md)记录旧命令/模板红、8项新CLI测试、100项bin单测、7项原基础E2E、Clippy/fmt、实际生成/空声明/两次名称变更与前后清单摘要，再走适用治理和源码/历史保全。本片不动Base/公共DTO/Host/runtime/原Memory/依赖锁/CI/债状态；不新增执行、权限、Host强制接口或导出格式。仅本地冻结，不合入/推送main，不借父main正式CI；实际运行绑定、调用记录及功能验收不因声明视图转绿。
+
+### DCL-20261013-104 · SDK与接线视图文档、工程收尾
+
+- **原因 / 授权**：维护者要求整理文档并形成冻结基线。按[六文收尾计划](ROUND-02-PLAN.md#源码-sdk-与接线视图--文档及工程收尾2026-10-13)接续干净 `abf2f8a5`；controller实施与语义自查 independent=false。SDK“我改哪里”先讲实现和测试，再讲可选查看；CLI指南中英解释旧CLI缺命令、选错workspace清单、重复表和声明未核实等实际排查，避免把工具版本误解成模块契约缺口。
+- **变化 / 保持**：三个上手文、计划/本事件追加及[冻结交接快照](waves/WAVE-20261013-SDK-WIRING-CLOSEOUT.md)，不新建规则或格式SSOT。Rust/模板/测试/manifest/锁/CI/债状态与旧Wave/证据保持；现有SDK `9c0ce96f` 与接线 `abf2f8a5` 分别沿用其实际范围证据，不混成新运行验收。
+- **验收 / 出口**：实际同字节CLI帮助、SDK五段PowerShell语法及CLI中英TOML示例核对，适用文档/编码/六路径/原件/历史/源码复用/diff后本地提交及注释checkpoint tag；最终完整SHA/tag与clean状态在交付记录，不回写另造提交。只形成Locally verified可接手基线，不合入/推送main或宣称远端正式通过；第一阶段停止主动扩面，后续按实际反馈或具体Host报告来源处理。
+
+### DCL-20261013-105 · 近期工作有限质量审查
+
+- **原因 / 范围**：维护者要求按多轮巡检、现行AI规则和GPT局限补充再审近期工作。受检 `2d36bb01` 的默认Host/CI、源码SDK、只读接线及文档共八选样；[计划](ROUND-02-PLAN.md#近期-sdk接线与-host-ci-质量审查2026-10-13)和[报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md)分别拥有预算与结果。controller第二遍自查 independent=false，不升级为独立审查或全档评分。
+- **结果 / 证据**：本范围未确认新增阻断或值得立即重构的重复抽象；合法公共/树外契约、声明读取与实际消费者、默认Host与桌面feature组合分别核。旧CI `08348f31`、SDK与接线原日志均按真实范围/受测源核对，当前分层和旧路径另验；私有核对器的派生锁误判已保留首次失败并修正，不改产品或减断言。没有技术债状态变动、没有新的公共义务，也未解冻其它路线。
+- **交接 / 保全**：仅PLAN/DCL追加和本报告，原件与历史前缀保全；原SDK/接线源码、模板、测试、依赖/CI、旧Wave及checkpoint保持。本轮文档适用门禁通过再本地提交，不推送、不重复完整CI/业务；当前只能称有限本地复核，具体Host报告、跨平台新机器和真实产品目标仍需实际需求再定验证。
+
+### DCL-20261013-106 · 二次复核候选的限定澄清
+
+- **原因 / 边界**：维护者转来截止 `08348f31` 的DeepSeek二次复核；按[五项计划](ROUND-02-PLAN.md#二次复核回传的有限澄清2026-10-13)核候选，不将对方的旧main窗口、目标列举或AI身份混成本地SDK/接线正式验收。接续 `9c2f142a`，controller核对 independent=false。
+- **变化 / 例子**：CI说明中英补workspace Host的条件迁移出口；CLI说明中英补legacy settings `_comment_*` 当前中文、help不代表生成物翻译。旧AI Wave追加材料按hash寻址、四原件位置与保全/最终改写的区别；[近期报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md#二次复核回传核对2026-10-13)追加五项裁定。两真实Cargo tree显示default vs default,tauri-commands，故不按“等价重复”删检查；四原件与旧manifest匹配，未找到不被写成不存在。三个入口样板本片不抽helper。
+- **验收 / 保持**：八文原件及四历史前缀保全，按文档门禁/编码/精确写集及源、锁、CI不变核验后本地提交。没有代码/翻译/公共API/执行选择/债状态变化，不复跑Rust/业务/完整CI，不推送或覆盖旧tag。当前说明已够用，没有新的维护者决策点。
+
+### DCL-20261013-107 · 审查后入口样板实际收敛
+
+- **原因 / 授权**：维护者进一步要求修复整理审查问题并确认基线。接续 `072fa31b`，按[八路径计划](ROUND-02-PLAN.md#审查后检查入口样板收敛与基线确认2026-10-13)处理此前仅记录的T1；controller实施/语义自查 independent=false。共同行为已有三个消费者，在原gate-toolchain内提取，不扩到全仓入口框架。
+- **改动 / 保持**：新增 `runGateEntry(moduleUrl, main, usage)`，三个固定检查入口调用它；保留各自commands、cwd、timeout、Usage、PASS和原native错误处理。原工具链测试新增正常/导入/坏参数三类真实子进程回归。T2–T5前片说明继续有效，Host配置/覆盖、SDK、模板、公共面、锁、workflow/catalog/选择/required与债状态保持。
+- **验证 / 收口**：新三测在旧helper上红（原10通过、新3失败，exit1）后绿；合并Node回归28/28、五脚本语法、Dimension5 31项均exit0，失败原日志保留。文档/编码/八路径/历史前缀/固定链原件/diff通过后本地提交及新reviewfix checkpoint，旧tag/main/SDK保持。实际日志与边界追加[原审查报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md#审查后入口样板收敛2026-10-13)，不重复全量CI或借旧CI为新SHA盖章。
+
+### DCL-20261013-108 · 当前批完整交接与SDK开发准备
+
+- **原因 / 授权**：维护者要求完整收尾后准备SDK开发。接续干净 `6947c48a`，按[五文计划](ROUND-02-PLAN.md#审查批完整交接与源码-sdk-开发准备2026-10-13)把已修审查、当前源码工具包和只读视图整理成可接手记录；controller自查 independent=false，不重复全仓调查。
+- **变化 / 下一步**：SDK RFC中英明确下一片尚未实施的配方自动回归；优先使用现有CLI集成测试设施、原Memory源及真实生成/编译/消费者调用，减少升级时手工复走命令。不另建SDK门面、执行框架或五套同形示例；具体实施写集与验收由计划拥有，[收尾记录](waves/WAVE-20261013-SDK-READINESS.md)拥有当前交接。
+- **验证 / 保持**：本片只改五文，四原件与历史前缀保全；适用文档、编码、精确范围、原证据及源码不变核对通过再本地提交/新ready checkpoint。未实施自动回归、未改技术债状态、公共面、模板或CI；旧tag/工作树/main及日志保持。不推送或借旧SHA正式CI，把当前可用、下一片计划和目标发行版验收分开。
+
+### DCL-20261013-109 · 源码SDK配方自动回归落地
+
+- **原因 / 授权**：维护者要求持续开发、落实当前规划。按[七路径实施计划](ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13)接续 `aebe7c46`，controller实施与语义自查 independent=false。使用原CLI辅助函数和canonical Memory，不新增SDK门面或执行框架；升级后作者工程的组装路径由真实回归检查。
+- **交付 / 实例**：新CLI集成测试在临时独立工程中生成基础、显式添加runtime、复制示例与锁种子，核workspace/精确直接依赖/无Host桌面/第三方身份/派生锁稳定，再实际check/test/run。故意将临时Memory的取样数改为0，要求原消费者测试确切失败；原模块源码保持。SDK RFC中英更新已实施范围，指南增加现有Cargo维护者入口。
+- **验收 / 保持**：新外层集成1项通过（内含原binary三项与预期失败负控），CLI原100/8/7、runtime例子3项及实际run、Clippy/fmt/分层/module-compat均exit0；首次fmt失败及修复日志独立保留。适用文档、编码、七路径/历史/源码保全及diff之后本地提交/checkpoint，具体证据见[本片Wave](waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md)。未改生产源码、公共面、依赖锁、工作流/required、债状态或旧锚点；未推送/合main，不冒称新SHA远端CI或所有平台通过。
+
+### DCL-20261013-110 · 单个Memory案例可模仿教学收束
+
+- **原因 / 授权**：维护者确认一个完整Memory案例即可，下一片完善作者模仿路径与三种验证分责。按[五文计划](ROUND-02-PLAN.md#源码-sdk-单个-memory-案例教学收束2026-10-13)接续 `4107d52e`，controller实施与语义自查 independent=false。只完善指南/复制README与记录，不复制模块或增加其它槽案例。
+- **交付 / 练习**：指南定位Memory实现、retrieve绑定、main材料和tests断言；复用已有窗口配置，作者副本两处2改1，先观察旧断言确切失败，再按事先确定的最新一条承诺调整两处预期，保持其它测试/原文/零生成。明确官方配方回归、作者模块测试和目标Host验收的不同用途；doctor仍是声明视图，literal/calls不是Base义务。
+- **验收 / 保持**：新树外工程原三测/selected2通过，指定选取测试native101为预期失败，调整期望后三测/selected1通过，作者fmt/Clippy及官方回归1项通过；私有命令一次cwd路径误用已单独登记，不混入行为红证据。文档、编码、五路径/原件/历史/官方源码保全后本地提交/checkpoint，详见[教学Wave](waves/WAVE-20261013-SDK-MEMORY-TEACHING.md)。未改官方Rust/测试、模板、公共面、锁、CI/债状态，旧锚点/main保持；不推送或冒称目标Host/其它平台正式验收。
+
+### DCL-20261013-111 · SDK复用权威文档与任务阅读入口
+
+- **原因 / 授权**：维护者确认SDK保持轻量，与既有人类/AI资料结合，模块作者优先，Host/发行版只补现有入口。按[七文计划](ROUND-02-PLAN.md#源码-sdk-与人类ai-阅读导航收束2026-10-13)接续 `b7581292`，controller实施与语义自查 independent=false；已经足够的Memory练习直接复用，不重写操作或补其它槽。
+- **交付 / 例子**：人类首页中英直达SDK操作与Base/兼容依据，并分开自有Host与所选发行版；AI索引§9按任务选一行，明确现行规范、可运行案例及历史/草案的效力，链接原核实预算。SDK指南只提供入口与SSOT指针。比如模块作者先找自己的实现/断言，Host作者读现有Base-first例子，而参考Host profile只在选择相关路径时使用，不自动变成通用义务。
+- **验收 / 保持**：手工走读三类任务和有限误读边界，按文档/编码/七文/六原件/历史/旧指南操作与源码证据保全检查后本地提交/checkpoint，结果见[导航Wave](waves/WAVE-20261013-SDK-DOC-NAVIGATION.md)。只导航，不新增SDK/AI协议、规则SSOT、运行权限或Host义务；代码/模板/测试/依赖/CI/债状态与旧报告/tag保持，旧练习及回归按原范围复用而未重跑，不推送或冒称新SHA远端CI。
+
+### DCL-20261013-112 · 源码SDK最终审查、集成冻结与分类远端交付
+
+- **原因 / 授权**：维护者要求收尾、最后检查SDK可靠性与范围，再确认冻结基线并分类详实推送。按[最终计划](ROUND-02-PLAN.md#源码-sdk-最终范围审查集成冻结与远端交付2026-10-13)接续干净 `89590c0d`，整批从main `08348f31`起的十个分类提交保留；本轮controller实施与语义自查 independent=false，有限核八条直接声明，不重开全仓调查。
+- **交付 / 例子**：完整Memory作者路径、只读CLI声明视图、真实官方配方回归、两条改一条练习和人类/AI导航共同冻结；例子通过说明作者实现确被消费者调用，不将literal规则或示例行为变成Base义务。最终[交接Wave](waves/WAVE-20261013-SDK-FINAL-CLOSEOUT.md)拥有提交分类、适用检查与可携带边界，本PLAN/DCL只追加，无公共API、锁、CI组合/required或技术债状态改动。
+- **验收 / 推送纪律**：同主题里程碑的适用阶段全部完成，精确结果由Wave拥有：首跑缺少隔离Tauri资源，续跑又发现私有执行器target作用域与空值设置问题，三次native101分别保留；没有把分段通过写成完整首命令exit0。最终Rust、workspace集成和CLI全tests均通过，新SDK配方实际运行，脚本28/28及模块兼容/全部改文另核；未改产品断言或给SDK添加Host依赖。停止写入后精确推送本分支和新final checkpoint，由ready PR的目标SHA正式CI验收；旧本地tag/main/原证据保持，不绕过保护、不为远端绿灯回写另造提交。实际结果、最终SHA及远端状态分别查Wave与本次交付报告，不以计划或旧main绿灯冒充新提交验收。

@@ -1122,3 +1122,101 @@
 **验收 / 节奏 / 出口**：先增真实仓库合同至旧配置红，再实现绿；真实Host默认入口，已有native/公共入口回归、trusted-base旧目录/错映射/损坏JSON负控、原gate对两组失败/缺失/取消/skip的关闭及合法docs skip、规划器合同与21路由模拟、Dimension5、fmt/文档/编码/结构/保全。与f4本地片合为同主题16路径批次，稳定后一次适用完整本地链，冻结SHA、复核干净main/远端后FF和一次push，等待该SHA正式CI。不是每片各推完整矩阵；不为绿灯回写提交。配置定义15验证job/21实际全量job，数量不是性能目标；默认组不承诺所有Host功能或真实模型验收。达到这两种配置责任明确及适用验收即停，后续物理/feature深拆和ready扩面另议。
 
 **本地出口结果（同片）**：25项Node回归、规划器11+8项、真实默认Host756/19及原 `check:ci-local` 完整链native exit0（700.89秒）。所有旧验证job的YAML执行配置、影响图和策略保持；两处旧断言及新增CRLF匹配缺陷按原失败修正，workflow只将报错新行改LF而保全原件。文档与源范围门禁完成后冻结提交，正式main证据绑定新SHA，状态不借父main绿灯。
+
+### 源码 SDK 首片 · 复用基础工程与共享消费（2026-10-12）
+
+**决策 / 基线 / 预算**：维护者选择源码接入工具包：现有crate、独立消费工程、依赖和验证说明，不新增公开SDK门面。main `08348f31b8f3459537c13227302bf4b8e273baa8` 已正式21/21、ci-gate成功（[38199557652](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/38199557652)）。在新隔离分支承接旧SDK草案 `3884cf19`，不直接合入其过期计划/事件或器灵授权表述。M/有限文档交付，controller实施与语义自查 independent=false；四组直接入口、树外试验约30分钟，到可复现消费即停。
+
+**闭环 / 实施**：现有 `init --template kernel-base --base-example none` → 作者显式添加runtime → 复制原Memory示例及许可证 → 独立manifest/锁/依赖身份 → 原三项测试和真实消费者调用。原源文件逐字复用，先证明现有组件足够；不新增生成器、SDK crate、公共re-export、六槽默认模块或调度。源码路径和移动限制、作者改哪里及检查含义由SDK示例指南拥有，RFC定义交付形态、其他主题链接其SSOT。
+
+**十二路径 / 保全**：SDK RFC中英、`examples/developer-sdk-memory/{README,project-README}.md`、工厂愿景中英的一行入口、Memory人类指南中英的SDK路由、handoff索引、本计划/DCL只追加、新Wave。七份旧文先保全；CLI、原Memory源码/测试、契约/Host/runtime、manifest/锁、CI控制面和债/队列状态不改。SDK不取得发现、授权、重试、状态应用或外部硬件权力。
+
+**验收 / 出口**：本机主仓外两个独立工程的offline metadata/check/test/run；官方基础生成和Cargo显式添加已实跑，依赖无Host/Tauri且第三方身份为原锁子集，已有用例实际调用消费者、typed失败和零生成保持。源码输入/副本hash、主树状态及实际stdout/native exit留于 `_recovery/SDK-SOURCE-KIT-PROBE-20261012-R0/`，本机证据不随Git携带。落文执行适用链接、镜像、登记、docs-only旧路径、债结构、编码、diff及精确纯文档/历史保全。无公开代码变化，不额外workspace doctest或完整CI；达到指南可复现与门禁通过后本地提交/交接，状态Locally verified，不借083正式CI替新文档SHA盖章，不为补绿灯再造提交。注册表发布、统一门面、Host/硬件目标与更广平台另外开片。
+
+### 终端接线声明视图 · 脚手架中的可选元数据（2026-10-13）
+
+**授权 / 基线 / 预算**：维护者确认由脚手架初始提供、作者工程维护可选Cargo元数据、CLI只读展示。SDK冻结 `9c0ce96f13b7804c288783537143b760c89a35b5` 和main `08348f31` 都保持；新 `codex/wiring-view-20261013-r0` 承接SDK。M/常规，controller实施与语义自查 independent=false；有限核对doctor、config-resolve、基础模板及Memory直接消费者已足够，不继续全仓测绘。
+
+**闭环 / 有限形状**：基础模板写 `[package.metadata.oclive.wiring] schema_version=1` 空声明，不把测试例子冒充运行绑定 → 作者可选声明六槽实现名/接入名/用途、调用范围 → `doctor wiring --manifest-path` 每次读一份Cargo.toml → Base与实现分开、来源和绑定/调用/功能未核实标签 → 真CLI输入/重读/错误/只读/敏感内容负例及原生成回归。复用现有TOML和六槽键常量，不扫描Rust或解析第二套蓝图，不启动环境探测、Cargo/Host/模型。不新增导出格式、GUI、常驻监控、发现/授权/执行器/公共Base或Host强制接口。
+
+**十五路径 / 保全**：CLI main/doctor_cmd、新doctor_wiring、基础Cargo/README模板、新doctor_wiring集成测试、原e2e_kernel_base、CLI指南中英、SDK指南/项目README、CLI crate README、本计划/DCL追加、新Wave；12份原件先保存字节/hash。根manifest/锁、公共types/contracts/runtime及原Memory源码、其它模板/工作流/影响图/选择策略、债务状态和已冻结旧报告保持。显示格式归CLI指南，SDK/模板只写使用入口；可选标签不是模块注册或真实运行报告。
+
+**验收 / 出口**：先新CLI/生成断言旧代码红，再实现绿；实际CLI集成、doctor相关unit、原基础E2E串行、CLI默认all-target Clippy、fmt、分层/module-compat、适用文档/镜像/登记/旧路径/债结构/编码/diff及精确写集和历史字节保全。真实新工程一次生成→查看空声明→添加Memory声明→查看→改名称再查看，保存退出码/stdout及前后文件摘要；私有数据/未知字段不能被原文打印，环境探测及产品回合不参与。无公开Rust签名/re-export、CI控制面或发版/Done变化，workspace doctest/完整发行版链/远端CI不适用。达到声明视图可靠且定向验收通过即本地冻结，不合入/推送main；实际绑定、调用记录和功能质量保持未核实，后续有具体Host来源再另片。
+
+### 源码 SDK 与接线视图 · 文档及工程收尾（2026-10-13）
+
+**目标 / 基线 / 预算**：维护者要求文档整理、工程收尾与冻结基线。接续干净 `abf2f8a5074e863289af94cb2993d3733cfda0f7`，SDK父 `9c0ce96f`、main `08348f31`保留。M/纯文档收尾，controller实施与语义自查 independent=false；只审三个上手入口到足以交接，不扩查全部文档、其它槽或发行版。SDK“我改哪里”主路径被可选查看插在前面、旧CLI缺命令的排查缺口已可直接修，无新架构决策。
+
+**六路径 / 保全 / 闭环**：CLI指南中英补命令版本前提、未知状态与典型错误定位；SDK指南先实现/测试再可选查看，链接原格式SSOT；PLAN/DCL只追加、新收尾Wave。五份原件先保全字节/hash。CLI Rust/两基础模板/测试、公共契约/Host/runtime、manifest/锁/CI、SDK及接线原Wave、债/队列状态和旧证据不改；不是新功能或元数据格式迁移。
+
+**验收 / 冻结出口**：同字节CLI的wiring帮助实读、SDK五段PowerShell语法与CLI示例TOML按现有解析器检查；默认及六文链接、镜像、登记、docs-only旧路径、债结构、UTF-8/汉字、六路径/原件/历史前缀和源码复用摘要/diff。按实际字节不变沿用abf的115项、Clippy/fmt和真实重读示范，不冒称重跑；不重复Rust/业务/完整CI。文档与代码关联通过后本地提交，并新增本地 `checkpoint/source-sdk-wiring-20261013-r0` 注释tag，既不覆盖旧锚点也不发布SemVer或推送main。最终SHA/tag/clean状态在交付记录，状态Locally verified；达到可接手即停止主动扩面，后续实际问题或可靠Host报告另片。
+
+### 近期 SDK、接线与 Host CI 质量审查（2026-10-13）
+
+**授权 / 基线 / 尺寸**：维护者要求结合巡检手册、AI辅助限制与GPT局限补充，审近期文档、工程、代码质量和易读性。受检干净 `2d36bb017a4dd81bdd5608d31cad0c5120307978`，旧checkpoint不移；M/有限审查与报告，controller第二遍语义自查 independent=false。范围为 `f4f0ecdb^..2d36bb01` 的默认Host反馈/CI所有者、源码SDK和接线视图；快档基线＋受影响维度一/三/六/七，最多八个选样或120分钟，不全档评分。补充材料原件已从保全区核hash `422A32A4…7895D`，只采方法警示，旧计数、数量硬上限与回滚指令不是现行规则。
+
+**取证 / 止点**：D1核当前声明、实现与直接证据，具体矛盾才加至多两个D2边界，不自动D3。Git对象核Host/runtime/contracts/types/validation、锁、脚本与CI控制面相对main `08348f31` 未变，读正式run `38199557652` 的目标SHA与21成功job；CLI七源/模板/测试核原受测hash，原115项及Clippy/fmt限域复用；SDK两源、种子锁及十原生命令同样对账。当前分层与docs+code旧路径另实跑，不重建全CI或业务矩阵。验证器首次错把派生锁要求等于种子锁，B2 exit1原样保留，先停后改核种子原件，B2b exit0；不把它归给产品。
+
+**写集 / 验收 / 出口**：八项审查没有确认新的阻断或公共表达缺陷，不为产生“修复”而改代码。只追加PLAN/DCL与新[有限审查报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md)，两份原件先保全；现行使用文、代码、模板、测试、锁、CI、原Wave和债状态不改。默认/三文链接、docs-only旧路径、登记、债结构、编码、三路径/两历史前缀/四份旧冻结上手文与七源码原hash和diff为适用门禁。报告通过后可本地提交，旧tag保持；不合main/push或冒称新SHA正式通过，不重开其它五槽、实机/性能/发行版及既定冻结。达到可行动的八项结论即结束，后续按真实使用反馈或明确的集成范围推进。
+
+### 二次复核回传的有限澄清（2026-10-13）
+
+**授权 / 基线 / 止点**：维护者转来DeepSeek只读二次复核，其窗口截止main `08348f31`，与本地SDK/接线片不同，不自动成为后一片的验收。接续干净 `9c2f142a89d5f212fdb0c33d4e6f850bbc42d301`；M/纯文档，controller核对 independent=false，最多五候选/60分钟。T1只核三个脚本的入口守卫，T2重读manifest并实际Cargo tree核两配置，T3/T5核材料及四原件，T4追生成说明字段；足以分类即停止，不复跑Rust测试正文、Clippy、Dimension5或完整CI。
+
+**裁定 / 八路径**：T1确认局部样板形状，但当前不改共享helper/执行语义；后续有实际同类改动时再定范围。T2等价重复归因不成立（default vs default,tauri-commands），接受补迁移出口条件；CI指南中英补覆盖条件、catalog/gate对齐与独立片验证后才可迁出的说明，不现在删Host。T3旧“桌面提供”是历史描述，补hash身份/当前位置非固定；T5在_recovery核四原件完整，旧Wave只追加保全与最终候选改写的区别。T4在CLI指南中英写清legacy settings中文说明的现状及help不代表生成物英文化，不新增locale政策或翻译实现。已有近期报告追加复核范围/五裁定，本PLAN/DCL追加；八份原件/hash先保全，四份历史前缀保持，不另建报告/规则SSOT或改债状态。
+
+**验收 / 出口**：两实际Cargo tree原生exit、四原件manifest/材料hash、入口样板同源比对；默认及八文链接、镜像、登记、docs-only旧路径、债结构、严格编码、精确八文/历史前缀与源/CI/锁不变/diff。报告所述105为复核方的测试目标列举，不冒称本轮运行或测试通过。适用文档通过后本地提交，旧checkpoint/main/SDK工作树保持，不push、不修改脚本/CI选择/required gate；没有新增架构问题，文案澄清够用即结束。
+
+### 审查后检查入口样板收敛与基线确认（2026-10-13）
+
+**授权 / 基线 / 目标**：维护者要求修复整理审查问题并确认基线。接续干净 `072fa31bc11ed55fb76a4e3a93d9532a8a464cc4`；M/常规、controller实施与语义自查 independent=false。T2–T5明确文案问题已处理；本片收敛T1三个固定检查脚本相同的入口判断/参数拒绝逻辑，足以减少一处真实维护重复即停，不扩到其它check脚本或通用命令框架。
+
+**八路径 / 闭环**：现有 `scripts/lib/gate-toolchain.mjs` 添加同步入口helper，原同文件测试加三类真实子进程回归；kernel-base/kernel-contracts/reference-host三个入口改调用helper，各自固定commands/20分钟timeout/native错误/Usage字符串不变。PLAN/DCL与原审查报告只追加，八原件先保全。模块/API/Host/SDK/模板/锁/CI/catalog/选择/门禁和债状态不改，不新增注册/权限/参数发现。共同行为归原工具链lib，不新建runEntry框架。
+
+**验收 / CI节奏**：新入口helper回归先在旧实现下红，再最小实现；Node工具链/三个入口/原控制面回归、脚本语法、Dimension5 --ci、适用三文链接/登记/旧路径/债结构/严格编码/八路径与历史前缀/原固定链/diff。Dimension5只在子进程使用已有Cargo target/jobs、portable Python及主树现有node_modules挂接，不安装或升级依赖，记录环境前提/首次失败。fixed chain/集成命令与workflow不变，因此不重复check:ci-local/Rust全测或完整远端矩阵；若实际控制流/验证链改变则重新定范围。通过后本地提交并新建本地 `checkpoint/source-sdk-wiring-reviewfix-20261013-r0`，旧tag保持，不合main/push、不冒称主树正式验收；最终SHA/clean状态在交付记录。
+
+### 审查批完整交接与源码 SDK 开发准备（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者要求完整收尾，然后准备SDK开发。接续干净 `6947c48a2afa4dafc7adcd72c4183f71348fc64f`；M/有限文档，controller实施与语义自查 independent=false。复用已经完成的SDK、接线、审查及入口修补，不重新调查全仓或重复验证不变的实现。本片只把既有冻结成果、可转让与本机证据的区别、下一片实施范围写清；约五个直接入口/60分钟，达到能开工即停。
+
+**五文写集 / 验收**：SDK RFC中英补尚未实施的下一片；本计划/DCL只追加、新收尾与准备Wave。四份原件先保全。源码/模板/测试/manifest/锁/CI控制面、债状态及旧报告/tag不改；适用默认与五文链接、镜像、登记、docs-only旧路径、债结构、严格编码/精确写集/历史前缀/源码不变与diff，核对原证明身份。通过后本地提交及新 `checkpoint/source-sdk-ready-20261013-r0` 注释tag；main/远端不动，不把本地冻结写成正式CI或发版完成。原日志仍存保全位置；Git只转让源码、测试、操作配方与报告。
+
+**下一实施片 / 具体对象**：现有源码SDK Memory配方的自动回归，改善升级后的重复验收成本。优先在 `kernel/crates/oclive-cli/tests/e2e_source_sdk.rs` 复用原 `tests/common` 与TempDir/真实CLI调用，使用当前checkout的canonical Memory两源、项目README、许可证及锁种子；不维护第二份模块实现、不新增SDK门面或通用runner。作者独立工程在临时新目录生成，显式加runtime后派生自己的锁；metadata检查独立workspace、直接依赖及无Host/Tauri，真实check/test/run核三项binary行为与消费者输出。数量是原案例事实，不是包数量上限；零library/doctest不算功能证据。
+
+**下一片验收 / 停止线（尚未执行）**：该集成目标与CLI原E2E串行；runtime原Memory例子、CLI Clippy/fmt、分层与module-compat及适用文档/编码/债结构按实际改动选择。坏目录/缺源优先沿用原生成器回归，不机械复制全部负例；新回归须拒绝子命令非零或真实输出/依赖身份不符，不能只数文件或mock所有Cargo。只读view不是消费者调用证据。记录当前源码/tool/派生锁，缓存缺失明确归工程前提，不冒称产品故障或自动联网安装。实施不改公开Rust面则无需额外workspace doctest，不改变CI job/filter/required；同主题最终批次再按集成范围定完整链及目标SHA正式CI，不为每个测试重复全量。能重复验证此一条路径即停，不扩其余五槽或目标Host。出现契约表达障碍、资源/调度权或公共强制义务才回问维护者。
+
+### 源码 SDK Memory 配方自动回归实施（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者要求持续开发、落实当前规划。干净 `aebe7c466bfc316951529c2664bdd56083a82c23`；M/常规，controller实施与语义自查 independent=false。按上片准备范围施工；约七直接入口/90分钟，真实生成/调用和负控足以支撑该配方回归即停止，不为寻找通用SDK缺口扩查全仓。
+
+**七路径 / 闭环**：新增 `kernel/crates/oclive-cli/tests/e2e_source_sdk.rs`，SDK RFC中英由未实施改为实际交付，Memory SDK指南只加维护者回归入口，PLAN/DCL只追加、新实施Wave。五旧文先保全；复用原tests/common与当前Cargo构建的CLI，在新TempDir中生成作者独立工程，显式Cargo add runtime、原Memory两源/README/LICENSE复制、根锁只作种子，真实metadata/check/test/run。元数据核独立workspace、精确三个直接依赖、无Host/Tauri和第三方身份沿原锁；锁不要求与种子逐字相同，只要求后续locked命令不改派生锁。坏目录/缺源沿用原E2E，不新增第二套设施。
+
+**真实失败验证 / 边界**：现有组件已经足够，不为编译红删旧API或假造公共能力缺失。临时作者副本中把Memory取样数改为0，执行原消费者行为测试，必须出现该测试失败而非编译/前提失败；canonical源码不改，负控是预期子命令非零，外层回归通过必须确认这一事实。输出与依赖检查不mock Cargo，不仅核文件存在。测试进程使用已有缓存/offline和已有target，临时目录明确close；无模型/Host/真实网络/用户DB。
+
+**验收 / 收口**：新目标及原基础E2E串行、CLI bin/接线回归、原runtime例子测试与真实run、CLI all-targets Clippy/fmt、分层/module-compat和适用链接/镜像/登记/旧路径/债结构/编码/七路径/历史保全。只有测试与文档，无公共API、生成器、依赖、workspace锁、工作流或必需门禁改变；不额外workspace doctest、Dimension5或完整发行版CI。默认Cargo发现此集成目标，现有CLI --tests路径能够选择它；通过后本地提交/newcheckpoint，旧锚点/main保持，不push或改变债状态。碰到新契约/权限/执行选择才问维护者。
+
+### 源码 SDK 单个 Memory 案例教学收束（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者明确只保留一个完整Memory案例，完善可模仿的教学路径与三种验证用途。干净 `4107d52e5a50c9a7eabb8f0c86f15576b8c9bff5`；M/有限文档与树外练习，controller实施与语义自查 independent=false。五直接入口/60分钟；已有实现/绑定说明复用，练习实际显出行为变化即停，不补其它槽、通用验收器或Host目标。
+
+**五文写集 / 闭环**：SDK Memory指南补符号级实现/绑定/材料/断言位置、一条作者副本练习和三类验证分责；复制用project README只指向此说明，不双写练习。PLAN/DCL只追加、新教学Wave。四原件先保全。现有官方Rust、集成测试、模板/公共面、manifest/锁、CI/债状态和旧报告/tag保持；小Kernel/共享消费者/Host责任不改。Memory的literal语法与calls观察都属示例，不新增Base义务。
+
+**练习 / 验收 / 收口**：本机新树外作者工程按既有生成/add/复制/锁配方真实check/test/run；先在main和首个选取测试的构造处把窗口2改1，保留旧断言观测确切测试失败；再把这两个使用点的预期末尾区间2..改3..，保留原文、baseline及零生成等断言，三测通过并实际run显示selected=1。其它测试不变，源码副本及各阶段前后摘要/原生退出件保留；官方原件逐字不变。重跑原SDK目标核新增project README的配方仍可用；其它不变的Rust/Clippy/fmt不重复。文档链接/登记/旧路径/债结构/编码/五路径/历史与原件保全/diff之后本地提交、新 `checkpoint/source-sdk-memory-teaching-20261013-r0`，不合main/push、不宣称远端/目标Host/其它平台通过。无契约或执行选择的新障碍即可完成本片。
+
+### 源码 SDK 与人类、AI 阅读导航收束（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者确认轻量SDK结合既有权威文档，当前模块作者优先，Host/发行版仅提供已有入口。干净 `b75812924eaab5c3dc03d643b58b6aef934768b6`；M/纯文档，controller实施与语义自查 independent=false。Memory模仿路径已有真实练习与回归，本片复用；最多七直接文档/60分钟，三种任务能走到对应SSOT/源码/验证含义即停，不重开全仓映射。
+
+**七文写集 / 闭环**：AI_READING_INDEX在现有§9补任务导航、材料性质及既有调查停止线链接；人类README中英直链SDK，并分开自有Host与所选发行版路径；SDK指南只加人类/AI入口和兼容SSOT指针，不双写操作或规则。PLAN/DCL只追加、新导航Wave。六原件先保全。手工走读模块/Host/发行版三条路径，规范/案例/历史各归既有owner；SDK与AI导航不取得运行Agent、权限、发现或调度能力。
+
+**验收 / 收口**：默认及七文链接、镜像、登记、docs-only旧路径、债结构、严格编码/精确七文/六原件/两历史前缀/原指南操作与练习/源码及旧证据保全/diff。仅文档导航，原例子、集成测试、复制README、CLI/模板/契约、依赖锁、工作流/CI选择与债状态保持，不重复Rust、教学练习、业务/全量CI；旧结果按字节与范围复用而非冒称新执行。通过后本地提交/新增 `checkpoint/source-sdk-doc-navigation-20261013-r0`，main与旧锚点保持，不push、不称目标Host已验。出现真正契约/权限/Host义务取舍才问维护者。
+
+### 源码 SDK 最终范围审查、集成冻结与远端交付（2026-10-13）
+
+**授权 / 基线 / 路由**：维护者要求最后检查SDK可靠性与范围、确认冻结基线并分类详实推送。接续干净 `89590c0d1eb745deaa012080b2aa9c72a38fd1db`，整批起点为main `08348f31b8f3459537c13227302bf4b8e273baa8`；保留十个既有分类提交及本地checkpoint。L/里程碑收口，controller实施与语义自查 independent=false。本次明确推送授权取代各历史片当时的“不push”，不回改历史记录。直接复查SDK配方、CLI声明视图、对应回归、教学与阅读入口，足以判断已定范围及可转让性即停，不重开全仓调查。
+
+**三文写集 / 交付**：本PLAN与DCL只追加，新最终交接Wave记录分类、可复现入口、实际门禁及限制；原件先保全。若复查暴露具体缺陷，再记录精确修改与定向验证，不顺手扩大功能。小Kernel、六槽Base、共享消费者与Host既定责任不改，不增加SDK门面、模块发现、Host义务或其它五槽案例。公共API、依赖锁、CI组合/选择/required及技术债状态保持。
+
+**验收 / CI节奏**：同主题最终批次运行一次 `npm run check:ci-local`（Dimension5、前端lint/typecheck/build、workspace静态/lib与集成、CLI串行集成），覆盖放回当前工程后的兼容；另核固定入口Node自测与本批默认/全部改文链接、镜像、登记、docs-only旧路径、债结构、编码和diff。生产公共Rust面未变，G8额外workspace doctest不适用；不扩大到真实模型、TTS、发行版发布或平台实机。失败保留原生输出，按首因定点修补，受影响验证通过后冻结提交。最终停止写入检查三文与既有实现身份，新增注释checkpoint，明确不是SemVer发布。
+
+**远端 / 停止线**：先重核origin/main与当前工作树，精确推送本分支和本轮tag，不使用全量tags快捷脚本。main受 `ci-gate` 保护，建立ready PR触发一次正式 `ci.yml`，核目标head/检查SHA与门禁结果；不绕过保护、不开第二套CI。正式远端未通过前只称Locally verified，绿灯后不为回写编号另造提交。PR及最终交付报告保存远端身份与结果。公共契约、权限或Host强制义务取舍才询问维护者；普通修补在范围内继续。
