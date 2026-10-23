@@ -16,6 +16,10 @@ description = "{{ cargo_description }}"
 [dependencies]
 oclive_kernel_contracts = { path = "{{ path_contracts }}" }
 oclive_kernel_types = { path = "{{ path_types }}" }
+{{#if base_consumer_example}}
+# Consumer variant: the shared runtime is an explicit author choice, not a default foundation dependency.
+oclive_kernel_runtime = { path = "{{ path_runtime }}" }
+{{/if}}
 
 # Optional CLI view only; does not register or bind any implementation.
 [package.metadata.oclive.wiring]

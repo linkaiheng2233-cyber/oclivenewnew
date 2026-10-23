@@ -25,22 +25,26 @@ cargo --version
 
 本轮 Windows 配方在源码 `08348f31b8f3459537c13227302bf4b8e273baa8` 实跑。后续使用者记录自己的 SHA、工作状态和工具版本；path 依赖会读取当前磁盘，Cargo.lock 不锁定它们的 Git 内容。This recipe was tested on Windows at that source SHA; record your own inputs. A Cargo lock does not pin the contents of path dependencies.
 
-## 2. 创建基础工程 / Generate the foundation
+## 2. 创建可运行的消费者工程 / Generate the runnable consumer
 
 ```powershell
 $ErrorActionPreference = 'Stop'
 $sourceRoot = (Resolve-Path -LiteralPath '.').Path
 $projectRoot = Join-Path (Split-Path $sourceRoot -Parent) 'my-sdk-memory'
 
-cargo run --locked -p oclive-cli -- init --non-interactive --no-smart --template kernel-base --kernel-source "$sourceRoot" --base-example none --license Apache-2.0 --project-name sdk-memory-caller -o "$projectRoot"
-if ($LASTEXITCODE -ne 0) { throw 'Foundation generation failed.' }
+cargo run --locked -p oclive-cli -- init --non-interactive --no-smart --template kernel-base --base-example consumer --kernel-source "$sourceRoot" --license Apache-2.0 --project-name sdk-memory-caller -o "$projectRoot"
+if ($LASTEXITCODE -ne 0) { throw 'Consumer generation failed.' }
 ```
 
-这里选择 `none`，先生成四文件基础工程；仍可使用六槽公共契约，没有关闭运行时 Memory。`--no-smart` 保持明确的生成动作；其它选项和冲突规则见 [CLI 指南](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
+`--base-example consumer` 一次生成可运行工程：复制 canonical `main.rs`/`memory.rs`、源码 `Cargo.lock` 与 `LICENSE`，并显式加入 runtime 依赖；`src/lib.rs` 仍是你的库入口。生成工程是独立 Cargo workspace，**不需要**再手工复制或 `cargo add`。`--no-smart` 保持明确的生成动作；其它选项见 [CLI 指南](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md)。
 
-`none` omits the teaching test, not the six-slot contracts. At this point the project depends only on contracts/types. The next step explicitly adds consumer support. See the [English CLI guide](../../creator-docs-en/cli/OCLIVE_CLI_GUIDE.md) for other options.
+`--base-example consumer` generates a runnable project in one command: it copies the canonical sources, the source lock and license, and adds the runtime dependency. No manual copy or `cargo add` is required.
 
-## 3. 添加消费者案例 / Add the consumer example
+**手动等价路径 / Manual equivalent**：如果要用 `--base-example none` 分步走，按下一节手动复制；两条路径生成的项目结构相同。
+
+## 3. 手动路径（可选）/ Manual path (optional)
+
+使用 `consumer` 模板时跳过本节；下面是等价的逐步操作，便于理解或按需分步执行。
 
 在**刚生成的项目**中复制原例子和许可证。下面对新增文件采用拒绝覆盖；只有生成的 README 被有意替换为本路径的项目说明。保留生成的 `src/lib.rs`。
 

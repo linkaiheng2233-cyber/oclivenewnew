@@ -57,6 +57,7 @@ fn template_context(cfg: &ProjectConfig, out: &Path) -> serde_json::Value {
         "cargo_license": cfg.cargo_license.as_deref().unwrap_or("MIT"),
         "cargo_description": cfg.cargo_description.as_deref().unwrap_or(""),
         "base_memory_example": cfg.base_memory_example,
+        "base_consumer_example": cfg.base_consumer_example,
     });
     if let Some(ref root) = cfg.kernel_source {
         let path_tauri = relativize_path(out, &root.join("distros/desktop-tauri"));

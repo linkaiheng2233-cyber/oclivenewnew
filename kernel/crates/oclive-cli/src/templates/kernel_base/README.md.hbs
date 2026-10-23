@@ -2,6 +2,10 @@
 
 Kernel 契约基础开发工程，由 `oclive init --template kernel-base` 生成。
 
+{{#if base_consumer_example}}
+本工程是 **Memory 消费者** 变体：`src/memory.rs` 是你的实现，`src/main.rs` 通过共享 runtime 的消费者真实调用它。生成器从源码 checkout 复制 canonical 示例、许可证与派生锁，并显式加入 runtime 依赖。
+{{/if}}
+
 ## 基础与边界
 
 - 直接引用现有 `oclive_kernel_contracts` 与 `oclive_kernel_types`，不复制、不重新定义公共契约。
@@ -19,6 +23,12 @@ src/lib.rs                开发者代码入口
 {{#if base_memory_example}}
 tests/base_contracts.rs   仅测试内的 Memory 调用与失败示例
 {{/if}}
+{{#if base_consumer_example}}
+src/main.rs               消费者调用与三项行为测试
+src/memory.rs             你的 MemoryBase 实现
+Cargo.lock                由源码 checkout 派生的锁
+LICENSE                   原仓库许可证
+{{/if}}
 README.md                 当前说明
 .gitignore                本工程构建产物
 ```
@@ -32,6 +42,19 @@ README.md                 当前说明
 | 编译检查 | `cargo check` |
 | 运行测试 | `cargo test` |
 | 检查格式 | `cargo fmt -- --check`；修正格式用 `cargo fmt` |
+
+{{#if base_consumer_example}}
+### 直接运行消费者
+
+在本工程根运行：
+
+```bash
+cargo run
+cargo test
+```
+
+运行应看到 `external memory: selected=2 baseline=3 memory_calls=1 llm_calls=0`；`cargo test` 应为 3 项通过。
+{{/if}}
 
 查看接线时，从包含本命令的 OCLive 源码根运行 `cargo run -p oclive-cli -- doctor wiring --manifest-path <本工程>/Cargo.toml`；若已编译/安装当前 CLI，可在本工程运行 `oclive-cli doctor wiring`。初始 `Cargo.toml` 的可选 `package.metadata.oclive.wiring` 只有版本，六个实现都显示未提供，测试示例不自动成为运行绑定。填写格式与标签见 [CLI 接线说明](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/main/creator-docs/cli/OCLIVE_CLI_GUIDE.md#doctor-wiring)。
 

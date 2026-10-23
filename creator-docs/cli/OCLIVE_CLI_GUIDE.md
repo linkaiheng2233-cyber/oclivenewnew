@@ -680,14 +680,15 @@ cargo test
 cargo run -p oclive-cli -- init --template kernel-base
 ```
 
-依次确认工程名、源码根、教学示例（`memory` 或 `none`）、可选作者、许可证（默认 MIT）、可选描述和输出目录，最后确认才写盘。已提供的源码/示例/元数据选项及非默认工程名、输出目录沿用；输入无效或最后取消不会生成工程。`--non-interactive`、`--dry-run`、`--check` 保持脚本化，不提问，须显式提供源码根。
+依次确认工程名、源码根、教学示例（`memory`、`none` 或 `consumer`）、可选作者、许可证（默认 MIT）、可选描述和输出目录，最后确认才写盘。已提供的源码/示例/元数据选项及非默认工程名、输出目录沿用；输入无效或最后取消不会生成工程。`--non-interactive`、`--dry-run`、`--check` 保持脚本化，不提问，须显式提供源码根。
 
 | 选择 | 生成内容 | 含义 |
 |---|---|---|
 | `--base-example memory`（默认） | 五文件，附测试内 Memory 调用和失败示例 | 从一条已有教学路径开工 |
 | `--base-example none` | 四文件，省去 `tests/base_contracts.rs` | 空白 contracts/types 工程，作者自行添加实现及测试 |
+| `--base-example consumer` | 复制 canonical Memory 消费者源码 + 许可证 + 派生锁，并显式加入 runtime 依赖 | 一条命令得到可 `cargo run` 的消费者工程 |
 
-两者均保留六槽 Base 与公共类型。`none` 不表示关闭运行时记忆、删除契约或生成 Noop；实际运行开关由模板作者及消费者接线负责。空白工程初始 `cargo test` 可执行零项，不能当成模块功能通过。比如在上方非交互命令加 `--base-example none` 即可生成空白工程；预览也反映相同四文件。
+三者均保留六槽 Base 与公共类型。`none` 不表示关闭运行时记忆、删除契约或生成 Noop；实际运行开关由模板作者及消费者接线负责。空白工程初始 `cargo test` 可执行零项，不能当成模块功能通过。`consumer` 从源码 checkout 的 `kernel/crates/oclive_kernel_runtime/examples/external_memory_base` 复制 `main.rs`/`memory.rs`，不维护第二份示例；生成后 `cargo run` 应输出 `external memory: selected=2 baseline=3 memory_calls=1 llm_calls=0`，`cargo test` 应为 3 项通过。
 
 命令行显式传 `--base-example` 时须同时指定 `--template kernel-base`；它不适用于旧quick或其它运行配方。
 

@@ -26,6 +26,8 @@ pub use crate::cli_english_init::PRESET_MATRIX_HELP;
 pub enum BaseExampleArg {
     Memory,
     None,
+    /// Copy the canonical Memory consumer sources and add the shared runtime dependency.
+    Consumer,
 }
 
 #[derive(Parser, Debug, Clone)]

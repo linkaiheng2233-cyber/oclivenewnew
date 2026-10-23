@@ -174,6 +174,7 @@ pub fn preset_config(name: &str, preset: &str) -> ProjectConfig {
         with_example_plugin: false,
         factory_template: None,
         base_memory_example: false,
+        base_consumer_example: false,
         run_monolith_bench_after_init: false,
         kernel_source: None,
         cargo_author: None,
