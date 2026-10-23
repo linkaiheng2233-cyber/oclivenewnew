@@ -42,6 +42,25 @@ Windows PowerShell probes used source input `08348f31b8f3459537c13227302bf4b8e27
 - Select Host wiring. The reference route can continue with the [CLI guide's library-embed recipe](../cli/OCLIVE_CLI_GUIDE.md); a custom Host follows current public contracts. Neither is started in this slice.
 - Record actual source SHA, dirty state, toolchain and derived lock. Recheck caller behavior and downstream compatibility when updating sources.
 
+## SDK boundary: a development-time toolkit
+
+The SDK is a **development-time** aid (generation, examples, diagnostics, documentation), not a runtime layer:
+
+- Kernel and Host Cargo dependencies must not contain any SDK crate; the SDK may appear only in `dev-dependencies` or repository tooling;
+- Author projects depend only on `contracts` / `types` / `runtime`, never on the SDK at runtime;
+- The SDK adds no public traits, DTOs, discovery or registration, and does not start a Host;
+- The SDK version follows the tool itself, not the kernel's semver.
+
+Dependency direction:
+
+```
+contracts/types ← Host / module implementations
+contracts/types ← SDK (development time only)
+Kernel / Host  ✗→  SDK
+```
+
+`npm run check:sdk-boundary` enforces the runtime-dependency rule (`*sdk*` must stay out of runtime dependencies).
+
 ## Stop and expand deliberately
 
 ### Recipe regression (limited)

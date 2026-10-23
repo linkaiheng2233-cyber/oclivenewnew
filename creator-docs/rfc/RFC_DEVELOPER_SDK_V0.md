@@ -42,6 +42,25 @@
 - 用什么 Host 接线。参考 Host 路径可按 [CLI 指南中的 library-embed](../cli/OCLIVE_CLI_GUIDE.md) 配方继续；自有 Host 依照现有公共契约实现。SDK 本片不启动两者。
 - 如何交付及升级依赖。保存实际源码 SHA、dirty 状态、工具链和派生锁；更新源码时按影响核对自己的调用和下游兼容。
 
+## SDK 的边界：开发时工具包
+
+SDK 是**开发时**辅助（生成、示例、诊断、文档），不是运行时层：
+
+- Kernel 与 Host 的 Cargo 依赖不得包含任何 SDK crate；SDK 最多出现在 `dev-dependencies` 或仓库工具链中；
+- 用户工程只依赖 `contracts` / `types` / `runtime`，不把 SDK 作为运行依赖；
+- SDK 不新增公共 trait、DTO、发现/注册机制，也不启动 Host；
+- SDK 版本跟随工具自身，不与内核 semver 绑定。
+
+依赖方向：
+
+```
+contracts/types ← Host / 模块实现
+contracts/types ← SDK（仅开发时）
+Kernel / Host  ✗→  SDK
+```
+
+仓库用 `npm run check:sdk-boundary` 强制"运行时依赖不得命中 `*sdk*`"这一条。
+
 ## 扩展条件与停止线
 
 ### 配方自动回归（有限）

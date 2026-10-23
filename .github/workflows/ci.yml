@@ -265,6 +265,8 @@ jobs:
         run: node scripts/check-domain-layering.mjs
       - name: AI documentation navigator (vendored sync + tests)
         run: npm run check:ai-docs
+      - name: SDK runtime boundary
+        run: npm run check:sdk-boundary
 
   dimension5-acceptance:
     needs: ci-impact-plan
