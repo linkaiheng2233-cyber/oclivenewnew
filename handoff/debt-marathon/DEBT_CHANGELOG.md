@@ -1111,3 +1111,15 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者要求收尾、最后检查SDK可靠性与范围，再确认冻结基线并分类详实推送。按[最终计划](ROUND-02-PLAN.md#源码-sdk-最终范围审查集成冻结与远端交付2026-10-13)接续干净 `89590c0d`，整批从main `08348f31`起的十个分类提交保留；本轮controller实施与语义自查 independent=false，有限核八条直接声明，不重开全仓调查。
 - **交付 / 例子**：完整Memory作者路径、只读CLI声明视图、真实官方配方回归、两条改一条练习和人类/AI导航共同冻结；例子通过说明作者实现确被消费者调用，不将literal规则或示例行为变成Base义务。最终[交接Wave](waves/WAVE-20261013-SDK-FINAL-CLOSEOUT.md)拥有提交分类、适用检查与可携带边界，本PLAN/DCL只追加，无公共API、锁、CI组合/required或技术债状态改动。
 - **验收 / 推送纪律**：同主题里程碑的适用阶段全部完成，精确结果由Wave拥有：首跑缺少隔离Tauri资源，续跑又发现私有执行器target作用域与空值设置问题，三次native101分别保留；没有把分段通过写成完整首命令exit0。最终Rust、workspace集成和CLI全tests均通过，新SDK配方实际运行，脚本28/28及模块兼容/全部改文另核；未改产品断言或给SDK添加Host依赖。停止写入后精确推送本分支和新final checkpoint，由ready PR的目标SHA正式CI验收；旧本地tag/main/原证据保持，不绕过保护、不为远端绿灯回写另造提交。实际结果、最终SHA及远端状态分别查Wave与本次交付报告，不以计划或旧main绿灯冒充新提交验收。
+
+### DCL-20261024-113 · CI 分层认证的效果复查进入技术债
+
+- **原因 / 授权**：维护者要求把 CI 后续跟踪与反馈纳入技术债；本项不改变现有选择逻辑，只登记持续观测与演进条件。
+- **登记 / 范围**：[K-CI-OBSERVE-01](../TECHNICAL_DEBT_INVENTORY.md#debt-k-ci-observe-01) 记录每月 `npm run stats:ci` 的复查项（全量占比、p50、最慢 run）、`active` scheme 与 override 复审，以及组织化后重评 merge queue；未认证模块（cli/kernel 等）不提前晋升。
+- **证据 / 后续**：2026-10-19 周 `stats:ci` 实跑为 34 runs、32 success、p50 11.7 分钟、max 127.7 分钟，只作当前观察，不作完成判定；不新增代码或门禁。
+
+### DCL-20261024-114 · 源码 SDK v0 的外部反馈进入技术债
+
+- **原因 / 授权**：维护者要求收集 SDK 反馈并纳入技术债；v0 已通过 #217/#218 落地，但尚无外部使用者反馈。
+- **登记 / 范围**：[K-SDK-FEEDBACK-01](../TECHNICAL_DEBT_INVENTORY.md#debt-k-sdk-feedback-01) 的完成条件是至少 1–2 位外部模块作者按 [Memory 配方](../../examples/developer-sdk-memory/README.md) 跑通并提供失败命令、源码 SHA 与工具版本；反馈前不新增 facade crate、不发布 crates.io、不承诺 semver，也不把示例的 `literal:` 约定升级为 Base 义务。
+- **证据 / 后续**：当前证据只到 #217 的 e2e 与本地验证；反馈入口沿用 [CLI 指南](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md) 的反馈入口。
