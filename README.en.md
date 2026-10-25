@@ -5,8 +5,10 @@
 [中文](README.md)
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/linkaiheng2233-cyber/oclivenewnew?include_prereleases&label=release)](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
 
-**Release**: desktop host **0.5.2** · see [CHANGELOG.en.md](CHANGELOG.en.md)
+**Main-branch version**: desktop host **0.5.2** (the published installer is the **0.5.0 beta**, see [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)) · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
 ## Start here
 
@@ -106,6 +108,10 @@ Profile SSOT: [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSU
 ## Architecture (one-paragraph version)
 
 OCLive optimizes for **orthogonal layers**, not for stuffing every capability into one app: swapping the LLM does not touch the persona, adding voice does not pollute the main chain, and freezing experimental features does not affect Stable releases.
+
+![OCLive kernel-centric architecture: upper/lower slot layers, the dialogue kernel, persistence and side channels, and compile-time scaffolding](creator-docs/assets/oclive-kernel-centric-architecture.png)
+
+*Kernel-centric view: `memory` / `emotion` / `event` and `prompt` / `llm` / `agent` sit on either side of the dialogue kernel; persistence, directory plugins, remote RPC and MCP attach through explicit compile-time or optional wiring.*
 
 The **kernel** specifies the shape of six capability ports plus a small set of baselines every Host must honour (how failures and errors are expressed, which combinations are illegal); the **Host** decides how to wire them into one turn; the **distro** decides what is installed and enabled by default. The six ports are `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` — **all optional capabilities, not a fixed six-step pipeline**.
 
