@@ -10,6 +10,10 @@
 
 **主分支版本**：桌面宿主 **0.5.2**（安装包为 **0.5.0 内测版**，见 [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)）· 详见 [CHANGELOG.md](CHANGELOG.md)
 
+![A.I.Live Chat Pro：角色运行空间、对话与本地记录](creator-docs/assets/chat-pro-chat.jpg)
+
+*Chat Pro 界面预览：每个角色有自己的运行空间，对话与记忆默认保存在本机。*
+
 > **第一次听说这个项目？先读 [OCLive 是什么（5 分钟）](human-docs/START_HERE.md)。**
 > 那一页讲清它是什么、给谁用、不是什么，以及你该从哪条路进来。下面这页留着完整介绍。
 
@@ -110,6 +114,10 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 | **VS Code Flash** | `vscode` | 姊妹仓 [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 渗透能力 **插件化**；核心只做轻量聊天宿主 |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | 打包预埋；模式 2 playtest **已解冻** |
 | **dev lab** | `desktop-chat` | 实验场 profile | 日常开发 / 低延迟试验 |
+
+![A.I.Live Chat Pro 角色库：选择角色包进入各自的运行空间](creator-docs/assets/chat-pro-roles.jpg)
+
+*角色库：导入或选择角色包，进入各自的运行空间。*
 
 Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md)；三发行版结项约束见 [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md)。
 
