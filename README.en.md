@@ -10,6 +10,10 @@
 
 **Main-branch version**: desktop host **0.5.2** (the published installer is the **0.5.0 beta**, see [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)) · see [CHANGELOG.en.md](CHANGELOG.en.md)
 
+![A.I.Live Chat Pro: role space, conversation and local history](creator-docs/assets/chat-pro-chat.jpg)
+
+*Chat Pro preview: each character gets its own role space; conversations and memory stay local by default.*
+
 ## Start here
 
 > **New to the project? Read [What is OCLive (5 min)](human-docs/START_HERE.md) first** (Chinese).
@@ -99,6 +103,10 @@ Current reference distros reuse **`process_message`** and **`distro.oclive.toml`
 | **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = lightweight chat host |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
 | **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |
+
+![A.I.Live Chat Pro role library: pick a role pack and enter its space](creator-docs/assets/chat-pro-roles.jpg)
+
+*Role library: import or select a role pack and enter its space.*
 
 Profile SSOT: [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md)
 
