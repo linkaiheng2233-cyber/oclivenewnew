@@ -5,8 +5,10 @@
 [English](README.en.md)
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/linkaiheng2233-cyber/oclivenewnew?include_prereleases&label=release)](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
 
-**发版**：桌面宿主 **0.5.2** · 详见 [CHANGELOG.md](CHANGELOG.md)
+**主分支版本**：桌面宿主 **0.5.2**（安装包为 **0.5.0 内测版**，见 [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)）· 详见 [CHANGELOG.md](CHANGELOG.md)
 
 > **第一次听说这个项目？先读 [OCLive 是什么（5 分钟）](human-docs/START_HERE.md)。**
 > 那一页讲清它是什么、给谁用、不是什么，以及你该从哪条路进来。下面这页留着完整介绍。
@@ -22,7 +24,7 @@
 | Rust Base 模块作者 | [Kernel 基础工程开工](creator-docs/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory 示例](human-docs/modules/slots/memory.md) | 先生成与测试，再按目标接入 |
 | 插件 / UI 插件作者 | [插件作者学习路径](creator-docs/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) | 30–60 分钟 |
 | **内核集成方**（无头 / 嵌入式 / 新发行版） | [内核集成路径](creator-docs/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | 约 1 小时 |
-| **贡献代码** | [CONTRIBUTING.md](CONTRIBUTING.md) · [Good first issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) | — |
+| **贡献代码** | [CONTRIBUTING.md](CONTRIBUTING.md) · [Good second issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+second+issue%22) | — |
 | AI Agent | [AGENTS.md](AGENTS.md) | 按任务读取 SSOT |
 
 完整索引：[DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md)。
@@ -117,6 +119,10 @@ Profile SSOT：[DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABIL
 ## 架构（一句话版）
 
 OCLive 的优化目标不是「把所有能力塞进一个 App」，而是**正交分层**：换 LLM 不动人设、加语音不污染主链、冻结实验能力不影响 Stable 发版。
+
+![OCLive 内核中心架构：六槽上下分层、对话内核、持久化与外协、编译期脚手架](creator-docs/assets/oclive-kernel-centric-architecture.png)
+
+*内核中心架构：`memory` / `emotion` / `event` 与 `prompt` / `llm` / `agent` 分列对话内核两侧；持久化、目录插件、远程 RPC 与 MCP 通过编译期/可选接线接入。*
 
 **内核**规定六个能力端口的形状，以及少量所有 Host 都必须遵守的底线（失败与错误怎么表达、哪些组合不合法）；**Host** 决定怎么接起来跑一轮对话；**发行版**决定默认装什么。六个端口是 `memory` / `emotion` / `event` / `prompt` / `llm` / `agent`——**都是可选能力，不是固定六步**。
 
