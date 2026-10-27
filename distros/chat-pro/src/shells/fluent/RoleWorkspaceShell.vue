@@ -11,6 +11,8 @@ import ShortcutHelp from '@oclive/shared/components/ShortcutHelp.vue'
 import StartupWarningsBanner from '@oclive/shared/components/StartupWarningsBanner.vue'
 import SupportDiagnostics from '@oclive/shared/components/SupportDiagnostics.vue'
 import Toast from '@oclive/shared/components/Toast.vue'
+import UiButton from '@oclive/shared/components/ui/UiButton.vue'
+import UiCloseButton from '@oclive/shared/components/ui/UiCloseButton.vue'
 import Win98TitleBar from '@oclive/shared/components/win98/Win98TitleBar.vue'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
@@ -76,7 +78,7 @@ const helpOpen = ref(false)
 const rolePanelOpen = ref(false)
 const browserFixture = import.meta.env.MODE === 'e2e'
 const helpCard = ref<HTMLElement | null>(null)
-useModalFocusRestore(helpOpen, helpCard)
+useModalFocusRestore(helpOpen, helpCard, { trapFocus: true })
 const blocked = computed(() => busy.value || roleSwitching.value || startupState.value !== 'ready')
 const runtimeReady = computed(() => page.value === 'chat' && !!activeSession.value && !!roleStore.currentRoleId)
 const ui = useUiStore()
@@ -205,9 +207,13 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
           </ErrorNotice>
           <div v-if="page === 'roles'" class="library-page">
             <div class="library-tools">
-              <h2>{{ t('workspace.myRoles') }} <small>{{ roleStore.roles.length }}</small></h2><button type="button" :disabled="blocked" @click="retryStartup">
-                {{ t('workspace.retry') }}
-              </button><RolePackBar v-if="roleStore.roles.length" :disabled="blocked" :can-export="false" @imported="onImported" @notify="notify" />
+              <h2>{{ t('workspace.myRoles') }} <small>{{ roleStore.roles.length }}</small></h2>
+              <div class="library-actions">
+                <UiButton :disabled="blocked" @click="retryStartup">
+                  {{ t('workspace.retry') }}
+                </UiButton>
+                <RolePackBar v-if="roleStore.roles.length" :disabled="blocked" :can-export="false" @imported="onImported" @notify="notify" />
+              </div>
             </div>
             <div v-if="roleStore.roles.length === 0" class="workspace-empty">
               <div class="empty-role-icon" aria-hidden="true">
@@ -222,7 +228,10 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
                   <CharacterInfo :role-id="role.id" :name="role.name" emotion="neutral" />
                 </div>
                 <div class="role-card-copy">
-                  <h2>{{ role.name }}</h2><p>{{ role.description }}</p>
+                  <h2>{{ role.name }}</h2>
+                  <p class="role-description" :title="role.description">
+                    {{ role.description }}
+                  </p>
                   <small v-if="role.version">{{ t('workspace.version') }} {{ role.version }}</small>
                   <h3>{{ t('workspace.recent') }}</h3>
                   <ErrorNotice v-if="recentErrors[role.id]" :error="recentErrors[role.id]" :summary="t('workspace.recentFailed')">
@@ -301,9 +310,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
               </h2>
               <p>{{ t('workspace.helpHint') }}</p>
             </div>
-            <button class="workspace-help-close" type="button" :aria-label="t('workspace.close')" :title="t('workspace.close')" @click="helpOpen = false">
-              <span aria-hidden="true">×</span>
-            </button>
+            <UiCloseButton class="workspace-help-close" :label="t('workspace.close')" @click="helpOpen = false" />
           </header>
           <SupportDiagnostics :active="helpOpen" />
           <footer class="workspace-help-footer">

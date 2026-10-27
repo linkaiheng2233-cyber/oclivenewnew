@@ -63,6 +63,6 @@ input:focus-visible+.ui-toggle__track { outline:2px solid var(--accent); outline
 .ui-toggle--disabled .ui-toggle__switch { opacity:.55; }
 @media(max-width:600px) { .ui-toggle{gap:14px}.ui-toggle__control{gap:6px}.ui-toggle__state{font-size:11px} }
 @media(prefers-reduced-motion:reduce) { .ui-toggle__track,.ui-toggle__track>span{transition:none} }
-:global(html[data-skin="win98"]) .ui-toggle__track { border-radius:0; border-style:inset; }
-:global(html[data-skin="win98"]) .ui-toggle__track>span { border-radius:0; }
+:global(html[data-skin="win98"] .ui-toggle__track) { border-radius:0; border-style:inset; transition:none; }
+:global(html[data-skin="win98"] .ui-toggle__track>span) { border-radius:0; transition:none; }
 </style>

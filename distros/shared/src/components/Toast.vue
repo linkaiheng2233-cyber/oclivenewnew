@@ -62,11 +62,14 @@ const { dismissToast } = useAppToast()
 }
 .toast-enter-active,
 .toast-leave-active {
-  transition: opacity 260ms ease, transform 260ms ease;
+  transition: opacity var(--ui-motion-panel,160ms) ease-out, transform var(--ui-motion-panel,160ms) ease-out;
 }
 .toast-enter-from,
 .toast-leave-to {
   opacity: 0;
   transform: translateX(12px);
 }
+@media(prefers-reduced-motion:reduce) { .toast-enter-active,.toast-leave-active { transition:none; } }
+:global(html[data-skin="win98"] .toast-enter-active),
+:global(html[data-skin="win98"] .toast-leave-active) { transition:none; }
 </style>

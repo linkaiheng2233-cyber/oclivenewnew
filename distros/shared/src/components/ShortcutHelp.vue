@@ -7,6 +7,7 @@ import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
+import UiCloseButton from './ui/UiCloseButton.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const shDialogRef = ref<HTMLElement | null>(null)
-useModalFocusRestore(toRef(props, 'modelValue'), shDialogRef)
+useModalFocusRestore(toRef(props, 'modelValue'), shDialogRef, { trapFocus: true })
 
 const { t } = useI18n()
 const roleStore = useRoleStore()
@@ -88,14 +89,11 @@ const rows = computed(() => {
           <h2 class="sh-title">
             {{ t("common.shortcutHelp.title") }}
           </h2>
-          <button
-            type="button"
+          <UiCloseButton
             class="sh-close"
-            :aria-label="t('common.close')"
+            :label="t('common.close')"
             @click="emit('update:modelValue', false)"
-          >
-            ×
-          </button>
+          />
         </header>
         <table class="sh-table">
           <tbody>
@@ -157,14 +155,6 @@ const rows = computed(() => {
 .sh-title {
   margin: 0;
   font-size: 17px;
-}
-.sh-close {
-  border: none;
-  background: transparent;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--text-secondary);
 }
 .sh-table {
   width: 100%;

@@ -74,6 +74,10 @@ html[data-skin="win98"] .role-app .kernel-status {
   background: #c0c0c0;
 }
 
+html[data-skin="win98"] .role-app .library-actions .pack-bar .btn {
+  border-radius: 0;
+}
+
 html[data-skin="win98"] .role-app .card-conversation:hover {
   background: #000080;
   color: #ffffff;

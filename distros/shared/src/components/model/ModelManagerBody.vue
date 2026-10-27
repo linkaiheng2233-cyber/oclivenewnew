@@ -701,12 +701,13 @@ const {
   min-height: 0;
   overflow: auto;
   font-size: 13px;
+  line-height: 1.65;
   color: var(--text-primary);
 }
 .mm-lead {
   margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 .mm-muted {
@@ -1027,6 +1028,7 @@ const {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
@@ -1037,6 +1039,8 @@ const {
   background: var(--bg-elevated);
   cursor: pointer;
   font-size: 12px;
+  min-height: 34px;
+  line-height: 1.5;
 }
 .mm-btn:disabled {
   opacity: 0.55;

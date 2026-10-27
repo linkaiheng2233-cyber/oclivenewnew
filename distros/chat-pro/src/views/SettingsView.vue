@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import UiCloseButton from '@oclive/shared/components/ui/UiCloseButton.vue'
 import { VOICE_ASR_PLUGIN_ID } from '@oclive/shared/lib/voiceAsrEvents'
 import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
 import {
@@ -207,9 +208,7 @@ function openGeneralAdvancedKeybindings(): void {
           <h2 class="sv-title">
             {{ t("settings.title") }}
           </h2>
-          <button type="button" class="sv-close" :aria-label="t('settings.closeAria')" @click="emit('close')">
-            ×
-          </button>
+          <UiCloseButton class="sv-close" :label="t('settings.closeAria')" @click="emit('close')" />
         </header>
 
         <div class="sv-layout">
@@ -274,8 +273,6 @@ function openGeneralAdvancedKeybindings(): void {
 .sv-dialog:focus { outline:none; }
 .sv-head { display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding:20px 26px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
 .sv-title { margin:0; font-size:21px; font-weight:650; color:var(--text-primary); }
-.sv-close { display:grid; place-items:center; width:34px; height:34px; padding:0; border:1px solid var(--border-light); border-radius:8px; background:transparent; font-size:24px; color:var(--text-secondary); cursor:pointer; }
-.sv-close:hover { background:var(--bg-secondary); color:var(--text-primary); }
 .sv-layout { flex:1; min-height:0; min-width:0; display:grid; grid-template-columns:194px minmax(0,1fr); overflow:hidden; }
 .sv-nav { display:flex; flex-direction:column; gap:5px; padding:20px 12px; overflow:auto; border-right:1px solid var(--border-light); background:var(--bg-secondary); }
 .sv-nav-heading { margin:0 12px 12px; font-size:11px; letter-spacing:.1em; color:var(--text-secondary); }
@@ -305,7 +302,7 @@ function openGeneralAdvancedKeybindings(): void {
 .sv-content :deep(.ui-btn:disabled) { opacity:.5; cursor:not-allowed; }
 .sv-content :deep(.ui-btn:focus-visible),.sv-content :deep(.ui-select:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
 .sv-content :deep(.error-notice) { flex-shrink:0; }
-.sv-close:focus-visible,.sv-nav-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.sv-nav-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 .sv-nav,.sv-content :deep(.sv-body),.sv-content :deep(pre) { scrollbar-width:thin; scrollbar-color:var(--scrollbar-chat-thumb,#486b6240) transparent; }
 .sv-nav::-webkit-scrollbar,.sv-content :deep(.sv-body::-webkit-scrollbar),.sv-content :deep(pre::-webkit-scrollbar) { width:10px; height:10px; }
 .sv-nav::-webkit-scrollbar-thumb,.sv-content :deep(.sv-body::-webkit-scrollbar-thumb),.sv-content :deep(pre::-webkit-scrollbar-thumb) { background:var(--scrollbar-chat-thumb,#486b6240); border:3px solid transparent; background-clip:padding-box; border-radius:12px; }

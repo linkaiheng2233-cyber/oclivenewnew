@@ -34,21 +34,26 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .library-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
 .library-tools h2 { margin:0; font-size:16px; }
 .library-tools h2 small { font-size:11px; font-weight:400; color:var(--text-secondary); margin-left:8px; }
-.role-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:20px; }
+.library-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.library-actions :deep(.pack-bar) { gap:8px; }
+.library-actions :deep(.pack-bar .btn) { min-height:32px; padding:6px 12px; font-size:13px; border-radius:6px; }
+.role-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr)); gap:20px; align-items:stretch; }
 .role-card { border:1px solid var(--border-light); border-radius:13px; background:var(--bg-elevated); overflow:hidden; display:flex; align-items:stretch; }
 .card-portrait { width:36%; min-width:110px; display:flex; align-items:center; background:color-mix(in srgb,var(--accent) 6%,var(--bg-primary)); }
 .card-portrait :deep(.hero) { width:100%; padding:14px 8px; background:transparent; }
 .card-portrait :deep(.avatar-wrap) { margin:0; }
 .card-portrait :deep(.title), .card-portrait :deep(.emotion-line) { display:none; }
-.role-card-copy { flex:1; min-width:0; padding:24px 18px 18px; }
+.role-card-copy { flex:1; min-width:0; padding:22px 20px 20px; display:flex; flex-direction:column; }
 .role-card-copy h2 { font-size:20px; margin:0 0 8px; }
-.role-card-copy p { color:var(--text-secondary); font-size:12px; line-height:1.8; margin:6px 0; }
-.role-card-copy>small { color:var(--text-secondary); font-size:10px; }
-.role-card-copy h3 { font-size:11px; color:var(--text-secondary); margin:20px 0 8px; font-weight:500; }
+.role-card-copy p { color:var(--text-secondary); font-size:13px; line-height:1.75; margin:6px 0; overflow-wrap:anywhere; }
+.role-card-copy .role-description { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.role-card-copy>small { color:var(--text-secondary); font-size:12px; margin-top:4px; }
+.role-card-copy h3 { font-size:12px; color:var(--text-secondary); margin:18px 0 8px; font-weight:600; }
 .card-conversation { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:9px 0; border:0; border-top:1px solid var(--border-light); text-align:left; background:transparent; color:var(--text-primary); font-size:12px; }
 .card-conversation span { color:var(--accent); }
 .primary { border:0; border-radius:7px; padding:11px 16px; color:var(--bg-primary); background:var(--accent); font-weight:650; }
-.enter-role { display:flex; justify-content:space-between; gap:16px; width:100%; margin-top:20px; font-size:12px; }
+.enter-role { display:flex; justify-content:space-between; gap:16px; width:100%; margin-top:18px; font-size:13px; min-height:36px; }
+.role-card-copy .muted { flex:1; margin-bottom:0; }
 .workspace-empty { display:flex; flex:1; min-height:320px; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:36px; }
 .workspace-empty h2 { margin:0; font-size:25px; }
 .workspace-empty p { color:var(--text-secondary); max-width:410px; line-height:2; font-size:13px; white-space:pre-line; }
@@ -75,8 +80,8 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .conversation-header { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:16px 24px; border-bottom:1px solid var(--border-light); }
 .conversation-header>div { flex:1; min-width:160px; }
 .conversation-header h2 { font-size:14px; margin:0 0 6px; overflow-wrap:anywhere; }
-.conversation-header small { font-size:10px; color:var(--text-secondary); line-height:1.6; }
-.conversation-header button, .workspace-help button { border:1px solid var(--border-light); padding:7px 10px; border-radius:6px; background:var(--bg-primary); color:var(--text-primary); font-size:12px; }
+.conversation-header small { font-size:12px; color:var(--text-secondary); line-height:1.65; }
+.conversation-header button, .workspace-help button:not(.ui-close-button) { border:1px solid var(--border-light); padding:7px 10px; border-radius:6px; background:var(--bg-primary); color:var(--text-primary); font-size:12px; min-height:34px; }
 .workspace-messages { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; position:relative; }
 .workspace-messages :deep(.chat-list) { flex:1; }
 .chat-empty { margin:auto; padding:24px; color:var(--text-secondary); text-align:center; font-size:14px; }
@@ -88,11 +93,10 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .workspace-help-header { flex-shrink:0; display:flex; justify-content:space-between; gap:24px; align-items:flex-start; padding:24px 26px 20px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
 .workspace-help h2 { margin:0; font-size:22px; line-height:1.4; letter-spacing:.02em; }
 .workspace-help-header p { margin:8px 0 0; font-size:12px; line-height:1.8; color:var(--text-secondary); }
-.workspace-help .workspace-help-close { flex-shrink:0; display:grid; place-items:center; width:34px; height:34px; padding:0; font-size:24px; line-height:1; color:var(--text-secondary); background:transparent; border:1px solid var(--border-light); border-radius:8px; }
-.workspace-help .workspace-help-close:hover { color:var(--text-primary); background:var(--bg-secondary); border-color:var(--accent); }
 .workspace-help button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 .workspace-help-footer { flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px 26px; border-top:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
 .workspace-help-footer small { color:var(--text-secondary); font-size:11px; }
+.library-page,.nav-role-list,.runtime-role,.workspace-messages { scrollbar-gutter:stable; }
 @media(max-width:600px) { .workspace-modal-backdrop{padding:10px}.workspace-help{height:calc(100dvh - 20px);max-height:calc(100dvh - 20px);border-radius:12px}.workspace-help-header{padding:18px 16px 14px;gap:12px}.workspace-help h2{font-size:19px}.workspace-help-footer{padding:10px 16px} }
 @media(max-width:1080px) { .role-nav{flex-basis:185px;padding:20px 10px 10px}.workspace-header{padding:22px}.library-page{padding:22px}.runtime-role{width:220px;min-width:180px}.runtime-role :deep(.avatar){max-height:270px} }
 @media(max-width:760px) { .role-nav{flex-basis:64px;padding:18px 6px}.role-brand{margin:0 6px 20px}.role-brand>span:last-child,.nav-label,.nav-conversations,.local-note,.role-initial,.nav-role-title button:last-child{display:none}.nav-button{padding:10px 5px;font-size:10px;flex-direction:column;gap:6px;text-align:center}.nav-role-title button:first-child{padding:9px 4px;font-size:11px;justify-content:center;overflow-wrap:anywhere}.runtime-role{display:none}.workspace-header{padding:16px;gap:8px;flex-wrap:wrap}.workspace-header h1{font-size:20px}.library-page{padding:18px}.role-card-grid{grid-template-columns:1fr}.role-card{flex-direction:column}.card-portrait{width:100%;height:150px;justify-content:center}.card-portrait :deep(.hero){width:140px;height:150px}.card-portrait :deep(.avatar){height:130px;object-fit:contain}.role-card-copy{padding:18px}.conversation-header{padding:14px}.workspace-header p{line-height:1.7}.workspace-empty{padding:24px;min-height:280px}.workspace-empty h2{font-size:21px} }

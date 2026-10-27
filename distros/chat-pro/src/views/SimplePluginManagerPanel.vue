@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import SimplePluginManager from '@oclive/shared/components/plugin-manager/SimplePluginManager.vue'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
-import { ref, toRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MarketView from './MarketView.vue'
 
@@ -24,7 +24,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const dialogRef = ref<HTMLElement | null>(null)
-useModalFocusRestore(toRef(props, 'visible'), dialogRef)
+useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef, { trapFocus: true })
 
 function selectSubview(next: PluginsPanelSubview): void {
   emit('update:subview', next)
