@@ -95,7 +95,7 @@ The Win98 Easter egg retains an independent classic palette. Disabling it restor
 | Local | Prepare the runner/weights independently, then use supported panel selection/import. For Ollama, verify address and actual model name. GGUF/LoRA also depends on runner/model compatibility. |
 | Cloud API / compatible endpoint | Use the provider's address, model ID and key; save and test. A free app does not make external services free. Never send keys to the maintainer. |
 
-Record backend/model ID and test a short message. Troubleshoot the role's effective configuration, not merely the last form edited.
+Cloud connection tests use saved settings; save edited endpoints, models or keys first. Record backend/model ID and test a short message. Troubleshoot the role's effective configuration, not merely the last form edited.
 
 ### 4.3 Update, backup and uninstall
 

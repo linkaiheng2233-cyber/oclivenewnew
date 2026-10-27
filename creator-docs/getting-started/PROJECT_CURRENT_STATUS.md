@@ -25,6 +25,7 @@
 - **Chat Pro 内测候选**：默认角色库 → 当前角色运行空间，各角色最近对话分开，身份/关系、记录、模型与连接、分类设置、帮助与恢复为日常入口；使用说明见 [USER_MANUAL](USER_MANUAL.md)，旧壳和延后能力见 [MODULE_MAP §13.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces)。安装包不附带模型运行器或权重。
 - **候选验收边界**：本地标签 `baseline/chatpro-0.6.0-rc.2-internal-20261027` 绑定 `b4341eb22e987ffef4a19ccad3784e2402cd2bd1`；该源码的发行/集成门禁、浏览器回归及隔离安装/启动已在本机通过。候选包未签名、未公开发布；该提交的远端 CI、全新 Windows 环境和这份新包的真实模型聊天仍未验。后续纯文档提交不冒充重新执行这批程序测试。
 - **运行时**：Tauri 桌面端、角色包导入、`process_message` 主链、六槽模块、目录 / Remote 插件、本地 HTTP `--api`，以及不启动 Tauri/HTTP 的稳定 Rust 进程内门面 **`oclive_kernel_host::OcliveKernel`**；架构见 [OCLIVE_ARCHITECTURE_OVERVIEW](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
+- **候选之后的源码修补**：内部 workspace 安装解析、认证诊断脱敏及云端探测的保存/生命周期边界已修补，执行证据与未验范围见[本轮专项报告续接](../../handoff/debt-marathon/waves/WAVE-20261027-CHATPRO-ROUND-REVIEW.md#review-fixes)。桌面已有的上述 rc.2 安装包仍绑定 `b4341eb2`，没有自动包含这些后续代码。
 - **内核工程**：里程碑 **K0–K5** 的代码路径已收口；进程内完整回合已验证。**P2（OTA / 远程日志等）** 与 **V-EMBED-01 的 Linux/ARM/真机、资源预算和长时 soak** 仍未完成；验收留痕见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
 - **产品级「首发」门槛**：以 [CONTRIBUTING](../../CONTRIBUTING.md)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。
 
