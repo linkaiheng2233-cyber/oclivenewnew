@@ -423,7 +423,7 @@ const {
               type="button"
               class="mm-btn"
               :disabled="loading || loraMutating || loraImporting"
-              @click="loadSettings"
+              @click="loadSettings()"
             >
               {{ t("modelManager.loraRefresh") }}
             </button>

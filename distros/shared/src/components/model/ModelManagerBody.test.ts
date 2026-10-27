@@ -57,10 +57,12 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({
 
 function deferred<T>() {
   let resolve!: (value: T) => void
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (reason: unknown) => void
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
+    reject = rejectPromise
   })
-  return { promise, resolve }
+  return { promise, resolve, reject }
 }
 
 function settingsFor(
@@ -112,6 +114,7 @@ async function flushMicrotasks(rounds = 12): Promise<void> {
   await nextTick()
 }
 
+const wrappers: Array<ReturnType<typeof mount>> = []
 function mountManager(useRealSharedComponents = false, initialProvider?: 'local' | 'cloud') {
   const i18n = createI18n({
     legacy: false,
@@ -120,7 +123,7 @@ function mountManager(useRealSharedComponents = false, initialProvider?: 'local'
     fallbackWarn: false,
     messages: { en: {} },
   })
-  return mount(ModelManagerBody, {
+  const wrapper = mount(ModelManagerBody, {
     props: { initialProvider },
     global: {
       plugins: [i18n],
@@ -132,11 +135,13 @@ function mountManager(useRealSharedComponents = false, initialProvider?: 'local'
           },
     },
   })
+  wrappers.push(wrapper)
+  return wrapper
 }
 
 describe('model manager async ownership', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     mocks.getGlobal.mockResolvedValue({ model: '' })
     mocks.listCloud.mockResolvedValue([])
     mocks.listOllama.mockResolvedValue([])
@@ -146,6 +151,10 @@ describe('model manager async ownership', () => {
   })
 
   afterEach(async () => {
+    wrappers.splice(0).forEach((wrapper) => {
+      if (wrapper.exists())
+        wrapper.unmount()
+    })
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-a'
     document.body.innerHTML = ''
@@ -399,5 +408,120 @@ describe('model manager async ownership', () => {
     expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeDefined()
     expect(mocks.probe).not.toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it.each([
+    ['manual', 'success'],
+    ['manual', 'failure'],
+    ['saved', 'success'],
+    ['saved', 'failure'],
+  ])('ignores %s probe %s after unmount without refreshing the disposed form', async (source, outcome) => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const result = deferred<string>()
+    mocks.probe.mockReturnValueOnce(result.promise)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[source === 'saved' ? 0 : 1].trigger('click')
+    await flushMicrotasks()
+    expect(mocks.probe).toHaveBeenCalledWith('role-a')
+    wrapper.unmount()
+    mocks.showToast.mockClear()
+    if (outcome === 'success')
+      result.resolve('ok')
+    else
+      result.reject(new Error('synthetic probe failure'))
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    expect(wrapper.emitted('saved')).toBeUndefined()
+    expect(mocks.getSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the new role probe busy when the previous role probe finishes last', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const previous = deferred<string>()
+    const current = deferred<string>()
+    mocks.probe.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[1].trigger('click')
+    const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+    useRoleStore().currentRoleId = 'role-b'
+    await flushMicrotasks()
+    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeUndefined()
+    await wrapper.findAll('.mm-footer button')[1].trigger('click')
+    expect(mocks.probe).toHaveBeenLastCalledWith('role-b')
+    previous.resolve('old ok')
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalledWith('success', 'modelManager.probeOk')
+    expect(wrapper.findAll('.mm-footer button')[1].text()).toBe('modelManager.probing')
+    current.resolve('current ok')
+    await flushMicrotasks()
+    expect(mocks.showToast).toHaveBeenCalledTimes(1)
+    expect(mocks.showToast).toHaveBeenCalledWith('success', 'modelManager.probeOk')
+  })
+
+  it('does not accept an earlier probe after switching away and returning to the same role', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const result = deferred<string>()
+    mocks.probe.mockReturnValueOnce(result.promise)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[1].trigger('click')
+    const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+    useRoleStore().currentRoleId = 'role-b'
+    await flushMicrotasks()
+    useRoleStore().currentRoleId = 'role-a'
+    await flushMicrotasks()
+    result.resolve('old ok')
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeUndefined()
+  })
+
+  it('preserves new edits made during the automatic post-save probe', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const result = deferred<string>()
+    mocks.probe.mockReturnValueOnce(result.promise)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[0].trigger('click')
+    await flushMicrotasks()
+    await wrapper.get('input[list="mm-cloud-model-list"]').setValue('new-unsaved-model')
+    mocks.showToast.mockClear()
+    result.resolve('old ok')
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    expect(wrapper.emitted('saved')).toBeUndefined()
+    expect(mocks.getSettings).toHaveBeenCalledTimes(1)
+    expect(wrapper.get<HTMLInputElement>('input[list="mm-cloud-model-list"]').element.value).toBe('new-unsaved-model')
+    expect(wrapper.findAll('.mm-footer button')[0].attributes('disabled')).toBeUndefined()
+  })
+
+  it('preserves edits made while saving and does not probe them as if they were saved', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const result = deferred<Record<string, unknown>>()
+    mocks.saveSettings.mockReturnValueOnce(result.promise)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[0].trigger('click')
+    await wrapper.get('input[list="mm-cloud-model-list"]').setValue('new-unsaved-model')
+    result.resolve({})
+    await flushMicrotasks()
+    expect(mocks.probe).not.toHaveBeenCalled()
+    expect(wrapper.emitted('saved')).toBeUndefined()
+    expect(wrapper.get<HTMLInputElement>('input[list="mm-cloud-model-list"]').element.value).toBe('new-unsaved-model')
+    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeDefined()
+  })
+
+  it('still reports a current post-save probe failure as a warning and finishes the successful save', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    mocks.probe.mockRejectedValueOnce(new Error('synthetic probe failure'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.findAll('.mm-footer button')[0].trigger('click')
+    await flushMicrotasks()
+    expect(mocks.showToast).toHaveBeenCalledWith('warning', expect.any(String), expect.any(String))
+    expect(wrapper.emitted('saved')).toEqual([['role-a']])
+    expect(wrapper.findAll('.mm-footer button')[0].attributes('disabled')).toBeUndefined()
   })
 })

@@ -75,6 +75,9 @@ export function useModelManagerBody(options: {
   let cloudModelsLoadGeneration = 0
   let settingsSaveGeneration = 0
   let globalSaveGeneration = 0
+  let cloudProbeGeneration = 0
+  let cloudFormGeneration = 0
+  let disposed = false
   let initialProvider = options.initialProvider
 
   function formatAdapterSize(bytes: number): string {
@@ -259,7 +262,10 @@ export function useModelManagerBody(options: {
     }
   }
 
-  async function loadSettings(): Promise<void> {
+  async function loadSettings({ preserveForm = false }: { preserveForm?: boolean } = {}): Promise<void> {
+    if (disposed)
+      return
+    invalidateCloudProbe()
     const generation = ++settingsLoadGeneration
     const roleId = roleStore.currentRoleId
     // A role switch owns all loading indicators from this point onward. Older
@@ -297,6 +303,8 @@ export function useModelManagerBody(options: {
       }
       settings.value = s
       settingsRoleId.value = roleId
+      if (preserveForm)
+        return
       providerTab.value = initialProvider ?? (s.provider === 'cloud' ? 'cloud' : 'local')
       initialProvider = undefined
       ollamaBaseUrl.value = s.ollamaBaseUrl
@@ -639,18 +647,50 @@ export function useModelManagerBody(options: {
     }
   }
 
-  async function runCloudProbeAfterSave(): Promise<void> {
+  function invalidateCloudProbe(): void {
+    cloudProbeGeneration += 1
+    probing.value = false
+  }
+
+  async function probeCloudConnection(source: 'manual' | 'saved'): Promise<boolean> {
+    if (disposed)
+      return false
+    const generation = ++cloudProbeGeneration
+    const roleId = roleStore.currentRoleId
+    const isCurrent = () => !disposed && generation === cloudProbeGeneration && roleId === roleStore.currentRoleId
+    probing.value = true
     try {
-      await probeCloudLlm(roleStore.currentRoleId)
-      showToast('info', t('modelManager.probeOk'))
+      await probeCloudLlm(roleId)
+      if (isCurrent())
+        showToast(source === 'saved' ? 'info' : 'success', t('modelManager.probeOk'))
     }
     catch (e) {
-      const failure = toErrorPresentation(e)
-      showToast('warning', failure.summary, failure.details)
+      if (isCurrent()) {
+        if (source === 'saved') {
+          const failure = toErrorPresentation(e)
+          showToast('warning', failure.summary, failure.details)
+        }
+        else {
+          toastAsyncError(e)
+        }
+      }
     }
+    finally {
+      if (isCurrent())
+        probing.value = false
+    }
+    // A closed/changed form loses permission to update UI, even if the remote
+    // probe physically finishes. This does not assert cancellation upstream.
+    return isCurrent()
+  }
+
+  async function runCloudProbeAfterSave(): Promise<boolean> {
+    return probeCloudConnection('saved')
   }
 
   async function onProbeCloud(): Promise<void> {
+    if (disposed || probing.value || saving.value || loading.value)
+      return
     if (!remoteUrl.value.trim()) {
       showToast('error', t('modelManager.needRemoteUrl'))
       return
@@ -670,22 +710,15 @@ export function useModelManagerBody(options: {
       showToast('info', t('modelManager.probeNeedSave'))
       return
     }
-    probing.value = true
-    try {
-      await probeCloudLlm(roleStore.currentRoleId)
-      showToast('success', t('modelManager.probeOk'))
-    }
-    catch (e) {
-      toastAsyncError(e)
-    }
-    finally {
-      probing.value = false
-    }
+    await probeCloudConnection('manual')
   }
 
   async function onSave(): Promise<void> {
+    if (disposed || saving.value || loading.value)
+      return
     const generation = ++settingsSaveGeneration
     const roleId = roleStore.currentRoleId
+    const formGeneration = cloudFormGeneration
     saving.value = true
     try {
       if (providerTab.value === 'local') {
@@ -764,14 +797,21 @@ export function useModelManagerBody(options: {
           return
         }
         roleStore.applyRoleInfo(info)
-        rememberCloudModel(remoteModel.value.trim())
+        rememberCloudModel(req.remoteModel ?? '')
         cloudModelHistory.value = getCloudModelHistory()
         showToast('success', t('modelManager.saveOk'))
-        await runCloudProbeAfterSave()
+        if (formGeneration !== cloudFormGeneration) {
+          await loadSettings({ preserveForm: true })
+          return
+        }
+        if (!await runCloudProbeAfterSave())
+          return
       }
-      if (generation === settingsSaveGeneration && roleStore.currentRoleId === roleId)
-        options.onSaved?.(roleId)
-      await loadSettings()
+      if (disposed || generation !== settingsSaveGeneration || roleStore.currentRoleId !== roleId)
+        return
+      options.onSaved?.(roleId)
+      if (!disposed && generation === settingsSaveGeneration && roleStore.currentRoleId === roleId)
+        await loadSettings()
     }
     catch (e) {
       if (
@@ -803,12 +843,27 @@ export function useModelManagerBody(options: {
   })
 
   watch(
+    [providerTab, remoteUrl, remoteModel, remoteToken],
+    () => {
+      cloudFormGeneration += 1
+      invalidateCloudProbe()
+    },
+    { flush: 'sync' },
+  )
+
+  watch(
     () => roleStore.currentRoleId,
-    () => void loadSettings(),
-    { immediate: true },
+    () => {
+      settingsSaveGeneration += 1
+      saving.value = false
+      void loadSettings()
+    },
+    { immediate: true, flush: 'sync' },
   )
 
   onBeforeUnmount(() => {
+    disposed = true
+    invalidateCloudProbe()
     settingsLoadGeneration += 1
     ollamaModelsLoadGeneration += 1
     cloudModelsLoadGeneration += 1

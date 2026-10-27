@@ -4,6 +4,7 @@
 import type { SessionMeta, StoredMessage } from '../distros/shared/src/api/chatStorage'
 
 const conversations = new Map<string, { meta: SessionMeta, messages: StoredMessage[] }>()
+const savedModelSettings = new Map<string, ReturnType<typeof llmUserSettings>>()
 export interface MockRole { id: string, name: string, version: string, author: string }
 
 export const mockRoles: MockRole[] = [
@@ -369,7 +370,28 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     case 'get_global_ollama_model':
       return { model: 'mock' }
     case 'get_llm_user_settings':
-      return llmUserSettings()
+      return savedModelSettings.get(String(payload.roleId ?? currentRoleId)) ?? llmUserSettings()
+    case 'save_llm_user_settings': {
+      const req = payload.req as Record<string, unknown>
+      const roleId = String(req.roleId)
+      const previous = savedModelSettings.get(roleId) ?? llmUserSettings()
+      savedModelSettings.set(roleId, {
+        ...previous,
+        provider: String(req.provider),
+        remoteUrl: String(req.remoteUrl ?? previous.remoteUrl),
+        remoteModel: String(req.remoteModel ?? previous.remoteModel),
+        remoteTokenConfigured: Boolean(req.remoteToken) || previous.remoteTokenConfigured,
+      })
+      return roleInfo(roleId)
+    }
+    case 'probe_cloud_llm': {
+      const saved = savedModelSettings.get(String(payload.roleId ?? currentRoleId))
+      if (!saved || saved.provider !== 'cloud' || !saved.remoteUrl || !saved.remoteModel || !saved.remoteTokenConfigured)
+        throw JSON.stringify({ code: 'INVALID_PARAMETER', message: 'Save a cloud connection before probing' })
+      return 'ok'
+    }
+    case 'list_cloud_models':
+      return ['mock-cloud']
     case 'list_ollama_models':
       return ['mock']
     case 'get_remote_fallback_app_settings':
@@ -383,6 +405,7 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
 
 export function resetE2eMockState(): void {
   conversations.clear()
+  savedModelSettings.clear()
   currentRoleId = 'role-a'
   installedPluginIds.clear()
   installedPluginIds.add('demo-plugin')
