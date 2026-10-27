@@ -12,12 +12,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-22** (local `cargo audit` against a refreshed advisory-db: **1,348** advisories; **696** dependency entries scanned; 0 vulnerabilities / 10 allowed warnings) |
+| **Last scan date** | **2026-10-27** (local `cargo audit --json` against a refreshed advisory-db: **1,378** advisories; **698** dependency entries scanned; 0 vulnerabilities / 11 warnings; exit code **0**) |
 | **Scan path** | Workspace root `Cargo.lock` |
-| **Vulnerability-level count** | **0** (`cargo audit --no-fetch --stale` exit code **0**) |
-| **Warning-level count** | **10 reported / 11 matched** (the 10 reported are `glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities; the 11th, `proc-macro-error` RUSTSEC-2024-0370, is suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
+| **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
+| **Warning-level count** | **11 reported / 12 matched** (`glib`, `tokio`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+The 2026-10-27 candidate changes the desktop version to `0.6.0-rc.1` and constrains the property-test-only `proptest` dependency to `~1.11.0`, sharing `bit-set/bit-vec 0.8` with Tauri's `dom_query`. Test counts and duplicate-dependency limits are not relaxed. Existing package dependency edges are preserved; new random-number dependencies serve only this test toolchain, and no ignore entries are added. The newly observed Tokio warning concerns Unix `AsyncFd`, which is not callable in this Windows installer. It still requires separate remediation before a Unix release; Windows verification cannot establish Unix safety.
 
 The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
 
@@ -102,6 +104,7 @@ On 2026-10-20 two more upstream advisories (same CVE-2026-111943, emSign root tr
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| **RUSTSEC-2026-0386** | `tokio` 1.53.2 | **Open · Unix path** | Safe constructors of `tokio::io::unix::AsyncFd` violate I/O safety; the advisory lists 1.53.3 among the fixed lines. This candidate targets Windows only; no dependency or ignore was changed. Upgrade and inspect affected callers before a Unix release |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |

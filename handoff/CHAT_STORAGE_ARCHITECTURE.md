@@ -20,6 +20,14 @@
 
 ## Ordinary user-turn identity and result recovery
 
+### Transcript-only conversations
+
+`SendMessageRequest.chat_thread_id` optionally carries a canonical, non-nil UUID. It selects a separate chat log under `{uuid}:chat:{state_namespace}`; it does **not** change the memory, relationship, identity or turn-lock namespace. The separator is forbidden in portable role IDs, preventing collisions with another role's legacy transcript; the UUID-first prefix is portable for mirror filenames. The existing `session_id` retains its independent-runtime meaning. Omitting `chat_thread_id` keeps legacy transcript IDs and requires no database migration. Both ordinary and Agent-shortcut persistence paths honor the thread; staged adult interactions reject it.
+
+`get_chat_storage_capabilities.supports_chat_threads` advertises support. Clients must check it before creating/continuing transcript-only threads: older hosts may ignore unknown request fields. The same typed request, including `chat_thread_id`, passes through Tauri, `/chat`, `/chat/stream` and recovery. It remains part of the request fingerprint, so changing threads cannot silently reuse a completed request identity. Chat Pro reads the selected transcript exactly, never merging a different transcript or IndexedDB scene cache into it. Legacy runtime-isolated histories remain accessible through data management.
+
+### Request receipts
+
 `SendMessageRequest.client_request_id` is optional for legacy callers. An identified ordinary user send uses a canonical non-nil UUID, created once per intentional send and retained across transports. Host admission in `chat_engine/request_receipt.rs` precedes the entire turn pipeline: a durable SQLite receipt keys the role/session scope and UUID, checks the typed request payload hash, and admits only its first caller. Matching running requests wait up to 30 seconds; matching completed requests return the stored `SendMessageResponse`. A changed payload produces `CHAT_REQUEST_CONFLICT`. Staged adult generations retain their separate identity protocol.
 
 `POST /chat/recover` accepts `SendMessageRequest` (`role_id`, not `role_path`); Tauri exposes the same operation as `recover_message`. Recovery only reads/waits for an existing receipt: it does not load a role, claim a request, start generation, or apply turn state. The frontend reuses the original request after a stream transport failure and calls this recovery operation. A missing receipt, unavailable older endpoint, unresolved execution, or unreadable result produces `CHAT_REQUEST_UNCONFIRMED`; the UI asks the user to check history. Even if the initial request never reached Host, automatic recovery does not resend it.

@@ -18,6 +18,8 @@
 
 **Stable baseline**: legacy **`portrait_emotion`** (7 tags) and `{tag}.png` fallback remain when the facility is disabled or resolution fails.
 
+**CoPresent single-call expression hint**: the optional `portrait_hint` in the main reply's `[EMO]` block chooses a validated display emotion independently of the seven analysis labels. The two fields validate separately, so a bad analysis label does not discard a valid display hint. Invalid/missing hints retain emotion-based selection; no extra model call is added.
+
 **AI lives only here** — the Visual Presentation facility (#4) must **not** run a second LLM to pick images.
 
 ---
@@ -61,7 +63,13 @@ sequenceDiagram
 | 3 | post 持久化 | `turn_pipeline/persistence.rs` | **替换/合并** `pick_portrait_emotion` |
 | 4 | assemble response | `SendMessageResponse` | 输出 `visual_state_id` + legacy `portrait_emotion` |
 
-**CoPresent 特例**：今日跳过 portrait LLM，用 `bot_emotion_str` → 映射 catalog 默认项；不强制额外 LLM 调用。
+**CoPresent 特例**：跳过 portrait LLM。主回复的完整 `[EMO]` 可携带可选 `portrait_hint`，取值严格限定为 `happy/sad/angry/neutral/excited/confused/shy`，仅用于本轮外显表情；例如 `labels:["joy"]` 与 `portrait_hint:"shy"` 可同时成立。它不改写 `bot_emotion`、关系策略或七维分析标签，也不单独持久化。缺失、未知或类型错误的表情提示，回退到原有主情绪映射；不丢弃合法情绪分析。主模型失败及 RemoteLife 保持既有路径；缺少主模型有效表情提示时，插件降级也保持原有映射。表情与本轮有效 intensity 共同选择 catalog 的 mild/moderate/severe 档，仍经封闭 catalog 输出 `visual_state_id` 与图片指令，不接受任意路径，不增加模型调用。
+
+独立校验：完整 JSON 标记中，`labels` 无效仍按原有复杂情感规则降级；若 `portrait_hint` 合法，仍可显示该表情，并使用合法、有限的本轮 intensity 选择强度。不能借此把 `shy` 写进七维标签。标记未闭合、JSON 不能解析或表情不是闭集值时，不使用表情提示。
+
+Chat Pro 前端把本轮 `portrait_emotion` 与 catalog 图片作为一组临时显示状态保留。同角色的角色信息或轮询快照更新主情绪时，不覆盖这一组外显状态；更换角色时清除。它不写入持久化偏好，也不把后台的主情绪当成图片表情标签。
+
+回归入口：`kernel/crates/oclive_kernel_host/tests/portrait_stream_triggers.rs` 使用真实 Host、官方沐沐 catalog 与隔离数据库，覆盖七类三档和七维标签回退；模型输出为固定夹具，仅证明接线正确。前端 `CharacterInfo.test.ts` 覆盖实际图片字节、异步竞争、角色切换和缺图降级；真实模型是否按语境选中表情另作实测，不能由夹具结果推断。
 
 ---
 

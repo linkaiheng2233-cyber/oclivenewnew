@@ -166,6 +166,9 @@ See also `kernel status|promote|rollback`.
 | GET | `/user_identity/state` | User identity state |
 | POST | `/user_identity/set` | Set global identity |
 | POST | `/user_identity/scene_set` | Set per-scene identity |
+| POST | `/user_relation/set` | Set global relation (`role_id`, `relation`) |
+| POST | `/user_relation/scene_set` | Set per-scene relation (`role_id`, `scene_id`, `relation`) |
+| POST | `/user_relation/scene_clear` | Clear per-scene relation override (`role_id`, `scene_id`) |
 | POST | `/scene/user_presence` | Set user presence scene |
 | POST | `/event/create` | Create event |
 | GET | `/high_risk/grants` | List high-risk grants |

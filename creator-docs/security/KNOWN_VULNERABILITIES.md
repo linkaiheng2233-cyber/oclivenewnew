@@ -12,12 +12,14 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-22**（本地 `cargo audit` 刷新 advisory-db，共 **1348** 条；扫描 **696** 个依赖条目；漏洞级 **0**、警告级 **10**） |
+| **最近扫描日期** | **2026-10-27**（本地 `cargo audit --json` 刷新 advisory-db，共 **1378** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **11**；退出码 **0**） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
-| **漏洞级命中数** | **0**（`cargo audit --no-fetch --stale` 退出码 **0**） |
-| **警告级命中数** | **报出 10 / 实际命中 11**（报出的 10 条为 `glib` · 5 个 `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`，均为 *unmaintained*/*unsound*，不计入漏洞数；第 11 条 `proc-macro-error` RUSTSEC-2024-0370 由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
+| **漏洞级命中数** | **0**（`cargo audit --json` 退出码 **0**） |
+| **警告级命中数** | **报出 11 / 实际命中 12**（`glib`、`tokio`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+2026-10-27 候选版将桌面应用自身版本更新为 `0.6.0-rc.1`，并把仅用于属性测试的 `proptest` 限定为 `~1.11.0`，与 Tauri 的 `dom_query` 共用 `bit-set/bit-vec 0.8`；未降低测试数量或放宽重复依赖门禁。锁文件保留既有包的依赖边，新随机数依赖只服务于该测试工具链；未增加忽略项。新发现的 Tokio 警告针对 Unix `AsyncFd`，不属于本次 Windows 安装包的可调用接口；跨平台发布前仍须独立处理，不能把本次 Windows 验证外推到 Unix。
 
 2026-09-27 锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；该轮没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
 
@@ -104,6 +106,7 @@
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
+| **RUSTSEC-2026-0386** | `tokio` 1.53.2 | **开放 · Unix 路径** | `tokio::io::unix::AsyncFd` 的安全构造器违反 I/O 安全；advisory 给出的修复线含 1.53.3。当前只准备 Windows 桌面候选版，未改依赖或添加 ignore；Unix 发布前需升级与调用链复验 |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |

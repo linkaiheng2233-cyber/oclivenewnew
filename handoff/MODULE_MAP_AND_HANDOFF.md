@@ -870,10 +870,12 @@ flowchart TB
 
 | 主题 | SSOT / 行为 |
 |------|-------------|
-| **默认壳** | [`resolveOcliveShell()`](../distros/shared/src/composables/useOcliveShell.ts) fallback **`fluent`**；`VITE_OCLIVE_SHELL=tool` → ToolShell；`theater` 走剧场发行版。 |
-| **用户入口** | **Settings → General**（[`SettingsGeneralTab.vue`](../distros/shared/src/components/settings/SettingsGeneralTab.vue)）+ **FluentShell** 输入区上方 [`InteractionModeBar.vue`](../distros/shared/src/components/onboarding/InteractionModeBar.vue)（经 `MAIN_SHELL_KEY.onInteractionModeChange`）。 |
-| **键位绑定** | **Settings → General → Advanced** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
-| **发现 / 编程入口** | 日常聊解锁条 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue) · 首次剧情引导 [`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) · 插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）— **非**并列用户 IA。 |
+| **默认壳** | [`resolveOcliveShell()`](../distros/shared/src/composables/useOcliveShell.ts) fallback **`fluent`** → [`RoleWorkspaceShell.vue`](../distros/chat-pro/src/shells/fluent/RoleWorkspaceShell.vue)：先角色库、用户选择/导入后进入运行空间，各角色拥有自己的最近对话。标准壳不被目录整壳插件替换；`VITE_OCLIVE_SHELL=tool` → 原 ToolShell，`theater` 走剧场发行版。 |
+| **用户入口** | 默认壳以角色包与普通聊天为主，复用模型、身份、数据、外观与恢复组件；剧情控制保留在高级/替代壳路径，非默认输入区。记录线程与角色记忆的区别见 [聊天存储](CHAT_STORAGE_ARCHITECTURE.md#transcript-only-conversations)。 |
+| **设置分区** | [`SettingsView.vue`](../distros/chat-pro/src/views/SettingsView.vue) 在模态与 Tool 嵌入方式中共用分类：外观与语言、聊天体验、角色与身份、对话记录、连接与修复、高级设置。共享 [`SettingsGeneralTab.vue`](../distros/shared/src/components/settings/SettingsGeneralTab.vue) 按页挂载原有设置，语音/插件/成人入口仍沿用能力与原有启用状态判定；标准角色工作区不开放延后能力。异步开关保存期间禁重入、失败回退；错误保留概要、技术详情和手动重试。 |
+| **身份与关系持久化** | 连接内核的桌面经 [`kernel_attach/role_state.rs`](../distros/desktop-tauri/src/kernel_attach/role_state.rs) 转发身份与关系操作；权威实现位于 Host [`service/role/identity.rs`](../kernel/crates/oclive_kernel_host/src/service/role/identity.rs) / [`relation.rs`](../kernel/crates/oclive_kernel_host/src/service/role/relation.rs)。不得在桌面临时内存 shell 写入角色选择；连接失败回传原错误，无连接的嵌入服务调用保留原语义。HTTP 路由见 [生命周期接口表](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)。 |
+| **键位绑定** | **设置 → 高级设置** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
+| **发现 / 编程入口** | 原壳保留 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue)、[`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) 与插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）；默认角色库不挂载剧情/语音宿主，隐藏入口不清空旧用户状态。 |
 
 ### 13.2 Chat Pro 外观正交轴 `data-skin`
 
