@@ -13,7 +13,7 @@ html[data-skin="win98"] .role-app .role-nav {
   border-right: 2px groove #dfdfdf;
 }
 
-html[data-skin="win98"] .role-app :is(.brand-mark, .role-initial, .empty-role-icon) {
+html[data-skin="win98"] .role-app :is(.brand-mark, .role-initial) {
   border: 2px inset #dfdfdf;
   border-radius: 0;
   background: #ffffff;
@@ -22,6 +22,11 @@ html[data-skin="win98"] .role-app :is(.brand-mark, .role-initial, .empty-role-ic
 
 html[data-skin="win98"] .role-app :is(.nav-button, .nav-role-title, .nav-conversations button) {
   border-radius: 0;
+}
+
+html[data-skin="win98"] .role-app .nav-button .mumu-feature-icon {
+  transition: none;
+  transform: none;
 }
 
 html[data-skin="win98"] .role-app :is(.nav-button:hover, .nav-role-title:hover) {

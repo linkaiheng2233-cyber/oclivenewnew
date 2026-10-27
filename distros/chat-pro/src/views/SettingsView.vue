@@ -11,6 +11,7 @@ import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, ref, Teleport, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MumuFeatureIcon from '../components/MumuFeatureIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -205,6 +206,7 @@ function openGeneralAdvancedKeybindings(): void {
         @keydown="onDialogKeydown"
       >
         <header v-if="!embedded" class="sv-head">
+          <MumuFeatureIcon name="settings" size="heading" />
           <h2 class="sv-title">
             {{ t("settings.title") }}
           </h2>
@@ -271,8 +273,8 @@ function openGeneralAdvancedKeybindings(): void {
 .sv-backdrop { position:fixed; inset:0; z-index:10040; display:flex; align-items:center; justify-content:center; padding:24px; background:#1c2d2866; backdrop-filter:blur(3px); }
 .sv-dialog { position:relative; width:min(1040px,100%); height:min(800px,calc(100dvh - 48px)); min-height:0; max-height:calc(100dvh - 48px); overflow:hidden; border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border-light)); border-radius:16px; background:var(--bg-primary); box-shadow:0 24px 72px #172a2440; display:flex; flex-direction:column; }
 .sv-dialog:focus { outline:none; }
-.sv-head { display:flex; justify-content:space-between; align-items:center; flex-shrink:0; padding:20px 26px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
-.sv-title { margin:0; font-size:21px; font-weight:650; color:var(--text-primary); }
+.sv-head { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-shrink:0; padding:16px 26px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
+.sv-title { flex:1; margin:0; font-size:21px; font-weight:650; color:var(--text-primary); }
 .sv-layout { flex:1; min-height:0; min-width:0; display:grid; grid-template-columns:194px minmax(0,1fr); overflow:hidden; }
 .sv-nav { display:flex; flex-direction:column; gap:5px; padding:20px 12px; overflow:auto; border-right:1px solid var(--border-light); background:var(--bg-secondary); }
 .sv-nav-heading { margin:0 12px 12px; font-size:11px; letter-spacing:.1em; color:var(--text-secondary); }

@@ -4,6 +4,7 @@ import UiCloseButton from '@oclive/shared/components/ui/UiCloseButton.vue'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MumuFeatureIcon from '../components/MumuFeatureIcon.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -44,6 +45,7 @@ useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef
         @keydown.escape.stop="emit('close')"
       >
         <header v-if="!embedded" class="mm-header">
+          <MumuFeatureIcon name="model" size="heading" />
           <h2 class="mm-heading">
             {{ t("modelManager.title") }}
           </h2>
@@ -102,6 +104,7 @@ useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef
   flex-shrink: 0;
 }
 .mm-heading {
+  flex: 1;
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;

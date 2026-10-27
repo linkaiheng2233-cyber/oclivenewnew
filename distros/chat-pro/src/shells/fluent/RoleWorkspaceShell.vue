@@ -19,6 +19,7 @@ import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRe
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, inject, ref } from 'vue'
 import ModelSetupGuide from '../../components/ModelSetupGuide.vue'
+import MumuFeatureIcon from '../../components/MumuFeatureIcon.vue'
 import { ModelManagerPanel, SettingsView } from '../../composables/useMainShell'
 import { useRoleWorkspace } from '../../composables/useRoleWorkspace'
 
@@ -128,7 +129,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
           <span class="brand-mark">oc</span><span>OCLive<small>Chat Pro</small></span>
         </button>
         <button class="nav-button" :class="{ active: page === 'roles' }" type="button" :disabled="blocked" @click="openLibrary">
-          <span aria-hidden="true">▦</span>{{ t('workspace.library') }}
+          <MumuFeatureIcon name="library" />{{ t('workspace.library') }}
         </button>
         <div class="nav-role-list">
           <p class="nav-label">
@@ -161,13 +162,13 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
         </div>
         <div class="nav-global">
           <button class="nav-button" type="button" :disabled="blocked" @click="openConnection()">
-            <span aria-hidden="true">◇</span>{{ t('workspace.model') }}
+            <MumuFeatureIcon name="model" />{{ t('workspace.model') }}
           </button>
           <button class="nav-button" type="button" @click="openSettingsView">
-            <span aria-hidden="true">⚙</span>{{ t('workspace.settings') }}
+            <MumuFeatureIcon name="settings" />{{ t('workspace.settings') }}
           </button>
           <button class="nav-button" type="button" @click="helpOpen = true">
-            <span aria-hidden="true">?</span>{{ t('workspace.help') }}
+            <MumuFeatureIcon name="help" />{{ t('workspace.help') }}
           </button>
           <small class="local-note">{{ t('workspace.local') }}</small>
         </div>
@@ -216,9 +217,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
               </div>
             </div>
             <div v-if="roleStore.roles.length === 0" class="workspace-empty">
-              <div class="empty-role-icon" aria-hidden="true">
-                ♧
-              </div>
+              <MumuFeatureIcon class="empty-role-icon" name="library" size="empty" />
               <h2>{{ t('workspace.emptyTitle') }}</h2><p>{{ t('workspace.emptyHint') }}</p>
               <RolePackBar :disabled="blocked" :can-export="false" @imported="onImported" @notify="notify" />
             </div>
@@ -304,7 +303,8 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
       <div v-if="helpOpen" class="workspace-modal-backdrop" @click.self="helpOpen = false">
         <section ref="helpCard" class="workspace-help" role="dialog" aria-modal="true" aria-labelledby="workspace-help-title" tabindex="-1" @keydown.esc="helpOpen = false">
           <header class="workspace-help-header">
-            <div>
+            <MumuFeatureIcon name="help" size="heading" />
+            <div class="workspace-help-title-copy">
               <h2 id="workspace-help-title">
                 {{ t('workspace.helpTitle') }}
               </h2>

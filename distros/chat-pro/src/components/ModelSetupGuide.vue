@@ -4,6 +4,7 @@ import ErrorNotice from '@oclive/shared/components/ErrorNotice.vue'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MumuFeatureIcon from './MumuFeatureIcon.vue'
 
 const props = defineProps<{ roleId: string, ready: boolean }>()
 const emit = defineEmits<{ configure: [provider: 'local' | 'cloud'] }>()
@@ -79,6 +80,7 @@ onBeforeUnmount(() => {
 <template>
   <section v-if="!ui.modelSetupDismissed && !existing" class="model-setup" aria-labelledby="model-setup-title">
     <div class="setup-heading">
+      <MumuFeatureIcon name="model" />
       <h2 id="model-setup-title">
         {{ t('workspace.setupTitle') }}
       </h2>
@@ -112,6 +114,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .model-setup { flex-shrink:0; margin:12px 22px; padding:16px; border:1px solid var(--border-light); border-radius:12px; color:var(--text-primary); background:var(--bg-elevated,var(--bg-primary)); }
 .setup-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.setup-heading h2 { flex:1;min-width:0;line-height:1.5; }
 h2 { margin:0; font-size:16px; }
 p { margin:8px 0 0; color:var(--text-secondary); font-size:12px; line-height:1.7; }
 button { font:inherit; cursor:pointer; }
