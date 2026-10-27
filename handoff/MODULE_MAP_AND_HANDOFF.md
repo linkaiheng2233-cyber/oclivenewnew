@@ -888,9 +888,10 @@ flowchart TB
 | **CSP `connect-src`** | CosyVoice2 侧车默认 `http://127.0.0.1:50000` · `ws://127.0.0.1:50000`（与插件 `local_synth_endpoint` 默认一致） | [`tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) `security.csp` |
 
 - **范围**：chat-pro **Fluent + Tool**；theater 不纳入。
-- **解锁**：Konami 序列 → `oclive-easteregg-unlocked=1` → 自动启用 Win98；设置 → 常规外观区开关（`v-if` 已解锁）。
+- **解锁**：`↑ ↑ ↓ ↓ ← → ← → B A` → `oclive-easteregg-unlocked=1` → 自动启用 Win98；设置 → 外观与语言开关（`v-if` 已解锁）。解锁资格与当前皮肤分别存储，关闭皮肤保留资格，刷新恢复当前选择。
 - **正交**：皮肤只覆盖 CSS 变量与少量 chrome 类；不改 shell 布局或六槽逻辑。`appearance:changed` 事件 payload 可含 `skin`。壳 / 面板 Win98 覆写 **co-locate 于 SFC unscoped `@import`**，避免与 scoped 样式抢同一属性。
-- **Authentic chrome（Win98 窗口框）**：[`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) 挂载于 FluentShell `.app-frame` / ToolShell `.tool-body__main` 首子节点；启用皮肤时 Tauri `setDecorations(false)` 隐藏原生标题栏，合成栏经 `data-tauri-drag-region` + `allowlist.window`（`minimize` / `maximize` / `unmaximize` / `close` / `startDragging` / `setDecorations`）驱动 ─ □ ✕；关闭皮肤或退出即恢复原生装饰与边缘缩放。对话框 / 侧栏 / 气泡等 Win98 覆写见下表（✕ 仍关对话框，非 OS 窗）。
+- **Authentic chrome（Win98 窗口框）**：[`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) 挂载于默认 RoleWorkspaceShell `.role-app`、旧 FluentShell `.app-frame` / ToolShell `.tool-body__main`；启用皮肤时 Tauri `setDecorations(false)` 隐藏原生标题栏，合成栏经 `data-tauri-drag-region` + Tauri 窗口权限（`minimize` / `maximize` / `unmaximize` / `close` / `startDragging` / `setDecorations`）驱动 ─ □ ✕。关闭皮肤恢复原生装饰；异步装饰请求串行执行并跳过过期请求，防止启动或快速开关后状态倒置。对话框 / 侧栏 / 气泡等 Win98 覆写见下表（✕ 仍关对话框，非 OS 窗）。
+- **角色中心工作区**：保留角色库、最近对话、聊天和响应式布局，通过下表专属样式覆盖导航、卡片、首次模型引导和帮助窗口；共享恢复样式覆盖日志、错误详情及滚动条。立绘原图保持原分辨率，不强制降采样。关闭皮肤后移除限定选择器的影响，角色、对话草稿和模型设置不被重置。行为回归见 [`useEasterEggSkin.test.ts`](../distros/shared/src/composables/useEasterEggSkin.test.ts) / [`Win98TitleBar.test.ts`](../distros/shared/src/components/win98/Win98TitleBar.test.ts)；实际浏览器换肤与恢复路径见 [`win98-workspace.spec.ts`](../distros/chat-pro/e2e/win98-workspace.spec.ts)，浏览器与原生 mock 不代替真实 OS 窗口实测。
 
 **Win98 样式依赖表**（`distros/shared/src/styles/win98/`；规则均以 `html[data-skin="win98"]` 为前缀，`default` 零泄漏）：
 
@@ -899,6 +900,7 @@ flowchart TB
 | `win98/tokens.css` | [`chat-pro/main.ts`](../distros/chat-pro/src/main.ts) | L0 |
 | `win98/primitives.css` | `chat-pro/main.ts` | L1 |
 | `win98/shell-fluent.css` | [`FluentShell.vue`](../distros/chat-pro/src/shells/fluent/FluentShell.vue) | L2 |
+| `win98/shell-role-workspace.css` | [`RoleWorkspaceShell.vue`](../distros/chat-pro/src/shells/fluent/RoleWorkspaceShell.vue) | L2 |
 | `win98/shell-tool.css` | [`ToolShell.vue`](../distros/chat-pro/src/shells/tool/ToolShell.vue) | L2 |
 | `win98/titlebar.css` | [`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) | L4 |
 | `win98/panel-settings.css` | [`SettingsView.vue`](../distros/chat-pro/src/views/SettingsView.vue) | L3 |
@@ -908,6 +910,7 @@ flowchart TB
 | `win98/component-side-panel.css` | [`UiSidePanel.vue`](../distros/shared/src/components/ui/UiSidePanel.vue) | L3 |
 | `win98/dialogs-shared.css` | [`ShortcutHelp.vue`](../distros/shared/src/components/ShortcutHelp.vue) · [`HotkeyHost.vue`](../distros/shared/src/components/hotkey/HotkeyHost.vue) · [`PluginUiSlotSelectorDialog.vue`](../distros/shared/src/components/PluginUiSlotSelectorDialog.vue) · [`ImmersiveModeIntro.vue`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) · [`TopBarSceneModeDialog.vue`](../distros/shared/src/components/scene/TopBarSceneModeDialog.vue) · [`PresetRolePicker.vue`](../distros/shared/src/components/onboarding/PresetRolePicker.vue) | L3 |
 | `win98/component-chat.css` | [`ChatMessage.vue`](../distros/shared/src/components/chat/ChatMessage.vue) | L3 |
+| `win98/component-recovery.css` | [`SupportDiagnostics.vue`](../distros/shared/src/components/SupportDiagnostics.vue) · [`ErrorNotice.vue`](../distros/shared/src/components/ErrorNotice.vue) | L3 |
 | `win98/component-top-bar.css` | [`TopBarMorePanel.vue`](../distros/shared/src/components/TopBarMorePanel.vue) | L3 |
 | `win98/component-plugin-toolbar.css` | [`ChatPluginToolbarSlots.vue`](../distros/shared/src/components/ChatPluginToolbarSlots.vue) · [`com.oclive.voice.asr` VoiceToolbar](../distros/chat-pro/plugins/com.oclive.voice.asr/slots/VoiceToolbar.vue) | L3 |
 | `win98/component-voice-settings.css` | [`PluginSettingsPanelSlots.vue`](../distros/shared/src/components/PluginSettingsPanelSlots.vue)（`com.oclive.voice.asr` VoiceSettings 插槽） | L3 |
