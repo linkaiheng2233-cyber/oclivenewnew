@@ -899,7 +899,7 @@ flowchart TB
 | 组件管理、市场/分享安装、插件剧情卡与快捷动作 | 基础设置/默认壳收起这些入口 | `SettingsView.showPluginsSettingsTab`、`SimplePluginManagerPanel`、`MarketView`、`PluginSidebarSlots`、`PluginChatHeaderSlots`；依赖、权限和安装复核仍适用，不把旧占位更新检查当可发布能力 |
 | 最小角色源码绑定、内部运行数值与调试面板 | 日常角色库不展示开发面 | `MinimalRoleSourceControls`、`DebugPanel`、`RoleRuntimePanel`；诊断所需的只读状态继续在“帮助与恢复”可达 |
 | 旧 Fluent / Tool 整壳与目录整壳替换 | RoleWorkspace 为默认；Tool 保留显式构建入口，旧 Fluent 文件留存 | `App.vue`、`useOcliveShell`、`directoryShellBootstrap`；保留源码与 Git 基线，不能直接挪走组件目录使引用断裂 |
-| 双核 Beta | **真正冻结，默认关闭**，不在本次内测解冻 | `dual_core` Cargo feature；当前暂停维护和 NULL 补偿缺口以 [双核冻结计划](debt-marathon/long-plans/DUAL-CORE-FREEZE.md) 与 [主台账](TECHNICAL_DEBT_INVENTORY.md) 为准；不是所有高级功能都具有同样的冻结状态 |
+| 双核 Beta、配套 expert routing 与 blueprint v3 实验管线 | **真正冻结，默认关闭**，不在本次内测解冻 | `dual_core` Cargo feature、蓝图开关与显式路由配置；暂停维护及 NULL 补偿缺口以 [双核冻结计划](debt-marathon/long-plans/DUAL-CORE-FREEZE.md) 与 [主台账](TECHNICAL_DEBT_INVENTORY.md) 为准。不把普通 LoRA 模型选择或其他高级功能一起视作冻结 |
 
 **继续工作的能力**：六槽接线、正常聊天/停止与故障恢复、角色包导入导出、身份/关系、按角色分开的记录线程、角色记忆连续性、情绪/表情提示与立绘、本地/云端模型连接、资源协调和回复后处理均未因收起入口而删除。LoRA/GGUF 等仍沿用模型面板现有能力与兼容约束；Win98 彩蛋、明暗切换和帮助日志继续开放。技术债、未完成协议与其他实验开关的状态仍由对应台账拥有，本表不授予解冻权限。
 

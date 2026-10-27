@@ -33,17 +33,9 @@
 
 ---
 
-## 发版版本（`main`，2026-08-24）
+## 版本与发布状态
 
-| 产物 | 版本 | 位置 |
-|------|------|------|
-| **桌面宿主** | **0.5.2** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
-| **角色包编写器** | **0.5.1** | 姊妹仓 `oclive-pack-editor` |
-| **VS Code 扩展** | **0.5.0** | 姊妹仓 `oclive-vscode` |
-| **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
-| **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
-
-变更见 [CHANGELOG.md](CHANGELOG.md) **`[0.5.2]`** · SemVer [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)。
+当前版本、候选包基线与未验边界只查 [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)，再核对应源码 manifest；本页不缓存另一张版本表。独立 SemVer 与 MSI 映射规则查 [RELEASE_VERSIONING](creator-docs/development/RELEASE_VERSIONING.md)，用户可见历史查 [CHANGELOG](CHANGELOG.md)。本地内测包、源码版本和公开发布附件须分别核对，不能互相代证；姊妹仓版本在该仓单独确认。
 
 ---
 

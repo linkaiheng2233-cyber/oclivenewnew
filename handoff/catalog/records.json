@@ -7,7 +7,7 @@
       "path": "AGENTS.md",
       "purpose": "找到本仓修改前的已有阅读入口",
       "tags": ["documentation", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "b0ae0fd1703def910838bc8764df1c794e065d91"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "473a8a5e477923876d6636934522edf2eef10515"},
       "entries": [{"key": "before-change", "label": "改代码前先读哪些资料", "locator": {"kind": "heading-path", "value": ["Agent / AI 协作说明（A.I.Live · oclivenewnew）", "改代码前必读（AI · 精简索引）"]}}]
     },
     {
@@ -15,7 +15,7 @@
       "path": "handoff/README.md",
       "purpose": "定位文档分责、现行与历史的判读入口",
       "tags": ["documentation", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "bfc95b6bb3b3c0f8dd716d46cd46b72f219dc56b"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "40d5089ed339b9b444faa51d56e3e8e96781332f"},
       "entries": [
         {"key": "state", "label": "区别当前实现、候选、部分接线与历史", "locator": {"kind": "explicit-anchor", "value": "documentation-status"}},
         {"key": "maintenance", "label": "修改文档后如何维护关联入口", "locator": {"kind": "explicit-anchor", "value": "documentation-maintenance"}}
@@ -26,7 +26,7 @@
       "path": "handoff/AI_READING_INDEX.md",
       "purpose": "沿已有路线选择任务所需原文",
       "tags": ["documentation", "kernel", "role", "contribution"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "d3dbd19c13c8d40c9d146d0f283b20e0cb12b4a4"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "8a9f7353daa6054801cb12b27455cc169c3af50e"},
       "entries": [
         {"key": "docs", "label": "文档任务怎样找 SSOT", "locator": {"kind": "heading-path", "value": ["AI 深读索引（Agent Reading Index）", "9. 按任务选阅读路径", "改文档"]}},
         {"key": "kernel", "label": "Kernel、六槽与 Host 权责的阅读路径", "locator": {"kind": "explicit-anchor", "value": "kernel-slot-reading"}}
@@ -56,7 +56,7 @@
       "path": "handoff/MODULE_MAP_AND_HANDOFF.md",
       "purpose": "定位模块职责、公共候选及当前实现对照",
       "tags": ["kernel", "module", "review"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "c592835e865af07cb7fa485e47bf2dd6cdbf308a"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "cfc1c24dee3a47c92cd1da38ac7c6b4d205bee37"},
       "entries": [
         {"key": "responsibility", "label": "Kernel、六槽、Host 与 Adapter 各负责什么", "locator": {"kind": "explicit-anchor", "value": "kernel-responsibilities"}},
         {"key": "candidate", "label": "哪些公共语义仍需按候选范围阅读", "locator": {"kind": "explicit-anchor", "value": "kernel-semantics-candidate"}},
@@ -82,7 +82,7 @@
       "path": "handoff/TECHNICAL_DEBT_INVENTORY.md",
       "purpose": "查看原台账与冻结范围，不复制债务当前状态",
       "tags": ["debt", "review"],
-      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "93560721093b0399abe9dd3c4ce0d7882ecb99b3"},
+      "source_ref": {"scheme": "git-blob", "object_format": "sha1", "oid": "bd7b2789703c5cb74213656571d14cff8ec5aca3"},
       "entries": [
         {"key": "ledger", "label": "当前技术债状态由哪份台账拥有", "locator": {"kind": "heading-path", "value": ["Technical debt inventory", "§1 主台账（当前状态与已结案引用；不是自动开工清单）"]}},
         {"key": "frozen", "label": "现有哪些冻结项需要先核对", "locator": {"kind": "heading-path", "value": ["Technical debt inventory", "§2 冻结 / registry（明确「不动」）"]}}

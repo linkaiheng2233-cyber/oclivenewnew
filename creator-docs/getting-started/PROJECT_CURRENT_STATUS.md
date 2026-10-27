@@ -1,10 +1,10 @@
 # 项目现状（事实快照）
 
-**用途**：给协作者与发布流程一个**短、可核对**的当前状态摘要（版本、交付面、变更日志入口）。文档查找统一从 [DOCUMENTATION_INDEX](DOCUMENTATION_INDEX.md) 开始。
+**SSOT 范围**：当前版本与候选发布状态的事实快照；版本规则由 [RELEASE_VERSIONING](../development/RELEASE_VERSIONING.md) 拥有，运行时职责由 MODULE_MAP 拥有。其他入口链接本页，不复制当前版本表。
 
 [English](../../creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**快照日期**：2026-08-31（随大里程碑或版本号 bump 时应更新本页首段与日期）
+**快照日期**：2026-10-27。随版本或交付状态变化更新；文档更新本身不产生新的运行验收。
 
 ---
 
@@ -12,7 +12,9 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.5.2**（以根目录 `package.json`、`distros/desktop-tauri/tauri.conf.json`、`distros/desktop-tauri/Cargo.toml` 对齐为准） |
+| 桌面应用语义化版本 | **0.6.0-rc.2**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
+| Windows MSI 数值版本 | **0.6.0.2**；与桌面候选版对应，独立于 CLI 和内核版本 |
+| CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**；分别见 [CLI](../../kernel/crates/oclive-cli/Cargo.toml)、[runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml)、[validation](../../kernel/crates/oclive_validation/Cargo.toml) |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
 
@@ -20,6 +22,8 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
+- **Chat Pro 内测候选**：默认角色库 → 当前角色运行空间，各角色最近对话分开，身份/关系、记录、模型与连接、分类设置、帮助与恢复为日常入口；使用说明见 [USER_MANUAL](USER_MANUAL.md)，旧壳和延后能力见 [MODULE_MAP §13.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces)。安装包不附带模型运行器或权重。
+- **候选验收边界**：本地标签 `baseline/chatpro-0.6.0-rc.2-internal-20261027` 绑定 `b4341eb22e987ffef4a19ccad3784e2402cd2bd1`；该源码的发行/集成门禁、浏览器回归及隔离安装/启动已在本机通过。候选包未签名、未公开发布；该提交的远端 CI、全新 Windows 环境和这份新包的真实模型聊天仍未验。后续纯文档提交不冒充重新执行这批程序测试。
 - **运行时**：Tauri 桌面端、角色包导入、`process_message` 主链、六槽模块、目录 / Remote 插件、本地 HTTP `--api`，以及不启动 Tauri/HTTP 的稳定 Rust 进程内门面 **`oclive_kernel_host::OcliveKernel`**；架构见 [OCLIVE_ARCHITECTURE_OVERVIEW](OCLIVE_ARCHITECTURE_OVERVIEW.md)。
 - **内核工程**：里程碑 **K0–K5** 的代码路径已收口；进程内完整回合已验证。**P2（OTA / 远程日志等）** 与 **V-EMBED-01 的 Linux/ARM/真机、资源预算和长时 soak** 仍未完成；验收留痕见 [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) 与根目录 [AGENTS.md](../../AGENTS.md)。
 - **产品级「首发」门槛**：以 [CONTRIBUTING](../../CONTRIBUTING.md)、CI workflow 与 [TECHNICAL_DEBT_INVENTORY](../../handoff/TECHNICAL_DEBT_INVENTORY.md) 为准。

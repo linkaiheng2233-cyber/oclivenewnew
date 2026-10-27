@@ -8,7 +8,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/linkaiheng2233-cyber/oclivenewnew?include_prereleases&label=release)](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
 
-**主分支版本**：桌面宿主 **0.5.2**（安装包为 **0.5.0 内测版**，见 [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)）· 详见 [CHANGELOG.md](CHANGELOG.md)
+**版本与内测状态**：[当前事实快照](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)区分源码、候选包和公开发行；用户可见历史见 [CHANGELOG](CHANGELOG.md)。
 
 ![A.I.Live Chat Pro：角色运行空间、对话与本地记录](creator-docs/assets/chat-pro-chat.jpg)
 
@@ -110,7 +110,7 @@ fork `examples/directory-plugin-minimal` 或 `examples/voice-loop-minimal`，实
 
 | 发行版 | `distro_id` | 形态 | 状态 |
 |--------|-------------|------|------|
-| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面（Release hero） | **0.5.2** 主路径 |
+| **A.I.Live Chat Pro** | `desktop` | 本仓 Tauri 桌面 | 默认角色工作区；[交付状态](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) |
 | **VS Code Flash** | `vscode` | 姊妹仓 [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | 渗透能力 **插件化**；核心只做轻量聊天宿主 |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | 打包预埋；模式 2 playtest **已解冻** |
 | **dev lab** | `desktop-chat` | 实验场 profile | 日常开发 / 低延迟试验 |
@@ -163,10 +163,10 @@ npm run check        # 日常门禁（build + fmt + clippy + test --lib）
 | 前置 | 说明 |
 |------|------|
 | Node.js 22+、Rust stable | Windows 另需 **VS Build Tools（MSVC）** |
-| Ollama | **可选**；未安装也能编译通过，对话需本地 LLM |
+| 模型服务 | 编译不要求 Ollama；对话需配置可用的本地服务或云端 API，安装包不附带模型权重 |
 | Cargo 产物 | 默认在仓库外 `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
 
-**安装包说明**：GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) 已提供 **A.I.Live Chat Pro 0.5.0 内测版** Windows x64 MSI / NSIS 安装器（未代码签名、无自动更新）。主分支当前为 **0.5.2**，可能领先于已发布安装器；需要最新源码时请克隆本仓并按 [CONTRIBUTING.md](CONTRIBUTING.md) 本地构建。
+**安装包说明**：公开可取得的附件以 GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) 实际内容为准。本地内测候选、公开安装器与源码版本分别核对，当前候选的范围和未验边界见[事实快照](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)。普通用户先读[用户手册](creator-docs/getting-started/USER_MANUAL.md)；源码构建按 [CONTRIBUTING](CONTRIBUTING.md)。
 
 分步说明与验收：[human-docs/02_THIRTY_MINUTE_START.md](human-docs/02_THIRTY_MINUTE_START.md)
 

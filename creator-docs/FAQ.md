@@ -2,6 +2,8 @@
 
 面向 **插件开发者** 与 **角色包创作者**。技术细节以 `creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md` 为准。
 
+**界面范围**：下文是支持插件界面的 Host/旧壳调试路径，不表示默认角色工作区开放这些菜单。普通用户先看[当前用户手册](getting-started/USER_MANUAL.md)；缺少按钮时先核对能力范围，不据此判断插件损坏。
+
 ---
 
 ### Q: 为什么我的 Vue 插槽组件没有显示？

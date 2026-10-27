@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-10-02。
+**最后更新**：2026-10-27。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
@@ -47,6 +47,8 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | 任务 | 先读 | 再读 |
 |------|------|------|
 | AI 改代码或文档 | [AI_CHANGE_BOUNDARIES](AI_CHANGE_BOUNDARIES.md) | [AI_READING_INDEX](AI_READING_INDEX.md) |
+| 普通用户安装、聊天、备份与排错 | [当前 Chat Pro 用户手册](../creator-docs/getting-started/USER_MANUAL.md) | [版本与候选状态](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)；无需通读下方工程阶段记录 |
+| 改 Chat Pro 新前端 | [前端开工包](../human-docs/modules/surfaces/frontend-chat-pro.md) | [默认壳与收起能力](MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces)；旧壳源码不等于当前默认界面 |
 | 接手主编排 / DB | [BUS_FACTOR_NOTES](BUS_FACTOR_NOTES.md) | [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md) |
 | 改模块或槽位 | [MODULE_MAP](MODULE_MAP_AND_HANDOFF.md) | [SLOT_BACKEND_REALITY_MATRIX](SLOT_BACKEND_REALITY_MATRIX.md) |
 | 接续六槽基础契约讨论 | [已确认方向](MODULE_MAP_AND_HANDOFF.md#six-slot-base-extension) · [公共承诺决策](MODULE_MAP_AND_HANDOFF.md#six-slot-confirmed-decisions) | [统一模板候选](MODULE_MAP_AND_HANDOFF.md#six-slot-contract-candidate) · [逐槽审阅](MODULE_MAP_AND_HANDOFF.md#six-slot-consistency-review) · [公共面组合](MODULE_MAP_AND_HANDOFF.md#small-kernel-composition) · [接口表达建议](MODULE_MAP_AND_HANDOFF.md#six-slot-interface-proposal) · [AI 阅读顺序](AI_READING_INDEX.md#kernel-slot-reading) |
@@ -118,6 +120,14 @@ RFC 可以包含已实现的切片，不能把整篇一律判成“未实现”�
 | `launcher/` | [退役启动器](launcher/README.md) |
 | `studio/` | [工作室叙事](studio/README.md) |
 | `debt-marathon/` | [债务马拉松记录](debt-marathon/README.md) |
+
+### 用户与发布入口
+
+| 文件 | 唯一职责 |
+|------|----------|
+| [USER_MANUAL](../creator-docs/getting-started/USER_MANUAL.md) | 当前默认 Chat Pro 的安装、聊天、设置与自助恢复；旧壳技术路径按范围另查 |
+| [PROJECT_CURRENT_STATUS](../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) | 当前版本、候选基线与交付/未验状态的事实快照；其他入口不复制版本表 |
+| [RELEASE_VERSIONING](../creator-docs/development/RELEASE_VERSIONING.md) | 独立版本、候选与 MSI 映射规则；不重复维护当前数值 |
 
 ## 归档与新增规则
 

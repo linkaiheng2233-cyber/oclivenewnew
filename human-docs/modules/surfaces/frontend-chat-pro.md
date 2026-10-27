@@ -12,6 +12,7 @@
 ## 1. 你插在哪
 
 - **代码根**：`distros/chat-pro/` + `distros/shared/`  
+- **默认界面**：`App.vue` 当前把 `fluent` 标识接到 `RoleWorkspaceShell.vue`，不是旧 `FluentShell.vue`；Tool 为显式替代入口。界面职责和收起能力只查 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。
 - **发消息链**：`distros/shared/src/api/chat.ts` → `send_message`  
 - **状态**：`distros/shared/src/stores/chatStore.ts`  
 - **不进**：`process_message.rs` 编排（业务下沉内核）

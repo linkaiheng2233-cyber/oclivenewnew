@@ -2,6 +2,8 @@
 
 For **plugin authors** and **role pack creators**. Authoritative technical detail lives in [`plugin-and-architecture/DIRECTORY_PLUGINS.md`](plugin-and-architecture/DIRECTORY_PLUGINS.md).
 
+**Interface scope**: these debugging paths require a Host/legacy shell that exposes plugin UI. They do not promise those menus in the default role workspace. Users start with the [current manual](getting-started/USER_MANUAL.md); check capability scope before treating an absent button as a broken plugin.
+
 [中文](../creator-docs/FAQ.md)
 
 ---

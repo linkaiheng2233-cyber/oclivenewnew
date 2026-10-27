@@ -8,7 +8,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Latest release](https://img.shields.io/github/v/release/linkaiheng2233-cyber/oclivenewnew?include_prereleases&label=release)](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
 
-**Main-branch version**: desktop host **0.5.2** (the published installer is the **0.5.0 beta**, see [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)) · see [CHANGELOG.en.md](CHANGELOG.en.md)
+**Version and candidate status**: the [fact snapshot](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) distinguishes source, internal candidates and public releases; see [CHANGELOG](CHANGELOG.en.md) for user-visible history.
 
 ![A.I.Live Chat Pro: role space, conversation and local history](creator-docs/assets/chat-pro-chat.jpg)
 
@@ -99,7 +99,7 @@ Current reference distros reuse **`process_message`** and **`distro.oclive.toml`
 
 | Distro | `distro_id` | Shape | Status |
 |--------|-------------|-------|--------|
-| **A.I.Live Chat Pro** | `desktop` | This repo Tauri desktop (Release hero) | **0.5.2** main path |
+| **A.I.Live Chat Pro** | `desktop` | This repo's Tauri desktop | Default role workspace; [delivery status](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) |
 | **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = lightweight chat host |
 | **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
 | **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |
@@ -152,10 +152,10 @@ npm run check        # daily gates (build + fmt + clippy + test --lib)
 | Prerequisite | Notes |
 |--------------|-------|
 | Node.js 22+, Rust stable | Windows also needs **VS Build Tools (MSVC)** |
-| Ollama | **Optional** for build; needed for local LLM chat |
+| Model service | Building does not require Ollama; replies need a configured local service or cloud API. Installers exclude model weights. |
 | Cargo artifacts | Default outside repo: `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
 
-**Installers**: GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) provides the **A.I.Live Chat Pro 0.5.0 beta** Windows x64 MSI / NSIS installers (unsigned and without automatic updates). The current main branch is **0.5.2** and may be ahead of the published installer; clone the repo and follow [CONTRIBUTING.en.md](CONTRIBUTING.en.md) when you need the latest source build.
+**Installers**: public downloads are the actual attachments on GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases). Check internal candidates, public installers and source versions separately; the [fact snapshot](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) states the candidate scope and unverified boundaries. Users start with the [manual](creator-docs-en/getting-started/USER_MANUAL.md); source contributors use [CONTRIBUTING](CONTRIBUTING.en.md).
 
 Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md)
 

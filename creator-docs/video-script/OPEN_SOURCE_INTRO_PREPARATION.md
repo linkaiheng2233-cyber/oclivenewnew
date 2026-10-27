@@ -16,7 +16,7 @@
 | SDK主线合入 | PR #188仍OPEN；main为`08348f31…` | [PR #188](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/188)；录制前重新核对，不给默认main或旧二进制套上新命令 |
 | 仓库简介 | GitHub description当前为空 | 可准备文案，提交前由维护者审阅；本片不写入远端简介 |
 
-此前SDK的原始失败、返修和未覆盖边界保存在[最终交接](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-FINAL-CLOSEOUT.md)与[续片记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md)。本片由controller整理与语义自查，`independent=false`。
+此前SDK的原始失败、返修和未覆盖边界保存在[最终交接](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-FINAL-CLOSEOUT.md)与[冻结提交中的续片记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/80ab85824849a466674169a3be34d94a92117886/handoff/debt-marathon/waves/WAVE-20261013-SDK-QUINN-SECURITY-FIX.md)。后者属于上表 SDK 冻结版本的历史证据，不是当前工作树中的文件或现行规范。本片由controller整理与语义自查，`independent=false`。
 
 ## 2. 对外准备清单
 

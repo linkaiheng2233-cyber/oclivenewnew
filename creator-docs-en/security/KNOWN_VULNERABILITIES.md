@@ -12,14 +12,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-27** (local `cargo audit --json` against a refreshed advisory-db: **1,378** advisories; **698** dependency entries scanned; 0 vulnerabilities / 11 warnings; exit code **0**) |
+| **Last scan date** | **2026-10-27** (local `cargo audit --json` against a refreshed advisory-db: **1,380** advisories; **698** dependency entries scanned; 0 vulnerabilities / 11 warnings; exit code **0**) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
 | **Warning-level count** | **11 reported / 12 matched** (`glib`, `tokio`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
-The new-frontend internal package on 2026-10-27 changes the desktop's own version from `0.6.0-rc.1` to `0.6.0-rc.2`. This Cargo.lock delta changes only that workspace package version, with no dependency, checksum, feature or ignore changes. Release gates rerun the audit; the UI update does not resolve the existing warnings.
+The new-frontend internal package on 2026-10-27 changes the desktop's own version from `0.6.0-rc.1` to `0.6.0-rc.2`. This Cargo.lock delta changes only that workspace package version, with no dependency, checksum, feature or ignore changes. Candidate source `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` passed the release audit; the table uses its original scan. The UI update does not resolve existing warnings. Subsequent documentation-only work reuses that point-in-time evidence without claiming a new scan.
 
 The 2026-10-27 candidate changes the desktop version to `0.6.0-rc.1` and constrains the property-test-only `proptest` dependency to `~1.11.0`, sharing `bit-set/bit-vec 0.8` with Tauri's `dom_query`. Test counts and duplicate-dependency limits are not relaxed. Existing package dependency edges are preserved; new random-number dependencies serve only this test toolchain, and no ignore entries are added. The newly observed Tokio warning concerns Unix `AsyncFd`, which is not callable in this Windows installer. It still requires separate remediation before a Unix release; Windows verification cannot establish Unix safety.
 
