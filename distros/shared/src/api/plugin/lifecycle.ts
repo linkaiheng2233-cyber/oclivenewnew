@@ -453,6 +453,8 @@ export interface PluginBridgeDeleteRoleParams {
 export interface PluginBridgeDeleteRoleResult {
   ok: boolean
   role_id: string
+  /** Deletion committed; file/UI-state cleanup will retry at restart. */
+  cleanup_pending?: boolean
 }
 
 /** `update_settings`; allowed keys include theme and shell-renamed fields. */

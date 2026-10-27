@@ -16,10 +16,14 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         return Err(AppError::InvalidParameter("role_id required".into()).into());
     }
     oclive_validation::validate_role_id(rid).map_err(AppError::InvalidParameter)?;
-    let removed_ns = state
-        .db_manager
-        .delete_all_data_for_manifest_role(rid)
-        .await?;
+    crate::infrastructure::role_deletion::recover_pending_deletions(
+        &state.db_manager,
+        state.storage.roles_dir(),
+        Some(&state.directory_plugins),
+    )
+    .await?;
+    let _guard = crate::infrastructure::role_files::lock_role_writes(state.storage.roles_dir())?;
+    crate::infrastructure::role_files::recover_imports_locked(state.storage.roles_dir())?;
     let chat_location = state
         .load_role_cached_async(rid)
         .await
@@ -31,29 +35,31 @@ pub async fn delete_role_impl(state: &AppState, role_id: String) -> Result<Value
         rid,
         chat_location.as_deref(),
     );
-    if let Err(e) =
-        crate::infrastructure::chat_storage::delete_mirror_tree_for_role(&mirror_root, rid).await
-    {
-        tracing::warn!(
-            target: "oclive_chat_storage",
-            role_id = %rid,
-            error = %e,
-            "delete_mirror_tree_for_role failed"
-        );
-    }
+    let (record, removed_ns) = crate::infrastructure::role_deletion::delete_files_and_data(
+        &state.db_manager,
+        state.storage.roles_dir(),
+        rid,
+        &mirror_root.join(rid),
+    )
+    .await?;
     for ns in &removed_ns {
         state.clear_all_session_slot_overrides(ns);
     }
-    let dir = state.storage.role_dir_path(rid)?;
-    if dir.exists() {
-        let dir_owned = dir.clone();
-        tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&dir_owned))
-            .await
-            .map_err(|e| format!("delete_role: join {e}"))?
-            .map_err(|e: std::io::Error| e.to_string())?;
-    }
-    state.directory_plugins.remove_role_plugin_state(rid)?;
     state.role_cache.write().remove(rid);
     state.invalidate_personality_cache_for_role(rid);
-    Ok(json!({ "ok": true, "role_id": rid }))
+    let cleanup_pending = match crate::infrastructure::role_deletion::finish_deletion(
+        &state.db_manager,
+        &record,
+        &state.directory_plugins,
+    )
+    .await
+    {
+        Ok(()) => false,
+        Err(error) => {
+            tracing::warn!(target: "oclive_role_files", role_id = rid, %error,
+                "role deleted; cleanup deferred until retry/restart");
+            true
+        }
+    };
+    Ok(json!({ "ok": true, "role_id": rid, "cleanup_pending": cleanup_pending }))
 }

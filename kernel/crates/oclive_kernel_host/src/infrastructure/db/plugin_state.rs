@@ -7,6 +7,22 @@ use crate::error::{AppError, Result};
 use std::collections::HashMap;
 
 impl DbManager {
+    pub(crate) async fn pending_role_deletions(&self) -> Result<Vec<(String, String)>> {
+        sqlx::query_as("SELECT key, value FROM app_settings WHERE key GLOB 'role_delete:*'")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))
+    }
+
+    pub(crate) async fn clear_role_deletion(&self, key: &str) -> Result<()> {
+        sqlx::query("DELETE FROM app_settings WHERE key = ?")
+            .bind(key)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+        Ok(())
+    }
+
     pub async fn upsert_app_setting(&self, key: &str, value: &str) -> Result<()> {
         sqlx::query(
             "INSERT INTO app_settings (key, value) VALUES (?, ?)

@@ -281,18 +281,30 @@ where
     F: FnMut(ImportProgress),
     P: Fn(usize, usize) -> i32,
 {
+    let _guard = super::role_files::lock_role_writes(storage.roles_dir())?;
+    super::role_files::recover_imports_locked(storage.roles_dir())?;
     let role = load_role_for_pack_import(storage, root)?;
     let id = role.id.clone();
     oclive_validation::validate_role_id(&id).map_err(AppError::InvalidParameter)?;
     let dest = storage.role_dir_path(&id)?;
-    if dest.exists() {
-        if !overwrite {
-            return Err(AppError::RolePackExists(id));
-        }
-        fs::remove_dir_all(&dest)?;
+    let source = root.canonicalize()?;
+    let resolved_dest = if dest.exists() {
+        dest.canonicalize()?
+    } else {
+        storage.roles_dir().canonicalize()?.join(&id)
+    };
+    if source.starts_with(&resolved_dest) || resolved_dest.starts_with(&source) {
+        return Err(AppError::InvalidParameter(
+            "role import source and destination overlap".into(),
+        ));
     }
-    fs::create_dir_all(&dest)?;
-    copy_role_tree(root, &dest, |cur, tot, current| {
+    if dest.exists() && !overwrite {
+        return Err(AppError::RolePackExists(id));
+    }
+    let workspace = super::role_files::import_workspace(storage.roles_dir())?;
+    let staged = workspace.path().join("next").join(&id);
+    fs::create_dir_all(&staged)?;
+    copy_role_tree(&source, &staged, |cur, tot, current| {
         let pct = copy_percent(cur, tot).min(99);
         on_progress(ImportProgress {
             percent: pct,
@@ -302,6 +314,13 @@ where
             current_file: current.map(str::to_string),
         });
     })?;
+    let staged_role = load_role_for_pack_import(storage, &staged)?;
+    if staged_role.id != id {
+        return Err(AppError::InvalidParameter(
+            "role id changed while copying".into(),
+        ));
+    }
+    super::role_files::commit_import(workspace, &dest, &id)?;
     on_progress(ImportProgress {
         percent: 100,
         message: "Import complete".into(),
@@ -317,13 +336,19 @@ fn copy_role_tree(
     dest: &Path,
     mut on_file: impl FnMut(usize, usize, Option<&str>),
 ) -> Result<()> {
-    let files: Vec<PathBuf> = WalkDir::new(src)
-        .min_depth(1)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .map(|e| e.path().to_path_buf())
-        .collect();
+    let mut files = Vec::new();
+    for entry in WalkDir::new(src).min_depth(1) {
+        let entry =
+            entry.map_err(|e| AppError::InvalidParameter(format!("read role tree: {e}")))?;
+        if entry.path_is_symlink() || !entry.path().canonicalize()?.starts_with(src) {
+            return Err(AppError::InvalidParameter(
+                "role import cannot contain linked files/directories".into(),
+            ));
+        }
+        if entry.file_type().is_file() {
+            files.push(entry.path().to_path_buf());
+        }
+    }
     let total = files.len().max(1);
     for (i, path) in files.iter().enumerate() {
         let rel = path
@@ -692,5 +717,47 @@ mod tests {
             validate_bridge_import_role_source(&st, app.path(), &outside.path().join("pack.zip"))
                 .unwrap_err();
         assert!(matches!(err, AppError::InvalidParameter(_)));
+    }
+
+    #[test]
+    fn self_overwrite_is_rejected_without_touching_role() {
+        let roles = tempdir().unwrap();
+        write_minimal_blueprint_role(roles.path(), "example");
+        let role = roles.path().join("example");
+        let before = fs::read(role.join("core_personality.txt")).unwrap();
+        let storage = RoleStorage::new(roles.path());
+        assert!(import_role_pack(&storage, &role, true, |_| {}).is_err());
+        assert_eq!(fs::read(role.join("core_personality.txt")).unwrap(), before);
+        assert!(storage.load_role("example").is_ok());
+    }
+
+    #[test]
+    fn interrupted_copy_leaves_previous_role_intact() {
+        let roles = tempdir().unwrap();
+        let incoming = tempdir().unwrap();
+        write_minimal_blueprint_role(roles.path(), "example");
+        write_minimal_blueprint_role(incoming.path(), "example");
+        let old = roles.path().join("example/core_personality.txt");
+        fs::write(&old, "previous personality").unwrap();
+        let source = incoming.path().join("example");
+        let source_files: Vec<_> = WalkDir::new(&source)
+            .into_iter()
+            .map(|e| e.unwrap())
+            .filter(|e| e.file_type().is_file())
+            .map(|e| e.into_path())
+            .collect();
+        let mut interrupted = false;
+        let result = import_role_pack(&RoleStorage::new(roles.path()), &source, true, |progress| {
+            if !interrupted && progress.file_index == Some(1) {
+                let current = source.join(progress.current_file.as_ref().unwrap());
+                let remaining = source_files.iter().find(|path| **path != current).unwrap();
+                fs::remove_file(remaining).unwrap();
+                interrupted = true;
+            }
+        });
+        assert!(interrupted);
+        assert!(result.is_err());
+        assert_eq!(fs::read_to_string(old).unwrap(), "previous personality");
+        assert!(RoleStorage::new(roles.path()).load_role("example").is_ok());
     }
 }

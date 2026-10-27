@@ -85,7 +85,8 @@ impl HighRiskGrantStore {
                 .map_err(|e| format!("create_dir_all {}: {}", parent.display(), e))?;
         }
         let raw = serde_json::to_string_pretty(data).map_err(|e| e.to_string())?;
-        fs::write(&p, raw).map_err(|e| format!("write {}: {}", p.display(), e))
+        crate::infrastructure::file_commit::atomic_write(&p, raw.as_bytes())
+            .map_err(|e| format!("write {}: {}", p.display(), e))
     }
 
     fn enforcement_active(&self) -> bool {
@@ -248,8 +249,11 @@ impl HighRiskGrantStore {
             return Err("id required".to_string());
         }
         let mut w = self.inner.write();
-        pick(&mut w).insert(key);
-        self.persist(&w)
+        let mut next = w.clone();
+        pick(&mut next).insert(key);
+        self.persist(&next)?;
+        *w = next;
+        Ok(())
     }
 
     fn revoke_bucket(
@@ -259,8 +263,11 @@ impl HighRiskGrantStore {
     ) -> Result<(), String> {
         let key = id.trim().to_string();
         let mut w = self.inner.write();
-        pick(&mut w).remove(&key);
-        self.persist(&w)
+        let mut next = w.clone();
+        pick(&mut next).remove(&key);
+        self.persist(&next)?;
+        *w = next;
+        Ok(())
     }
 }
 
@@ -326,5 +333,74 @@ mod tests {
         let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
         assert!(!store.is_network_granted("any"));
         assert!(!store.is_process_spawn_granted("plug"));
+    }
+
+    #[test]
+    fn grant_persistence_failure_does_not_publish_memory() {
+        let dir = tempdir().unwrap();
+        let blocked = dir.path().join("not-a-directory");
+        fs::write(&blocked, b"block parent creation").unwrap();
+        let store = HighRiskGrantStore::load(blocked, true);
+        assert!(store.grant_network("review-plugin").is_err());
+        assert!(!store.snapshot().network.contains("review-plugin"));
+    }
+
+    #[test]
+    fn revoke_failure_keeps_memory_and_original_disk_grant() {
+        let dir = tempdir().unwrap();
+        let live = dir.path().join("live");
+        let parked = dir.path().join("parked");
+        let store = HighRiskGrantStore::load(live.clone(), true);
+        store.grant_network("review-plugin").unwrap();
+        let before = fs::read(live.join(FILE_NAME)).unwrap();
+        fs::rename(&live, &parked).unwrap();
+        fs::write(&live, b"block parent creation").unwrap();
+        assert!(store.revoke_network("review-plugin").is_err());
+        assert!(store.snapshot().network.contains("review-plugin"));
+        assert_eq!(fs::read(parked.join(FILE_NAME)).unwrap(), before);
+        fs::remove_file(&live).unwrap();
+        fs::rename(&parked, &live).unwrap();
+        let restarted = HighRiskGrantStore::load(live, true);
+        assert!(restarted.snapshot().network.contains("review-plugin"));
+    }
+
+    #[test]
+    fn successful_grant_and_revoke_survive_restart() {
+        let dir = tempdir().unwrap();
+        let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
+        store.grant_network("review-plugin").unwrap();
+        assert!(HighRiskGrantStore::load(dir.path().to_path_buf(), true)
+            .snapshot()
+            .network
+            .contains("review-plugin"));
+        store.revoke_network("review-plugin").unwrap();
+        assert!(!HighRiskGrantStore::load(dir.path().to_path_buf(), true)
+            .snapshot()
+            .network
+            .contains("review-plugin"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn failed_atomic_replace_keeps_existing_grant_bytes() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = tempdir().unwrap();
+        let store = HighRiskGrantStore::load(dir.path().to_path_buf(), true);
+        store.grant_network("review-plugin").unwrap();
+        let path = dir.path().join(FILE_NAME);
+        let before = fs::read(&path).unwrap();
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+        assert!(store.revoke_network("review-plugin").is_err());
+        assert!(store.snapshot().network.contains("review-plugin"));
+        drop(held);
+        assert_eq!(fs::read(&path).unwrap(), before);
+        assert!(HighRiskGrantStore::load(dir.path().to_path_buf(), true)
+            .snapshot()
+            .network
+            .contains("review-plugin"));
     }
 }

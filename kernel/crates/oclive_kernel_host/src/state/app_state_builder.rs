@@ -130,6 +130,7 @@ impl AppStateBuilder {
     ///
     /// Database connect/migrate, policy load, or plugin bootstrap failures.
     pub async fn build(self) -> Result<AppState> {
+        crate::infrastructure::role_files::recover_imports(&self.roles_dir)?;
         let runtime_event_trace_path = self.runtime_event_trace_path.clone();
         let main_database_path = self.db_path.clone();
         let db = connect_db(&self.db_path).await?;
@@ -173,6 +174,12 @@ impl AppStateBuilder {
         }
 
         let db_manager = Arc::new(DbManager::new(db));
+        crate::infrastructure::role_deletion::recover_pending_deletions(
+            &db_manager,
+            &self.roles_dir,
+            None,
+        )
+        .await?;
         let user_llm_provider = parking_lot::RwLock::new(String::new());
         let remote_fallback_allowed = remote_fallback_switch(&db_manager).await?;
         let host_profile = Arc::new(
@@ -339,6 +346,12 @@ impl AppStateBuilder {
                 true,
             )
         };
+        crate::infrastructure::role_deletion::recover_pending_deletions(
+            &db_manager,
+            storage.roles_dir(),
+            Some(&directory_plugins),
+        )
+        .await?;
         let plugins = crate::infrastructure::plugin_wiring::build_plugin_host(
             llm.clone(),
             Some(directory_plugins.clone()),
