@@ -15,6 +15,7 @@
 
 ### Added
 
+- **Chat Pro 侧栏头像与明暗快捷切换**：左侧角色小框使用角色包现有立绘的局部裁切，缺图回退角色首字，窄窗口仍保留图片。右上角新增太阳/月亮开关，一次切换明暗并记住偏好；与设置、系统主题和缩放共享状态，避免打开设置时回到旧外观。Win98 保持独立经典配色，快捷开关提示先关闭皮肤。
 - **Chat Pro 动漫功能图标**：为角色库、模型连接、应用设置和帮助恢复增加统一的沐沐插画，复用到面板标题、首次引导和空状态；保留文字标签与简洁的关闭/分类图标，支持透明背景、响应式尺寸、加载失败回退和减少动态效果，兼容默认、深色及 Win98 外观。
 - **Chat Pro 0.6.0-rc.1**：以角色包为入口的角色库、各角色最近对话、分类设置和帮助与恢复日志界面；默认聚焦聊天，高级互动按需启用。安装包不捆绑模型权重，首次引导选择本地 GGUF/Ollama 或云端 API；可稍后配置，已有连接保持兼容。当前为待验证的发布候选版，尚未公开发布。
 - **CP-B3-ALL P：内置 Prompt 的共享连接核心**：`oclive_kernel_runtime` 的 `domain/base_prompt.rs` 新增 `concat_prepared_text` 与 `assemble_literal_material`，`prompt_builder` 的准备块（`prepare_prompt_blocks`/`build_prompt`）、`PromptSegments::full()` 与 `BuiltinPromptAssembler` 的 Base 入口改为共用同一连接规则。改前五组输入（含 CRLF、U+3000、空世界观、锚点轮）的逐字节摘要复算不变，产品布局、segments 边界与 `stable_len`、门控行为均未变；`requirements` 非空仍为 `Unsupported`，Base 入口对材料逐字、保序、保重复。此单元是字节等价重构，不是新的 Prompt 能力。
