@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   setGlobal: vi.fn(),
   showToast: vi.fn(),
   scan: vi.fn(),
+  probe: vi.fn(),
 }))
 
 vi.mock('@oclive/shared/api/llmSettings', () => ({
@@ -28,7 +29,7 @@ vi.mock('@oclive/shared/api/llmSettings', () => ({
   listCloudModels: mocks.listCloud,
   listOllamaModels: mocks.listOllama,
   openPathInFileManager: vi.fn(),
-  probeCloudLlm: vi.fn(),
+  probeCloudLlm: mocks.probe,
   saveLlmUserSettings: mocks.saveSettings,
   scanLocalModelFiles: mocks.scan,
   setGlobalOllamaModel: mocks.setGlobal,
@@ -96,6 +97,15 @@ function settingsFor(
   }
 }
 
+function cloudSettings(): LlmUserSettings {
+  return {
+    ...settingsFor('http://local.test', 'cloud'),
+    remoteUrl: 'https://saved.test/v1',
+    remoteModel: 'saved-model',
+    remoteTokenConfigured: true,
+  }
+}
+
 async function flushMicrotasks(rounds = 12): Promise<void> {
   for (let index = 0; index < rounds; index += 1)
     await Promise.resolve()
@@ -132,6 +142,7 @@ describe('model manager async ownership', () => {
     mocks.listOllama.mockResolvedValue([])
     mocks.saveSettings.mockResolvedValue({})
     mocks.setGlobal.mockResolvedValue({ model: 'new-model' })
+    mocks.probe.mockResolvedValue('ok')
   })
 
   afterEach(async () => {
@@ -326,6 +337,67 @@ describe('model manager async ownership', () => {
     expect(wrapper.find('.mm-lora-route .help-hint').exists()).toBe(true)
     expect(wrapper.findAll('.mm-footer button.ui-btn')).toHaveLength(2)
 
+    wrapper.unmount()
+  })
+
+  it.each([
+    ['input[placeholder="modelManager.remoteUrlPlaceholder"]', 'https://unsaved.test/v1'],
+    ['input[list="mm-cloud-model-list"]', 'unsaved-model'],
+    ['input[type="password"]', 'synthetic-new-key'],
+  ])('requires saving changed cloud fields before testing: %s', async (selector, value) => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const probe = wrapper.findAll('.mm-footer button')[1]
+    expect(probe.attributes('disabled')).toBeUndefined()
+    await wrapper.get(selector).setValue(value)
+    expect(probe.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('modelManager.probeNeedSave')
+    await probe.trigger('click')
+    expect(mocks.probe).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('also rejects an unsaved test from the handler and re-enables it after reverting the form', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const wrapper = mountManager()
+    await flushMicrotasks()
+    const url = wrapper.get('input[placeholder="modelManager.remoteUrlPlaceholder"]')
+    await url.setValue('https://unsaved.test/v1')
+    await wrapper.findAll('.mm-footer ui-button-stub')[1].trigger('click')
+    expect(mocks.probe).not.toHaveBeenCalled()
+    expect(mocks.showToast).toHaveBeenCalledWith('info', 'modelManager.probeNeedSave')
+    await url.setValue('https://saved.test/v1')
+    await wrapper.findAll('.mm-footer ui-button-stub')[1].trigger('click')
+    await flushMicrotasks()
+    expect(mocks.probe).toHaveBeenCalledWith('role-a')
+    wrapper.unmount()
+  })
+
+  it('tests the newly saved cloud configuration and clears its unsaved indication after reload', async () => {
+    mocks.getSettings.mockResolvedValue(cloudSettings())
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.get('input[placeholder="modelManager.remoteUrlPlaceholder"]').setValue('https://saved-next.test/v1')
+    mocks.getSettings.mockResolvedValue({ ...cloudSettings(), remoteUrl: 'https://saved-next.test/v1' })
+    await wrapper.findAll('.mm-footer button')[0].trigger('click')
+    await flushMicrotasks()
+    expect(mocks.saveSettings).toHaveBeenCalledWith(expect.objectContaining({ roleId: 'role-a', remoteUrl: 'https://saved-next.test/v1' }))
+    expect(mocks.probe).toHaveBeenCalledWith('role-a')
+    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeUndefined()
+    expect(wrapper.text()).not.toContain('modelManager.probeNeedSave')
+    wrapper.unmount()
+  })
+
+  it('does not treat the previous role settings as saved configuration after a new role load fails', async () => {
+    mocks.getSettings.mockResolvedValueOnce(cloudSettings()).mockRejectedValueOnce(new Error('settings unavailable'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+    useRoleStore().currentRoleId = 'role-b'
+    await flushMicrotasks()
+    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeDefined()
+    expect(mocks.probe).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 })

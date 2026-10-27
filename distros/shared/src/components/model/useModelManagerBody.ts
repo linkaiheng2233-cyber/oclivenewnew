@@ -57,6 +57,7 @@ export function useModelManagerBody(options: {
   const loraReplaceExisting = ref(false)
   const globalDefaultModel = ref('')
   const settings = ref<LlmUserSettings | null>(null)
+  const settingsRoleId = ref<string | null>(null)
   const ollamaModels = ref<string[]>([])
   const folderModelFiles = ref<LocalModelFile[]>([])
 
@@ -211,6 +212,16 @@ export function useModelManagerBody(options: {
     )
   }
 
+  const cloudProbeNeedsSave = computed(() => {
+    const saved = settings.value
+    return loading.value || !saved || settingsRoleId.value !== roleStore.currentRoleId
+      || saved.provider !== 'cloud' || providerTab.value !== 'cloud'
+      || !remoteUrl.value.trim() || !remoteModel.value.trim() || !saved.remoteTokenConfigured
+      || remoteUrl.value.trim() !== saved.remoteUrl.trim()
+      || remoteModel.value.trim() !== (saved.remoteModel || saved.sessionOllamaModel || '').trim()
+      || remoteToken.value.trim().length > 0
+  })
+
   const effectiveModel = computed(() =>
     settings.value?.localRuntimeMode === 'performance'
     && settings.value.localModelPath?.trim()
@@ -285,6 +296,7 @@ export function useModelManagerBody(options: {
         return
       }
       settings.value = s
+      settingsRoleId.value = roleId
       providerTab.value = initialProvider ?? (s.provider === 'cloud' ? 'cloud' : 'local')
       initialProvider = undefined
       ollamaBaseUrl.value = s.ollamaBaseUrl
@@ -654,6 +666,10 @@ export function useModelManagerBody(options: {
       showToast('error', t('modelManager.needApiKey'))
       return
     }
+    if (cloudProbeNeedsSave.value) {
+      showToast('info', t('modelManager.probeNeedSave'))
+      return
+    }
     probing.value = true
     try {
       await probeCloudLlm(roleStore.currentRoleId)
@@ -808,6 +824,7 @@ export function useModelManagerBody(options: {
     cloudModels,
     cloudModelsLoadGeneration,
     cloudModelsLoading,
+    cloudProbeNeedsSave,
     effectiveModel,
     folderModelFiles,
     formatAdapterSize,

@@ -15,6 +15,7 @@ const {
   cloudModelHistory,
   cloudModelOptions,
   cloudModelsLoading,
+  cloudProbeNeedsSave,
   effectiveModel,
   formatAdapterSize,
   globalDefaultModel,
@@ -667,6 +668,9 @@ const {
         </div>
       </section>
 
+      <p v-if="providerTab === 'cloud' && cloudProbeNeedsSave" id="mm-probe-save-hint" class="mm-hint" role="status">
+        {{ t('modelManager.probeNeedSave') }}
+      </p>
       <footer class="mm-footer">
         <UiButton
           size="sm"
@@ -680,7 +684,8 @@ const {
           v-if="providerTab === 'cloud'"
           size="sm"
           variant="ghost"
-          :disabled="probing || saving || loading"
+          :disabled="probing || saving || loading || cloudProbeNeedsSave"
+          :aria-describedby="cloudProbeNeedsSave ? 'mm-probe-save-hint' : undefined"
           @click="onProbeCloud"
         >
           {{
