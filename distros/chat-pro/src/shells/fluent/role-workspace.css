@@ -21,7 +21,8 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .nav-role-title button { display:flex; align-items:center; gap:9px; min-width:0; border:0; padding:9px; text-align:left; background:none; color:inherit; }
 .nav-role-title button:first-child { flex:1; font-weight:650; }
 .nav-role-title button:last-child { font-size:20px; }
-.role-initial { display:grid; place-items:center; width:27px; height:27px; flex-shrink:0; border:1px solid var(--border-light); border-radius:9px; font-size:12px; background:var(--bg-primary); }
+.role-initial { display:block;width:32px;height:32px;flex-shrink:0;overflow:hidden;border:1px solid var(--border-light);border-radius:9px;background:var(--bg-primary); }
+.nav-role-name { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .nav-conversations { margin:6px 4px 12px 20px; padding-left:12px; border-left:1px solid var(--border-light); }
 .nav-conversations button { display:block; width:100%; padding:8px; border:0; border-radius:5px; background:transparent; color:var(--text-secondary); text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
 .nav-conversations button.selected { background:var(--bg-primary); color:var(--text-primary); }
@@ -32,6 +33,10 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .workspace-header { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:24px 30px; border-bottom:1px solid var(--border-light); }
 .workspace-header h1 { font-size:23px; margin:0 0 8px; letter-spacing:-.4px; }
 .workspace-header p { margin:0; color:var(--text-secondary); font-size:12px; }
+.workspace-header-actions { display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;min-width:0; }
+.theme-toggle { display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:36px;min-height:36px;padding:7px 10px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-elevated);color:var(--text-primary);font-size:12px;line-height:1.5; }
+.theme-toggle svg { width:18px;height:18px;flex-shrink:0; }
+.theme-toggle:hover:not(:disabled) { border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--bg-primary)); }
 .library-page { flex:1; overflow:auto; padding:24px 30px; }
 .library-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
 .library-tools h2 { margin:0; font-size:16px; }
@@ -102,3 +107,4 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 @media(max-width:760px) { .role-nav{flex-basis:64px;padding:18px 6px}.role-brand{margin:0 6px 20px}.role-brand>span:last-child,.nav-label,.nav-conversations,.local-note,.role-initial,.nav-role-title button:last-child{display:none}.nav-button{padding:10px 5px;font-size:10px;flex-direction:column;gap:6px;text-align:center}.nav-role-title button:first-child{padding:9px 4px;font-size:11px;justify-content:center;overflow-wrap:anywhere}.runtime-role{display:none}.workspace-header{padding:16px;gap:8px;flex-wrap:wrap}.workspace-header h1{font-size:20px}.library-page{padding:18px}.role-card-grid{grid-template-columns:1fr}.role-card{flex-direction:column}.card-portrait{width:100%;height:150px;justify-content:center}.card-portrait :deep(.hero){width:140px;height:150px}.card-portrait :deep(.avatar){height:130px;object-fit:contain}.role-card-copy{padding:18px}.conversation-header{padding:14px}.workspace-header p{line-height:1.7}.workspace-empty{padding:24px;min-height:280px}.workspace-empty h2{font-size:21px} }
 @media(max-width:760px) { .compact-role-controls{display:block}.runtime-grid{position:relative}.runtime-role--open{display:block;position:absolute;z-index:5;left:0;top:72px;bottom:0;background:var(--bg-primary);box-shadow:5px 0 16px #0002;width:240px} }
 @media(max-width:760px) { .role-card .card-portrait { min-height:190px;height:190px;border-right:0;border-bottom:1px solid var(--border-light); }.card-portrait :deep(.hero--preview) { width:100%;height:100%; }.card-portrait :deep(.hero--preview .avatar) { width:100%;height:100%;object-fit:cover; } }
+@media(max-width:760px) { .nav-role-title button:first-child { flex-direction:column;gap:5px; }.nav-role-title .role-initial { display:block; }.nav-role-name { width:100%;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.5; }.theme-toggle span { display:none; }.workspace-header-actions { gap:7px; } }

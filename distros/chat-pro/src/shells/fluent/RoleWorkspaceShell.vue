@@ -15,7 +15,9 @@ import UiButton from '@oclive/shared/components/ui/UiButton.vue'
 import UiCloseButton from '@oclive/shared/components/ui/UiCloseButton.vue'
 import Win98TitleBar from '@oclive/shared/components/win98/Win98TitleBar.vue'
 import { MAIN_SHELL_KEY } from '@oclive/shared/composables/mainShellKey'
+import { useEasterEggSkin } from '@oclive/shared/composables/useEasterEggSkin'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
+import { useOcliveAppearance } from '@oclive/shared/composables/useOcliveAppearance'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, inject, ref } from 'vue'
 import ModelSetupGuide from '../../components/ModelSetupGuide.vue'
@@ -85,6 +87,9 @@ const blocked = computed(() => busy.value || roleSwitching.value || startupState
 const runtimeReady = computed(() => page.value === 'chat' && !!activeSession.value && !!roleStore.currentRoleId)
 const ui = useUiStore()
 const initialProvider = ref<'local' | 'cloud' | undefined>()
+const { effectiveTheme, toggleDarkTheme } = useOcliveAppearance()
+const { win98Enabled } = useEasterEggSkin()
+const isDark = computed(() => effectiveTheme.value === 'dark')
 
 function openConnection(provider?: 'local' | 'cloud'): void {
   if (!runtimeReady.value || blocked.value) {
@@ -145,7 +150,8 @@ function openRecoveryFromNotice(): void {
           <section v-for="role in roleStore.roles" :key="role.id" class="nav-role">
             <div class="nav-role-title" :class="{ active: runtimeReady && roleStore.currentRoleId === role.id }">
               <button type="button" :disabled="blocked" @click="enterRole(role.id)">
-                <span class="role-initial" aria-hidden="true">{{ role.name.slice(0, 1) }}</span>{{ role.name }}
+                <span class="role-initial" aria-hidden="true"><CharacterInfo :role-id="role.id" :name="role.name" emotion="neutral" layout="thumbnail" /></span>
+                <span class="nav-role-name" :title="role.name">{{ role.name }}</span>
               </button>
               <button type="button" :title="t('workspace.newChat')" :aria-label="`${role.name} · ${t('workspace.newChat')}`" :disabled="blocked" @click="enterRole(role.id, undefined, true)">
                 +
@@ -188,7 +194,25 @@ function openRecoveryFromNotice(): void {
             <h1>{{ runtimeReady ? t('workspace.runtime', { name: roleName }) : t('workspace.library') }}</h1>
             <p>{{ runtimeReady ? (roleStore.roleInfo.effectiveOllamaModel || t('workspace.noModel')) : t('workspace.libraryHint') }}</p>
           </div>
-          <KernelStatusBar />
+          <div class="workspace-header-actions">
+            <button
+              class="theme-toggle"
+              type="button"
+              role="switch"
+              :aria-label="t('workspace.darkMode')"
+              :aria-checked="isDark"
+              :disabled="win98Enabled"
+              :title="win98Enabled ? t('workspace.classicThemeHint') : t(isDark ? 'workspace.switchToLight' : 'workspace.switchToDark')"
+              @click="toggleDarkTheme"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path v-if="isDark" d="M20.8 13.1A8.8 8.8 0 0 1 10.9 3.2 9 9 0 1 0 20.8 13.1Z" />
+                <template v-else><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5" /></template>
+              </svg>
+              <span>{{ t(isDark ? 'workspace.darkMode' : 'workspace.lightMode') }}</span>
+            </button>
+            <KernelStatusBar />
+          </div>
         </header>
 
         <ModelSetupGuide v-if="startupState === 'ready'" :role-id="roleStore.currentRoleId" :ready="runtimeReady && !blocked" @configure="openConnection" />

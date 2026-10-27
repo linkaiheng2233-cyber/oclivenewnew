@@ -212,4 +212,17 @@ describe('character info role portrait', () => {
     expect(wrapper.get('.avatar-fallback').text()).toBe('沐')
     wrapper.unmount()
   })
+
+  it('uses the same portrait source for a decorative sidebar thumbnail and keeps the role initial fallback', async () => {
+    const wrapper = mountCharacter()
+    await flushPromises()
+    await wrapper.setProps({ layout: 'thumbnail' })
+    expect(wrapper.get('.hero--thumbnail').attributes('aria-hidden')).toBe('true')
+    expect(wrapper.get('img.avatar').attributes('src')).toBe('blob:role-portrait')
+    expect(wrapper.find('.title').exists()).toBe(false)
+    expect(mocks.readRoleAssetBytes).toHaveBeenCalledTimes(1)
+    await wrapper.get('img.avatar').trigger('error')
+    expect(wrapper.get('.avatar-fallback').text()).toBe('沐')
+    wrapper.unmount()
+  })
 })

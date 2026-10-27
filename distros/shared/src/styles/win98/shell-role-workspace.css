@@ -29,6 +29,13 @@ html[data-skin="win98"] .role-app .nav-button .mumu-feature-icon {
   transform: none;
 }
 
+html[data-skin="win98"] .role-app .theme-toggle {
+  border:2px outset #dfdfdf;
+  border-radius:0;
+  background:#c0c0c0;
+  color:#000000;
+}
+
 html[data-skin="win98"] .role-app :is(.nav-button:hover, .nav-role-title:hover) {
   background: #dfdfdf;
 }

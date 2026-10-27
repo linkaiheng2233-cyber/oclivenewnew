@@ -15,12 +15,13 @@ const props = withDefaults(
     emotion: string
     /** Catalog / directive relative asset path (e.g. assets/images/happy.webp) */
     portraitAssetRelPath?: string | null
-    layout?: 'stack' | 'sidebar' | 'preview'
+    layout?: 'stack' | 'sidebar' | 'preview' | 'thumbnail'
   }>(),
   { layout: 'stack' },
 )
 
 const { t, te } = useI18n()
+const compactPortrait = computed(() => props.layout === 'preview' || props.layout === 'thumbnail')
 
 const portraitSrc = ref<string | null>(null)
 const portraitBlobUrl = ref<string | null>(null)
@@ -228,7 +229,7 @@ onBeforeUnmount(() => {
 
 <template>
   <!-- Match oclive-new .main-content: hero image + name + emotion (affinity in bottom .status-bar) -->
-  <div class="hero" :class="{ 'hero--sidebar': props.layout === 'sidebar', 'hero--preview': props.layout === 'preview' }" :aria-hidden="props.layout === 'preview' ? 'true' : undefined">
+  <div class="hero" :class="{ 'hero--sidebar': props.layout === 'sidebar', 'hero--preview': props.layout === 'preview', 'hero--thumbnail': props.layout === 'thumbnail' }" :aria-hidden="compactPortrait ? 'true' : undefined">
     <div class="avatar-wrap">
       <img
         v-if="portraitSrc && !portraitLoadFailed"
@@ -239,12 +240,12 @@ onBeforeUnmount(() => {
         decoding="async"
         @error="onPortraitError"
       >
-      <span v-else class="avatar-fallback">{{ props.layout === 'preview' ? props.name.trim().slice(0, 1) || '◇' : emotionToEmoji[emotionKey()] ?? "😐" }}</span>
+      <span v-else class="avatar-fallback">{{ compactPortrait ? props.name.trim().slice(0, 1) || '◇' : emotionToEmoji[emotionKey()] ?? "😐" }}</span>
     </div>
-    <h2 v-if="props.layout !== 'preview'" class="title">
+    <h2 v-if="!compactPortrait" class="title">
       {{ props.name }}
     </h2>
-    <p v-if="props.layout !== 'preview'" class="emotion-line">
+    <p v-if="!compactPortrait" class="emotion-line">
       <span :key="emotionKey()" class="icon">{{ emotionToEmoji[emotionKey()] ?? "😐" }}</span>
       <span>{{ emotionDisplayLabel }}</span>
     </p>
@@ -366,5 +367,9 @@ onBeforeUnmount(() => {
 .hero--preview .avatar-wrap { width:100%;height:100%;max-width:none;margin:0;overflow:hidden; }
 .hero--preview .avatar { width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:50% 18%;animation:none; }
 .hero--preview .avatar-fallback { width:100%;height:100%;min-height:0;font-size:48px;font-weight:650;color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--bg-primary)); }
+.hero--thumbnail { width:100%;height:100%;padding:0;overflow:hidden;background:transparent; }
+.hero--thumbnail .avatar-wrap { width:100%;height:100%;margin:0;max-width:none;overflow:hidden; }
+.hero--thumbnail .avatar { width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:50% 18%;animation:none; }
+.hero--thumbnail .avatar-fallback { width:100%;height:100%;min-height:0;font-size:12px;line-height:1;font-weight:650;color:var(--accent); }
 @media(prefers-reduced-motion:reduce) { .avatar,.icon { animation:none; } }
 </style>
