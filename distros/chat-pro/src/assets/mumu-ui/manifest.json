@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "createdOn": "2026-10-27",
+  "generator": "built-in imagegen",
+  "identityReference": "distros/chat-pro/roles/mumu/assets/images/normal-v2.png",
+  "purpose": "Decorative Chat Pro feature illustrations. These do not represent the currently selected role.",
+  "exports": {
+    "small": 96,
+    "large": 256,
+    "format": "PNG",
+    "alpha": true
+  },
+  "assets": [
+    {
+      "name": "library",
+      "symbol": "Mumu with a folder and character profile cards",
+      "sourceSha256": "92FE0CADCBB2A4D2673EFA4CC7CB321415C8B6FAD5D80F28956A51E7814F2EE8"
+    },
+    {
+      "name": "model",
+      "symbol": "Mumu with a friendly AI chip and plug",
+      "sourceSha256": "99CAB83BC4B9302C6AAD240F6E65A40EF54B07B7664BD9A80468B213F4AD9DA2"
+    },
+    {
+      "name": "settings",
+      "symbol": "Mumu with a cogwheel",
+      "sourceSha256": "B74D20C9DA0A388DE522CEDD3A664646B4AFD6F7CE3F583DEFAC92DEF20F5FE4"
+    },
+    {
+      "name": "help",
+      "symbol": "Mumu with a lifebuoy",
+      "sourceSha256": "EEA3F1314DFD6116D9F43C53D7952F44E4CB9FB4888BBE09879A8421712A4354"
+    }
+  ],
+  "constraints": [
+    "Keep text labels and accessible names on controls.",
+    "Use the MumuFeatureIcon component for fixed-size rendering and failure fallback.",
+    "Keep close, back and dense settings-category icons as simple symbols.",
+    "Do not animate continuously; respect reduced-motion and Win98 conventions."
+  ]
+}
