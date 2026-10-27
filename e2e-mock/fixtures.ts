@@ -327,7 +327,7 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     case 'reload_policy_plugins':
       return 'ok'
     case 'find_role_asset_path':
-      return null
+      return typeof localStorage === 'undefined' ? null : localStorage.getItem(`oclive.e2e.portrait.${payload.roleId}`)
     case 'get_hotkey_bindings':
       return { schemaVersion: 1, bindings: [] }
     case 'list_mcp_servers':

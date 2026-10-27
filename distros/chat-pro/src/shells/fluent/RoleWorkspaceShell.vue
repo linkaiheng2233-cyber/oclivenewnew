@@ -79,6 +79,7 @@ const helpOpen = ref(false)
 const rolePanelOpen = ref(false)
 const browserFixture = import.meta.env.MODE === 'e2e'
 const helpCard = ref<HTMLElement | null>(null)
+const helpOpener = ref<HTMLButtonElement | null>(null)
 useModalFocusRestore(helpOpen, helpCard, { trapFocus: true })
 const blocked = computed(() => busy.value || roleSwitching.value || startupState.value !== 'ready')
 const runtimeReady = computed(() => page.value === 'chat' && !!activeSession.value && !!roleStore.currentRoleId)
@@ -114,6 +115,12 @@ function sessionLabel(snippet: string): string {
 
 function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', message: string, details?: string }): void {
   showToast(payload.type, payload.message, payload.details)
+}
+
+function openRecoveryFromNotice(): void {
+  // Use a persistent opener so closing Help restores a useful keyboard position.
+  helpOpener.value?.focus({ preventScroll: true })
+  helpOpen.value = true
 }
 </script>
 
@@ -167,7 +174,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
           <button class="nav-button" type="button" @click="openSettingsView">
             <MumuFeatureIcon name="settings" />{{ t('workspace.settings') }}
           </button>
-          <button class="nav-button" type="button" @click="helpOpen = true">
+          <button ref="helpOpener" class="nav-button" type="button" @click="helpOpen = true">
             <MumuFeatureIcon name="help" />{{ t('workspace.help') }}
           </button>
           <small class="local-note">{{ t('workspace.local') }}</small>
@@ -206,7 +213,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
               {{ t('workspace.retry') }}
             </button>
           </ErrorNotice>
-          <div v-if="page === 'roles'" class="library-page">
+          <div v-if="page === 'roles'" class="library-page" role="region" :aria-label="t('workspace.library')" tabindex="0">
             <div class="library-tools">
               <h2>{{ t('workspace.myRoles') }} <small>{{ roleStore.roles.length }}</small></h2>
               <div class="library-actions">
@@ -224,7 +231,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
             <div v-else class="role-card-grid">
               <article v-for="role in roleStore.roles" :key="role.id" class="role-card">
                 <div class="card-portrait">
-                  <CharacterInfo :role-id="role.id" :name="role.name" emotion="neutral" />
+                  <CharacterInfo :role-id="role.id" :name="role.name" emotion="neutral" layout="preview" />
                 </div>
                 <div class="role-card-copy">
                   <h2>{{ role.name }}</h2>
@@ -322,7 +329,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
         </section>
       </div>
     </Teleport>
-    <Toast :show="toast.show" :type="toast.type" :message="toast.message" :details="toast.details" />
+    <Toast :show="toast.show" :type="toast.type" :message="toast.message" :details="toast.details" recovery-action @open-recovery="openRecoveryFromNotice" />
   </main>
 </template>
 

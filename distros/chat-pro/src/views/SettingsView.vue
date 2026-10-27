@@ -305,9 +305,6 @@ function openGeneralAdvancedKeybindings(): void {
 .sv-content :deep(.ui-btn:focus-visible),.sv-content :deep(.ui-select:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
 .sv-content :deep(.error-notice) { flex-shrink:0; }
 .sv-nav-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-.sv-nav,.sv-content :deep(.sv-body),.sv-content :deep(pre) { scrollbar-width:thin; scrollbar-color:var(--scrollbar-chat-thumb,#486b6240) transparent; }
-.sv-nav::-webkit-scrollbar,.sv-content :deep(.sv-body::-webkit-scrollbar),.sv-content :deep(pre::-webkit-scrollbar) { width:10px; height:10px; }
-.sv-nav::-webkit-scrollbar-thumb,.sv-content :deep(.sv-body::-webkit-scrollbar-thumb),.sv-content :deep(pre::-webkit-scrollbar-thumb) { background:var(--scrollbar-chat-thumb,#486b6240); border:3px solid transparent; background-clip:padding-box; border-radius:12px; }
 .sv-content :deep(pre) { white-space:pre-wrap; overflow-wrap:anywhere; }
 .sv-embedded .sv-layout { grid-template-columns:180px minmax(0,1fr); }
 @container oclive-settings (max-width:600px) {

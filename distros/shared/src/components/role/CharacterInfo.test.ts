@@ -188,4 +188,28 @@ describe('character info role portrait', () => {
     expect(mocks.revokeObjectURL).toHaveBeenCalledWith('blob:role-portrait')
     wrapper.unmount()
   })
+
+  it('opts into a cropped library preview without reloading or changing the runtime portrait source', async () => {
+    const wrapper = mountCharacter()
+    await flushPromises()
+    expect(wrapper.find('.hero--preview').exists()).toBe(false)
+    await wrapper.setProps({ layout: 'preview' })
+    expect(wrapper.get('.hero').attributes('aria-hidden')).toBe('true')
+    expect(wrapper.find('.title').exists()).toBe(false)
+    expect(wrapper.get('img.avatar').attributes('src')).toBe('blob:role-portrait')
+    expect(mocks.readRoleAssetBytes).toHaveBeenCalledTimes(1)
+    await wrapper.setProps({ layout: 'stack' })
+    expect(wrapper.get('.title').text()).toBe('沐沐')
+    expect(wrapper.find('.hero--preview').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('uses the role initial when a library preview is missing', async () => {
+    mocks.resolveRoleAssetPath.mockResolvedValue(null)
+    const wrapper = mountCharacter()
+    await wrapper.setProps({ layout: 'preview' })
+    await flushPromises()
+    expect(wrapper.get('.avatar-fallback').text()).toBe('沐')
+    wrapper.unmount()
+  })
 })

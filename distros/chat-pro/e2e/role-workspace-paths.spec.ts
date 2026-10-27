@@ -92,6 +92,8 @@ test('completed replies remain successful when a later status refresh fails', as
   await page.locator('#chat-user-message').press('Enter')
   await expect(page.locator('.workspace-messages')).toContainText('Echo: already delivered')
   await expect(page.locator('.toast')).toContainText('Your reply arrived')
+  await expect(page.locator('.toast .error-notice')).toHaveAttribute('role', 'status')
+  await expect(page.locator('.toast [role=alert]')).toHaveCount(0)
   await expect(page.locator('#chat-user-message')).toHaveValue('')
 })
 

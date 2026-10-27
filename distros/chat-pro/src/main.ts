@@ -17,6 +17,7 @@ import '@oclive/shared/styles/global.css'
 import '@oclive/shared/styles/win98/tokens.css'
 import '@oclive/shared/styles/win98/primitives.css'
 import '@oclive/shared/styles/interaction.css'
+import '@oclive/shared/styles/scrollbars.css'
 
 hydrateLayoutWidths()
 
