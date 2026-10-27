@@ -141,7 +141,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-group more-group--scene">
+        <div v-if="open && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive" class="more-group more-group--scene">
           <div v-if="allSceneOptions.length > 0" class="more-tile more-tile--scene more-tile--wide">
             <div class="more-tile-head more-tile-head--tight">
               <span class="more-label">{{ t("app.more.narrativeScene") }}</span>
@@ -182,7 +182,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-group more-group--plugin">
+        <div v-if="open && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive" class="more-group more-group--plugin">
           <div class="more-tile more-tile--action plugin-entry-tile">
             <div class="more-tile-body plugin-entry-actions" role="group" :aria-label="t('app.more.pluginBtnSimple')">
               <button
@@ -225,7 +225,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="roleStore.interactionImmersive" class="more-group more-group--dev">
+        <div v-if="open && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive" class="more-group more-group--dev">
           <div class="more-tile more-tile--action">
             <div class="more-tile-head">
               <span class="more-label">{{ t("app.more.debug") }}</span>

@@ -1,9 +1,12 @@
 import type { PresenceMode, SendMessageResponse } from '@oclive/shared/api'
+import type { SessionMeta } from '@oclive/shared/api/chatStorage'
 import type { RoleSceneMessageMap } from '@oclive/shared/utils/chatMessageDb'
 import type { RoleplaySplit } from '@oclive/shared/utils/roleplayReplySplit'
 import {
+  fetchChatMessages,
   getChatStorageCapabilities,
 } from '@oclive/shared/api/chatStorage'
+import { rt } from '@oclive/shared/i18n/runtimeT'
 import { cancelAdultBeatQueue } from '@oclive/shared/lib/adultBeatQueue'
 import {
   bucketMapKey,
@@ -12,6 +15,8 @@ import {
   saveDirtyBucketsToIdb,
 } from '@oclive/shared/utils/chatMessageDb'
 import { isChatStorageMigrated, runChatStorageMigrationIfNeeded } from '@oclive/shared/utils/chatStorageMigration'
+import { chatThreadForSession, chatThreadStorageId } from '@oclive/shared/utils/chatThread'
+import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 
 import {
   assistantDialogueFromSplit,
@@ -22,7 +27,7 @@ import { defineStore } from 'pinia'
 import { resolveUserNarrativeSceneId } from '../composables/narrativeScene'
 import { PURE_CHAT_DEFAULT_SCENE_ID } from '../utils/pureChatScene'
 import { useAdultInteractionStore } from './adultInteractionStore'
-import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback } from './chatStoreLoad'
+import { loadRoleSceneMessages, loadRoleSceneMessagesWithSceneFallback, storedMessageIsHidden, storedMessagesToChatMessages } from './chatStoreLoad'
 import {
   cancelActiveChatSend,
   resumeAdultBeatQueueForChat,
@@ -220,6 +225,8 @@ export const useChatStore = defineStore(
       messageCapPerSession: FALLBACK_MAX_MESSAGES_PER_CONVERSATION,
       /** Role×scene buckets successfully fetched at least once this session. */
       loadedBucketKeys: {} as Record<string, true>,
+      /** Transcript-only selection. Memory continues under the manifest role ID. */
+      selectedChatThreads: {} as Record<string, Record<string, string | null>>,
     }),
     getters: {
       messagesForRoleScene: (state) => {
@@ -247,6 +254,57 @@ export const useChatStore = defineStore(
       },
     },
     actions: {
+      chatThreadId(roleId: string, sceneId: string): string | null | undefined {
+        return this.selectedChatThreads[roleId]?.[sceneId || 'default']
+      },
+
+      chatSessionKey(roleId: string, sceneId: string): string {
+        return chatThreadStorageId(roleId, this.chatThreadId(roleId, sceneId) ?? null)
+      },
+
+      /** Legacy IDB keys have no thread dimension; never put explicit transcripts into them. */
+      persistLegacyBucket(roleId: string, sceneId: string): void {
+        if (this.chatThreadId(roleId, sceneId) === undefined)
+          schedulePersistMessages(this.messageMap, roleId, sceneId)
+      },
+
+      /** Explicit transcript loading never merges the previous conversation into the selected one. */
+      async selectChatSession(roleId: string, sceneId: string, session: SessionMeta | null): Promise<void> {
+        const sid = sceneId || 'default'
+        if (session && session.scene_id !== sid)
+          throw new Error('Conversation scene does not match')
+        const thread = session ? chatThreadForSession(roleId, session) : crypto.randomUUID()
+        if (thread && useAdultInteractionStore().sessionFor(roleId, sid).active)
+          throw new Error(rt('workspace.exitAdvancedInteractionFirst'))
+        this.cancelPendingSend()
+        const generation = ++this.messageLoadGeneration
+        this.messagesLoadingKey = bucketMapKey(roleId, sid)
+        try {
+          await this.flushPendingPersist()
+          const caps = await getChatStorageCapabilities()
+          if (generation !== this.messageLoadGeneration || useRoleStore().currentRoleId !== roleId)
+            return
+          if (thread && caps.supports_chat_threads !== true)
+            throw new Error(rt('workspace.hostUpgradeRequired'))
+          const stored = session ? await fetchChatMessages(session.session_id, 500, 0) : []
+          if (generation !== this.messageLoadGeneration || useRoleStore().currentRoleId !== roleId)
+            return
+          const messages = storedMessagesToChatMessages(stored.filter(m =>
+            (m.sender === 'user' || m.sender === 'assistant') && !storedMessageIsHidden(m),
+          ))
+          this.selectedChatThreads[roleId] ??= {}
+          this.selectedChatThreads[roleId]![sid] = thread
+          this.messageMap[roleId] ??= {}
+          this.messageMap[roleId]![sid] = messages
+          this.sceneHistorySplitIndex[roleId] ??= {}
+          this.sceneHistorySplitIndex[roleId]![sid] = 0
+          syncLastAssistantAside(this.lastAssistantAside, roleId, sid, messages)
+        }
+        finally {
+          if (generation === this.messageLoadGeneration)
+            this.messagesLoadingKey = null
+        }
+      },
       /** Startup: migrate IndexedDB → backend; defer bucket load until role info is ready (see useAppBootstrap). */
       async hydrateFromStorage() {
         if (this.messagesHydrated)
@@ -268,6 +326,8 @@ export const useChatStore = defineStore(
       },
 
       async loadMessagesForRoleScene(roleId: string, sceneId: string) {
+        if (this.chatThreadId(roleId, sceneId) !== undefined)
+          return
         const sid = sceneId || 'default'
         const loadKey = bucketMapKey(roleId, sid)
         delete this.loadedBucketKeys[loadKey]
@@ -322,6 +382,11 @@ export const useChatStore = defineStore(
         const uiStore = useUiStore()
         const rid = roleId.trim()
         if (!rid)
+          return
+
+        // The role workspace owns explicit transcript selection. Legacy shells keep their old path.
+        const selectedScene = effectiveChatSceneId(roleStore.roleInfo.interactionMode, uiStore.sceneId)
+        if (this.chatThreadId(rid, selectedScene) !== undefined)
           return
 
         const primarySceneId = roleStore.interactionImmersive
@@ -509,7 +574,7 @@ export const useChatStore = defineStore(
         )
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
         if (options?.persistIdbCache !== false)
-          schedulePersistMessages(this.messageMap, roleId, sid)
+          this.persistLegacyBucket(roleId, sid)
       },
 
       patchMessageById(
@@ -539,7 +604,7 @@ export const useChatStore = defineStore(
           return
         bucket[idx] = { ...bucket[idx], ...patch }
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, bucket)
-        schedulePersistMessages(this.messageMap, roleId, sid)
+        this.persistLegacyBucket(roleId, sid)
       },
 
       deleteMessage(roleId: string, sceneId: string, messageId: string) {
@@ -548,7 +613,7 @@ export const useChatStore = defineStore(
         const next = bucket.filter(m => m.id !== messageId)
         this.messageMap[roleId]![sid] = next
         syncLastAssistantAside(this.lastAssistantAside, roleId, sid, next)
-        schedulePersistMessages(this.messageMap, roleId, sid)
+        this.persistLegacyBucket(roleId, sid)
       },
 
       clearMessages(roleId: string, sceneId: string) {
@@ -559,12 +624,13 @@ export const useChatStore = defineStore(
           this.sceneHistorySplitIndex[roleId] = {}
         this.sceneHistorySplitIndex[roleId][sid] = 0
         this.lastAssistantAside[roleSceneAsideKey(roleId, sid)] = ''
-        schedulePersistMessages(this.messageMap, roleId, sid)
+        this.persistLegacyBucket(roleId, sid)
       },
 
       async sendMessage(content: string, sceneId: string): Promise<SendMessageResponse | undefined> {
         return sendChatStoreMessage(
           {
+            getChatThreadId: (rid, sid) => this.chatThreadId(rid, sid),
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,
             setLoading: loading => (this.isLoading = loading),
             getMessageCountForRoleScene: (roleId, sid) => this.getMessageCountForRoleScene(roleId, sid),

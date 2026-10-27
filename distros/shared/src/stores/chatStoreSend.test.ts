@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   roleStore: {
     currentRoleId: 'role',
     roleInfo: {
+      interactionMode: 'immersive' as 'immersive' | 'pure_chat',
       adultExtensionAvailable: true,
       relationState: 'Friend',
       replyMode: null as null | {
@@ -184,6 +185,7 @@ describe('chat store send presentation', () => {
     mocks.sendMessageStream.mockReset()
     mocks.streamEnabled = false
     mocks.roleStore.currentRoleId = 'role'
+    mocks.roleStore.roleInfo.interactionMode = 'immersive'
     mocks.roleStore.roleInfo.adultExtensionAvailable = true
     mocks.roleStore.roleInfo.replyMode = null
     mocks.uiStore.sceneId = 'home'
@@ -199,6 +201,62 @@ describe('chat store send presentation', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('keeps transcript identity across stream recovery without isolating role memory', async () => {
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.streamEnabled = true
+    mocks.sendMessageStream.mockRejectedValueOnce(new Error('transport interrupted'))
+    mocks.recoverMessage.mockResolvedValueOnce(ordinaryResponse('recovered'))
+    const ctx = context([])
+    const thread = 'b1a27229-4f57-4456-b37f-fbc41b026871'
+    ctx.getChatThreadId = () => thread
+    await sendChatStoreMessage(ctx, 'hi', 'home')
+    const request = mocks.sendMessageStream.mock.calls[0]![0]
+    expect(request.chat_thread_id).toBe(thread)
+    expect(request.session_id).toBeUndefined()
+    expect(request.role_id).toBe('role')
+    expect(mocks.recoverMessage.mock.calls[0]![0]).toBe(request)
+    expect(mocks.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('ignores a late reply after the selected transcript changes', async () => {
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.streamEnabled = false
+    let finish!: (response: SendMessageResponse) => void
+    mocks.sendMessage.mockImplementationOnce(() => new Promise((resolve) => {
+      finish = resolve
+    }))
+    const messages: ChatMessage[] = []
+    const ctx = context(messages)
+    let thread = 'b1a27229-4f57-4456-b37f-fbc41b026871'
+    ctx.getChatThreadId = () => thread
+    const pending = sendChatStoreMessage(ctx, 'hello', 'home')
+    await vi.waitFor(() => expect(finish).toBeDefined())
+    thread = 'b1a27229-4f57-4456-b37f-fbc41b026872'
+    finish(ordinaryResponse('late'))
+    await pending
+    expect(messages.some(message => message.role === 'assistant')).toBe(false)
+    expect(mocks.updateLocal).not.toHaveBeenCalled()
+  })
+
+  it('does not add an optimistic message after switching while old work is being cancelled', async () => {
+    let finishCancel!: () => void
+    mocks.cancelQueue.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      finishCancel = resolve
+    }))
+    const messages: ChatMessage[] = []
+    const ctx = context(messages)
+    let thread = 'b1a27229-4f57-4456-b37f-fbc41b026871'
+    ctx.getChatThreadId = () => thread
+    const pending = sendChatStoreMessage(ctx, 'old text', 'home')
+    await vi.waitFor(() => expect(finishCancel).toBeDefined())
+    thread = 'b1a27229-4f57-4456-b37f-fbc41b026872'
+    finishCancel()
+    await pending
+    expect(messages).toEqual([])
+    expect(mocks.sendMessage).not.toHaveBeenCalled()
+    expect(mocks.sendMessageStream).not.toHaveBeenCalled()
   })
 
   it('renders dialogue and narration separately and emits only dialogue for TTS', async () => {
@@ -248,6 +306,35 @@ describe('chat store send presentation', () => {
     )
   })
 
+  it('renders a pure-chat reply when the UI retains a different scene and clears loading', async () => {
+    mocks.roleStore.roleInfo.interactionMode = 'pure_chat'
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.uiStore.sceneId = 'default'
+    mocks.streamEnabled = true
+    mocks.sendMessageStream.mockImplementation(async (
+      _request: unknown,
+      handlers: { onToken: (token: string, accumulated: string) => void },
+    ) => {
+      handlers.onToken('hello', 'hello')
+      return ordinaryResponse('hello')
+    })
+    const messages: ChatMessage[] = []
+    const ctx = context(messages)
+
+    await sendChatStoreMessage(ctx, 'hi', 'home')
+
+    expect(ctx.patchMessageById).toHaveBeenCalledWith('role', 'home', expect.any(String), { content: 'hello' })
+    expect(messages.find(message => message.role === 'assistant')).toMatchObject({
+      id: 'assistant-1',
+      content: 'hello',
+      streaming: false,
+    })
+    expect(ctx.setLoading).toHaveBeenLastCalledWith(false)
+    expect(mocks.sendMessageStream).toHaveBeenCalledTimes(1)
+    expect(mocks.recoverMessage).not.toHaveBeenCalled()
+    expect(mocks.sendMessage).not.toHaveBeenCalled()
+  })
+
   it('drops a late reply after the foreground scene changes', async () => {
     let resolveSend: ((value: SendMessageResponse) => void) | undefined
     mocks.sendMessage.mockReturnValueOnce(new Promise((resolve) => {
@@ -255,7 +342,8 @@ describe('chat store send presentation', () => {
     }))
     const messages: ChatMessage[] = []
 
-    const pending = sendChatStoreMessage(context(messages), '继续', 'home')
+    const ctx = context(messages)
+    const pending = sendChatStoreMessage(ctx, '继续', 'home')
     await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1))
     mocks.uiStore.sceneId = 'garden'
     resolveSend?.(response())
@@ -269,6 +357,28 @@ describe('chat store send presentation', () => {
     )
     expect(mocks.updateLocal).not.toHaveBeenCalled()
     expect(mocks.updateRelation).not.toHaveBeenCalled()
+    expect(ctx.setLoading).toHaveBeenLastCalledWith(false)
+  })
+
+  it('keeps a newer send loading when the old send completes', async () => {
+    const resolves: Array<(value: SendMessageResponse) => void> = []
+    mocks.sendMessage.mockImplementation(() => new Promise<SendMessageResponse>((resolve) => {
+      resolves.push(resolve)
+    }))
+    const messages: ChatMessage[] = []
+    const ctx = context(messages)
+    const first = sendChatStoreMessage(ctx, 'first', 'home')
+    await vi.waitFor(() => expect(resolves).toHaveLength(1))
+    const second = sendChatStoreMessage(ctx, 'second', 'home')
+    await vi.waitFor(() => expect(resolves).toHaveLength(2))
+
+    resolves[0]!(response())
+    await first
+    expect(ctx.setLoading).not.toHaveBeenCalledWith(false)
+    resolves[1]!(response())
+    await second
+    expect(ctx.setLoading).toHaveBeenLastCalledWith(false)
+    expect(mocks.emitBuiltin.mock.calls.filter(call => call[0] === 'message:sent')).toHaveLength(1)
   })
 
   it('reveals every live reply-mode segment in order and defers voice to the clean final reply', async () => {
@@ -594,7 +704,7 @@ describe('chat store send presentation', () => {
       user_message: 'hello',
       scene_id: 'home',
       adult: undefined,
-    })
+    }, expect.any(AbortSignal))
     expect(mocks.recoverMessage.mock.calls[0][0]).toBe(mocks.sendMessageStream.mock.calls[0][0])
     expect(mocks.recoverMessage.mock.calls[0][0].client_request_id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/)
     expect(messages).toHaveLength(2)
@@ -631,7 +741,7 @@ describe('chat store send presentation', () => {
     expect(mocks.emitBuiltin.mock.calls.filter(call => call[0] === 'message:sent')).toHaveLength(0)
   })
 
-  it.each(['role', 'scene'])('cp-int b2 stale stream tokens and done are ignored after changing %s', async (changed) => {
+  it.each(['role', 'scene', 'mode'])('cp-int b2 stale stream tokens and done are ignored after changing %s', async (changed) => {
     mocks.streamEnabled = true
     mocks.roleStore.roleInfo.adultExtensionAvailable = false
     let resolveStream: ((value: SendMessageResponse) => void) | undefined
@@ -651,13 +761,15 @@ describe('chat store send presentation', () => {
     await vi.waitFor(() => expect(resolveStream).toBeDefined())
     if (changed === 'role')
       mocks.roleStore.currentRoleId = 'other-role'
-    else
+    else if (changed === 'scene')
       mocks.uiStore.sceneId = 'garden'
+    else
+      mocks.roleStore.roleInfo.interactionMode = 'pure_chat'
     onToken!('late', 'late')
     resolveStream!(ordinaryResponse('late final'))
     await pending
     expect(ctx.patchMessageById).not.toHaveBeenCalled()
-    expect(ctx.setLoading).not.toHaveBeenCalledWith(false)
+    expect(ctx.setLoading).toHaveBeenLastCalledWith(false)
     expect(mocks.sendMessage).not.toHaveBeenCalled()
     expect(mocks.recoverMessage).not.toHaveBeenCalled()
     expect(messages.filter(message => message.role === 'assistant')).toHaveLength(0)

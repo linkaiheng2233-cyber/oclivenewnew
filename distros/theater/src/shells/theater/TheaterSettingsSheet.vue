@@ -71,7 +71,7 @@ const emit = defineEmits<{
   'close': []
   'update:settingsTab': [tab: SettingsTab]
   'applyCast': [config: import('../../composables/theater/theaterCastConfig').TheaterCastConfig]
-  'notify': [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  'notify': [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string, details?: string }]
 }>()
 
 const KernelConnectionSettingsPanel = defineAsyncComponent(

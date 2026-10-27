@@ -6,6 +6,7 @@ import commonBundle from './fragments/common.zh'
 import devTools from './fragments/devTools.zh'
 import editorBundle from './fragments/editor.zh'
 import emotionUi from './fragments/emotionUi.zh'
+import errorUi from './fragments/errorUi.zh'
 import kernelBundle from './fragments/kernel.zh'
 import { modelManagerZh as modelManager } from './fragments/modelManager.zh'
 import onboardingBundle from './fragments/onboarding.zh'
@@ -13,11 +14,15 @@ import pluginManagerBundle from './fragments/pluginManager.zh'
 import roleRuntimeBundle from './fragments/roleRuntime.zh'
 import settingsBundle from './fragments/settings.zh'
 import { simplePluginManagerZh as simplePluginManager } from './fragments/simplePluginManager.zh'
+import support from './fragments/support.zh'
 import theaterBundle from './fragments/theater.zh'
 import toolShellBundle from './fragments/toolShell.zh'
 import virtualTime from './fragments/virtualTime.zh'
+import workspace from './fragments/workspace.zh'
 
 export default {
+  support,
+  workspace,
   apiErrors,
   app: appBundle.app,
   chat,
@@ -26,6 +31,7 @@ export default {
   devTools,
   editor: editorBundle.editor,
   emotionUi,
+  errorUi,
   ...kernelBundle,
   pluginManager: pluginManagerBundle.pluginManager,
   pluginTerms: pluginManagerBundle.pluginTerms,

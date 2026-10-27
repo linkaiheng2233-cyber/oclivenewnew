@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   saveSettings: vi.fn(),
   setGlobal: vi.fn(),
   showToast: vi.fn(),
+  scan: vi.fn(),
 }))
 
 vi.mock('@oclive/shared/api/llmSettings', () => ({
@@ -29,7 +30,7 @@ vi.mock('@oclive/shared/api/llmSettings', () => ({
   openPathInFileManager: vi.fn(),
   probeCloudLlm: vi.fn(),
   saveLlmUserSettings: mocks.saveSettings,
-  scanLocalModelFiles: vi.fn(),
+  scanLocalModelFiles: mocks.scan,
   setGlobalOllamaModel: mocks.setGlobal,
 }))
 
@@ -101,7 +102,7 @@ async function flushMicrotasks(rounds = 12): Promise<void> {
   await nextTick()
 }
 
-function mountManager(useRealSharedComponents = false) {
+function mountManager(useRealSharedComponents = false, initialProvider?: 'local' | 'cloud') {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -110,6 +111,7 @@ function mountManager(useRealSharedComponents = false) {
     messages: { en: {} },
   })
   return mount(ModelManagerBody, {
+    props: { initialProvider },
     global: {
       plugins: [i18n],
       stubs: useRealSharedComponents
@@ -136,6 +138,47 @@ describe('model manager async ownership', () => {
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-a'
     document.body.innerHTML = ''
+  })
+
+  it('honors the first-run cloud choice instead of the default local provider', async () => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://local.test'))
+    const wrapper = mountManager(false, 'cloud')
+    await flushMicrotasks()
+    expect(wrapper.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true')
+    expect(wrapper.find('.mm-global-default').exists()).toBe(false)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('shows an explicit choice without silently selecting the first available model', async () => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://local.test'))
+    mocks.listOllama.mockResolvedValue(['model-one', 'model-two'])
+    const wrapper = mountManager()
+    await flushMicrotasks()
+    const selectors = wrapper.findAll<HTMLSelectElement>('.mm-select').slice(0, 2)
+    for (const selector of selectors) {
+      expect(selector.element.value).toBe('')
+      expect(selector.get('option[value=""]').text()).toBe('modelManager.chooseModel')
+    }
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('signals saved setup only after settings are actually persisted', async () => {
+    const settings = settingsFor('http://local.test')
+    settings.sessionOllamaModel = 'chosen:7b'
+    mocks.getSettings.mockResolvedValue(settings)
+    mocks.listOllama.mockResolvedValue(['chosen:7b'])
+    mocks.saveSettings.mockRejectedValueOnce(new Error('[IO_ERROR] could not save'))
+    const wrapper = mountManager()
+    await flushMicrotasks()
+    await wrapper.get('.mm-footer ui-button-stub').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.emitted('saved')).toBeUndefined()
+    await wrapper.get('.mm-footer ui-button-stub').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.emitted('saved')).toEqual([['role-a']])
+    wrapper.unmount()
   })
 
   it('keeps the latest role settings when an older request finishes last', async () => {
@@ -208,8 +251,26 @@ describe('model manager async ownership', () => {
 
     expect((wrapper.get('input[type="url"].mm-input').element as HTMLInputElement).value)
       .toBe('http://role-settings.test')
-    expect(mocks.showToast).toHaveBeenCalledWith('error', 'global unavailable')
+    expect(mocks.showToast).toHaveBeenCalledWith('error', 'global unavailable', '')
 
+    wrapper.unmount()
+  })
+
+  it('surfaces a folder scan failure and allows another scan without leaving the form blocked', async () => {
+    const settings = settingsFor('http://local.test')
+    settings.localModelsDir = 'E:/isolated-model-fixture'
+    mocks.getSettings.mockResolvedValue(settings)
+    mocks.scan.mockRejectedValueOnce(new Error('[IO_ERROR] scan denied')).mockResolvedValueOnce([])
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const scan = wrapper.findAll('button').find(button => button.text() === 'modelManager.scanFolderModels')!
+    await scan.trigger('click')
+    await flushMicrotasks()
+    expect(mocks.showToast).toHaveBeenCalledWith('error', expect.any(String), expect.stringContaining('scan denied'))
+    expect(scan.attributes('disabled')).toBeUndefined()
+    await scan.trigger('click')
+    await flushMicrotasks()
+    expect(mocks.scan).toHaveBeenCalledTimes(2)
     wrapper.unmount()
   })
 

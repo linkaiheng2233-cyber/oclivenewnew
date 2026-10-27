@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { invalidateVoiceRuntimeConfig, useVoiceAutoTts } from './useVoiceAutoTts'
@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   getSettings: vi.fn(),
   invokeFriendly: vi.fn(),
   resolveSidecarEndpoint: vi.fn(),
+  scheduleWarm: vi.fn(async () => undefined),
 }))
 
 vi.mock('@oclive/shared/api', async (importOriginal) => {
@@ -37,7 +38,7 @@ vi.mock('@oclive/shared/api/helpers', async (importOriginal) => {
 vi.mock('@oclive/shared/composables/useVoiceExpansionWarm', () => ({
   resetVoiceExpansionWarmSchedule: vi.fn(),
   resolveVoiceSidecarEndpoint: (...args: unknown[]) => mocks.resolveSidecarEndpoint(...args),
-  scheduleVoiceExpansionWarm: vi.fn(async () => undefined),
+  scheduleVoiceExpansionWarm: mocks.scheduleWarm,
 }))
 
 vi.mock('@oclive/shared/lib/hostEventBus', () => ({
@@ -121,6 +122,38 @@ describe('voice auto TTS ownership', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it.each(['reply', 'stream-final', 'stream-sentence', 'role-warm'])('does not restart optional voice after closing during the %s role check', async (entry) => {
+    const wrapper = mount(Harness)
+    await flushPromises()
+    mocks.pluginDisabled = false
+    mocks.roleStore.currentRoleId = `late-${entry}`
+    mocks.getSettings.mockResolvedValue({ config: { tts_expansion_enabled: true, auto_tts: true } })
+    mocks.invokeFriendly.mockResolvedValue(`D:/fixture/late-${entry}`)
+    let finishProfile!: (value: unknown) => void
+    mocks.directoryInvoke.mockImplementation(async (_id: string, method: string) => {
+      if (method === 'voice.read_role_profile') {
+        return new Promise((resolve) => {
+          finishProfile = resolve
+        })
+      }
+      return { profiles: [] }
+    })
+    let pending: unknown
+    if (entry === 'role-warm')
+      pending = mocks.handlers.get('role:switched')?.({ roleId: mocks.roleStore.currentRoleId })
+    else if (entry === 'stream-sentence')
+      pending = mocks.handlers.get('com.oclive.voice:stream-sentence')?.({ role_id: mocks.roleStore.currentRoleId, stream_id: 'fixture-stream', sentence: 'fixture' })
+    else
+      pending = mocks.handlers.get('message:sent')?.({ role_id: mocks.roleStore.currentRoleId, reply: 'fixture', ...(entry === 'stream-final' ? { stream_id: 'fixture-stream' } : {}) })
+    await vi.waitFor(() => expect(finishProfile).toBeDefined())
+    wrapper.unmount()
+    finishProfile({ profile: { synth_profile: 'bundled-cosyvoice2-zh' } })
+    await pending
+    await flushPromises()
+    expect(mocks.scheduleWarm).not.toHaveBeenCalled()
+    expect(mocks.directoryInvoke.mock.calls.filter(([, method]) => method === 'voice.build_directive')).toHaveLength(0)
   })
 
   it('does not load or prewarm voice resources for an explicitly text-only submitted turn', async () => {

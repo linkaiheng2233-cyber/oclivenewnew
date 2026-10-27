@@ -9,6 +9,7 @@ import {
   snakeToCamelKey,
   toastAsyncError,
   toCamelPayload,
+  toErrorPresentation,
   toFriendlyError,
 } from './helpers'
 
@@ -85,7 +86,23 @@ describe('api/helpers', () => {
       raw: '[ROLE_NOT_FOUND] Role not found: x',
       code: 'ROLE_NOT_FOUND',
     }))
-    expect(showToastMock).toHaveBeenCalledWith('error', 'role not found')
+    expect(showToastMock).toHaveBeenCalledWith('error', expect.any(String), expect.stringContaining('[ROLE_NOT_FOUND]'))
+  })
+
+  it('preserves a wrapped machine error and presents summary before redacted diagnostics', () => {
+    const wrapped = new ApiInvokeError(toFriendlyError(JSON.stringify({
+      code: 'LLM_ERROR',
+      message: 'connection refused; Authorization: Bearer secret-test-value; api_key=secret-key-value',
+      hint: 'check the local model service',
+    })))
+    expect(toFriendlyError(wrapped).code).toBe('LLM_ERROR')
+    expect(toFriendlyError(wrapped).kernel?.hint).toContain('local model')
+    const failure = toErrorPresentation(wrapped)
+    expect(failure.summary).not.toContain('connection refused')
+    expect(failure.details).toContain('LLM_ERROR')
+    expect(failure.details).toContain('connection refused')
+    expect(failure.details).not.toContain('secret-test-value')
+    expect(failure.details).not.toContain('secret-key-value')
   })
 
   it.each([

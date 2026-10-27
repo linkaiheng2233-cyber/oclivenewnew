@@ -35,11 +35,11 @@ function onIdentityClick() {
 <template>
   <footer class="tool-status-bar" role="status">
     <KernelStatusBar class="tool-status-bar__kernel" />
-    <span v-if="roleStore.interactionImmersive" class="tool-status-bar__sep" aria-hidden="true">·</span>
-    <span v-if="roleStore.interactionImmersive" class="tool-status-bar__segment">
+    <span v-if="uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive" class="tool-status-bar__sep" aria-hidden="true">·</span>
+    <span v-if="uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive" class="tool-status-bar__segment">
       {{ sceneLabel }}
     </span>
-    <template v-if="roleStore.interactionImmersive">
+    <template v-if="uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive">
       <span class="tool-status-bar__sep" aria-hidden="true">·</span>
       <span class="tool-status-bar__segment">
         {{ favorabilityText }}

@@ -1,0 +1,95 @@
+import type { Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { gotoApp } from './helpers'
+
+async function openSettings(page: Page) {
+  await page.locator('.nav-global').getByRole('button', { name: 'App settings', exact: true }).click()
+  await expect(page.locator('.sv-dialog')).toBeVisible()
+  return page.locator('.sv-dialog')
+}
+async function failOnce(page: Page, command: string) {
+  await page.evaluate(command => localStorage.setItem(`oclive.e2e.fail.${command}`, JSON.stringify({ code: 'IO_ERROR', message: 'preferences directory is not writable; api_key=settings-secret-fixture', once: true })), command)
+}
+
+test('settings separate purposes, retain chat preferences and return keyboard focus', async ({ page }) => {
+  await gotoApp(page)
+  const settings = await openSettings(page)
+  await expect(settings.locator('[data-settings-page]')).toHaveCount(6)
+  await expect(settings.locator('#settings-page-title')).toHaveText('Appearance & language')
+  await expect(settings.getByRole('button', { name: 'Run check', exact: true })).toHaveCount(0)
+  await settings.locator('[data-settings-page=chat]').click()
+  const streaming = settings.getByRole('switch', { name: 'Streaming replies', exact: true })
+  await expect(streaming).not.toBeChecked()
+  await streaming.check()
+  await settings.locator('[data-settings-page=roles]').click()
+  await expect(settings.locator('.pack-bar')).toBeVisible()
+  await settings.locator('[data-settings-page=chat]').click()
+  await expect(streaming).toBeChecked()
+  await page.keyboard.press('Escape')
+  await expect(settings).not.toBeVisible()
+  await expect(page.locator('.nav-global').getByRole('button', { name: 'App settings', exact: true })).toBeFocused()
+})
+
+test('failed settings read can be retried without allowing an unknown switch value to be saved', async ({ page }) => {
+  await gotoApp(page)
+  await failOnce(page, 'get_remote_fallback_app_settings')
+  const settings = await openSettings(page)
+  await settings.locator('[data-settings-page=connection]').click()
+  const toggle = settings.getByRole('switch', { name: 'Fall back to built-in when remote HTTP fails', exact: true })
+  await expect(toggle).toBeDisabled()
+  const notice = settings.locator('.sv-general-page > .error-notice')
+  await expect(notice).toContainText('could not be loaded')
+  await notice.getByText('Technical details', { exact: true }).click()
+  await expect(notice.locator('pre')).toContainText('IO_ERROR')
+  await expect(notice.locator('pre')).not.toContainText('settings-secret-fixture')
+  await notice.getByRole('button', { name: 'Retry this action' }).click()
+  await expect(toggle).toBeEnabled()
+  await expect(notice).toHaveCount(0)
+})
+
+test('failed switch saves restore the old value and retry applies the intended value', async ({ page }) => {
+  await gotoApp(page)
+  const settings = await openSettings(page)
+  await settings.locator('[data-settings-page=connection]').click()
+  const toggle = settings.getByRole('switch', { name: 'Fall back to built-in when remote HTTP fails', exact: true })
+  await expect(toggle).toBeChecked()
+  await failOnce(page, 'set_remote_fallback_to_builtin')
+  await toggle.click()
+  const notice = settings.locator('.sv-general-page > .error-notice')
+  await expect(notice).toContainText('previous choice was restored')
+  await expect(toggle).toBeChecked()
+  await notice.getByRole('button', { name: 'Retry this action' }).click()
+  await expect(toggle).not.toBeChecked()
+  await settings.locator('[data-settings-page=appearance]').click()
+  await settings.locator('[data-settings-page=connection]').click()
+  await expect(toggle).not.toBeChecked()
+})
+
+test('environment diagnostics explains a failed check and recovers in place', async ({ page }) => {
+  await gotoApp(page)
+  const settings = await openSettings(page)
+  await settings.locator('[data-settings-page=connection]').click()
+  await failOnce(page, 'run_environment_diagnostics')
+  await settings.getByRole('button', { name: 'Run check', exact: true }).click()
+  const notice = settings.locator('.sv-general-page > .error-notice')
+  await expect(notice).toContainText('environment check could not finish')
+  await notice.getByRole('button', { name: 'Retry this action' }).click()
+  await expect(notice).toHaveCount(0)
+  await expect(settings.locator('.sv-env-results')).toBeVisible()
+})
+
+test('narrow settings keep navigation, switches and close controls usable', async ({ page }) => {
+  await page.setViewportSize({ width: 430, height: 860 })
+  await gotoApp(page)
+  const settings = await openSettings(page)
+  await settings.locator('[data-settings-page=chat]').click()
+  const toggle = settings.getByRole('switch', { name: 'Streaming replies', exact: true })
+  await toggle.focus()
+  await page.keyboard.press('Space')
+  await expect(toggle).toBeChecked()
+  await settings.locator('[data-settings-page=connection]').click()
+  await expect(settings.getByRole('button', { name: 'Run check', exact: true })).toBeVisible()
+  expect(await settings.evaluate(element => element.scrollWidth > element.clientWidth + 1)).toBe(false)
+  await settings.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(settings).not.toBeVisible()
+})

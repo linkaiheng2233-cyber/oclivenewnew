@@ -37,7 +37,7 @@ import { useI18n } from 'vue-i18n'
 
 type Level = 'roles' | 'scenes' | 'sessions' | 'messages'
 
-export function useChatStorageSettings() {
+export function useChatStorageSettings(options: { initialRoleId?: string } = {}) {
   const { t } = useI18n()
   const { showToast } = useAppToast()
 
@@ -522,7 +522,14 @@ export function useChatStorageSettings() {
   onMounted(() => {
     void loadRoleNames()
     void loadStorageRoot()
-    void refreshStats()
+    void refreshStats().then(async () => {
+      const roleId = options.initialRoleId?.trim()
+      if (!roleId)
+        return
+      const row = stats.value.find(role => role.role_id === roleId)
+        ?? { role_id: roleId, total_size_bytes: 0, scene_count: 0, last_active: null, scenes: [] }
+      await openRole(row)
+    })
     void getChatStorageCapabilities().then((c) => {
       capabilities.value = c
       capabilitiesDegraded.value = false

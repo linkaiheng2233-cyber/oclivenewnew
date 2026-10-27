@@ -1,0 +1,21 @@
+export default {
+  generic: '操作暂时没有完成，请查看详情或打开帮助与恢复。',
+  importRefreshFailed: '角色包已导入，但列表没有刷新完整。请重新加载角色库，不必重复导入。',
+  details: '技术详情',
+  dismiss: '关闭提示',
+  refreshAfterReply: '回复已收到，但界面状态没有刷新完整。请重新打开角色，不必重发消息。',
+  summary: {
+    LLM_ERROR: '模型没有成功回复。请打开“模型与连接”检查配置和服务状态。',
+    REMOTE_SERVICE_UNAVAILABLE: '暂时无法连接服务，请检查连接配置或稍后再试。',
+    KERNEL_AUTH_REQUIRED: '本地内核连接需要恢复。请打开“帮助与恢复”，持续失败时重启应用。',
+    KERNEL_OFFLINE: '本地内核暂未连接。请稍后重试，或打开“帮助与恢复”重新连接。',
+    STARTUP_HEALTH_FAILED: '启动检查没有通过。请查看详情并打开“帮助与恢复”。',
+    ROLE_NOT_FOUND: '找不到这个角色包，请重新选择或导入。',
+    INVALID_ROLE_PATH: '无法读取这个角色包。请选择完整的角色包文件或文件夹。',
+    DB_ERROR: '暂时无法读取或保存记录，请查看详情并检查数据目录。',
+    IO_ERROR: '文件读写失败，请检查目录权限和磁盘空间。',
+    UNKNOWN_ERROR: '操作没有完成。请查看技术详情，持续失败时打开“帮助与恢复”。',
+    CHAT_REQUEST_UNCONFIRMED: '消息可能已处理，请先查看记录，避免重复发送。',
+    CHAT_REQUEST_CONFLICT: '这次请求与原消息不一致。请先查看记录，再决定是否重新发送。',
+  },
+}

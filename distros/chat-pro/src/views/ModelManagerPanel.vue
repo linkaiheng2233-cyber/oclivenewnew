@@ -8,6 +8,7 @@ const props = withDefaults(
   defineProps<{
     visible: boolean
     embedded?: boolean
+    initialProvider?: 'local' | 'cloud'
   }>(),
   { embedded: false },
 )
@@ -15,6 +16,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   close: []
   openSettings: []
+  saved: [roleId: string]
 }>()
 
 const { t } = useI18n()
@@ -48,7 +50,7 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
             {{ t("modelManager.close") }}
           </button>
         </header>
-        <ModelManagerBody @open-settings="emit('openSettings')" />
+        <ModelManagerBody :initial-provider="initialProvider" @saved="emit('saved', $event)" @open-settings="emit('openSettings')" />
       </div>
     </div>
   </component>

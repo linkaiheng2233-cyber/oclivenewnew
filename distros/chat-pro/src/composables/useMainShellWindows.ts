@@ -7,6 +7,7 @@ export type MainShellSettingsTab = 'general' | 'plugins' | 'storage'
 
 export function useMainShellWindows(options: {
   pluginMarketStore: ReturnType<typeof usePluginMarketStore>
+  advancedFeaturesEnabled?: () => boolean
 }) {
   const { pluginMarketStore } = options
   const topMoreOpen = ref(false)
@@ -20,6 +21,7 @@ export function useMainShellWindows(options: {
     openSimplePluginManager,
     openPluginMarket,
   } = usePluginManagerWindow({
+    enabled: options.advancedFeaturesEnabled,
     closeMoreMenu: () => {
       topMoreOpen.value = false
     },

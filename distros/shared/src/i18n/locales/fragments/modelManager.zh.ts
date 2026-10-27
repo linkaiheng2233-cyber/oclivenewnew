@@ -33,6 +33,7 @@ export const modelManagerZh = {
   refreshModels: '刷新 Ollama 列表',
   refreshingModels: '刷新中…',
   localModelLabel: '使用模型',
+  chooseModel: '请选择一个模型',
   baseRatingGeneral: '通用基座',
   baseRatingAdult: '成人基座（18+）',
   baseLicense: '许可证：{license}',

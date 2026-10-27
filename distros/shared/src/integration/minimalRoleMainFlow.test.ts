@@ -180,7 +180,7 @@ describe('minimal role in the main chat flow', () => {
     await wrapper.get('textarea').setValue('hello')
     await wrapper.get('button.send').trigger('click')
     await settle()
-    expect(showToast).toHaveBeenCalledWith('error', 'synthetic model unavailable')
+    expect(showToast).toHaveBeenCalledWith('error', 'synthetic model unavailable', '')
     expect(useMinimalRoleChatStore().messages).toEqual([])
     expect(ipc).toHaveBeenCalledOnce()
   })

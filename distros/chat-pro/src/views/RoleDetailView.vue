@@ -2,6 +2,7 @@
 import PluginRoleDetailSlots from '@oclive/shared/components/PluginRoleDetailSlots.vue'
 import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
 
 defineProps<{
   roleId: string
@@ -13,6 +14,7 @@ defineProps<{
 }>()
 
 const roleStore = useRoleStore()
+const uiStore = useUiStore()
 </script>
 
 <template>
@@ -26,7 +28,7 @@ const roleStore = useRoleStore()
       :portrait-asset-rel-path="portraitAssetRelPath"
     />
     <PluginRoleDetailSlots
-      v-if="roleStore.interactionImmersive"
+      v-if="uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive"
       :bootstrap-epoch="bootstrapEpoch"
     />
   </div>

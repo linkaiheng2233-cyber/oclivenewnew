@@ -1,5 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
 import { importRolePack, peekRolePack } from '@oclive/shared/api'
+import { toErrorPresentation } from '@oclive/shared/api/helpers'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { listen } from '@tauri-apps/api/event'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -9,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 export interface RolePackNotifyPayload {
   type: 'success' | 'error' | 'info' | 'warning'
   message: string
+  details?: string
 }
 
 export function useRolePackImport(options?: {
@@ -41,23 +43,23 @@ export function useRolePackImport(options?: {
     importFileIndex.value = null
     importFileTotal.value = null
     importCurrentFile.value = null
-    unlistenProgress = await listen<{
-      percent: number
-      message: string
-      fileIndex?: number
-      fileTotal?: number
-      currentFile?: string
-    }>('import_progress', (e) => {
-      importPercent.value = e.payload.percent
-      importMessage.value = e.payload.message
-      importFileIndex.value
-        = typeof e.payload.fileIndex === 'number' ? e.payload.fileIndex : null
-      importFileTotal.value
-        = typeof e.payload.fileTotal === 'number' ? e.payload.fileTotal : null
-      importCurrentFile.value
-        = typeof e.payload.currentFile === 'string' ? e.payload.currentFile : null
-    })
     try {
+      unlistenProgress = await listen<{
+        percent: number
+        message: string
+        fileIndex?: number
+        fileTotal?: number
+        currentFile?: string
+      }>('import_progress', (e) => {
+        importPercent.value = e.payload.percent
+        importMessage.value = e.payload.message
+        importFileIndex.value
+          = typeof e.payload.fileIndex === 'number' ? e.payload.fileIndex : null
+        importFileTotal.value
+          = typeof e.payload.fileTotal === 'number' ? e.payload.fileTotal : null
+        importCurrentFile.value
+          = typeof e.payload.currentFile === 'string' ? e.payload.currentFile : null
+      })
       return await fn()
     }
     finally {
@@ -74,9 +76,15 @@ export function useRolePackImport(options?: {
   }
 
   async function finishImport(roleId: string, message: string): Promise<void> {
-    await roleStore.loadRoles()
-    await options?.onImported?.(roleId)
-    notify({ type: 'success', message })
+    try {
+      await roleStore.loadRoles()
+      await options?.onImported?.(roleId)
+      notify({ type: 'success', message })
+    }
+    catch (err) {
+      const failure = toErrorPresentation(err, t('errorUi.importRefreshFailed'))
+      notify({ type: 'warning', message: failure.summary, details: failure.details })
+    }
   }
 
   async function confirmOverwrite(): Promise<void> {
@@ -92,10 +100,8 @@ export function useRolePackImport(options?: {
       await finishImport(roleId, t('common.rolePack.importedOverwrite', { id: roleId }))
     }
     catch (e) {
-      notify({
-        type: 'error',
-        message: e instanceof Error ? e.message : String(e),
-      })
+      const failure = toErrorPresentation(e)
+      notify({ type: 'error', message: failure.summary, details: failure.details })
     }
     finally {
       closeConflict()
@@ -142,10 +148,8 @@ export function useRolePackImport(options?: {
       return await runImportFlow(path)
     }
     catch (e) {
-      notify({
-        type: 'error',
-        message: e instanceof Error ? e.message : String(e),
-      })
+      const failure = toErrorPresentation(e)
+      notify({ type: 'error', message: failure.summary, details: failure.details })
       return null
     }
   }

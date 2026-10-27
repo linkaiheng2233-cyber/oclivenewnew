@@ -7,8 +7,8 @@ import ChatStorageReplayBar from './chat-storage/ChatStorageReplayBar.vue'
 import ChatStorageSessionList from './chat-storage/ChatStorageSessionList.vue'
 import ChatStorageStatsPanel from './chat-storage/ChatStorageStatsPanel.vue'
 
+const props = withDefaults(defineProps<{ initialRoleId?: string, allowMemoryReplay?: boolean }>(), { allowMemoryReplay: true })
 const { t } = useI18n()
-
 const {
   level,
   loading,
@@ -53,7 +53,7 @@ const {
   cancelEdit,
   confirmEditMessage,
   confirmDeleteMessage,
-} = useChatStorageSettings()
+} = useChatStorageSettings({ initialRoleId: props.initialRoleId })
 
 defineExpose({ refreshStats })
 </script>
@@ -152,6 +152,9 @@ defineExpose({ refreshStats })
       </li>
     </ul>
 
+    <p v-if="selectedRole" class="css-selected-role">
+      <strong>{{ selectedRoleLabel }}</strong>
+    </p>
     <ChatStorageReplayBar :active="replayActive" :percent="replayProgress" />
 
     <ChatStorageStatsPanel
@@ -160,7 +163,7 @@ defineExpose({ refreshStats })
       :role-names="roleNames"
       :loading="loading"
       :supports-cleanup="capabilities.supports_cleanup"
-      :supports-replay="capabilities.supports_replay"
+      :supports-replay="allowMemoryReplay && capabilities.supports_replay"
       @open-role="openRole"
       @export-role="handleExportRole"
       @cleanup="openCleanupSettings"
@@ -175,7 +178,7 @@ defineExpose({ refreshStats })
       :selected-scene="selectedScene"
       :selected-role-label="selectedRoleLabel"
       :sessions="sessions"
-      :supports-replay="capabilities.supports_replay"
+      :supports-replay="allowMemoryReplay && capabilities.supports_replay"
       @open-scene="openScene"
       @open-session="openSession"
       @export-session="(id) => handleExportSession(id, 'markdown')"
@@ -191,7 +194,7 @@ defineExpose({ refreshStats })
       :messages="messages"
       :editing-message-id="editingMessageId"
       :editing-content="editingContent"
-      :supports-replay="capabilities.supports_replay"
+      :supports-replay="allowMemoryReplay && capabilities.supports_replay"
       @update:editing-content="editingContent = $event"
       @start-edit="startEditMessage"
       @cancel-edit="cancelEdit"

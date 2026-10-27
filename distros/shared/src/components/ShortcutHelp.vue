@@ -3,6 +3,7 @@ import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRe
 import { describeBindingOrUnbound, getPrimaryEffectiveAcceleratorForAction, loadUnifiedBindingsFile } from '@oclive/shared/lib/keybindings'
 import { SLOT_LAUNCHER_PALETTE } from '@oclive/shared/stores/pluginStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PluginSlotEmbed from './PluginSlotEmbed.vue'
@@ -25,6 +26,7 @@ useModalFocusRestore(toRef(props, 'modelValue'), shDialogRef)
 
 const { t } = useI18n()
 const roleStore = useRoleStore()
+const uiStore = useUiStore()
 
 const rows = computed(() => {
   const f = loadUnifiedBindingsFile()
@@ -35,7 +37,7 @@ const rows = computed(() => {
     desc: t('common.shortcutHelp.rowOpenSettings'),
   })
 
-  if (roleStore.interactionImmersive) {
+  if (uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive) {
     out.push({
       keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openPluginManager')),
       desc: t('common.shortcutHelp.ctrlShiftFSimple'),
@@ -47,17 +49,19 @@ const rows = computed(() => {
     desc: t('common.shortcutHelp.ctrlShiftM'),
   })
 
-  if (roleStore.interactionImmersive) {
+  if (uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive) {
     out.push({
       keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.toggleDebug')),
       desc: t('common.shortcutHelp.ctrlShiftD'),
     })
   }
 
-  out.push({
-    keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'voice.holdToTalk')),
-    desc: t('common.shortcutHelp.voiceHoldToTalk'),
-  })
+  if (uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive) {
+    out.push({
+      keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'voice.holdToTalk')),
+      desc: t('common.shortcutHelp.voiceHoldToTalk'),
+    })
+  }
 
   out.push({
     keys: describeBindingOrUnbound(getPrimaryEffectiveAcceleratorForAction(f, 'app.openShortcutHelp')),
@@ -108,7 +112,7 @@ const rows = computed(() => {
         <p class="sh-foot">
           {{ t("common.shortcutHelp.foot") }}
         </p>
-        <section class="sh-slot" :aria-label="t('common.shortcutHelp.slotSectionAria')">
+        <section v-if="uiStore.advancedFeaturesEnabled" class="sh-slot" :aria-label="t('common.shortcutHelp.slotSectionAria')">
           <h3 class="sh-slot-h">
             {{ t("common.shortcutHelp.slotHeading") }}
           </h3>

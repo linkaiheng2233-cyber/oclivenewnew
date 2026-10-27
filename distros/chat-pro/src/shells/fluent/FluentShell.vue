@@ -3,7 +3,6 @@ import type { useMainShell } from '../../composables/useMainShell'
 import ChatInput from '@oclive/shared/components/chat/ChatInput.vue'
 import ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
 import ChatPluginToolbarSlots from '@oclive/shared/components/ChatPluginToolbarSlots.vue'
-import HotkeyHost from '@oclive/shared/components/hotkey/HotkeyHost.vue'
 import KernelStatusBar from '@oclive/shared/components/KernelStatusBar.vue'
 import ImmersiveModeIntro from '@oclive/shared/components/onboarding/ImmersiveModeIntro.vue'
 import ImmersiveUnlockBanner from '@oclive/shared/components/onboarding/ImmersiveUnlockBanner.vue'
@@ -26,6 +25,7 @@ import {
   setLeftRailWidth,
 } from '@oclive/shared/composables/useLayoutWidths'
 import { inject } from 'vue'
+import AdvancedFeatureHost from '../../components/AdvancedFeatureHost.vue'
 import {
   AutonomousSceneNotice,
   DebugPanel,
@@ -56,7 +56,9 @@ const {
   chatStore,
   debugStore,
   uiStore,
+  storyUiEnabled,
   pluginStore,
+  pluginMarketStore,
   chatListRef,
   chatInputRef,
   leftPaneRef,
@@ -162,6 +164,7 @@ function onLeftRailResize(deltaX: number) {
               @change-relation="onChangeRelation"
             />
             <MinimalRoleSourceControls
+              v-if="uiStore.advancedFeaturesEnabled || roleStore.minimalRoleActive" :allow-binding="uiStore.advancedFeaturesEnabled"
               :source="minimalRoleChatStore.source"
               :loading="minimalRoleChatStore.isLoading"
               :disabled="roleSwitching"
@@ -180,7 +183,7 @@ function onLeftRailResize(deltaX: number) {
       </p>
 
       <div
-        v-if="roleStore.interactionImmersive && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
+        v-if="storyUiEnabled && uiStore.connectivityBanner?.kind === 'plugin_index_offline'"
         class="connectivity-banner"
         role="status"
       >
@@ -202,7 +205,7 @@ function onLeftRailResize(deltaX: number) {
       </div>
 
       <div
-        v-if="roleStore.interactionImmersive && sceneTransition.visible"
+        v-if="storyUiEnabled && sceneTransition.visible"
         class="scene-transition-overlay"
         role="status"
         aria-live="polite"
@@ -211,7 +214,7 @@ function onLeftRailResize(deltaX: number) {
       </div>
 
       <TopBarSceneModeDialog
-        v-if="roleStore.interactionImmersive"
+        v-if="storyUiEnabled"
         :visible="topBarSceneDialogVisible"
         :pending-scene-label="sceneLabelForId(pendingTopBarSceneId)"
         @confirm="confirmTopBarScene"
@@ -237,24 +240,24 @@ function onLeftRailResize(deltaX: number) {
               :portrait-asset-rel-path="portraitAssetRelPath"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
-            <RoleplayAsidePanel v-if="roleStore.interactionImmersive" :text="latestRoleplayAside" />
-            <PluginSidebarSlots v-if="roleStore.interactionImmersive" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
+            <RoleplayAsidePanel v-if="storyUiEnabled" :text="latestRoleplayAside" />
+            <PluginSidebarSlots v-if="storyUiEnabled" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
             <div
-              v-if="roleStore.interactionImmersive"
+              v-if="storyUiEnabled"
               class="left-pane-status"
               :aria-label="t('app.sidebar.favorability')"
             >
               {{ t("app.sidebar.favorability") }} {{ Math.round(roleStore.roleInfo.favorability) }} {{ statusHeart }}
             </div>
             <div
-              v-if="roleStore.interactionImmersive && roleStore.roleInfo.currentLife?.label"
+              v-if="storyUiEnabled && roleStore.roleInfo.currentLife?.label"
               class="left-pane-life"
               :aria-label="t('app.sidebar.scheduleInference')"
             >
               {{ t("app.sidebar.lifeNow", { label: roleStore.roleInfo.currentLife?.label }) }}
             </div>
             <AutonomousSceneNotice
-              v-if="roleStore.interactionImmersive"
+              v-if="storyUiEnabled"
               :visible="autonomousSceneNotice.visible"
               :from-label="autonomousSceneNotice.fromLabel"
               :to-label="autonomousSceneNotice.toLabel"
@@ -269,7 +272,7 @@ function onLeftRailResize(deltaX: number) {
           />
           <div class="right-pane" :class="{ 'right-pane--input-top': chatInputTop }">
             <PluginChatHeaderSlots
-              v-if="roleStore.interactionImmersive"
+              v-if="storyUiEnabled"
               :bootstrap-epoch="pluginStore.bootstrapEpoch"
             />
             <div class="chat-scroll-wrap chat-list">
@@ -286,18 +289,18 @@ function onLeftRailResize(deltaX: number) {
             </div>
             <section class="input-area">
               <ImmersiveUnlockBanner
-                v-if="!roleStore.minimalRoleActive"
+                v-if="uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive"
                 :visible="progressive.showImmersiveUnlockBanner"
                 @try-story="progressive.tryStoryMode"
                 @dismiss="progressive.dismissImmersiveHint"
               />
               <ChatPluginToolbarSlots
-                v-if="!roleStore.minimalRoleActive"
+                v-if="uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive"
                 :bootstrap-epoch="pluginStore.bootstrapEpoch"
                 :platform-only="!roleStore.interactionImmersive"
               />
               <SceneTravelBars
-                v-if="roleStore.interactionImmersive"
+                v-if="storyUiEnabled"
                 :together-visible="togetherTravelBarVisible"
                 :post-reply-visible="postReplySceneBarVisible"
                 :destination-options="sceneDestinationOptions"
@@ -310,7 +313,7 @@ function onLeftRailResize(deltaX: number) {
                 @confirm-post-reply="confirmPostReplyScene"
                 @dismiss-post-reply="dismissPostReplySceneBar"
               />
-              <InteractionModeBar v-if="!roleStore.minimalRoleActive" />
+              <InteractionModeBar v-if="uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive" />
               <ChatInput
                 ref="chatInputRef"
                 :loading="chatListLoading"
@@ -325,7 +328,7 @@ function onLeftRailResize(deltaX: number) {
       </div>
 
       <DebugPanel
-        v-if="roleStore.interactionImmersive"
+        v-if="storyUiEnabled && debugStore.visible"
         :visible="debugStore.visible"
         :loading="chatStore.isLoading"
         :favorability="roleStore.roleInfo.favorability"
@@ -348,22 +351,23 @@ function onLeftRailResize(deltaX: number) {
       />
 
       <ImmersiveModeIntro
-        v-if="!roleStore.minimalRoleActive"
+        v-if="uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive"
         :visible="progressive.immersiveIntroVisible"
         @dismiss="progressive.dismissImmersiveIntro"
       />
-      <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
+      <Toast :show="toast.show" :type="toast.type" :message="toast.message" :details="toast.details" />
       <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
 
-      <MarketView v-if="roleStore.interactionImmersive" />
+      <MarketView v-if="storyUiEnabled && pluginMarketStore.marketPanelVisible" />
       <SimplePluginManagerPanel
-        v-if="roleStore.interactionImmersive"
+        v-if="storyUiEnabled && simplePluginManagerOpen"
         :visible="simplePluginManagerOpen"
         @close="simplePluginManagerOpen = false"
         @open-market="openPluginMarket"
       />
 
       <ModelManagerPanel
+        v-if="modelManagerOpen"
         :visible="modelManagerOpen"
         @close="closeModelManager"
         @open-settings="
@@ -375,19 +379,20 @@ function onLeftRailResize(deltaX: number) {
       />
 
       <SettingsView
+        v-if="settingsViewOpen"
         :visible="settingsViewOpen"
         :focus-tab="settingsFocusTab"
         @close="settingsViewOpen = false"
       />
 
-      <div v-if="roleStore.interactionImmersive" class="app-floating-slot" aria-hidden="true">
+      <div v-if="storyUiEnabled" class="app-floating-slot" aria-hidden="true">
         <PluginSlotEmbed
           slot-name="overlay.floating"
           :aria-label="t('app.floatingSlot')"
           :bootstrap-epoch="pluginStore.bootstrapEpoch"
         />
       </div>
-      <HotkeyHost />
+      <AdvancedFeatureHost v-if="uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive" />
     </div>
   </main>
 </template>

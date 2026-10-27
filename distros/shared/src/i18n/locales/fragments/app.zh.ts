@@ -29,7 +29,7 @@ export default {
     },
     defaultRoleName: '沐沐',
     /** 浏览器页签标题（与 index.html 内联引导脚本保持一致） */
-    documentTitle: '沐沐 - 桌面AI伴侣',
+    documentTitle: 'OCLive Chat Pro',
     more: {
       collapse: '收起',
       more: '更多',

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   invoke: vi.fn(),
+  settings: vi.fn(),
   settingsConfig: {
     tts_expansion_enabled: true,
     tts_profile: 'bundled-cosyvoice2-zh',
@@ -10,19 +11,51 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@oclive/shared/api', () => ({
   directoryPluginInvoke: (...args: unknown[]) => mocks.invoke(...args),
-  getPluginSettingsUi: vi.fn(async () => ({
-    config: mocks.settingsConfig,
-  })),
+  getPluginSettingsUi: (...args: unknown[]) => mocks.settings(...args),
 }))
 
 describe('useVoiceExpansionWarm', () => {
   beforeEach(async () => {
     vi.resetModules()
     mocks.invoke.mockReset()
+    mocks.settings.mockReset()
+    mocks.settings.mockImplementation(async () => ({ config: mocks.settingsConfig }))
     mocks.settingsConfig = {
       tts_expansion_enabled: true,
       tts_profile: 'bundled-cosyvoice2-zh',
     }
+  })
+
+  it.each(['settings', 'probe'])('does not start a warm after reset during %s', async (stage) => {
+    let resolvePending!: (value: unknown) => void
+    const deferred = new Promise((resolve) => {
+      resolvePending = resolve
+    })
+    if (stage === 'settings')
+      mocks.settings.mockReturnValueOnce(deferred)
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => method === 'voice.probe_tts' ? deferred : { ok: true })
+    const mod = await import('./useVoiceExpansionWarm')
+    const pending = mod.scheduleVoiceExpansionWarm()
+    await vi.waitFor(() => expect(stage === 'settings' ? mocks.settings : mocks.invoke).toHaveBeenCalled())
+    mod.resetVoiceExpansionWarmSchedule()
+    resolvePending(stage === 'settings' ? { config: mocks.settingsConfig } : { ok: true, warmed: false })
+    await pending
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(mocks.invoke.mock.calls.filter(([, method]) => method === 'voice.warm')).toHaveLength(0)
+  })
+
+  it('does not restore an endpoint from an already-issued warm after reset', async () => {
+    let finishWarm!: (value: unknown) => void
+    mocks.invoke.mockImplementation(async (_id: string, method: string) => method === 'voice.warm'
+      ? new Promise((resolve) => { finishWarm = resolve })
+      : { ok: true, warmed: false })
+    const mod = await import('./useVoiceExpansionWarm')
+    await mod.scheduleVoiceExpansionWarm()
+    await vi.waitFor(() => expect(finishWarm).toBeDefined())
+    mod.resetVoiceExpansionWarmSchedule()
+    finishWarm({ ok: true, sidecar_endpoint: 'http://127.0.0.1:59999' })
+    await new Promise(resolve => setTimeout(resolve, 0))
+    expect(mod.getVoiceSidecarEndpoint()).toBeNull()
   })
 
   it('does not expose bundled sidecar until host-admitted warm completes', async () => {

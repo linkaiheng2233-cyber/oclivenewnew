@@ -84,7 +84,7 @@ onBeforeUnmount(() => {
           {{ t("app.more.shortcutHelp") }}
         </UiButton>
         <UiButton
-          v-if="roleStore.interactionImmersive"
+          v-if="uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive"
           variant="secondary"
           @click="debugStore.toggle(); open = false"
         >
@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
         </UiButton>
       </section>
 
-      <template v-if="roleStore.interactionImmersive">
+      <template v-if="open && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive">
         <section class="tool-more-menu__section">
           <div class="tool-more-menu__section-head">
             <span>{{ t("app.more.virtualTime") }}</span>

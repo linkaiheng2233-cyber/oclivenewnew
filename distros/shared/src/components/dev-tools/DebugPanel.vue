@@ -30,7 +30,7 @@ const emit = defineEmits<{
   reload: []
   refresh: []
   close: []
-  notify: [{ type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  notify: [{ type: 'success' | 'error' | 'info' | 'warning', message: string, details?: string }]
   imported: [roleId: string]
 }>()
 const { t } = useI18n()

@@ -1,15 +1,21 @@
 <script setup lang="ts">
+import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import ErrorNotice from './ErrorNotice.vue'
+
 defineProps<{
   show: boolean
   type: 'success' | 'error' | 'warning' | 'info'
   message: string
+  details?: string
 }>()
+const { dismissToast } = useAppToast()
 </script>
 
 <template>
   <transition name="toast">
     <div v-if="show" class="toast" :class="type">
-      {{ message }}
+      <ErrorNotice v-if="type === 'error' || details" :error="message" :summary="details ? message : undefined" :details="details" dismissible @dismiss="dismissToast" />
+      <span v-else role="status">{{ message }}</span>
     </div>
   </transition>
 </template>

@@ -10,6 +10,7 @@ export type PluginsPanelSubview = 'list' | 'market'
 export interface UsePluginManagerWindowOptions {
   /** Collapse the top-bar "More" menu after each plugin manager open/switch. */
   closeMoreMenu: () => void
+  enabled?: () => boolean
 }
 
 /** Minimal installed-plugin list and market entry. */
@@ -26,7 +27,7 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   })
 
   function openSimplePluginManager(forceOpen = false): void {
-    if (!roleStore.interactionImmersive)
+    if (opts.enabled?.() === false || !roleStore.interactionImmersive)
       return
     toggle(forceOpen)
   }
@@ -36,7 +37,7 @@ export function usePluginManagerWindow(opts: UsePluginManagerWindowOptions) {
   }
 
   function openPluginMarket(): void {
-    if (!roleStore.interactionImmersive)
+    if (opts.enabled?.() === false || !roleStore.interactionImmersive)
       return
     void ensurePluginWorkbenchI18n()
     if (resolveOcliveShell() === 'tool') {

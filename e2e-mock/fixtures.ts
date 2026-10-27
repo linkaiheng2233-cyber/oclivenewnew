@@ -1,6 +1,9 @@
 /**
  * Playwright / vite preview E2E fixtures — in-memory app state mutated by mock invoke handlers.
  */
+import type { SessionMeta, StoredMessage } from '../distros/shared/src/api/chatStorage'
+
+const conversations = new Map<string, { meta: SessionMeta, messages: StoredMessage[] }>()
 export interface MockRole { id: string, name: string, version: string, author: string }
 
 export const mockRoles: MockRole[] = [
@@ -201,8 +204,31 @@ const emptyPluginState = {
 }
 
 export function mockInvoke(command: string, payload: Record<string, unknown> = {}): unknown {
+  // This module is aliased only by --mode e2e, never by a production build.
+  if (typeof localStorage !== 'undefined') {
+    const faultKey = `oclive.e2e.fail.${command}`
+    const encoded = localStorage.getItem(faultKey)
+    if (encoded) {
+      const fault = JSON.parse(encoded) as { code: string, message: string, once?: boolean }
+      if (fault.once)
+        localStorage.removeItem(faultKey)
+      throw JSON.stringify({ code: fault.code, message: fault.message })
+    }
+  }
   switch (command) {
+    case 'get_chat_storage_capabilities':
+      return { backend_kind: 'hybrid', mirror_enabled: true, default_max_messages_per_session: 500, supports_search: true, supports_replay: false, supports_cleanup: true, supports_chat_threads: true }
+    case 'get_chat_storage_stats':
+      return []
+    case 'list_chat_sessions':
+      return [...conversations.values()].map(row => row.meta)
+        .filter(row => row.role_id === payload.roleId && row.scene_id === payload.sceneId)
+        .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+    case 'fetch_chat_messages':
+      return conversations.get(String(payload.sessionId))?.messages ?? []
     case 'list_roles':
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('oclive.e2e.emptyRoles') === '1')
+        return []
       return mockRoles.map(r => ({ ...r }))
     case 'load_role': {
       const roleId = String(payload.roleId ?? payload.role_id ?? currentRoleId)
@@ -221,6 +247,21 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     case 'send_message': {
       const req = payload.req as Record<string, unknown>
       const userMessage = String(req?.user_message ?? '')
+      const roleId = String(req.role_id)
+      const sessionId = req.chat_thread_id ? `${req.chat_thread_id}:chat:${roleId}` : roleId
+      const now = new Date().toISOString()
+      const conversation = conversations.get(sessionId) ?? {
+        meta: { session_id: sessionId, role_id: roleId, scene_id: String(req.scene_id ?? 'default'), created_at: now, updated_at: now, message_count: 0, last_message_snippet: '' },
+        messages: [],
+      }
+      const userId = crypto.randomUUID()
+      const replyId = crypto.randomUUID()
+      conversation.messages.push(
+        { id: userId, session_id: sessionId, turn_index: conversation.messages.length, sender: 'user', content: userMessage, created_at: now },
+        { id: replyId, session_id: sessionId, turn_index: conversation.messages.length, sender: 'assistant', content: `Echo: ${userMessage}`, created_at: now },
+      )
+      Object.assign(conversation.meta, { updated_at: now, message_count: conversation.messages.length, last_message_snippet: `Echo: ${userMessage}` })
+      conversations.set(sessionId, conversation)
       return {
         api_version: 1,
         schema: 1,
@@ -246,6 +287,10 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
         reply_is_fallback: false,
         knowledge_chunks_in_prompt: 0,
         timestamp: Date.now(),
+        user_message_id: userId,
+        assistant_message_id: replyId,
+        user_message_timestamp: now,
+        assistant_message_timestamp: now,
       }
     }
     case 'get_directory_plugin_catalog':
@@ -291,16 +336,30 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
       return []
     case 'list_high_risk_grants':
       return { grants: [] }
+    case 'get_kernel_connection_status':
+    case 'reconnect_kernel':
+      return { mode: 'spawned', baseUrl: 'http://127.0.0.1:50000', port: 50000, binaryPath: '/isolated/kernel', kernelTier: 'shared', healthy: true }
+    case 'get_kernel_diagnostics':
+      return { status: { mode: 'spawned', baseUrl: 'http://127.0.0.1:50000', port: 50000, binaryPath: '/isolated/kernel', kernelTier: 'shared', healthy: true }, sharedRuntimePath: '/isolated/kernel', sharedRuntimeExists: true, sharedRuntimeModifiedMs: 1, healthJson: { healthy: true } }
+    case 'read_support_logs':
+      return {
+        directory: '/isolated/test-data/logs',
+        files: [{ name: 'oclive.2026-10-26.log', sizeBytes: 600, modifiedAtEpochMs: 1 }],
+        selectedFile: 'oclive.2026-10-26.log',
+        truncated: true,
+        text: '2026-10-26T12:00:00Z INFO kernel ready\n2026-10-26T12:01:00Z WARN retry scheduled\n2026-10-26T12:02:00Z ERROR model unavailable api_key=fixture-secret',
+      }
     case 'run_environment_diagnostics':
       return {
-        ollama_reachable: true,
-        ollama_base_url: 'http://127.0.0.1:11434',
-        ollama_detail: 'mock',
-        roles_root_exists: true,
-        roles_root_readable: true,
-        roles_root_detail: 'mock',
-        app_data_writable: true,
-        app_data_detail: 'mock',
+        ollamaReachable: true,
+        ollamaBaseUrl: 'http://127.0.0.1:11434',
+        ollamaDetail: 'mock',
+        rolesDir: '/isolated/roles',
+        rolesDirExists: true,
+        rolesDirReadable: true,
+        appDataDir: '/isolated/test-data',
+        appDataWritable: true,
+        appDataDetail: 'mock',
       }
     case 'get_time_state':
       return {
@@ -314,12 +373,16 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     case 'list_ollama_models':
       return ['mock']
     case 'get_remote_fallback_app_settings':
-      return { allow_remote_fallback: false }
+      return { remoteFallbackToBuiltin: localStorage.getItem('oclive.e2e.remoteFallback') ?? '1', remoteFallbackEnvOverrideActive: false }
+    case 'set_remote_fallback_to_builtin':
+      localStorage.setItem('oclive.e2e.remoteFallback', payload.allow ? '1' : '0')
+      return null
   }
   return null
 }
 
 export function resetE2eMockState(): void {
+  conversations.clear()
   currentRoleId = 'role-a'
   installedPluginIds.clear()
   installedPluginIds.add('demo-plugin')

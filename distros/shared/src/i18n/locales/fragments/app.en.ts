@@ -29,7 +29,7 @@ export default {
     },
     defaultRoleName: 'Mumu',
     /** Browser tab title (keep in sync with index.html inline bootstrap) */
-    documentTitle: 'OCLIVE — Desktop AI companion',
+    documentTitle: 'OCLive Chat Pro',
     more: {
       collapse: 'Collapse',
       more: 'More',

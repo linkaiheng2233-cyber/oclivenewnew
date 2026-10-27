@@ -36,6 +36,8 @@ export default defineConfig({
   timeout: tauriE2e ? 180_000 : 30_000,
   reporter: [['list']],
   use: {
+    // Local Windows verification can use an installed browser; CI keeps Playwright Chromium.
+    channel: process.env.OCLIVE_E2E_BROWSER_CHANNEL || undefined,
     baseURL: previewOrigin,
     trace: 'on-first-retry',
   },

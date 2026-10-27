@@ -1,0 +1,99 @@
+.role-app { display:flex; flex-direction:column; width:100%; height:100%; min-height:0; color:var(--text-primary); background:var(--bg-primary); }
+.role-app-body { display:flex; flex:1; min-height:0; }
+button, select { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:default; opacity:.5; }
+button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.role-nav { flex:0 0 220px; display:flex; flex-direction:column; min-width:0; min-height:0; padding:24px 14px 12px; background:color-mix(in srgb,var(--bg-secondary) 96%,var(--accent) 4%); border-right:1px solid var(--border-light); }
+.role-brand { display:flex; gap:12px; align-items:center; margin:0 8px 28px; border:0; color:var(--text-primary); background:none; text-align:left; font-size:20px; font-weight:750; }
+.role-brand small { display:block; color:var(--text-secondary); font-size:11px; letter-spacing:2px; font-weight:400; margin-top:3px; }
+.brand-mark { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; color:var(--bg-primary); background:var(--accent); font-size:17px; }
+.nav-button { display:flex; align-items:center; gap:12px; width:100%; padding:12px; background:transparent; border:0; border-radius:8px; color:var(--text-secondary); text-align:left; font-size:14px; }
+.nav-button span { display:grid; place-items:center; width:20px; font-size:19px; }
+.nav-button:hover, .nav-role-title:hover { background:var(--bg-elevated); }
+.nav-button.active, .nav-role-title.active { color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
+.nav-role-list { flex:1; min-height:0; overflow-y:auto; padding:16px 0; }
+.nav-label { padding:0 12px; margin:8px 0 14px; font-size:11px; color:var(--text-secondary); }
+.nav-role { margin-bottom:8px; }
+.nav-role-title { display:flex; border-radius:7px; }
+.nav-role-title button { display:flex; align-items:center; gap:9px; min-width:0; border:0; padding:9px; text-align:left; background:none; color:inherit; }
+.nav-role-title button:first-child { flex:1; font-weight:650; }
+.nav-role-title button:last-child { font-size:20px; }
+.role-initial { display:grid; place-items:center; width:27px; height:27px; flex-shrink:0; border:1px solid var(--border-light); border-radius:9px; font-size:12px; background:var(--bg-primary); }
+.nav-conversations { margin:6px 4px 12px 20px; padding-left:12px; border-left:1px solid var(--border-light); }
+.nav-conversations button { display:block; width:100%; padding:8px; border:0; border-radius:5px; background:transparent; color:var(--text-secondary); text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.nav-conversations button.selected { background:var(--bg-primary); color:var(--text-primary); }
+.nav-conversations .all-records { margin-top:6px; color:var(--accent); }
+.nav-global { flex-shrink:0; }
+.local-note { display:block; margin:12px 10px 0; padding-top:14px; border-top:1px solid var(--border-light); color:var(--text-secondary); font-size:10px; }
+.workspace-content { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+.workspace-header { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:24px 30px; border-bottom:1px solid var(--border-light); }
+.workspace-header h1 { font-size:23px; margin:0 0 8px; letter-spacing:-.4px; }
+.workspace-header p { margin:0; color:var(--text-secondary); font-size:12px; }
+.library-page { flex:1; overflow:auto; padding:24px 30px; }
+.library-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:22px; }
+.library-tools h2 { margin:0; font-size:16px; }
+.library-tools h2 small { font-size:11px; font-weight:400; color:var(--text-secondary); margin-left:8px; }
+.role-card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:20px; }
+.role-card { border:1px solid var(--border-light); border-radius:13px; background:var(--bg-elevated); overflow:hidden; display:flex; align-items:stretch; }
+.card-portrait { width:36%; min-width:110px; display:flex; align-items:center; background:color-mix(in srgb,var(--accent) 6%,var(--bg-primary)); }
+.card-portrait :deep(.hero) { width:100%; padding:14px 8px; background:transparent; }
+.card-portrait :deep(.avatar-wrap) { margin:0; }
+.card-portrait :deep(.title), .card-portrait :deep(.emotion-line) { display:none; }
+.role-card-copy { flex:1; min-width:0; padding:24px 18px 18px; }
+.role-card-copy h2 { font-size:20px; margin:0 0 8px; }
+.role-card-copy p { color:var(--text-secondary); font-size:12px; line-height:1.8; margin:6px 0; }
+.role-card-copy>small { color:var(--text-secondary); font-size:10px; }
+.role-card-copy h3 { font-size:11px; color:var(--text-secondary); margin:20px 0 8px; font-weight:500; }
+.card-conversation { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:9px 0; border:0; border-top:1px solid var(--border-light); text-align:left; background:transparent; color:var(--text-primary); font-size:12px; }
+.card-conversation span { color:var(--accent); }
+.primary { border:0; border-radius:7px; padding:11px 16px; color:var(--bg-primary); background:var(--accent); font-weight:650; }
+.enter-role { display:flex; justify-content:space-between; gap:16px; width:100%; margin-top:20px; font-size:12px; }
+.workspace-empty { display:flex; flex:1; min-height:320px; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:36px; }
+.workspace-empty h2 { margin:0; font-size:25px; }
+.workspace-empty p { color:var(--text-secondary); max-width:410px; line-height:2; font-size:13px; white-space:pre-line; }
+.empty-role-icon { width:72px; height:72px; display:grid; place-items:center; border-radius:25px; background:color-mix(in srgb,var(--accent) 10%,transparent); color:var(--accent); font-size:36px; margin-bottom:16px; }
+.workspace-error { padding:12px 24px; background:color-mix(in srgb,#ba4e3f 9%,var(--bg-primary)); color:var(--text-primary); border-bottom:1px solid var(--border-light); font-size:13px; line-height:1.7; }
+.inline-error { color:#ae4a3e!important; font-size:11px; }
+.runtime-grid { flex:1; min-height:0; display:flex; overflow:hidden; }
+.runtime-grid--sidebar-right { flex-direction:row-reverse; }
+.runtime-grid--sidebar-right .runtime-role { border-right:0; border-left:1px solid var(--border-light); }
+.runtime-chat--input-top .conversation-header { order:-2; }
+.runtime-chat--input-top .workspace-composer { order:-1; }
+.compact-role-controls { display:none; }
+.runtime-role { width:260px; min-width:200px; flex-shrink:0; overflow:auto; border-right:1px solid var(--border-light); padding:16px; }
+.runtime-role :deep(.hero) { padding:12px 0; background:transparent; }
+.runtime-role :deep(.avatar) { max-height:340px; object-fit:contain; }
+.runtime-role :deep(.title) { font-size:22px; }
+.runtime-role :deep(.emotion-line) { font-size:12px; }
+.runtime-role details { margin-top:18px; padding-top:16px; border-top:1px solid var(--border-light); }
+.runtime-role summary { cursor:pointer; font-size:12px; font-weight:600; margin-bottom:12px; }
+.runtime-role label { display:block; font-size:11px; color:var(--text-secondary); }
+.runtime-role select { display:block; width:100%; padding:8px; margin-top:7px; border:1px solid var(--border-light); border-radius:5px; background:var(--bg-primary); color:var(--text-primary); }
+.runtime-role :deep(.pack-bar) { flex-wrap:wrap; }
+.runtime-chat { flex:1; min-width:0; min-height:0; display:flex; flex-direction:column; }
+.conversation-header { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:16px 24px; border-bottom:1px solid var(--border-light); }
+.conversation-header>div { flex:1; min-width:160px; }
+.conversation-header h2 { font-size:14px; margin:0 0 6px; overflow-wrap:anywhere; }
+.conversation-header small { font-size:10px; color:var(--text-secondary); line-height:1.6; }
+.conversation-header button, .workspace-help button { border:1px solid var(--border-light); padding:7px 10px; border-radius:6px; background:var(--bg-primary); color:var(--text-primary); font-size:12px; }
+.workspace-messages { flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column; position:relative; }
+.workspace-messages :deep(.chat-list) { flex:1; }
+.chat-empty { margin:auto; padding:24px; color:var(--text-secondary); text-align:center; font-size:14px; }
+.workspace-composer { flex-shrink:0; border-top:1px solid var(--border-light); }
+.stop-button { display:block; margin:10px auto 0; padding:7px 13px; border:1px solid var(--border-light); border-radius:6px; background:var(--bg-elevated); color:var(--text-primary); font-size:12px; }
+.workspace-modal-backdrop { position:fixed; inset:0; background:#17262066; backdrop-filter:blur(3px); display:flex; justify-content:center; align-items:center; padding:24px; z-index:10010; }
+.workspace-help { width:min(1080px,100%); height:min(790px,calc(100dvh - 48px)); max-height:calc(100dvh - 48px); min-height:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-primary); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border-light)); border-radius:16px; padding:0; color:var(--text-primary); box-shadow:0 28px 90px #101e1933,0 0 0 1px #ffffff18; }
+.workspace-help:focus { outline:none; }
+.workspace-help-header { flex-shrink:0; display:flex; justify-content:space-between; gap:24px; align-items:flex-start; padding:24px 26px 20px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
+.workspace-help h2 { margin:0; font-size:22px; line-height:1.4; letter-spacing:.02em; }
+.workspace-help-header p { margin:8px 0 0; font-size:12px; line-height:1.8; color:var(--text-secondary); }
+.workspace-help .workspace-help-close { flex-shrink:0; display:grid; place-items:center; width:34px; height:34px; padding:0; font-size:24px; line-height:1; color:var(--text-secondary); background:transparent; border:1px solid var(--border-light); border-radius:8px; }
+.workspace-help .workspace-help-close:hover { color:var(--text-primary); background:var(--bg-secondary); border-color:var(--accent); }
+.workspace-help button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.workspace-help-footer { flex-shrink:0; display:flex; justify-content:space-between; align-items:center; gap:14px; padding:12px 26px; border-top:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }
+.workspace-help-footer small { color:var(--text-secondary); font-size:11px; }
+@media(max-width:600px) { .workspace-modal-backdrop{padding:10px}.workspace-help{height:calc(100dvh - 20px);max-height:calc(100dvh - 20px);border-radius:12px}.workspace-help-header{padding:18px 16px 14px;gap:12px}.workspace-help h2{font-size:19px}.workspace-help-footer{padding:10px 16px} }
+@media(max-width:1080px) { .role-nav{flex-basis:185px;padding:20px 10px 10px}.workspace-header{padding:22px}.library-page{padding:22px}.runtime-role{width:220px;min-width:180px}.runtime-role :deep(.avatar){max-height:270px} }
+@media(max-width:760px) { .role-nav{flex-basis:64px;padding:18px 6px}.role-brand{margin:0 6px 20px}.role-brand>span:last-child,.nav-label,.nav-conversations,.local-note,.role-initial,.nav-role-title button:last-child{display:none}.nav-button{padding:10px 5px;font-size:10px;flex-direction:column;gap:6px;text-align:center}.nav-role-title button:first-child{padding:9px 4px;font-size:11px;justify-content:center;overflow-wrap:anywhere}.runtime-role{display:none}.workspace-header{padding:16px;gap:8px;flex-wrap:wrap}.workspace-header h1{font-size:20px}.library-page{padding:18px}.role-card-grid{grid-template-columns:1fr}.role-card{flex-direction:column}.card-portrait{width:100%;height:150px;justify-content:center}.card-portrait :deep(.hero){width:140px;height:150px}.card-portrait :deep(.avatar){height:130px;object-fit:contain}.role-card-copy{padding:18px}.conversation-header{padding:14px}.workspace-header p{line-height:1.7}.workspace-empty{padding:24px;min-height:280px}.workspace-empty h2{font-size:21px} }
+@media(max-width:760px) { .compact-role-controls{display:block}.runtime-grid{position:relative}.runtime-role--open{display:block;position:absolute;z-index:5;left:0;top:72px;bottom:0;background:var(--bg-primary);box-shadow:5px 0 16px #0002;width:240px} }

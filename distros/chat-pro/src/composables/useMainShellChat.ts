@@ -4,6 +4,7 @@ import type { useRoleStore } from '@oclive/shared/stores/roleStore'
 import type { useUiStore } from '@oclive/shared/stores/uiStore'
 import type { ComposerTranslation } from 'vue-i18n'
 import { useChatSend } from '@oclive/shared/composables/useChatSend'
+import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useMinimalRoleChatStore } from '@oclive/shared/stores/minimalRoleChatStore'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
@@ -22,7 +23,7 @@ export function useMainShellChat(options: {
   const chatStore = useChatStore()
   const minimalRoleChatStore = useMinimalRoleChatStore()
   const activeChatKey = computed(() => minimalRoleChatStore.source?.role_id
-    ?? `${options.roleStore.currentRoleId}-${options.uiStore.sceneId}`)
+    ?? `${chatStore.chatSessionKey(options.roleStore.currentRoleId, options.uiStore.sceneId)}-${options.uiStore.sceneId}`)
   const chatListRef = ref<InstanceType<typeof ChatMessageList> | null>(null)
   const chatInputRef = ref<{ focusInput?: () => void } | null>(null)
 
@@ -67,7 +68,11 @@ export function useMainShellChat(options: {
     t: options.t,
     chatInputRef,
     clearSceneBarsBeforeSend: options.clearSceneBarsBeforeSend,
-    offerSceneBarsAfterReply: options.offerSceneBarsAfterReply,
+    offerSceneBarsAfterReply: (together, destination) => {
+      if (options.uiStore.advancedFeaturesEnabled)
+        options.offerSceneBarsAfterReply(together, destination)
+    },
+    debugDataEnabled: () => resolveOcliveShell() !== 'fluent' && options.uiStore.advancedFeaturesEnabled,
     onTurnRecorded: options.onTurnRecorded,
     isContextChanging: options.isContextChanging,
   })

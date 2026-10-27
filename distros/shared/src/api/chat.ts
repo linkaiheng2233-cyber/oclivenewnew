@@ -1,6 +1,6 @@
 import type { DisplayMetricsDto, RoleInfo } from './role'
 import { Channel, invoke } from '@tauri-apps/api/core'
-import { invokeWithFriendlyError, toFriendlyErrorMessage } from './helpers'
+import { ApiInvokeError, invokeWithFriendlyError, toFriendlyError } from './helpers'
 
 export interface SendMessageRequest {
   /** One logical user send; streaming and result recovery reuse this UUID. */
@@ -9,6 +9,8 @@ export interface SendMessageRequest {
   user_message: string
   scene_id?: string | null
   session_id?: string | null
+  /** Transcript-only UUID; does not reset the role's memory or relationship. */
+  chat_thread_id?: string | null
   adult?: AdultInteractionRequest | null
 }
 
@@ -280,14 +282,19 @@ export async function beginAdultStageGeneration(
 }
 
 /** Recover an existing send; never fall back to a command that starts a new turn. */
-export async function recoverMessage(req: SendMessageRequest): Promise<SendMessageResponse> {
+export async function recoverMessage(req: SendMessageRequest, signal?: AbortSignal): Promise<SendMessageResponse> {
+  if (signal?.aborted)
+    throw streamAbortError()
   try {
-    return await invokeWithFriendlyError<SendMessageResponse>('recover_message', { req })
+    return await invokeWithFriendlyError<SendMessageResponse>('recover_message', { req }, signal)
   }
   catch (error) {
+    if (signal?.aborted)
+      throw streamAbortError()
     if (error instanceof Error && 'code' in error && error.code === 'CHAT_REQUEST_CONFLICT')
       throw error
-    throw new Error(toFriendlyErrorMessage(JSON.stringify({ code: 'CHAT_REQUEST_UNCONFIRMED', message: 'Chat request outcome is unconfirmed' })), { cause: error })
+    const failure = toFriendlyError(JSON.stringify({ code: 'CHAT_REQUEST_UNCONFIRMED', message: 'Chat request outcome is unconfirmed' }))
+    throw new ApiInvokeError({ ...failure, raw: `${failure.raw}\n${toFriendlyError(error).raw}` }, { cause: error })
   }
 }
 
@@ -395,7 +402,7 @@ export async function sendMessageStream(
       req,
       transportId,
       onEvent,
-    })
+    }, options.signal)
   }
   catch (error) {
     if (cancelled || options.signal?.aborted)

@@ -156,8 +156,9 @@ export async function resolveChatSessionId(
   const sid = sceneId || 'default'
   try {
     const sessions = await listChatSessions(roleId, sid, 10, 0)
-    if (sessions.length > 0)
-      return sessions[0]!.session_id
+    const legacy = sessions.find(s => s.session_id === conversationSessionId(roleId, null))
+    if (legacy)
+      return legacy.session_id
     return null
   }
   catch {

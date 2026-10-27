@@ -38,11 +38,14 @@ const { bindPluginFrame, framePermissions, onPluginFrameLoad }
   })
 
 let unlisten: UnlistenFn | undefined
+let disposed = false
 
 onMounted(async () => {
-  unlisten = await listen<{ bindingId: string, action: HotkeyAction }>(
+  const stop = await listen<{ bindingId: string, action: HotkeyAction }>(
     'hotkey-action',
     (e) => {
+      if (disposed)
+        return
       const a = e.payload.action
       if (a.type === 'openLauncherList') {
         launcherOpen.value = true
@@ -57,9 +60,14 @@ onMounted(async () => {
       }
     },
   )
+  if (disposed)
+    stop()
+  else
+    unlisten = stop
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   unlisten?.()
 })
 

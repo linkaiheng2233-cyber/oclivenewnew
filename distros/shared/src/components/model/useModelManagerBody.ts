@@ -6,6 +6,7 @@ import type {
   LocalModelFile,
   LoraContentRating,
 } from '@oclive/shared/api/llmSettings'
+import { toastAsyncError, toErrorPresentation } from '@oclive/shared/api/helpers'
 import {
   activateLocalLoraAdapter,
   deleteLocalLoraAdapter,
@@ -35,7 +36,10 @@ import {
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-export function useModelManagerBody() {
+export function useModelManagerBody(options: {
+  initialProvider?: 'local' | 'cloud'
+  onSaved?: (roleId: string) => void
+} = {}) {
   const roleStore = useRoleStore()
   const { t } = useI18n()
   const { showToast } = useAppToast()
@@ -70,6 +74,7 @@ export function useModelManagerBody() {
   let cloudModelsLoadGeneration = 0
   let settingsSaveGeneration = 0
   let globalSaveGeneration = 0
+  let initialProvider = options.initialProvider
 
   function formatAdapterSize(bytes: number): string {
     if (!Number.isFinite(bytes) || bytes <= 0)
@@ -235,7 +240,7 @@ export function useModelManagerBody() {
     }
     catch (e) {
       if (generation === globalSaveGeneration)
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
     }
     finally {
       if (generation === globalSaveGeneration)
@@ -268,10 +273,7 @@ export function useModelManagerBody() {
           generation === settingsLoadGeneration
           && roleStore.currentRoleId === roleId
         ) {
-          showToast(
-            'error',
-            error instanceof Error ? error.message : String(error),
-          )
+          toastAsyncError(error)
         }
       })
     try {
@@ -283,7 +285,8 @@ export function useModelManagerBody() {
         return
       }
       settings.value = s
-      providerTab.value = s.provider === 'cloud' ? 'cloud' : 'local'
+      providerTab.value = initialProvider ?? (s.provider === 'cloud' ? 'cloud' : 'local')
+      initialProvider = undefined
       ollamaBaseUrl.value = s.ollamaBaseUrl
       localModelsDir.value = s.localModelsDir
       folderModelFiles.value = s.localModelFiles ?? []
@@ -303,7 +306,7 @@ export function useModelManagerBody() {
         generation === settingsLoadGeneration
         && roleStore.currentRoleId === roleId
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {
@@ -364,7 +367,7 @@ export function useModelManagerBody() {
     }
     catch (e) {
       if (generation === cloudModelsLoadGeneration && !opts?.silent)
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
     }
     finally {
       if (generation === cloudModelsLoadGeneration)
@@ -400,7 +403,7 @@ export function useModelManagerBody() {
         generation === ollamaModelsLoadGeneration
         && settings.value?.localRuntimeMode !== 'performance'
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {
@@ -410,20 +413,25 @@ export function useModelManagerBody() {
   }
 
   async function pickModelsFolder(): Promise<void> {
-    const picked = await openDialog({
-      directory: true,
-      multiple: false,
-      defaultPath: localModelsDir.value || undefined,
-    })
-    if (!picked || Array.isArray(picked)) {
-      return
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        defaultPath: localModelsDir.value || undefined,
+      })
+      if (!picked || Array.isArray(picked)) {
+        return
+      }
+      localModelsDir.value = picked
+      folderModelFiles.value = await scanLocalModelFiles(picked)
+      if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
+        const first = folderModelFiles.value[0]
+        if (first)
+          selectedLocalModel.value = `file:${first.path}`
+      }
     }
-    localModelsDir.value = picked
-    folderModelFiles.value = await scanLocalModelFiles(picked)
-    if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
-      const first = folderModelFiles.value[0]
-      if (first)
-        selectedLocalModel.value = `file:${first.path}`
+    catch (err) {
+      toastAsyncError(err)
     }
   }
 
@@ -432,7 +440,12 @@ export function useModelManagerBody() {
       showToast('info', t('modelManager.pickFolderFirst'))
       return
     }
-    folderModelFiles.value = await scanLocalModelFiles(localModelsDir.value)
+    try {
+      folderModelFiles.value = await scanLocalModelFiles(localModelsDir.value)
+    }
+    catch (err) {
+      toastAsyncError(err)
+    }
   }
 
   async function openModelsFolder(): Promise<void> {
@@ -440,7 +453,12 @@ export function useModelManagerBody() {
       showToast('info', t('modelManager.pickFolderFirst'))
       return
     }
-    await openPathInFileManager(localModelsDir.value)
+    try {
+      await openPathInFileManager(localModelsDir.value)
+    }
+    catch (err) {
+      toastAsyncError(err)
+    }
   }
 
   async function importSelectedFileToOllama(): Promise<void> {
@@ -459,7 +477,7 @@ export function useModelManagerBody() {
       await refreshOllamaModels()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       importing.value = false
@@ -512,7 +530,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraImporting.value = false
@@ -551,7 +569,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraMutating.value = false
@@ -582,7 +600,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraMutating.value = false
@@ -615,7 +633,8 @@ export function useModelManagerBody() {
       showToast('info', t('modelManager.probeOk'))
     }
     catch (e) {
-      showToast('warning', e instanceof Error ? e.message : String(e))
+      const failure = toErrorPresentation(e)
+      showToast('warning', failure.summary, failure.details)
     }
   }
 
@@ -641,7 +660,7 @@ export function useModelManagerBody() {
       showToast('success', t('modelManager.probeOk'))
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       probing.value = false
@@ -734,6 +753,8 @@ export function useModelManagerBody() {
         showToast('success', t('modelManager.saveOk'))
         await runCloudProbeAfterSave()
       }
+      if (generation === settingsSaveGeneration && roleStore.currentRoleId === roleId)
+        options.onSaved?.(roleId)
       await loadSettings()
     }
     catch (e) {
@@ -741,7 +762,7 @@ export function useModelManagerBody() {
         generation === settingsSaveGeneration
         && roleStore.currentRoleId === roleId
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {

@@ -3,11 +3,12 @@ import type { MinimalRoleLocalSource } from '@oclive/shared/api/chat'
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   source: Readonly<MinimalRoleLocalSource> | null
   disabled?: boolean
   loading?: boolean
-}>()
+  allowBinding?: boolean
+}>(), { allowBinding: true })
 const emit = defineEmits<{
   bind: [source: MinimalRoleLocalSource]
   return: []
@@ -38,7 +39,7 @@ function bind() {
     <summary>{{ t(source ? 'app.minimalRole.active' : 'app.minimalRole.select') }}</summary>
     <div class="minimal-source__panel">
       <p>{{ t('app.minimalRole.scope') }}</p>
-      <form @submit.prevent="bind">
+      <form v-if="allowBinding" @submit.prevent="bind">
         <label>
           {{ t('app.minimalRole.assetRoot') }}
           <input v-model="assetRoot" name="asset-root" :disabled="disabled" required autocomplete="off">

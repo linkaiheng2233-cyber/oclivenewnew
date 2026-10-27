@@ -43,7 +43,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   apply: [config: TheaterCastConfig]
-  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string, details?: string }]
 }>()
 
 type CastSlotKey = 'castA' | 'castB'

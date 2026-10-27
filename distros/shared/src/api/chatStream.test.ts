@@ -15,7 +15,7 @@
 import type { SendMessageResponse } from './chat'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recoverMessage, sendMessageStream } from './chat'
-import { ApiInvokeError } from './helpers'
+import { ApiInvokeError, setErrorReporter } from './helpers'
 
 interface RendererChannel {
   onmessage: ((event: unknown) => void) | null
@@ -88,7 +88,10 @@ describe('cP-INT R2 authenticated IPC stream client', () => {
     calls = installInvoke()
     vi.stubGlobal('__TAURI_INTERNALS__', { invoke: mocks.invoke })
   })
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    setErrorReporter(null)
+    vi.unstubAllGlobals()
+  })
 
   it('delivers ordered token events on the IPC channel and resolves with the terminal DTO', async () => {
     const onToken = vi.fn()
@@ -133,7 +136,28 @@ describe('cP-INT R2 authenticated IPC stream client', () => {
     await pending
   })
 
+  it('abandons a pending same-turn recovery without reporting its late failure', async () => {
+    const report = vi.fn()
+    setErrorReporter(report)
+    let rejectRecovery: ((error: unknown) => void) | undefined
+    mocks.invoke.mockImplementationOnce(() => new Promise((_resolve, reject) => {
+      rejectRecovery = reject
+    }))
+    const abort = new AbortController()
+    const pending = recoverMessage(identified, abort.signal)
+    expect(mocks.invoke).toHaveBeenLastCalledWith('recover_message', { req: identified })
+
+    abort.abort()
+    rejectRecovery!(new Error(JSON.stringify({ code: 'UNKNOWN_ERROR', message: 'late failure' })))
+
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(report).not.toHaveBeenCalled()
+    expect(mocks.invoke).toHaveBeenCalledTimes(1)
+  })
+
   it('surfaces the kernel error code from the command rejection', async () => {
+    const report = vi.fn()
+    setErrorReporter(report)
     const pending = sendMessageStream(request)
     await vi.waitFor(() => expect(calls).toHaveLength(1))
     calls[0]!.reject(new Error(JSON.stringify({
@@ -149,9 +173,12 @@ describe('cP-INT R2 authenticated IPC stream client', () => {
     )
     expect(failure).toBeInstanceOf(ApiInvokeError)
     expect((failure as ApiInvokeError).code).toBe('LLM_ERROR')
+    expect(report).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ code: 'LLM_ERROR' }))
   })
 
   it('cancels the transport instance through its own handle and reports an AbortError', async () => {
+    const report = vi.fn()
+    setErrorReporter(report)
     const abort = new AbortController()
     const pending = sendMessageStream(request, { signal: abort.signal })
     await vi.waitFor(() => expect(calls).toHaveLength(1))
@@ -165,7 +192,10 @@ describe('cP-INT R2 authenticated IPC stream client', () => {
     expect(cancelCall?.[1]).toEqual({ transportId })
     expect(cancelCall?.[1]).not.toEqual({ req: expect.anything() })
 
-    calls[0]!.reject(new Error('CHAT_STREAM_CANCELLED: aborted'))
+    calls[0]!.reject(new Error(JSON.stringify({
+      code: 'UNKNOWN_ERROR',
+      message: 'Unknown error: CHAT_STREAM_CANCELLED: aborted',
+    })))
     const failure = await pending.then(
       () => {
         throw new Error('cancelled stream must not resolve')
@@ -174,6 +204,7 @@ describe('cP-INT R2 authenticated IPC stream client', () => {
     )
     expect(failure).toBeInstanceOf(DOMException)
     expect((failure as DOMException).name).toBe('AbortError')
+    expect(report).not.toHaveBeenCalled()
   })
 
   it('drops tokens that arrive after the cancel instead of leaking them into the UI', async () => {

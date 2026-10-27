@@ -257,6 +257,8 @@ export async function getReplayProgress(taskId: string): Promise<ReplayProgress>
 }
 
 export interface ChatStorageCapabilities {
+  /** Missing on older hosts: do not send transcript-only thread requests. */
+  supports_chat_threads?: boolean
   backend_kind: string
   /** JSON mirror alongside SQLite (`hybrid` when true). */
   mirror_enabled: boolean

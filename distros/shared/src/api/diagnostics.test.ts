@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { runEnvironmentDiagnostics, runEnvironmentRepair } from './diagnostics'
+import { readSupportLogs, runEnvironmentDiagnostics, runEnvironmentRepair } from './diagnostics'
 import { invokeWithFriendlyError } from './helpers'
 
 vi.mock('./helpers', () => ({
@@ -25,5 +25,12 @@ describe('api/diagnostics IPC contracts', () => {
     await runEnvironmentRepair()
 
     expect(invokeMock).toHaveBeenCalledWith('run_environment_repair')
+  })
+
+  it('reads a bounded log by file name without accepting a root path', async () => {
+    await readSupportLogs()
+    expect(invokeMock).toHaveBeenLastCalledWith('read_support_logs', { fileName: null })
+    await readSupportLogs('oclive.2026-10-26.log')
+    expect(invokeMock).toHaveBeenLastCalledWith('read_support_logs', { fileName: 'oclive.2026-10-26.log' })
   })
 })

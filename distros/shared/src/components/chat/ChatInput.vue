@@ -4,14 +4,15 @@ import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteraction
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const props = defineProps<{ loading: boolean, textOnly?: boolean, roleName?: string }>()
+const props = defineProps<{ loading: boolean, textOnly?: boolean, roleName?: string, modelValue?: string, disabled?: boolean }>()
 
 const emit = defineEmits<{
-  send: [payload: { content: string }]
-  adultAction: [payload: { action: 'exit' }]
+  'send': [payload: { content: string }]
+  'adultAction': [payload: { action: 'exit' }]
+  'update:modelValue': [value: string]
 }>()
 const { t } = useI18n()
 const roleStore = useRoleStore()
@@ -25,7 +26,12 @@ const adultInteractionActive = computed(() =>
   !props.textOnly && adultStore.sessionFor(roleStore.currentRoleId, activeSceneId.value).active,
 )
 
-const text = ref('')
+const text = ref(props.modelValue ?? '')
+watch(() => props.modelValue, (value) => {
+  if (value !== undefined)
+    text.value = value
+})
+watch(text, value => emit('update:modelValue', value), { flush: 'sync' })
 const textAreaEl = ref<HTMLTextAreaElement | null>(null)
 
 const placeholder = computed(() =>
@@ -53,6 +59,8 @@ function focusInput(): void {
 }
 
 function submit() {
+  if (props.disabled)
+    return
   const value = text.value.trim()
   if (!value)
     return
@@ -111,13 +119,14 @@ onBeforeUnmount(() => {
         rows="2"
         autocomplete="off"
         :placeholder="placeholder"
+        :disabled="disabled"
         @keydown="onKeydown"
       />
     </div>
     <button
       type="button"
       class="send"
-      :disabled="!text.trim()"
+      :disabled="disabled || !text.trim()"
       @click="submit"
     >
       {{ t("common.send") }}

@@ -1,4 +1,5 @@
 import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { i18n } from '@oclive/shared/i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
@@ -19,7 +20,10 @@ import '@oclive/shared/styles/win98/primitives.css'
 hydrateLayoutWidths()
 
 void (async () => {
-  const shellPromise = Promise.resolve().then(() => tryReplaceWithDirectoryShell())
+  // The standard product owns its startup/library. Custom full shells remain in alternate builds.
+  const shellPromise = resolveOcliveShell() === 'fluent'
+    ? Promise.resolve(false)
+    : Promise.resolve().then(() => tryReplaceWithDirectoryShell())
 
   const app = createApp(App)
   app.use(i18n)
@@ -40,13 +44,7 @@ void (async () => {
   app.use(pinia)
 
   const chatStore = useChatStore()
-  try {
-    await chatStore.hydrateFromStorage()
-    chatStore.migrateAllLegacyMessageBuckets()
-  }
-  catch (e) {
-    console.error('[oclive] chat history hydrate failed; continuing without persisted messages', e)
-  }
+  // Mount first. Bootstrap hydrates records behind a visible loading/recovery interface.
 
   if (typeof window !== 'undefined') {
     const flushChat = () => {

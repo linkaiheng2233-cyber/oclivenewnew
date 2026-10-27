@@ -96,3 +96,21 @@ html[data-skin="win98"] .sv-embedded {
   box-shadow: none;
   background: transparent;
 }
+
+/* Keep the categorized layout while using classic square chrome. */
+html[data-skin="win98"] .sv-dialog {
+  overflow: hidden;
+}
+html[data-skin="win98"] .sv-page-head,
+html[data-skin="win98"] .sv-nav {
+  background: #c0c0c0;
+}
+html[data-skin="win98"] .sv-content .ui-section {
+  border: 2px groove #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+}
+html[data-skin="win98"] .ui-toggle__track,
+html[data-skin="win98"] .ui-toggle__track > span {
+  border-radius: 0;
+}
