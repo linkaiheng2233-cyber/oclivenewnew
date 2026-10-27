@@ -23,10 +23,11 @@ describe('two-level error display', () => {
   })
 
   it('redacts explicitly supplied diagnostics before displaying and copying them', async () => {
+    const basicCredential = btoa('review-user:synthetic-password')
     const copy = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } })
     const wrapper = mount(ErrorNotice, {
-      props: { summary: 'Model unavailable', details: 'LLM_ERROR: api_key=private-copy-fixture; Authorization: Bearer private-bearer' },
+      props: { summary: 'Model unavailable', details: `LLM_ERROR: api_key=private-copy-fixture; Authorization: Bearer private-bearer; Proxy-Authorization: Basic ${basicCredential}` },
       global: { plugins: [i18n] },
     })
     await wrapper.get('.error-notice-details button').trigger('click')
@@ -36,7 +37,9 @@ describe('two-level error display', () => {
     expect(copy.mock.calls[0]![0]).toContain('LLM_ERROR')
     expect(copy.mock.calls[0]![0]).not.toContain('private-copy-fixture')
     expect(copy.mock.calls[0]![0]).not.toContain('private-bearer')
+    expect(copy.mock.calls[0]![0]).not.toContain(basicCredential)
     expect(wrapper.text()).not.toContain('private-copy-fixture')
+    expect(wrapper.text()).not.toContain(basicCredential)
     expect(wrapper.get('.error-notice-copy-status').text()).toBe(i18n.global.t('errorUi.copied'))
     wrapper.unmount()
   })

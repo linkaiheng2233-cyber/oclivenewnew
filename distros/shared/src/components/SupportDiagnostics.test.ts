@@ -10,7 +10,8 @@ vi.mock('@oclive/shared/api/desktop', () => ({ writeUserTextFile: api.write }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ save: api.save }))
 vi.mock('@oclive/shared/stores/kernelConnectionStore', () => ({ useKernelConnectionStore: () => ({ status: { healthy: true, mode: 'spawned' } }) }))
 
-const snapshot = { directory: 'isolated/logs', files: [{ name: 'oclive.log', sizeBytes: 600, modifiedAtEpochMs: 1 }], selectedFile: 'oclive.log', truncated: true, text: 'INFO ready\nWARN slow\nERROR request api_key=secret-value' }
+const basicCredential = btoa('review-user:synthetic-password')
+const snapshot = { directory: 'isolated/logs', files: [{ name: 'oclive.log', sizeBytes: 600, modifiedAtEpochMs: 1 }], selectedFile: 'oclive.log', truncated: true, text: `INFO ready\nWARN slow\nERROR request api_key=secret-value; Authorization: Basic ${basicCredential}` }
 function start() {
   return mount(SupportDiagnostics, { props: { active: true }, global: { plugins: [i18n], stubs: { KernelConnectionSettingsPanel: true } } })
 }
@@ -29,6 +30,7 @@ describe('help diagnostics interactions', () => {
     await wrapper.find('#support-tab-logs').trigger('click')
     expect(wrapper.findAll('.support-log-line')).toHaveLength(3)
     expect(wrapper.text()).not.toContain('secret-value')
+    expect(wrapper.text()).not.toContain(basicCredential)
     expect(wrapper.find('.support-limit').text()).toContain('omitted')
     await wrapper.findAll('select')[1].setValue('error')
     expect(wrapper.findAll('.support-log-line')).toHaveLength(1)
@@ -39,11 +41,13 @@ describe('help diagnostics interactions', () => {
     await flushPromises()
     expect(api.copy).toHaveBeenCalledWith(expect.stringContaining('ERROR request'))
     expect(api.copy.mock.calls[0][0]).not.toContain('secret-value')
+    expect(api.copy.mock.calls[0][0]).not.toContain(basicCredential)
     api.save.mockResolvedValueOnce('isolated/report.txt')
     const exportButton = wrapper.findAll('button').find(button => button.text() === 'Save diagnostic report')!
     await exportButton.trigger('click')
     await flushPromises()
     expect(api.write).toHaveBeenCalledWith('isolated/report.txt', expect.stringContaining('[redacted]'))
+    expect(api.write.mock.calls[0][1]).not.toContain(basicCredential)
     wrapper.unmount()
   })
 
