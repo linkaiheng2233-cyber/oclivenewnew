@@ -883,6 +883,26 @@ flowchart TB
 | **键位绑定** | **设置 → 高级设置** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
 | **发现 / 编程入口** | 原壳保留 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue)、[`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) 与插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）；默认角色库不挂载剧情/语音宿主，隐藏入口不清空旧用户状态。 |
 
+<a id="chatpro-deferred-surfaces"></a>
+
+### 默认聊天版收起与冻结的能力
+
+下表记录从旧的本地小模型参考 Host 界面收起的能力，供内测打包和后续恢复入口核对。**界面隐藏不等于内核停用**，也不把这些 Host 实现写成小 Kernel 的必需职责。旧 Fluent / Tool 壳及共享组件保留源码；默认发行版仍由上表的 RoleWorkspaceShell 接管。
+
+| 能力 | 默认角色工作区的状态 | 保留与恢复锚点 / 注意事项 |
+|------|----------------------|--------------------------------|
+| 剧情/沉浸模式、解锁介绍 | 收起主动切换与引导入口 | `SettingsGeneralTab` 的 `!basicWorkspace && advancedFeaturesEnabled`、`useInteractionModeSettings`；旧壳保留管理路径，隐藏不改角色已保存模式 |
+| 场景移动、异地生活、虚拟时间 | 不挂载日常界面的剧情面板 | `SceneTravelBars`、`AutonomousSceneNotice`、`TimeDial`、`VirtualTimeBar`；旧场景记录不删除、不硬合并 |
+| 历史重新提取记忆 | 基础记录页 `allow-memory-replay=false` | `ChatStorageReplayBar` / `chatStorage` API 保留；普通聊天的记忆读取、提取与持久化仍工作 |
+| 成人扩展、自动节拍与连续生成 | 不向新用户主动开放 | `SettingsView.showAdultSettingsTab` 仍为旧的全局已启用状态保留管理/关闭出口；不因隐藏清空状态，不绕过既有确认与权限 |
+| 语音输入、自动朗读、情感语音、外部 TTS 与模型导入 | 默认壳不挂载语音宿主，基础设置隐藏语音页 | `useVoiceAutoTts`、`useVoiceExpansionWarm`、官方语音目录插件与 `VoiceSettings` 源码保留；打包保留资源不代表功能已向用户开放，也不默认预热语音模型 |
+| 组件管理、市场/分享安装、插件剧情卡与快捷动作 | 基础设置/默认壳收起这些入口 | `SettingsView.showPluginsSettingsTab`、`SimplePluginManagerPanel`、`MarketView`、`PluginSidebarSlots`、`PluginChatHeaderSlots`；依赖、权限和安装复核仍适用，不把旧占位更新检查当可发布能力 |
+| 最小角色源码绑定、内部运行数值与调试面板 | 日常角色库不展示开发面 | `MinimalRoleSourceControls`、`DebugPanel`、`RoleRuntimePanel`；诊断所需的只读状态继续在“帮助与恢复”可达 |
+| 旧 Fluent / Tool 整壳与目录整壳替换 | RoleWorkspace 为默认；Tool 保留显式构建入口，旧 Fluent 文件留存 | `App.vue`、`useOcliveShell`、`directoryShellBootstrap`；保留源码与 Git 基线，不能直接挪走组件目录使引用断裂 |
+| 双核 Beta | **真正冻结，默认关闭**，不在本次内测解冻 | `dual_core` Cargo feature；当前暂停维护和 NULL 补偿缺口以 [双核冻结计划](debt-marathon/long-plans/DUAL-CORE-FREEZE.md) 与 [主台账](TECHNICAL_DEBT_INVENTORY.md) 为准；不是所有高级功能都具有同样的冻结状态 |
+
+**继续工作的能力**：六槽接线、正常聊天/停止与故障恢复、角色包导入导出、身份/关系、按角色分开的记录线程、角色记忆连续性、情绪/表情提示与立绘、本地/云端模型连接、资源协调和回复后处理均未因收起入口而删除。LoRA/GGUF 等仍沿用模型面板现有能力与兼容约束；Win98 彩蛋、明暗切换和帮助日志继续开放。技术债、未完成协议与其他实验开关的状态仍由对应台账拥有，本表不授予解冻权限。
+
 ### 13.2 Chat Pro 外观正交轴 `data-skin`
 
 | 轴 | 属性 / 存储 | SSOT |
