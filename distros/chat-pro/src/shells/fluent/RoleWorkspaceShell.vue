@@ -320,3 +320,7 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
 </template>
 
 <style scoped src="./role-workspace.css"></style>
+
+<style>
+@import '@oclive/shared/styles/win98/shell-role-workspace.css';
+</style>

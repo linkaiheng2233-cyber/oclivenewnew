@@ -207,3 +207,7 @@ h3 { font-size:14px; font-weight:650; margin:0; }
 }
 @media(max-height:650px) { .support-scroll--logs{overflow:auto;display:block}.support-log-view{flex:none;height:240px} }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-recovery.css';
+</style>

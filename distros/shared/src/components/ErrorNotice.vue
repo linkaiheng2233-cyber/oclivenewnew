@@ -34,3 +34,7 @@ const failure = computed(() => toErrorPresentation(props.error, props.summary))
 .error-notice-details summary { cursor: pointer; }
 .error-notice-details pre { margin: 8px 0 0; padding: 10px; border-radius: 6px; background: var(--bg-secondary, #eeeae1); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; font: 12px/1.6 Consolas, monospace; user-select: text; }
 </style>
+
+<style>
+@import '@oclive/shared/styles/win98/component-recovery.css';
+</style>
