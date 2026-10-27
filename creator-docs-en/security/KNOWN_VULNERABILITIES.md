@@ -19,6 +19,8 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
 
+The new-frontend internal package on 2026-10-27 changes the desktop's own version from `0.6.0-rc.1` to `0.6.0-rc.2`. This Cargo.lock delta changes only that workspace package version, with no dependency, checksum, feature or ignore changes. Release gates rerun the audit; the UI update does not resolve the existing warnings.
+
 The 2026-10-27 candidate changes the desktop version to `0.6.0-rc.1` and constrains the property-test-only `proptest` dependency to `~1.11.0`, sharing `bit-set/bit-vec 0.8` with Tauri's `dom_query`. Test counts and duplicate-dependency limits are not relaxed. Existing package dependency edges are preserved; new random-number dependencies serve only this test toolchain, and no ignore entries are added. The newly observed Tokio warning concerns Unix `AsyncFd`, which is not callable in this Windows installer. It still requires separate remediation before a Unix release; Windows verification cannot establish Unix safety.
 
 The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.

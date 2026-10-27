@@ -4,7 +4,7 @@
 
 | 产物 | 当前工作树版本（2026-10-27） | 发版节奏 | 说明 |
 |------|-------------------|----------|------|
-| **桌面 Tauri**（`package.json` / `distros/desktop-tauri`） | **0.6.0-rc.1** | 用户可见功能与安装包 | 候选版；变更暂存 [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` |
+| **桌面 Tauri**（`package.json` / `distros/desktop-tauri`） | **0.6.0-rc.2** | 用户可见功能与安装包 | 候选版；变更暂存 [CHANGELOG.md](../../CHANGELOG.md) `[Unreleased]` |
 | **`oclive-cli`** | **0.1.0** | 脚手架与工具链 | CLI Breaking 见 [DEPRECATED_COMMANDS.md](../../kernel/crates/oclive-cli/DEPRECATED_COMMANDS.md) |
 | **`oclive_kernel_runtime`** | **0.2.0**（crate） | 与 HTTP/`--api` 契约 | 见 [COMPATIBILITY.md](../COMPATIBILITY.md) |
 | **`oclive_validation`** | **0.1.0** | 角色包 / 蓝图校验 | 与编写器 wasm 对齐 |
@@ -17,8 +17,8 @@
 
 ## 当前发布候选版
 
-1. **`0.6.0-rc.1`** 用于本地候选版检查；尚未打 tag 或公开发布。发布前冻结目标提交并完成适用门禁和该提交的远程 CI。
-2. MSI 使用数值版本 **`0.6.0.1`**，其余桌面版本标识保持 **`0.6.0-rc.1`**；CLI 与内核不随桌面版本重复升级。
+1. **`0.6.0-rc.2`** 用于新角色工作区的本地内测候选包，替代旧内测入口；已有本地回滚基线标签，尚未公开发布。发布前冻结目标提交并完成适用门禁和该提交的远程 CI。
+2. MSI 使用数值版本 **`0.6.0.2`**，其余桌面版本标识保持 **`0.6.0-rc.2`**；CLI 与内核不随桌面版本重复升级。
 3. Breaking 角色包：必须链 [V1_TO_V2_MIGRATION.md](../role-pack/V1_TO_V2_MIGRATION.md)。
 
 ## 后续
