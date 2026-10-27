@@ -13,6 +13,25 @@ use tauri::{AppHandle, Manager, State};
 
 const PROBE_TIMEOUT_SECS: u64 = 8;
 
+/// Read at most 200 lines / 96 KiB from an application-owned log, even when the kernel is offline.
+///
+/// # Errors
+/// Returns an IO error for inaccessible or rotated files and rejects paths outside the log root.
+#[tauri::command]
+pub async fn read_support_logs(
+    file_name: Option<String>,
+) -> Result<oclive_kernel_types::models::dto::SupportLogSnapshot, CommandError> {
+    let directory = oclive_kernel_runtime::find_app_data_dir_for_host().join("logs");
+    tokio::task::spawn_blocking(move || {
+        crate::support_logs::read_log_tail(&directory, file_name.as_deref())
+    })
+    .await
+    .map_err(|error| crate::api::error::ApiError::Io {
+        message: error.to_string(),
+    })?
+    .map_err(|message| crate::api::error::ApiError::Io { message }.into())
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EnvironmentDiagnostics {
