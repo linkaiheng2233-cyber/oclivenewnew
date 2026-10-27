@@ -7,8 +7,8 @@
     "test:unit": "vitest run --config vitest.config.ts"
   },
   "dependencies": {
-    "@oclive/chat-pro": "^0.5.2",
-    "@oclive/theater": "^0.5.2",
+    "@oclive/chat-pro": "*",
+    "@oclive/theater": "*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
