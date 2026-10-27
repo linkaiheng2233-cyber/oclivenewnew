@@ -79,7 +79,7 @@ const tabs = ['status', 'errors', 'logs'] as const
             <div class="support-event-meta">
               <time :datetime="new Date(entry.at).toISOString()">{{ new Date(entry.at).toLocaleString() }}</time><code>{{ entry.source }}</code><span :class="`support-level--${entry.level}`">{{ t(`support.${entry.level}`) }}</span><code v-if="entry.code">{{ entry.code }}</code>
             </div>
-            <ErrorNotice :summary="entry.summary" :details="entry.details" />
+            <ErrorNotice :summary="entry.summary" :details="entry.details" :tone="entry.level" />
           </li>
         </ol>
       </section>
@@ -132,7 +132,6 @@ const tabs = ['status', 'errors', 'logs'] as const
 .support-diagnostics {
   --support-border: color-mix(in srgb, var(--accent, #486b62) 12%, var(--border-light));
   --support-muted: color-mix(in srgb, var(--bg-secondary) 65%, var(--bg-primary));
-  --support-thumb: var(--scrollbar-chat-thumb, #486b6240);
   display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; overflow:hidden; font-size:14px;
 }
 .support-diagnostics button { padding:8px 12px; min-height:36px; border:1px solid var(--support-border); border-radius:8px; background:var(--bg-elevated,var(--bg-primary)); color:var(--text-primary); font:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:background .14s,border-color .14s; }
@@ -193,12 +192,6 @@ h3 { font-size:14px; font-weight:650; margin:0; }
 .support-diagnostics :deep(.kernel-panel__code) { min-width:0; font:12px/1.7 Consolas,monospace; overflow-wrap:anywhere; }
 .support-diagnostics :deep(.kernel-panel__raw) { padding:12px 14px; border:1px solid var(--support-border); border-radius:9px; }
 .support-diagnostics :deep(.kernel-panel__pre) { border:1px solid var(--support-border); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.7; }
-.support-scroll,.support-log-view,.support-diagnostics :deep(pre) { scrollbar-width:thin; scrollbar-color:var(--support-thumb) transparent; scrollbar-gutter:stable; }
-.support-scroll::-webkit-scrollbar,.support-log-view::-webkit-scrollbar,.support-diagnostics :deep(pre::-webkit-scrollbar) { width:10px; height:10px; }
-.support-scroll::-webkit-scrollbar-track,.support-log-view::-webkit-scrollbar-track,.support-diagnostics :deep(pre::-webkit-scrollbar-track) { background:transparent; margin-block:6px; }
-.support-scroll::-webkit-scrollbar-thumb,.support-log-view::-webkit-scrollbar-thumb,.support-diagnostics :deep(pre::-webkit-scrollbar-thumb) { background:var(--support-thumb); border:3px solid transparent; background-clip:padding-box; border-radius:12px; }
-.support-scroll::-webkit-scrollbar-thumb:hover,.support-log-view::-webkit-scrollbar-thumb:hover,.support-diagnostics :deep(pre::-webkit-scrollbar-thumb:hover) { background-color:var(--scrollbar-chat-thumb-hover,#486b6260); }
-.support-scroll::-webkit-scrollbar-corner,.support-log-view::-webkit-scrollbar-corner,.support-diagnostics :deep(pre::-webkit-scrollbar-corner) { background:transparent; }
 @media(max-width:820px) { .support-log-controls{grid-template-columns:minmax(140px,1fr) 100px}.support-search{grid-column:1}.support-toolbar{align-items:flex-start}.support-actions{gap:6px} }
 @media(max-width:600px) {
   .support-toolbar{padding:12px 14px 10px;gap:10px}.support-tabs{width:100%;box-sizing:border-box}.support-tabs>button{flex:1;padding:7px 5px}.support-actions{width:100%;justify-content:flex-end}.support-actions>button{flex:1}

@@ -3,6 +3,13 @@ export default {
   importRefreshFailed: '角色包已导入，但列表没有刷新完整。请重新加载角色库，不必重复导入。',
   details: '技术详情',
   dismiss: '关闭提示',
+  tone: { error: '操作未完成', warning: '需要留意', info: '提示', success: '已完成' },
+  detailsHint: '排查时可复制这些信息。',
+  copy: '复制详情',
+  copying: '正在复制…',
+  copied: '详情已复制，分享前请检查内容。',
+  copyFailed: '无法访问剪贴板，请选中下方文字手动复制。',
+  openRecovery: '打开帮助与恢复',
   refreshAfterReply: '回复已收到，但界面状态没有刷新完整。请重新打开角色，不必重发消息。',
   summary: {
     LLM_ERROR: '模型没有成功回复。请打开“模型与连接”检查配置和服务状态。',

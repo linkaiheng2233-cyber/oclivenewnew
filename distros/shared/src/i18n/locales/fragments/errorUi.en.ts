@@ -3,6 +3,13 @@ export default {
   importRefreshFailed: 'The role pack was imported, but the library could not refresh. Reload the library; do not import again.',
   details: 'Technical details',
   dismiss: 'Dismiss notification',
+  tone: { error: 'Action incomplete', warning: 'Needs attention', info: 'Information', success: 'Completed' },
+  detailsHint: 'Copy these details when investigating.',
+  copy: 'Copy details',
+  copying: 'Copying…',
+  copied: 'Details copied. Review them before sharing.',
+  copyFailed: 'The clipboard is unavailable. Select the text below and copy it manually.',
+  openRecovery: 'Open Help & recovery',
   refreshAfterReply: 'Your reply arrived, but the display could not fully refresh. Reopen the role; do not resend the message.',
   summary: {
     KERNEL_OFFLINE: 'The local kernel is disconnected. Try again shortly or reconnect in Help & recovery.',

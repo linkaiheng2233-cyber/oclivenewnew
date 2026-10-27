@@ -78,6 +78,18 @@ html[data-skin="win98"] .error-notice {
   background: #ffffff;
 }
 
+html[data-skin="win98"] .error-notice-symbol {
+  border-radius:0;
+  background:transparent;
+}
+
+html[data-skin="win98"] .error-notice-details button {
+  border:2px outset #dfdfdf;
+  border-radius:0;
+  background:#c0c0c0;
+  color:#000000;
+}
+
 html[data-skin="win98"] .error-notice .error-notice-details pre {
   border-radius: 0;
   border: 2px inset #dfdfdf;
