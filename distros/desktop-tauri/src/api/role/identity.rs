@@ -11,7 +11,7 @@ use oclive_kernel_types::models::dto::{
     GetUserIdentityStateRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
     UserIdentityStateResponse,
 };
-use tauri::State;
+use tauri::{AppHandle, Manager, State};
 
 /// # Errors
 ///
@@ -19,8 +19,14 @@ use tauri::State;
 #[tauri::command]
 pub async fn set_user_identity(
     req: SetUserIdentityRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<UserIdentityStateResponse, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        return crate::kernel_attach::KernelHttpClient::set_user_identity_via_http(&conn, &req)
+            .await
+            .map_err(Into::into);
+    }
     set_user_identity_impl(&state, &req).await
 }
 
@@ -30,8 +36,16 @@ pub async fn set_user_identity(
 #[tauri::command]
 pub async fn set_scene_user_identity(
     req: SetSceneUserIdentityRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<UserIdentityStateResponse, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        return crate::kernel_attach::KernelHttpClient::set_scene_user_identity_via_http(
+            &conn, &req,
+        )
+        .await
+        .map_err(Into::into);
+    }
     set_scene_user_identity_impl(&state, &req).await
 }
 
@@ -41,7 +55,15 @@ pub async fn set_scene_user_identity(
 #[tauri::command]
 pub async fn get_user_identity_state(
     req: GetUserIdentityStateRequest,
+    app: AppHandle,
     state: State<'_, SharedAppState>,
 ) -> Result<UserIdentityStateResponse, CommandError> {
+    if let Some(conn) = app.try_state::<crate::kernel_lifecycle::SharedKernelConnection>() {
+        return crate::kernel_attach::KernelHttpClient::get_user_identity_state_via_http(
+            &conn, &req,
+        )
+        .await
+        .map_err(Into::into);
+    }
     get_user_identity_state_impl(&state, &req).await
 }

@@ -31,13 +31,13 @@ pub fn is_migrations_dir(path: &Path) -> bool {
 
 fn migration_discovery_anchors() -> Vec<PathBuf> {
     let mut anchors = Vec::new();
-    if let Ok(cwd) = std::env::current_dir() {
-        anchors.push(cwd);
-    }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             anchors.push(parent.to_path_buf());
         }
+    }
+    if let Ok(cwd) = std::env::current_dir() {
+        anchors.push(cwd);
     }
     for key in ["OCLIVE_LOCAL_MONOREPO", ENV_ROLES_DIR] {
         if let Ok(raw) = std::env::var(key) {
@@ -72,10 +72,18 @@ fn bundled_migration_candidates(anchors: &[PathBuf]) -> Vec<PathBuf> {
     candidates
 }
 
+fn local_migration_candidates(anchors: &[PathBuf], build_tree: PathBuf) -> Vec<PathBuf> {
+    let mut candidates = bundled_migration_candidates(anchors);
+    // A release must use SQL shipped with its runner. The build machine may
+    // still have a checkout whose migrations have advanced since this build.
+    candidates.push(build_tree);
+    candidates
+}
+
 /// Resolve migrations directory for runtime apply.
 ///
-/// Order: `OCLIVE_MIGRATIONS_DIR` → compile-time crate directory →
-/// executable/cwd-relative bundle → monorepo
+/// Order: `OCLIVE_MIGRATIONS_DIR` → executable/cwd-relative bundle →
+/// compile-time crate directory → monorepo
 /// `kernel/crates/oclive_kernel_host/migrations` (via `find_monorepo_root`) → legacy
 /// `crates/oclive_kernel_host/migrations` → `src-tauri/migrations`.
 ///
@@ -101,22 +109,14 @@ pub fn find_migrations_dir() -> Result<PathBuf, String> {
         ));
     }
 
-    let embedded = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations");
-    if is_migrations_dir(&embedded) {
-        return Ok(embedded);
-    }
-    tried.push(format!(
-        "embedded {} (missing or no .sql)",
-        embedded.display()
-    ));
-
     let anchors = migration_discovery_anchors();
-    for candidate in bundled_migration_candidates(&anchors) {
+    let build_tree = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations");
+    for candidate in local_migration_candidates(&anchors, build_tree) {
         if is_migrations_dir(&candidate) {
             tracing::info!(
                 target: "oclive_migrate",
                 dir = %candidate.display(),
-                "using bundled migrations near executable/cwd"
+                "using local migrations"
             );
             return Ok(candidate);
         }
@@ -407,6 +407,65 @@ mod tests {
             .into_iter()
             .find(|candidate| is_migrations_dir(candidate));
         assert_eq!(found.as_deref(), Some(migrations.as_path()));
+    }
+
+    #[test]
+    fn bundled_migrations_win_over_a_newer_build_checkout() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let bundle = temp.path().join("installed");
+        let shipped = bundle.join("resources").join("migrations");
+        let checkout = temp.path().join("checkout").join("migrations");
+        for path in [&shipped, &checkout] {
+            std::fs::create_dir_all(path).expect("mkdir");
+        }
+        std::fs::write(shipped.join("039_old.sql"), "CREATE TABLE old(id INT);")
+            .expect("shipped SQL");
+        std::fs::write(checkout.join("040_new.sql"), "CREATE TABLE new(id INT);")
+            .expect("new checkout SQL");
+
+        let found = local_migration_candidates(&[bundle], checkout)
+            .into_iter()
+            .find(|candidate| is_migrations_dir(candidate));
+        assert_eq!(found.as_deref(), Some(shipped.as_path()));
+    }
+
+    #[test]
+    fn migration_discovery_places_executable_before_working_directory() {
+        let exe = std::env::current_exe().expect("test executable");
+        let parent = exe.parent().expect("executable directory");
+        let anchors = migration_discovery_anchors();
+        assert_eq!(anchors.first().map(PathBuf::as_path), Some(parent));
+    }
+
+    #[test]
+    fn executable_bundle_wins_over_a_different_working_directory_bundle() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let executable = temp.path().join("installed");
+        let cwd = temp.path().join("other-build");
+        let shipped = executable.join("resources").join("migrations");
+        let unrelated = cwd.join("migrations");
+        for path in [&shipped, &unrelated] {
+            std::fs::create_dir_all(path).expect("mkdir");
+            std::fs::write(path.join("001_init.sql"), "CREATE TABLE t(id INT);").expect("SQL");
+        }
+        let found = local_migration_candidates(&[executable, cwd], temp.path().join("checkout"))
+            .into_iter()
+            .find(|candidate| is_migrations_dir(candidate));
+        assert_eq!(found.as_deref(), Some(shipped.as_path()));
+    }
+
+    #[test]
+    fn development_without_a_bundle_still_finds_build_checkout() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let checkout = temp.path().join("checkout").join("migrations");
+        std::fs::create_dir_all(&checkout).expect("mkdir");
+        std::fs::write(checkout.join("001_init.sql"), "CREATE TABLE t(id INT);")
+            .expect("checkout SQL");
+
+        let found = local_migration_candidates(&[temp.path().join("no-bundle")], checkout.clone())
+            .into_iter()
+            .find(|candidate| is_migrations_dir(candidate));
+        assert_eq!(found.as_deref(), Some(checkout.as_path()));
     }
 
     #[test]

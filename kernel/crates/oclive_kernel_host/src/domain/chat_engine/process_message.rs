@@ -375,6 +375,7 @@ pub async fn process_proactive_turn(
         user_message: String::new(),
         scene_id: proposal.scene_id,
         session_id: proposal.session_id,
+        chat_thread_id: None,
         include_raw_reply: None,
         adult: None,
     };
@@ -410,6 +411,8 @@ async fn run_with_origin_boundary(
     origin: TurnOrigin,
 ) -> std::result::Result<SendMessageResponse, ProcessMessageError> {
     if origin == TurnOrigin::User {
+        super::chat_thread::validate(req)
+            .map_err(|source| ProcessMessageError::stage("chat_thread", source))?;
         if req.client_request_id.is_none() {
             return run(
                 state,
@@ -451,6 +454,7 @@ async fn run_with_origin_boundary(
         user_message: String::new(),
         scene_id: req.scene_id.clone(),
         session_id: req.session_id.clone(),
+        chat_thread_id: None,
         include_raw_reply: req.include_raw_reply,
         adult: None,
     };
@@ -517,6 +521,7 @@ async fn try_agent_shortcut(
             scene_id.to_string(),
             req.user_message.as_str(),
             agent_out.reply,
+            req.chat_thread_id.as_deref(),
         )
         .await
         .map(Some)

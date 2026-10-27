@@ -1294,18 +1294,26 @@ const EXPECTED_TEXT_TASK_FINAL_CHECK: &str = "复述、总结或改写用户的�
 const PRE_TEXT_TASK_FINAL_CHECK: &str =
     "回答主体没有把用户的“我”和角色的“你”倒置；成品不等于用户原句，也不重复上一轮助手回复；";
 
-// Retain the historical digests as evidence for all bytes OUTSIDE the two approved
-// footer edits. Require each new fragment exactly once before reversing precisely
+const PORTRAIT_EXAMPLE_ADDITION: &str = r#","portrait_hint":"neutral""#;
+const PORTRAIT_INSTRUCTION_ADDITION: &str = "portrait_hint 是独立的外显表情，只能选 happy/sad/angry/neutral/excited/confused/shy；害羞、羞赧或不好意思时选 shy，普通开心选 happy；激动、雀跃、迫不及待选 excited；不解、迷茫、没弄懂选 confused；无明确情绪时选 neutral，不能把 shy 写进 labels。两种开心的区别：普通微笑可用 labels=[joy]、intensity=0.4、portrait_hint=happy；兴奋地欢呼、雀跃或迫不及待时用 labels=[joy]、intensity=0.9、portrait_hint=excited。表情描述当前角色自己，不描述用户；整条标记必须以 [/EMO] 闭合。";
+
+// Retain historical digests outside the approved text-task and portrait-hint
+// revisions. Require each new fragment exactly once before reversing precisely
 // those edits; this is not an assertion that the current prompt equals the old one.
 fn pre_text_task_footer_revision_hash(text: &str) -> String {
     assert_eq!(text.matches(EXPECTED_TEXT_TASK_BLOCK).count(), 1);
     assert_eq!(text.matches(EXPECTED_TEXT_TASK_FINAL_CHECK).count(), 1);
     assert!(!text.contains(PRE_TEXT_TASK_FINAL_CHECK));
+    assert_eq!(text.matches(PORTRAIT_EXAMPLE_ADDITION).count(), 1);
+    assert_eq!(text.matches(PORTRAIT_INSTRUCTION_ADDITION).count(), 1);
     let previous = text.replacen(EXPECTED_TEXT_TASK_BLOCK, "", 1).replacen(
         EXPECTED_TEXT_TASK_FINAL_CHECK,
         PRE_TEXT_TASK_FINAL_CHECK,
         1,
     );
+    let previous = previous
+        .replacen(PORTRAIT_EXAMPLE_ADDITION, "", 1)
+        .replacen(PORTRAIT_INSTRUCTION_ADDITION, "", 1);
     sha256_hex(&previous)
 }
 
@@ -1689,6 +1697,8 @@ fn latest_user_message_and_final_turn_instruction_follow_emo_schema_in_both_path
     assert!(prompt.contains("[/EMO]"));
     assert!(prompt.contains("joy"));
     assert!(prompt.contains("narrative_hint"));
+    assert!(prompt.contains("portrait_hint"));
+    assert!(prompt.contains("happy/sad/angry/neutral/excited/confused/shy"));
 
     let segments = PromptBuilder::build_prompt_segments(&input);
     let suffix = segments.dynamic_suffix.as_str();

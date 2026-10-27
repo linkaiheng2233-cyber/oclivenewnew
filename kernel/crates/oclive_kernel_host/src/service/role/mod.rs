@@ -6,6 +6,7 @@ pub mod display;
 pub mod identity;
 pub mod interaction;
 pub mod minimal;
+pub mod relation;
 pub mod runtime;
 pub mod slot_session;
 

@@ -18,6 +18,8 @@ use crate::domain::chat_engine::chat_stage::ChatStage;
 pub(crate) struct PostTurnPolicy {
     pub bot_emotion: crate::models::Emotion,
     pub bot_emotion_str: String,
+    pub portrait_emotion_str: String,
+    pub portrait_intensity: Option<f64>,
     pub event: Event,
     pub memory_line: String,
     pub memory_importance: f64,
@@ -227,11 +229,13 @@ pub(crate) async fn persist_atomic_movement_portrait(
         Ok(PostPersistOutcome {
             favor_current,
             movement,
-            portrait_emotion_str: policy.bot_emotion_str.clone(),
+            portrait_emotion_str: policy.portrait_emotion_str.clone(),
             visual_state_id: resolve_visual_state_for_role(
                 role,
-                policy.bot_emotion_str.as_str(),
-                Some(complex_emotion_out.intensity),
+                policy.portrait_emotion_str.as_str(),
+                policy
+                    .portrait_intensity
+                    .or(Some(complex_emotion_out.intensity)),
                 state.host_profile.visual_presentation_mode.as_deref(),
             ),
         })
@@ -306,6 +310,7 @@ pub(crate) async fn append_turn_to_chat_storage(
     complex_emotion: Option<&ComplexEmotionOutput>,
     reply_segments: Option<&[String]>,
     reply_segment_delays_ms: Option<&[u32]>,
+    chat_thread_id: Option<&str>,
 ) -> ChatAppendIds {
     let TurnIds {
         mrid,
@@ -346,7 +351,7 @@ pub(crate) async fn append_turn_to_chat_storage(
     });
     let persist = TurnPersistRequest {
         idempotency_key: None,
-        session_id: srid.to_string(),
+        session_id: crate::domain::chat_engine::chat_thread::storage_id(srid, chat_thread_id),
         role_id: mrid.to_string(),
         scene_id: scene_id.to_string(),
         user_message: user_message.to_string(),
@@ -376,26 +381,38 @@ pub(crate) async fn append_turn_to_chat_storage(
     append_turn_inner(state, srid, persist, "append_turn failed").await
 }
 
+pub(crate) struct AgentChatTurn<'a> {
+    pub user_message: &'a str,
+    pub reply: &'a str,
+    pub user_emotion: &'a str,
+    pub bot_emotion: &'a str,
+    pub chat_thread_id: Option<&'a str>,
+}
+
 pub(crate) async fn append_agent_turn_to_chat_storage(
     state: &crate::state::AppState,
     ids: TurnIds<'_>,
     role: &Role,
-    user_message: &str,
-    reply: &str,
-    user_emotion: &str,
-    bot_emotion: &str,
+    turn: AgentChatTurn<'_>,
 ) -> ChatAppendIds {
     let TurnIds {
         mrid,
         srid,
         scene_id,
     } = ids;
+    let AgentChatTurn {
+        user_message,
+        reply,
+        user_emotion,
+        bot_emotion,
+        chat_thread_id,
+    } = turn;
     if reply.trim().is_empty() {
         return ChatAppendIds::default();
     }
     let persist = TurnPersistRequest {
         idempotency_key: None,
-        session_id: srid.to_string(),
+        session_id: crate::domain::chat_engine::chat_thread::storage_id(srid, chat_thread_id),
         role_id: mrid.to_string(),
         scene_id: scene_id.to_string(),
         user_message: user_message.to_string(),

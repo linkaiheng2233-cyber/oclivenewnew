@@ -14,7 +14,7 @@ use crate::state::AppState;
 use super::emotion_to_dto;
 use super::relation_snapshot::load_relation_snapshot;
 use super::turn_context::TurnIds;
-use super::turn_pipeline::persistence::append_agent_turn_to_chat_storage;
+use super::turn_pipeline::persistence::{append_agent_turn_to_chat_storage, AgentChatTurn};
 
 /// Loads relation / favorability / portrait emotion in parallel and builds a minimal [`SendMessageResponse`] for Agent shortcut, etc.
 #[allow(clippy::too_many_arguments)]
@@ -27,6 +27,7 @@ pub(crate) async fn build_minimal_response(
     scene_id: String,
     user_message: &str,
     reply: String,
+    chat_thread_id: Option<&str>,
 ) -> Result<SendMessageResponse> {
     let (_, emotion_result, user_relation_key) = tokio::try_join!(
         state
@@ -77,10 +78,13 @@ pub(crate) async fn build_minimal_response(
             scene_id: scene_id.as_str(),
         },
         role,
-        user_message,
-        reply.as_str(),
-        user_emotion_str.as_str(),
-        bot_emotion.as_str(),
+        AgentChatTurn {
+            user_message,
+            reply: reply.as_str(),
+            user_emotion: user_emotion_str.as_str(),
+            bot_emotion: bot_emotion.as_str(),
+            chat_thread_id,
+        },
     )
     .await;
 

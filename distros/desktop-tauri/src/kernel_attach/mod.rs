@@ -2,6 +2,7 @@
 
 mod chat;
 mod resources;
+mod role_state;
 mod theater;
 
 use crate::error::AppError;
@@ -90,6 +91,9 @@ fn probe_http_client() -> &'static reqwest::Client {
     static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
+            // Kernel health/auth probes only target loopback, like KernelConnection.
+            // Inheriting HTTP_PROXY can stall startup or route local auth off-host.
+            .no_proxy()
             .build()
             .unwrap_or_else(|_| reqwest::Client::new())
     })
@@ -207,4 +211,41 @@ fn parse_sse_block(block: &str) -> (String, String) {
         }
     }
     (event_name, data_lines.join("\n"))
+}
+
+#[cfg(test)]
+mod startup_probe_tests {
+    use super::KernelHttpClient;
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    // Also run this in a subprocess with HTTP_PROXY/HTTPS_PROXY pointing at a
+    // closed port and NO_PROXY empty, so a global environment mutation is unnecessary.
+    #[tokio::test]
+    async fn loopback_health_probe_reaches_local_kernel() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind loopback");
+        let address = listener.local_addr().expect("local addr");
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("accept");
+            let mut request = [0_u8; 2048];
+            let size = socket.read(&mut request).await.expect("read health");
+            assert!(String::from_utf8_lossy(&request[..size]).starts_with("GET /health "));
+            socket
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok")
+                .await
+                .expect("health response");
+        });
+        let ready = KernelHttpClient::probe_health_timeout(
+            &format!("http://{address}"),
+            Duration::from_secs(2),
+        )
+        .await;
+        if !ready {
+            server.abort();
+        }
+        assert!(ready, "loopback probe must not use an environment proxy");
+        server.await.expect("health server");
+    }
 }

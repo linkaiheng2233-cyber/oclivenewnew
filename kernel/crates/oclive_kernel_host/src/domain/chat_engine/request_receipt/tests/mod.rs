@@ -123,6 +123,22 @@ async fn cancelled_owner_is_never_taken_over() {
 }
 
 #[tokio::test]
+async fn changed_transcript_cannot_reuse_a_completed_turn_identity() {
+    let (db, _) = fixture().await;
+    let mut req = request();
+    req.chat_thread_id = Some("b1a27229-4f57-4456-b37f-fbc41b026871".into());
+    execute(&db, &req, async { Ok(response()) }).await.unwrap();
+    req.chat_thread_id = Some("b1a27229-4f57-4456-b37f-fbc41b026872".into());
+    assert!(matches!(
+        execute(&db, &req, async {
+            panic!("different thread must not execute")
+        })
+        .await,
+        Err(AppError::ChatRequestConflict)
+    ));
+}
+
+#[tokio::test]
 async fn execution_error_including_runtime_not_ready_becomes_unconfirmed_without_retry() {
     let (db, _) = fixture().await;
     let req = request();

@@ -249,6 +249,7 @@ fn turn_request(case: &Case) -> support::SendMessageRequest {
         user_message: case.message.into(),
         scene_id: Some(SCENE_ID.into()),
         session_id: None,
+        chat_thread_id: None,
         include_raw_reply: Some(true),
         adult: None,
     }

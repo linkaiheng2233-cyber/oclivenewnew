@@ -407,6 +407,7 @@ async fn run_scenario(scenario: &str, root: &Path) -> (Map<String, Value>, Vec<S
             user_message: user_msg.to_string(),
             scene_id: Some(SCENE_ID.to_string()),
             session_id: None,
+            chat_thread_id: None,
             include_raw_reply: Some(true),
             adult: None,
         };

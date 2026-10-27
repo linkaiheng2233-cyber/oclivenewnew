@@ -184,6 +184,7 @@ pub(crate) async fn chat(
         user_message,
         scene_id: body.scene_id,
         session_id: body.session_id,
+        chat_thread_id: body.chat_thread_id,
         include_raw_reply: body.include_raw_reply,
         adult: body.adult,
     };
@@ -318,6 +319,7 @@ pub(crate) async fn chat_stream(
         user_message,
         scene_id: body.scene_id,
         session_id: body.session_id,
+        chat_thread_id: body.chat_thread_id,
         include_raw_reply: body.include_raw_reply,
         adult: body.adult,
     };

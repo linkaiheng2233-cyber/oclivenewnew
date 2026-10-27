@@ -4,6 +4,7 @@
 //! Scene and favorability sub-logic: [`context`], [`scene`], [`favor`].
 
 pub mod chat_stage;
+mod chat_thread;
 pub(crate) mod context;
 pub(crate) mod dispatch;
 pub(crate) mod favor;
@@ -463,6 +464,7 @@ mod tests {
                 user_message: "Hello there".to_string(),
                 scene_id: None,
                 session_id: None,
+                chat_thread_id: None,
                 include_raw_reply: None,
                 adult: None,
             },
