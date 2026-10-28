@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import type { ComposerTranslation } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProtocolInstallQueue, installPendingProtocolPlugins } from '../composables/useAppBootstrap'
@@ -28,6 +29,7 @@ vi.mock('@oclive/shared/composables/usePluginInstallReviewHint', () => ({
 describe('pending protocol plugin installation', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
   })
 
   it.each(['consume', 'first-install'])('keeps remaining queued installs when advanced closes during %s', async (stage) => {
@@ -123,5 +125,53 @@ describe('pending protocol plugin installation', () => {
     expect(showPluginInstallReviewHint).toHaveBeenCalledOnce()
     expect(refreshPlugins).toHaveBeenCalledOnce()
     expect(openPluginManagerPanel).toHaveBeenCalledOnce()
+  })
+
+  it('does not install when the source confirmation is declined', async () => {
+    vi.mocked(window.confirm).mockReturnValue(false)
+    consumePendingProtocolInstalls.mockResolvedValue([{ gitUrl: 'https://example.test/plugin.git' }])
+    await installPendingProtocolPlugins({
+      showToast: vi.fn(),
+      t: vi.fn((key: string) => key) as unknown as ComposerTranslation,
+      refreshPlugins: vi.fn(async () => {}),
+      openPluginManagerPanel: vi.fn(),
+    })
+    expect(window.confirm).toHaveBeenCalledOnce()
+    expect(installPluginFromGit).not.toHaveBeenCalled()
+  })
+
+  it.each(['file:///C:/plugin', 'http://localhost/plugin', 'https://user:secret@example.test/plugin', 'https://example.test/plugin?token=secret'])('rejects unsafe protocol source %s before confirmation', async (gitUrl) => {
+    consumePendingProtocolInstalls.mockResolvedValue([{ gitUrl }])
+    await installPendingProtocolPlugins({
+      showToast: vi.fn(),
+      t: vi.fn((key: string) => key) as unknown as ComposerTranslation,
+      refreshPlugins: vi.fn(async () => {}),
+      openPluginManagerPanel: vi.fn(),
+    })
+    expect(window.confirm).not.toHaveBeenCalled()
+    expect(installPluginFromGit).not.toHaveBeenCalled()
+  })
+
+  it('waits for confirmation and rechecks the advanced-feature gate', async () => {
+    const queue = createProtocolInstallQueue()
+    consumePendingProtocolInstalls.mockResolvedValue([{ gitUrl: 'https://example.test/plugin.git' }])
+    let finish!: (value: boolean) => void
+    let enabled = true
+    const pending = installPendingProtocolPlugins({
+      queue,
+      advancedFeaturesEnabled: () => enabled,
+      confirmInstall: () => new Promise<boolean>((resolve) => { finish = resolve }),
+      showToast: vi.fn(),
+      t: vi.fn((key: string) => key) as unknown as ComposerTranslation,
+      refreshPlugins: vi.fn(async () => {}),
+      openPluginManagerPanel: vi.fn(),
+    })
+    await vi.waitFor(() => expect(finish).toBeDefined())
+    expect(installPluginFromGit).not.toHaveBeenCalled()
+    enabled = false
+    finish(true)
+    await pending
+    expect(installPluginFromGit).not.toHaveBeenCalled()
+    expect(queue.pending).toHaveLength(1)
   })
 })

@@ -54,6 +54,7 @@ export async function installPendingProtocolPlugins(options: {
   t: ComposerTranslation
   refreshPlugins: () => Promise<void>
   openPluginManagerPanel: () => void
+  confirmInstall?: (gitUrl: string) => boolean | Promise<boolean>
 }): Promise<void> {
   if (options.advancedFeaturesEnabled?.() === false)
     return
@@ -73,6 +74,22 @@ export async function installPendingProtocolPlugins(options: {
         if (!git)
           continue
         try {
+          const source = new URL(git)
+          if (git.length > 4096 || source.protocol !== 'https:' || !source.hostname
+            || source.username || source.password || source.search || source.hash) {
+            options.showToast('error', options.t('app.toast.pluginLinkInvalid'))
+            continue
+          }
+          // A protocol event supplies a request, never consent to install its code.
+          const confirmed = await (options.confirmInstall
+            ? options.confirmInstall(git)
+            : window.confirm(options.t('app.toast.pluginProtocolConfirm', { source: git })))
+          if (!confirmed)
+            continue
+          if (options.advancedFeaturesEnabled?.() === false) {
+            queue.pending.unshift(item)
+            return
+          }
           const result = await installPluginFromGit(git)
           // Already-issued installs may finish; hidden tools must not reopen their UI.
           await options.refreshPlugins()

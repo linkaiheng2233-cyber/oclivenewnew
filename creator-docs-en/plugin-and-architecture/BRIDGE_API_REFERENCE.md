@@ -69,6 +69,10 @@ Parameter / field names follow **JSON** (camelCase and snake_case mixed to match
 | `import_role` | Import a pack | `import:role` | yes | `{ "path": "C:/path.zip", "overwrite": false }` or **`src_path`** | `{ "role_id": "...", "ok": true }` |
 | `delete_role` | Delete local role | `delete:role` | yes | `{ "role_id": "..." }` or `{ "roleId": "..." }` | same as `delete_role` command |
 
+ZIP/ocpak role imports allow at most 20,000 entries, 256 MiB expanded per file and 1 GiB expanded in total. Actual reads enforce the byte budget instead of trusting ZIP metadata alone. Preview metadata has a separate 4 MiB limit. The source/destination overlap rule below applies to directory imports.
+
+Role ZIP imports allow at most 20,000 entries, 256 MiB expanded per file and 1 GiB expanded in total. The reader also counts actual bytes rather than trusting ZIP size metadata. Preview metadata has a separate 4 MiB limit. Exceeding a budget aborts import and preserves the previous pack.
+
 Role overwrite imports copy and validate a separate staging directory before replacing the old pack. Identical or overlapping source/destination paths are rejected; copy failures preserve the old pack. Role deletion stages the role directory and mirror, then commits database deletion and its recovery marker in one transaction. Restart restores directories for an interrupted pre-commit operation and only finishes cleanup after commit. `delete_role` returns `{ "ok": true, "role_id": "...", "cleanup_pending": false }`. Optional `cleanup_pending: true` means deletion committed but staged files or plugin UI state still require retry/restart cleanup; it does not mean the database rolled back. Older consumers may ignore the additive field. Do not manually remove `.oclive-role-import-*` / `.oclive-delete-*` staging directories during recovery.
 | `update_settings` | Update whitelisted app settings | `write:settings` | yes | see `update_settings_impl` | host‑specific |
 | `get_conversation_list` | Session metadata list | `read:conversations` | yes | `{}` | `{ "items": [ { session_namespace, turn_count, last_at } ] }` |

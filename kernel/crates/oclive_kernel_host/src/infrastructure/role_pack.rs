@@ -5,6 +5,7 @@ use crate::infrastructure::storage::RoleStorage;
 use crate::models::dto::ImportProgress;
 use crate::models::Role;
 use std::fs::{self, File};
+use std::io::Read;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use zip::write::{SimpleFileOptions, ZipWriter};
@@ -13,6 +14,48 @@ use zip::{CompressionMethod, ZipArchive};
 use crate::models::role_manifest_disk::DiskRoleManifest;
 use oclive_validation::PIPELINE_BLUEPRINT_FILENAME;
 use serde::Deserialize;
+
+#[derive(Clone, Copy)]
+struct PackImportLimits {
+    entries: usize,
+    entry_bytes: u64,
+    total_bytes: u64,
+}
+
+const PACK_IMPORT_LIMITS: PackImportLimits = PackImportLimits {
+    entries: 20_000,
+    entry_bytes: 256 * 1024 * 1024,
+    total_bytes: 1024 * 1024 * 1024,
+};
+const MAX_ROLE_METADATA_BYTES: u64 = 4 * 1024 * 1024;
+
+fn read_preview_metadata(reader: impl Read) -> Result<String> {
+    let mut bytes = Vec::new();
+    reader
+        .take(MAX_ROLE_METADATA_BYTES + 1)
+        .read_to_end(&mut bytes)?;
+    if bytes.len() as u64 > MAX_ROLE_METADATA_BYTES {
+        return Err(AppError::InvalidParameter(
+            "Role pack metadata exceeds 4 MiB".into(),
+        ));
+    }
+    String::from_utf8(bytes)
+        .map_err(|_| AppError::InvalidParameter("Role metadata must be UTF-8".into()))
+}
+
+fn copy_role_entry_bounded(
+    reader: impl Read,
+    writer: &mut impl std::io::Write,
+    limit: u64,
+) -> Result<u64> {
+    let written = std::io::copy(&mut reader.take(limit.saturating_add(1)), writer)?;
+    if written > limit {
+        return Err(AppError::InvalidParameter(
+            "Role pack expanded data exceeds import budget".into(),
+        ));
+    }
+    Ok(written)
+}
 
 #[derive(Deserialize)]
 struct BlueprintPackPreview {
@@ -126,7 +169,7 @@ fn peek_role_folder_manifest(dir: &Path) -> Result<(String, String, String)> {
         if !path.is_file() {
             continue;
         }
-        let raw = fs::read_to_string(&path).map_err(AppError::IoError)?;
+        let raw = read_preview_metadata(File::open(&path)?)?;
         return parse_pack_preview(file_name, &raw).ok_or_else(|| {
             AppError::InvalidParameter(format!(
                 "Role pack format: {file_name} has invalid role metadata"
@@ -152,6 +195,11 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
     let mut archive = ZipArchive::new(file).map_err(|_| {
         AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into())
     })?;
+    if archive.len() > PACK_IMPORT_LIMITS.entries {
+        return Err(AppError::InvalidParameter(
+            "Role pack exceeds 20000 archive entries".into(),
+        ));
+    }
     let mut candidates: Vec<(u8, u8, usize)> = Vec::new();
     for i in 0..archive.len() {
         let f = archive.by_index(i).map_err(|_| {
@@ -185,10 +233,7 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
                 AppError::InvalidParameter("Role pack format: archive entry name is invalid".into())
             })?
             .to_string();
-        let mut s = String::new();
-        std::io::Read::read_to_string(&mut f, &mut s).map_err(|_| {
-            AppError::InvalidParameter("Role pack format: cannot read manifest from archive".into())
-        })?;
+        let s = read_preview_metadata(&mut f)?;
         if let Some(preview) = parse_pack_preview(&name, &s) {
             return Ok(preview);
         }
@@ -201,7 +246,16 @@ pub fn peek_role_pack_manifest(src: &Path) -> Result<(String, String, String)> {
 fn unzip_to(
     src: &Path,
     dest: &Path,
+    on_entry: impl FnMut(usize, usize, Option<&str>),
+) -> Result<()> {
+    unzip_with_limits(src, dest, on_entry, PACK_IMPORT_LIMITS)
+}
+
+fn unzip_with_limits(
+    src: &Path,
+    dest: &Path,
     mut on_entry: impl FnMut(usize, usize, Option<&str>),
+    limits: PackImportLimits,
 ) -> Result<()> {
     let file = File::open(src).map_err(|e| {
         AppError::InvalidParameter(format!("Role pack format: cannot open file ({e})"))
@@ -209,6 +263,13 @@ fn unzip_to(
     let mut archive = ZipArchive::new(file).map_err(|_| {
         AppError::InvalidParameter("Role pack format: not a valid ZIP/ocpak archive".into())
     })?;
+    if archive.len() > limits.entries {
+        return Err(AppError::InvalidParameter(format!(
+            "Role pack exceeds {} archive entries",
+            limits.entries
+        )));
+    }
+    let mut expanded = 0u64;
     let total = archive.len().max(1);
     for i in 0..archive.len() {
         let mut file = archive
@@ -219,6 +280,14 @@ fn unzip_to(
             .map_err(|e| AppError::Unknown(e.to_string()))?
             .to_string();
         let normalized_name = name.replace('\\', "/");
+        if file
+            .unix_mode()
+            .is_some_and(|mode| mode & 0o170000 == 0o120000)
+        {
+            return Err(AppError::InvalidParameter(
+                "Role pack cannot contain symbolic links".into(),
+            ));
+        }
         if !safe_zip_path(&name) {
             on_entry(i + 1, total, None);
             continue;
@@ -227,11 +296,18 @@ fn unzip_to(
         if normalized_name.ends_with('/') {
             fs::create_dir_all(&outpath)?;
         } else {
+            let remaining = limits.total_bytes.saturating_sub(expanded);
+            let allowed = limits.entry_bytes.min(remaining);
+            if file.size() > allowed {
+                return Err(AppError::InvalidParameter(
+                    "Role pack expanded data exceeds import budget".into(),
+                ));
+            }
             if let Some(p) = outpath.parent() {
                 fs::create_dir_all(p)?;
             }
             let mut outfile = File::create(&outpath)?;
-            std::io::copy(&mut file, &mut outfile)?;
+            expanded += copy_role_entry_bounded(&mut file, &mut outfile, allowed)?;
         }
         on_entry(i + 1, total, Some(normalized_name.as_str()));
     }
@@ -729,6 +805,58 @@ mod tests {
         assert!(import_role_pack(&storage, &role, true, |_| {}).is_err());
         assert_eq!(fs::read(role.join("core_personality.txt")).unwrap(), before);
         assert!(storage.load_role("example").is_ok());
+    }
+
+    #[test]
+    fn archive_entry_and_expanded_byte_budgets_are_enforced() {
+        let fixture = tempdir().unwrap();
+        let archive_path = fixture.path().join("budget.zip");
+        let file = File::create(&archive_path).unwrap();
+        let mut zip = ZipWriter::new(file);
+        for name in ["one.txt", "two.txt", "three.txt"] {
+            zip.start_file(name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(b"abcdefghijkl").unwrap();
+        }
+        zip.finish().unwrap();
+        for limits in [
+            PackImportLimits {
+                entries: 2,
+                entry_bytes: 32,
+                total_bytes: 100,
+            },
+            PackImportLimits {
+                entries: 10,
+                entry_bytes: 8,
+                total_bytes: 100,
+            },
+            PackImportLimits {
+                entries: 10,
+                entry_bytes: 16,
+                total_bytes: 20,
+            },
+        ] {
+            let output = tempdir().unwrap();
+            assert!(unzip_with_limits(&archive_path, output.path(), |_, _, _| {}, limits).is_err());
+        }
+    }
+
+    #[test]
+    fn actual_stream_budget_does_not_trust_declared_size() {
+        let mut output = Vec::new();
+        assert!(
+            copy_role_entry_bounded(std::io::Cursor::new(vec![0; 1000]), &mut output, 8).is_err()
+        );
+        assert_eq!(output.len(), 9);
+    }
+
+    #[test]
+    fn preview_metadata_has_a_separate_small_budget() {
+        assert!(read_preview_metadata(std::io::Cursor::new(vec![
+            b' ';
+            MAX_ROLE_METADATA_BYTES as usize
+                + 1
+        ]))
+        .is_err());
     }
 
     #[test]

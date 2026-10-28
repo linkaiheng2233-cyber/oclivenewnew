@@ -97,6 +97,8 @@ export default {
       relationSetPerScene: 'Scene identity set: {name}',
       relationSetGlobal: 'Identity set: {name}',
       pluginInstalledFromWeb: 'Installed plugin from web link: {id}',
+      pluginLinkInvalid: 'Use an HTTPS repository URL without credentials or query parameters.',
+      pluginProtocolConfirm: 'A web page requested installation from:\n{source}\n\nThis repository code has not been verified. Continue only if you trust its source. Review its code and permissions after installation; high-risk capabilities require separate authorization. Install?',
       pluginReviewSource:
         'Plugin {id} installed at {path}. Review manifest.json and source before use; high-risk permissions require explicit host grants.',
       pluginFilesChanged: 'Plugin files changed; refreshed',

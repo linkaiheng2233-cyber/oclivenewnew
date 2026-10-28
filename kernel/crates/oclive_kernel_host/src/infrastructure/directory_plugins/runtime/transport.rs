@@ -56,7 +56,7 @@ fn resolve_existing_plugin_asset(resolved: &Path) -> Option<PathBuf> {
     None
 }
 
-/// Resolve a normalized relative asset path under a plugin root without `canonicalize`.
+/// Resolve an existing asset and check its final path remains under the plugin root.
 ///
 /// # Errors
 ///
@@ -77,7 +77,29 @@ pub fn find_plugin_asset_path(entry: &PluginRootEntry, rel: &str) -> Result<Path
     if !resolved.starts_with(&entry.canonical) {
         return Err("path escapes plugin directory".into());
     }
-    resolve_existing_plugin_asset(&resolved).ok_or_else(|| format!("not found: {rel}"))
+    let candidate =
+        resolve_existing_plugin_asset(&resolved).ok_or_else(|| format!("not found: {rel}"))?;
+    let canonical = candidate
+        .canonicalize()
+        .map_err(|e| format!("resolve asset: {e}"))?;
+    if !canonical.starts_with(&entry.canonical) {
+        return Err("path escapes plugin directory".into());
+    }
+    let relative = candidate
+        .strip_prefix(&entry.canonical)
+        .map_err(|_| "invalid asset root")?;
+    let mut component = entry.canonical.clone();
+    for segment in relative.components() {
+        component.push(segment);
+        if std::fs::symlink_metadata(&component)
+            .map_err(|e| format!("read asset metadata: {e}"))?
+            .file_type()
+            .is_symlink()
+        {
+            return Err("linked plugin assets are not allowed".into());
+        }
+    }
+    Ok(canonical)
 }
 
 pub(crate) fn plugin_roots_from_scan(
@@ -276,16 +298,76 @@ pub(crate) fn parse_ready_line(
 }
 
 pub(crate) fn rpc_url_is_loopback(url: &str) -> bool {
-    let rest = match url
-        .strip_prefix("http://")
-        .or_else(|| url.strip_prefix("https://"))
-    {
-        Some(r) => r,
-        None => return false,
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return false;
     };
-    let host = match rest.split('/').next() {
-        Some(h) => h.split(':').next().unwrap_or(h),
-        None => return false,
-    };
-    matches!(host, "127.0.0.1" | "localhost" | "[::1]") || host.eq_ignore_ascii_case("localhost")
+    matches!(parsed.scheme(), "http" | "https")
+        && parsed.username().is_empty()
+        && parsed.password().is_none()
+        && crate::infrastructure::is_loopback_endpoint(parsed.as_str())
+}
+
+#[cfg(test)]
+mod transport_security_tests {
+    use super::*;
+
+    #[test]
+    fn rpc_loopback_uses_real_url_host_and_rejects_userinfo() {
+        for allowed in [
+            "http://127.0.0.1:3123/rpc",
+            "http://localhost/rpc",
+            "https://[::1]:9876/rpc",
+        ] {
+            assert!(rpc_url_is_loopback(allowed), "{allowed}");
+        }
+        for rejected in [
+            "http://127.0.0.1:80@evil.example/rpc",
+            "http://localhost@evil.example",
+            "http://evil.example@localhost/rpc",
+            "http://localhost.evil.example",
+            "file://localhost/rpc",
+        ] {
+            assert!(!rpc_url_is_loopback(rejected), "{rejected}");
+        }
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn junction_asset_cannot_escape_root() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("plugin");
+        let outside = fixture.path().join("outside");
+        std::fs::create_dir(&root).unwrap();
+        std::fs::create_dir(&outside).unwrap();
+        std::fs::write(outside.join("private.txt"), b"fixture only").unwrap();
+        let link = root.join("linked");
+        // Junctions need no Developer Mode/admin; both paths are new owned fixtures.
+        let result = std::process::Command::new("cmd")
+            .args(["/c", "mklink", "/J"])
+            .arg(&link)
+            .arg(&outside)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        assert!(
+            find_plugin_asset_path(&PluginRootEntry::from_root(root), "linked/private.txt")
+                .is_err()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlink_asset_cannot_escape_root() {
+        let fixture = tempfile::tempdir().unwrap();
+        let root = fixture.path().join("plugin");
+        std::fs::create_dir(&root).unwrap();
+        let outside = fixture.path().join("private.txt");
+        std::fs::write(&outside, b"fixture only").unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("linked.txt")).unwrap();
+        assert!(find_plugin_asset_path(&PluginRootEntry::from_root(root), "linked.txt").is_err());
+    }
 }

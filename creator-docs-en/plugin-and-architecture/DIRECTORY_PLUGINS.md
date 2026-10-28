@@ -8,6 +8,10 @@ User paths **A1–C1**: scanning `distros/chat-pro/plugins/`, `manifest.json`, c
 
 [中文](../../creator-docs/plugin-and-architecture/DIRECTORY_PLUGINS.md)
 
+**Address and file boundaries**: directory RPC parses the actual URL host and rejects userinfo impersonating loopback. Local JSON-RPC does not follow redirects or fall back to an inherited proxy client if secure client construction fails. Assets require a final canonical path inside the plugin root and reject linked components, including junction/symlink escapes. The conditionally enabled web-install entry accepts HTTPS repository URLs without credentials, query parameters or fragments. It displays the source and requires confirmation before installation; cancellation installs nothing. Source review and high-risk authorization remain separate. This confirmation is neither publisher signature verification nor a complete pre-install manifest-permission review.
+
+**Address and file boundaries**: directory RPC parses the actual URL host and rejects userinfo impersonating a loopback address. Local JSON-RPC never automatically follows redirects or falls back to an inherited-proxy client when local client setup fails. Static assets must resolve inside the canonical plugin root, with linked components rejected to prevent junction/symlink escapes. The conditionally enabled web-install entry accepts only HTTPS repository URLs without credentials, query parameters or fragments. It displays the source and requires explicit confirmation; cancellation never installs. Source and permissions still need review after installation, and high-risk capabilities require separate authorization. Source confirmation is neither publisher authentication nor a complete pre-install manifest permission review.
+
 ---
 
 ## 1. Layout & scan order
