@@ -10,6 +10,7 @@ mod db;
 mod export;
 mod factory;
 mod mirror;
+mod mirror_io;
 mod replay;
 mod role_config;
 mod scheduler;
@@ -34,6 +35,7 @@ pub use factory::{
     build_conversation_store, pick_chat_storage_backend_kind, ENV_CHAT_STORAGE_BACKEND,
 };
 pub use mirror::delete_mirror_tree_for_role;
+pub(crate) use mirror_io::lock_root as lock_mirror_root;
 pub use replay::{spawn_memory_replay, ReplayTaskRegistry};
 pub use role_config::save_role_chat_storage_config;
 pub use scheduler::run_global_auto_cleanup;

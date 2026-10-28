@@ -146,6 +146,11 @@ pub(crate) async fn delete_files_and_data(
     role_id: &str,
     mirror: &Path,
 ) -> Result<(PendingRoleDeletion, Vec<String>)> {
+    let mirror_root = mirror
+        .parent()
+        .ok_or_else(|| AppError::InvalidParameter("role mirror directory has no parent".into()))?;
+    // Finish any already-started mirror publication before quarantining files and committing.
+    let _mirror_guard = super::chat_storage::lock_mirror_root(mirror_root).await?;
     let mut record = PendingRoleDeletion::prepare(root, role_id, mirror)?;
     let key = record.key();
     db.upsert_app_setting(&key, &serde_json::to_string(&record)?)
@@ -234,6 +239,40 @@ pub(crate) async fn recover_pending_deletions(
 mod tests {
     use super::*;
     use crate::infrastructure::test_db::mem_db_manager;
+
+    #[tokio::test]
+    async fn deletion_waits_for_active_mirror_before_staging_and_committing() {
+        let root = tempfile::tempdir().unwrap();
+        let roles = root.path().join("roles");
+        let mirrors = root.path().join("chats");
+        fs::create_dir_all(roles.join("example")).unwrap();
+        fs::create_dir_all(mirrors.join("example")).unwrap();
+        let db = std::sync::Arc::new(mem_db_manager().await);
+        db.upsert_chat_session("example", "example", "default")
+            .await
+            .unwrap();
+        let guard = super::super::chat_storage::lock_mirror_root(&mirrors)
+            .await
+            .unwrap();
+        let db_task = std::sync::Arc::clone(&db);
+        let roles_task = roles.clone();
+        let mirror_task = mirrors.join("example");
+        let mut task = tokio::spawn(async move {
+            delete_files_and_data(&db_task, &roles_task, "example", &mirror_task).await
+        });
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(20), &mut task)
+                .await
+                .is_err()
+        );
+        assert!(roles.join("example").is_dir());
+        assert!(db.get_chat_session("example").await.unwrap().is_some());
+        drop(guard);
+        let (record, _) = task.await.unwrap().unwrap();
+        assert!(record.committed);
+        assert!(!roles.join("example").exists());
+        assert!(db.get_chat_session("example").await.unwrap().is_none());
+    }
 
     #[tokio::test]
     async fn interrupted_precommit_restores_files_on_restart() {

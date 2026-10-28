@@ -83,6 +83,12 @@ Selection order:
 
 Implementation: `hybrid_store.rs` + `factory.rs::resolve_mirror_enabled`.
 
+### Mirror publication and ordering
+
+Background turn persistence, edits, imports, explicit rebuilds and JSON export publish a fresh SQLite snapshot after entering the mirror IO queue. They do not replay a captured turn delta over a newer mirror. The queue is shared across store instances by canonical storage root; different roots remain independent. The current bound is process-local, relying on the existing single-writer Host ownership rather than providing a cross-process filesystem lock.
+
+Snapshot reads happen inside the queue. Complete bytes are written and synced to a unique same-directory temporary file before replacement. A blocking file worker retains the queue until IO finishes even if its async caller is cancelled. Session, scene and role mirror deletion use that queue; normal role-file quarantine also waits for active publication before its DB commit. Auto-cleanup deletes the authoritative session before removing its mirror. JSON remains best-effort and never becomes the chat truth. Full multi-domain Session erasure, root migration coordination, server cancellation and power-loss guarantees remain outside this ordering repair.
+
 ## Legacy “three backends” note
 
 Older docs described independent `file` / `sqlite` store implementations. Phase 3+ uses a **single hybrid store**; `file`/`sqlite` backend enum values remain deserializable for migration and only toggle mirror behavior.
