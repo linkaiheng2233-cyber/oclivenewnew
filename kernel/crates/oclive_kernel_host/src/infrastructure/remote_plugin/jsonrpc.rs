@@ -82,6 +82,13 @@ fn body_preview(text: &str) -> String {
     format!("{}… (truncated bytes={})", &t[..end], t.len())
 }
 
+fn require_network_grant(grant: Option<(&HighRiskGrantStore, &str)>) -> Result<()> {
+    if let Some((grants, grant_id)) = grant {
+        grants.require_network(grant_id)?;
+    }
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn call_blocking(
     channel: RemoteRpcChannel,
@@ -93,7 +100,9 @@ pub fn call_blocking(
     network_grant: Option<(&HighRiskGrantStore, &str)>,
     request_timeout: Duration,
 ) -> Result<Value> {
-    crate::utils::block_on::block_on(call_async(
+    // Preserve denial priority; an unsupported runtime must not turn it into builtin fallback.
+    require_network_grant(network_grant)?;
+    crate::utils::block_on::try_block_on(call_async(
         channel,
         client,
         url,
@@ -103,6 +112,7 @@ pub fn call_blocking(
         network_grant,
         request_timeout,
     ))
+    .map_err(AppError::RemoteServiceUnavailable)?
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -185,9 +195,7 @@ async fn send_async(
     network_grant: Option<(&HighRiskGrantStore, &str)>,
     request_timeout: Duration,
 ) -> Result<(u64, Instant, reqwest::Response)> {
-    if let Some((grants, grant_id)) = network_grant {
-        grants.require_network(grant_id)?;
-    }
+    require_network_grant(network_grant)?;
     let id = next_id();
     let t0 = Instant::now();
     let ch = channel.label();
@@ -528,6 +536,43 @@ fn parse_jsonrpc_result(text: &str, method: &str, expected_id: u64) -> Result<Va
 mod tests {
     use super::*;
     use std::sync::Mutex;
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn blocking_rpc_on_current_thread_returns_error_without_connecting() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        listener.set_nonblocking(true).unwrap();
+        let url = format!("http://{}/rpc", listener.local_addr().unwrap());
+        let error = call_blocking(
+            RemoteRpcChannel::Plugin,
+            &reqwest::Client::new(),
+            &url,
+            "memory.rank",
+            json!({}),
+            None,
+            None,
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+        assert_eq!(error.code(), "REMOTE_SERVICE_UNAVAILABLE");
+        assert!(error.to_string().contains("async API"));
+        let data = tempfile::tempdir().unwrap();
+        let grants = HighRiskGrantStore::load(data.path().to_owned(), true);
+        let denied = call_blocking(
+            RemoteRpcChannel::Plugin,
+            &reqwest::Client::new(),
+            &url,
+            "memory.rank",
+            json!({}),
+            None,
+            Some((&grants, "blocked-fixture")),
+            Duration::from_secs(1),
+        )
+        .unwrap_err();
+        assert_eq!(denied.code(), "HIGH_RISK_CAPABILITY_NOT_GRANTED");
+        assert!(
+            matches!(listener.accept(), Err(error) if error.kind() == std::io::ErrorKind::WouldBlock)
+        );
+    }
 
     #[test]
     fn parse_jsonrpc_result_ok() {
