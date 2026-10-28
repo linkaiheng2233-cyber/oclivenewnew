@@ -63,6 +63,8 @@
 
 ## 最终冻结与整合证据
 
+首次在 `f120feb3` 的整合于 `runtime_event_stream_contract::stage_a2_review_fixture_freezes_non_runtime_boundaries` 失败：夹具仍把旧角色删除的两个实现 token 当当前证据。没有删断言或填注释伪造匹配，而是把审查证据扩为 4 项、明确要求当前服务与恢复实现两个锚点，并同步 RFC 中英对“当前实现”的描述；设计 stage、production=false、Session 擦除域、先阻断 ingress/lease、未实现 executor 的 known gaps 均保持不变。该关联修复不改 Kernel 公共 DTO/trait 或生产 Stream。保留首轮完整失败日志，定向通过后重新冻结并重跑整合。
+
 本页上文“待冻结/待整合”为各切片当时状态；最终命令、退出码、完整 Git SHA、源码文件哈希和未测边界集中保存在本机 artifact 的 `final-verification.json`，不通过只回写结果的提交再移动已测源码。未取得该文件中的成功证据不能把计划当作通过。
 
 - 冻结后执行一次 `npm run check:ci-local`：本轮改 Host 持久化、权限/目录插件和桌面接线，需要全仓本地整合，而不是只依赖定向单测。

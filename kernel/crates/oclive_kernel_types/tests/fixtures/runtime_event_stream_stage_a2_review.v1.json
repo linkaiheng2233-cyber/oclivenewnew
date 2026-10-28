@@ -56,9 +56,14 @@
       "required_tokens": ["Intentionally separate from chat transcript storage", "tx.commit()"]
     },
     {
-      "id": "current_mirror_delete_is_best_effort",
+      "id": "role_deletion_reports_deferred_cleanup_not_session_erasure",
       "evidence_path": "kernel/crates/oclive_kernel_host/src/service/role/delete.rs",
-      "required_tokens": ["delete_all_data_for_manifest_role", "delete_mirror_tree_for_role failed"]
+      "required_tokens": ["delete_files_and_data", "finish_deletion", "cleanup_pending"]
+    },
+    {
+      "id": "role_files_have_a_local_recovery_marker",
+      "evidence_path": "kernel/crates/oclive_kernel_host/src/infrastructure/role_deletion.rs",
+      "required_tokens": ["PendingRoleDeletion", "delete_role_data_and_mark_cleanup", "record.committed = true", "saved.restore()"]
     }
   ],
   "storage_decision": {

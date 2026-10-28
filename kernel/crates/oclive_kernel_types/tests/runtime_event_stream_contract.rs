@@ -330,7 +330,10 @@ fn stage_a2_review_fixture_freezes_non_runtime_boundaries() {
             &evidence.required_tokens,
         );
     }
-    assert_eq!(evidence_ids.len(), 3);
+    assert_eq!(evidence_ids.len(), 4);
+    // Local manifest-role recovery is not the multi-domain Session erasure executor.
+    assert!(evidence_ids.contains("role_deletion_reports_deferred_cleanup_not_session_erasure"));
+    assert!(evidence_ids.contains("role_files_have_a_local_recovery_marker"));
 
     let storage = &contract.storage_decision;
     assert_eq!(storage.first_backend, "sqlite");
