@@ -243,7 +243,7 @@ mod tests {
     #[tokio::test]
     async fn deletion_waits_for_active_mirror_before_staging_and_committing() {
         let root = tempfile::tempdir().unwrap();
-        let roles = root.path().join("roles");
+        let roles = root.path().join("fixture-role-library");
         let mirrors = root.path().join("chats");
         fs::create_dir_all(roles.join("example")).unwrap();
         fs::create_dir_all(mirrors.join("example")).unwrap();

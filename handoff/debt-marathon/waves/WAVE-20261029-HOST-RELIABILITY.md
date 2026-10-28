@@ -31,4 +31,6 @@ CI 节奏：实施期只跑三项定向测试和相关 Host 测试，保留首�
 
 上述数字分别属于各切片当时的测试。源码与文档分类提交后，冻结目标执行一次 `npm run check:ci-local`，再显式执行 `cargo test --locked --workspace --doc -j 1`；若失败则保留原日志，按首因修补并另存重跑记录。最终完整 SHA、命令、退出码、源码/日志哈希与复用范围保存在本机 artifact 的 `final-verification.json`。没有成功结果时不能把本计划当作验收通过，也不通过“只回写结果”的新提交移动已测 HEAD。
 
+首次整合冻结 `faa1cd71191ab4e08057c7521b54af529b519b67` 在 Dimension5 的 stale code paths 检查失败：新增角色删除测试把隔离目录命名为 `.join("roles")`，违反既有 monorepo 路径规则。只将该临时夹具改名 `fixture-role-library`，不改检查器、不改生产路径；保留 `ci-local-first.log` / exit 1，定点检查后重新冻结重跑。不是以父提交的测试证明修正后 HEAD。
+
 语义自查覆盖 runtime/授权拒绝优先级、migration 主/次错误与 Windows 有界占用、镜像队列/DB 读取/取消/删除顺序。未改公开 DTO/trait、六槽、角色内容、SQL migration、锁文件、前端或 CI；这些保护项需与基线逐项 diff 证明。前端使用前轮相同源码的单测/浏览器证据，不宣称新的原生窗口、真实模型或新包验收。父债及冻结项保持，签名/密钥/外部角色身份隔离/根迁移协调仍属各自后续范围。
