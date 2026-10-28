@@ -218,9 +218,16 @@ pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), Strin
     // created from; retaining it while replacing the main file can replay incompatible pages.
     for suffix in ["wal", "shm"] {
         let sidecar = PathBuf::from(format!("{}-{suffix}", db_file.to_string_lossy()));
-        if sidecar.is_file() {
-            retry_windows_sharing_violation(|| std::fs::remove_file(&sidecar))
-                .map_err(|e| format!("remove stale SQLite sidecar {}: {e}", sidecar.display()))?;
+        match retry_windows_sharing_violation(|| std::fs::remove_file(&sidecar)) {
+            Ok(()) => {}
+            // SQLite's closing worker can unlink a sidecar between observation and removal.
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(format!(
+                    "remove stale SQLite sidecar {}: {error}",
+                    sidecar.display()
+                ));
+            }
         }
     }
     retry_windows_sharing_violation(|| std::fs::copy(backup, db_file))

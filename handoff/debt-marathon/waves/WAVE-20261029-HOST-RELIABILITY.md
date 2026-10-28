@@ -33,4 +33,8 @@ CI 节奏：实施期只跑三项定向测试和相关 Host 测试，保留首�
 
 首次整合冻结 `faa1cd71191ab4e08057c7521b54af529b519b67` 在 Dimension5 的 stale code paths 检查失败：新增角色删除测试把隔离目录命名为 `.join("roles")`，违反既有 monorepo 路径规则。只将该临时夹具改名 `fixture-role-library`，不改检查器、不改生产路径；保留 `ci-local-first.log` / exit 1，定点检查后重新冻结重跑。不是以父提交的测试证明修正后 HEAD。
 
+第二次冻结 `407a0942250abb910c6129df6438e1b41eb61aca` 的整合通过静态/前端/Clippy 后，在相同真实迁移恢复用例出现 **684 pass / 1 fail**：等待 worker 关闭期间，SQLite 已自行清掉 WAL，恢复删除随后返回 os error 2。修正仅让 WAL/SHM 的 NotFound 按“已清理”处理，取消观察后再删除的 TOCTOU；备份缺失、目录冒充文件、持续占用及其他错误仍拒绝。原 `ci-local-fixed.log` / exit 101 保留，继续要求真实 DB 原始行恢复，再冻结重跑。
+
+幂等清理修正后，迁移模块 **20/0/0**、完整 Host 库 **685/0/0** 与 Host all-targets/all-features clippy 再次通过，分别保存在 `migration-sidecar-fixed`、`host-sidecar-final`、`clippy-sidecar-final` 日志。随后只冻结这份实际修正重新执行完整门禁，结果以本节指定的最终证据为准，不覆盖前两次整合日志。
+
 语义自查覆盖 runtime/授权拒绝优先级、migration 主/次错误与 Windows 有界占用、镜像队列/DB 读取/取消/删除顺序。未改公开 DTO/trait、六槽、角色内容、SQL migration、锁文件、前端或 CI；这些保护项需与基线逐项 diff 证明。前端使用前轮相同源码的单测/浏览器证据，不宣称新的原生窗口、真实模型或新包验收。父债及冻结项保持，签名/密钥/外部角色身份隔离/根迁移协调仍属各自后续范围。
