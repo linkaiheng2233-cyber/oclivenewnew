@@ -4,7 +4,7 @@
 
 [中文](../../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**Snapshot date**: 2026-10-27. Update when versions or delivery status change; editing this page does not create new runtime verification.
+**Snapshot date**: 2026-10-28. Update when versions or delivery status change; editing this page does not create new runtime verification.
 
 ---
 
@@ -21,6 +21,8 @@
 ---
 
 ## What this repo (`oclivenewnew`) delivers
+
+- **2026-10-28 source follow-up**: check the [batch execution record](../../handoff/debt-marathon/waves/WAVE-20261028-REVIEW-FIXES.md) for current verification of role file/database recovery, grant persistence, plugin address/asset/archive boundaries, web-install consent, authenticated snapshots and rendering recovery. No installer was rebuilt or published; the existing candidate below does not contain these repairs. Source tests do not prove a new installer or remote CI.
 
 - **Chat Pro internal candidate**: role library → character workspace, separate recent conversations per character, identity/relationship, records, model connection, categorized settings and Help & recovery. See [USER_MANUAL](USER_MANUAL.md) and the [legacy/deferred surface map](../../handoff/MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces). Installers bundle neither model runners nor weights.
 - **Candidate verification boundary**: local tag `baseline/chatpro-0.6.0-rc.2-internal-20261027` binds `b4341eb22e987ffef4a19ccad3784e2402cd2bd1`. Release/integration gates, browser regressions and isolated installation/startup passed locally for that source. The candidate is unsigned and unpublished; remote CI for that commit, fresh Windows compatibility and real model chat using this new package remain unverified. Later documentation-only commits do not claim to rerun those program tests.

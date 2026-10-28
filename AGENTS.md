@@ -51,7 +51,7 @@
 | 发行版 HostProfile | [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | 活跃债 / 冻结 | [主台账](handoff/TECHNICAL_DEBT_INVENTORY.md)；变动与续跑先读 [DEBT_CHANGELOG](handoff/debt-marathon/DEBT_CHANGELOG.md)，不另建状态表 |
 | 文档总索引 | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
-| 人类接手阶梯 L0–L8 | [human-docs/README.md](human-docs/README.md) |
+| 人类接手阶梯 L0–L7 | [human-docs/README.md](human-docs/README.md) |
 
 **主编排**：`kernel/crates/oclive_kernel_host/.../process_message.rs` → `co_present` · 蓝图 **`steps[]` 不调度** · Tauri 命令只在 `distros/desktop-tauri/src/api/*.rs` · 回复字段 **`reply`**。
 
@@ -61,7 +61,7 @@
 
 - 审查汇报前：[AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
 - OOCP S0–S12（+ 可选 S13/S14）：[OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)
-- invoke 热路径 **13** 条：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
+- invoke 热路径范围与验证入口：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
 - Dimension 5 门禁：`node scripts/dimension5-acceptance.mjs --ci`；检查项总数以脚本结尾 `PASS (N checks)` 为准（`--ci` 跳过 sample lib tests，但仍计入结果）。
 - 日常 `npm run check:rust` **不含 doctest**；发版 `npm run check:release` **含**
 

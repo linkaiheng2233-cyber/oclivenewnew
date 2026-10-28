@@ -6,6 +6,11 @@
 
 ### Fixed
 
+- **Role/grant failure protection**: copy and validate overwrite imports before replacement, reject overlapping directory paths, and distinguish pre-commit recovery from post-commit cleanup using quarantined directories and a database marker. Grant/revoke publishes memory only after successful atomic file replacement; write failure keeps the previous state.
+- **Plugin input boundaries**: reject RPC userinfo impersonating loopback, disable redirects for local RPC, reject linked asset escapes, and bound archive entries/actual expanded bytes. Web installation displays a safe source and requires confirmation instead of treating a link request as consent. Trusted publisher signatures and complete manifest pre-review remain unfinished.
+- **UI recovery/background snapshots**: reuse authenticated native role-info transport and reject stale role/scene/turn responses. Render failures expose regional/root recovery cards and redacted diagnostics. Stopped receiving leaves a transient notice without claiming server cancellation, retrying a turn or writing a fabricated reply.
+- **Documentation entry points**: correct the persona-file example, stale compatibility snapshots, code anchors and OOCP working directory; current versions link to the status SSOT. These are unreleased source changes, not an automatic update of the existing rc.2 installer.
+
 - **Clean Chat Pro source installation**: correct private workspace references so prerelease `npm ci` does not request obsolete internal packages from the registry. Synchronize the lock without upgrading third-party dependencies.
 - **Chat Pro cloud connection testing**: require saving edited endpoints, models or keys before testing, with an explicit unsaved-state explanation. Ignore probe results after panel disposal, role changes or form edits, without replacing newer notices or clearing a newer request's busy state. Preserve edits made during saving and report connectivity failures separately from persistence results.
 - **Diagnostic authentication redaction**: consistently remove complete Basic/Bearer and quoted authorization values from displayed, copied and exported diagnostics, retaining neighboring error context and the next log line after an empty header.

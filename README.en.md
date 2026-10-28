@@ -52,7 +52,7 @@ This repository also ships a complete reference runtime: concrete slot implement
 ### Example 1 · Creator: a talkable OC
 
 1. Clone [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) (role pack editor)
-2. New pack: write `prompts/system.md`, save under `distros/chat-pro/roles/your_role_id/`
+2. Prepare a pack using the [creator golden path](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md), edit its `core_personality.txt`, and save under `distros/chat-pro/roles/your_role_id/`
 3. In this repo: `npm run tauri:dev` → pick role → chat
 
 **Do not touch** blueprint `slot_registry` or six slots on this path. 30-minute guide: [CREATOR_GOLDEN_PATH.md](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md).

@@ -63,7 +63,7 @@
 ### 例子 1 · 创作者：做一个可对话 OC
 
 1. 克隆 [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor)（角色包编写器）
-2. 新建角色包：写 `prompts/system.md`、保存到 `distros/chat-pro/roles/你的角色id/`
+2. 按[创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)准备角色包，编辑包内的 `core_personality.txt`，保存到 `distros/chat-pro/roles/你的角色id/`
 3. 本仓 `npm run tauri:dev` → 选角色 → 开聊
 
 **不用改** 蓝图 `slot_registry` 或六槽——30 分钟路径见 [创作者黄金路径](creator-docs/getting-started/CREATOR_GOLDEN_PATH.md)。

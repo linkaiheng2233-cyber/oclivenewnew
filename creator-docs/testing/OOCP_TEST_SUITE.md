@@ -49,7 +49,7 @@
 
 ## 协议符合性报告
 
-`npm run test:json` 输出 JSON，字段集合见 `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`。其中：
+从仓库根运行 `npm --prefix examples/oocp-test-suite run test:json`（或先进入该示例目录再运行 `npm run test:json`）输出 JSON，字段集合见 `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`。其中：
 
 - `dual_core` 段给出双核场景开关与执行列表（S13/S14）；
 - `ci_context` 段给出生成时间与 CI 元信息（`github_run_id` / `github_sha` / `github_ref`）。

@@ -90,7 +90,7 @@ Vue invoke / HTTP --api
 | Tauri 命令注册 | `distros/desktop-tauri/src/lib.rs`（仅 `generate_handler!`） |
 | 前端 invoke 封装 | `distros/shared/src/api/`（**camelCase**） |
 
-详情：[`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)（**13** 条热路径）
+详情：[`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)（范围和验证入口以矩阵为准）
 
 ---
 

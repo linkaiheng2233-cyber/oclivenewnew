@@ -236,7 +236,7 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 
 ## Code map
 
-- `distros/desktop-tauri/migrations/027_chat_storage.sql`
+- `kernel/crates/oclive_kernel_host/migrations/027_chat_storage.sql`
 - `kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/` (`store_trait.rs`, `factory.rs`, `replay.rs`, `backends/`, …)
 - `kernel/crates/oclive-cli/src/role_pack.rs` — `config.json` with `chat_storage.backend`
 - `distros/shared/src/components/settings/ChatStorageSettingsPanel.vue`
