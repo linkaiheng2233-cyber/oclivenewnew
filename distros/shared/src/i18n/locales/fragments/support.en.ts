@@ -1,4 +1,8 @@
 export default {
+  applicationError: 'An application error occurred. Check diagnostics for details.',
+  regionFailed: 'This area cannot be displayed right now.',
+  renderRecoveryHint: 'Diagnostics remain in Help & recovery for this launch. Retrying only reopens this area; it does not resend messages or clear chat history. If it still fails, expand and copy the details above.',
+  retryRegion: 'Reopen this area',
   openDirectory: 'Open log directory',
   title: 'Diagnostics',
   status: 'Runtime status',

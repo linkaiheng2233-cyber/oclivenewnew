@@ -1,4 +1,5 @@
 export default {
+  receiveStopped: 'Stopped receiving the previous reply. Reopen this conversation to see what was saved.',
   switching: 'Switching…',
   historyExpandTitle: 'Show earlier messages here',
   historyExpandSub: '{step} messages per tap · {total} total in this block',

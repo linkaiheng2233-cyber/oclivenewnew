@@ -107,9 +107,13 @@ Use the installer for upgrades. Rollback needs the corresponding older version a
 
 ### 5.1 Blank window or endless loading
 
+After the UI loads, if a recovery card says the area cannot be displayed, expand/copy its details or choose “Reopen this area”. A work-area rendering failure keeps the Help & recovery entry available; an outer rendering failure has a root recovery card. Retrying does not resend messages or clear chat history. Diagnostics remain local for this launch and do not require remote error reporting.
+
 Check installation resources and WebView2, then close and relaunch. If the UI cannot open, use the supplied repair tool with the correct installation folder. Do not delete the entire user directory. Start with Help & recovery when accessible.
 
 ### 5.2 Thinking, no reply or model errors
+
+“Stopped receiving the previous reply” only describes the local receiver; it does not guarantee server generation stopped. Reopen the conversation to inspect saved content. This notice never automatically resends the message.
 
 Check backend, address, model name and reachability. Read the summary/details; stop an unfinished generation before resending. If both primary and fallback fail, check both services.
 

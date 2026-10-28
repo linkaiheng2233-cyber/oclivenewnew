@@ -8,6 +8,8 @@ Cross-host **single writer** model: one `oclive-kernel-server` on `127.0.0.1:842
 
 ## Architecture: decision up, execution down
 
+The reference desktop renderer projects background role snapshots through the existing native `get_role_info` command and authenticated Rust transport. The API token stays outside the renderer; it no longer fetches `/role_snapshot` without authentication. Consumers reject responses after role, scene, chat-turn revision or poll-generation changes. External Hosts may still use the authenticated `/role_snapshot` endpoint; it has not been removed.
+
 **Policy (Rust SSOT, no I/O)** lives in `oclive_kernel_runtime`. **Hosts** discover binaries, call policy, then **execute** attach / spawn / replace locally.
 
 ```text

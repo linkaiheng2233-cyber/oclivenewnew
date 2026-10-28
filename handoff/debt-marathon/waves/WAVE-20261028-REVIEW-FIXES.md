@@ -8,8 +8,8 @@
 |---|---|---|
 | A 数据与权限状态 | KER-02 导入同址/重叠拒绝、先复制校验后替换及恢复；KER-03 删除失败与重启可判定；KER-10 grant/revoke 落盘失败不改变内存，持久化原子替换 | 定向本地验证通过；整合门禁待最终冻结 |
 | B 外部输入 | SEC-06 标准 URL 解析及拒绝回归；KER-13 实际展开字节/条目预算；SEC-08 最终路径边界；条件深链预览确认，不扩大默认功能 | 定向本地验证通过；整合门禁待最终冻结 |
-| C 默认发行可靠性 | UI-07 通过认证 Host 读取快照与 turn freshness；UI-01 生产诊断/局部恢复；UI-08 取消后呈现与恢复约束 | 核对已有差量后接续 |
-| D 已确认文档错误 | README、中英兼容说明、实际失效代码锚点、OOCP 工作目录、缓存数字；Studio 归属保留待决，不盲改入口 | 待 C 验收 |
+| C 默认发行可靠性 | UI-07 通过认证 Host 读取快照与 turn freshness；UI-01 生产诊断/局部恢复；UI-08 取消后呈现与恢复约束 | 定向本地验证通过；整合门禁待最终冻结 |
+| D 已确认文档错误 | README、中英兼容说明、实际失效代码锚点、OOCP 工作目录、缓存数字；Studio 归属保留待决，不盲改入口 | 实施中 |
 
 不将 56 项全数变成修复清单；签名体系、公开发布、分支保护、Studio 产品迁移与冻结功能保持原状态。SEC-03/04/05/07 等更广信任策略沿已有边界记录，不能借小修宣称全面安全。
 
@@ -42,6 +42,16 @@
 - 前端首个命令误指定不存在的 vitest.config.ts；随后实际配置下因新夹具没有 window 而失败（Node 环境），加 jsdom 声明后 11 个确认/拒绝/队列用例通过。两次失败日志保留，不归因产品缺陷。
 - 最终 Host lib 671/0/0、Host all-targets/all-features clippy -D warnings、vue-tsc、B 的 ESLint、module-compat、中英镜像和 5 份改文链接通过。无 Cargo.lock、公开 Rust DTO/trait 或高级功能默认开关变化。
 - 在 C 开工前发现三个 C 源文件和两个新测试存在未记录在当前工具轨迹中的变更，未覆盖/删除；原件及哈希保存在 artifact 的 `C-existing-716b185961c344a3aeb21e0a1a85e34f`。已询问是否有并发工作；当前 Agent 树和 app 列表只见本任务活跃。B 提交明确排除这五个文件，C 先核对既有差量及稳定性。
+
+## C 实施与验证记录
+
+- B 已本地提交 `a7645ffb`。既有五份 C 文件在保全后多次核对哈希未再变化，内容与已授权方案一致，按同一任务的已有差量审查接续；不冒称由本轮从零编写。原件保留，后续增加取消提示不覆盖原来的 revision getter。
+- 快照复用 `get_role_info` 原生命令及其认证 Rust 路径；不新增 Kernel HTTP 路由/DTO，不向 JS 暴露 token。后台错误在公共脱敏诊断中抑制重复，避免每 8 秒弹前台错误。请求回来后核角色、场景、轮次、poll generation 和卸载状态。
+- 主工作区域增加无正常态额外 DOM 包装的渲染边界，Chat Pro/Theater 入口还有根边界；重开区域不自动业务重试。Vue、window error/unhandledrejection 记录到现有 bounded session diagnostics，卸载释放事件监听，不上传或持久化聊天。捕获 falsy thrown values 也显示恢复卡片。
+- 取消/被新发送替代时，清除临时助手气泡并在原角色/场景放一个不落 transcript 的系统提示；不声称服务器已取消，不自动重发，也不伪造成功事件。已登记的服务端取消/恢复剩余窗口保持原状态。
+- 定向 36 测通过。首轮 1 个失败来自本轮把取消断言插到 batch-presentation 用例的错误位置；移到实际取消用例后通过，不作为旧产品红证据。lint 首轮失败为本轮导入排序/排版，按规则修正后全量通过。
+- 全量前端单测：shared 411、Chat Pro 139、Theater 53 全过；全量 ESLint、vue-tsc、Theater prompt/skeleton smoke 通过。后续生产构建、浏览器与全仓整合门禁在最终冻结执行，不用这些 mock 结果冒充 native Windows/真实模型证据。
+- C 生产构建通过；构建脚本顺带重写无源码差量的 tracked plugin-bridge 产物，先保全到 artifact，再仅恢复该文件的原始 Git 字节，未覆盖用户差量。默认链接 52、本轮显式 6、中英 mirror、活跃编码、shared i18n 和 docs-only stale 检查通过。API polling 沿用既有原生 transport 的超时，不声称 browser 5 秒 AbortSignal 已保留。
 
 A 本地提交：`d0697780`。前置只读复核报告单独提交 `20c7a30b`，未推送。
 

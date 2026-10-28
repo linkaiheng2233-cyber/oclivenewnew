@@ -36,6 +36,10 @@ Migration `040_chat_request_receipts.sql` stores the full authoritative response
 
 History-row deletion invalidates responses referencing those rows. Explicit session/role/scene clearing also invalidates matching receipts even when no history rows exist; scene clearing conservatively invalidates all pending receipts for that role because their final validated scene is not yet known. Tombstones retain consumed identities while removing cached response text. Clearing does not cancel an already executing pipeline; it prevents recovery from its invalidated receipt. Receipts are local coordination state and are excluded from chat/persona/memory exports.
 
+### Renderer cancellation
+
+Renderer cancellation removes unfinished assistant stream bubbles and leaves one transient system notice in the captured role/scene bucket. It does not persist a fabricated assistant reply or a cancellation notice to the authoritative transcript, publish `message:sent`, retry the model, or claim server-side cancellation. Reopening the conversation reads saved backend content. This presentation repair does not close the remaining cancellation/recovery windows in `D-HOST-RECOVERY-01`.
+
 ## Portable-state boundary
 
 | State | Portable artifact | Rule |

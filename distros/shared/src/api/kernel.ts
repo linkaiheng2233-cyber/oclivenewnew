@@ -1,4 +1,7 @@
-import { invokeWithFriendlyError } from './helpers'
+import type { RoleInfo } from './role'
+import { recordDiagnostic } from '@oclive/shared/composables/useDiagnosticHistory'
+import { invoke } from '@tauri-apps/api/core'
+import { invokeWithFriendlyError, toErrorPresentation } from './helpers'
 
 export type DesktopKernelMode = 'attached' | 'spawned' | 'offline' | 'reconnecting'
 
@@ -50,31 +53,39 @@ export async function getKernelDiagnostics(): Promise<KernelDiagnostics> {
   return invokeWithFriendlyError<KernelDiagnostics>('get_kernel_diagnostics')
 }
 
-/** Poll role snapshot via kernel HTTP (through Tauri when available). */
+let snapshotFailure = ''
+
+/** Background projection of the existing authenticated native role-info transport. */
 export async function fetchRoleSnapshot(
   roleId: string,
-  sceneId?: string | null,
+  _sceneId?: string | null,
 ): Promise<RoleSnapshot | null> {
   try {
-    const status = await getKernelConnectionStatus()
-    if (!status.healthy) {
-      return null
-    }
-    const params = new URLSearchParams({ role_id: roleId })
-    if (sceneId) {
-      params.set('scene_id', sceneId)
-    }
-    const res = await fetch(`${status.baseUrl}/role_snapshot?${params.toString()}`, {
-      signal: AbortSignal.timeout(5000),
+    // Unlike foreground actions, a failed poll records one diagnostic instead of a toast
+    // every eight seconds. Rust owns the HTTP token; it never enters the renderer.
+    const info = await invoke<RoleInfo>('get_role_info', {
+      req: { role_id: roleId, session_id: null },
     })
-    if (!res.ok) {
-      console.warn('[kernel] fetchRoleSnapshot HTTP', res.status, roleId)
-      return null
+    snapshotFailure = ''
+    return {
+      role_id: info.role_id,
+      current_favorability: info.current_favorability,
+      current_emotion: info.current_emotion,
+      portrait_emotion: info.current_emotion,
+      relation_state: info.relation_state,
+      display_metrics: info.display_metrics,
+      personality_source: info.personality_source ?? 'vector',
+      current_scene: info.current_scene,
+      user_presence_scene: info.user_presence_scene,
     }
-    return (await res.json()) as RoleSnapshot
   }
   catch (err) {
-    console.warn('[kernel] fetchRoleSnapshot failed', { roleId, sceneId, err })
+    const display = toErrorPresentation(err)
+    const key = `${roleId}:${display.summary}`
+    if (snapshotFailure !== key) {
+      snapshotFailure = key
+      recordDiagnostic({ level: 'warning', source: 'role-snapshot', ...display })
+    }
     return null
   }
 }

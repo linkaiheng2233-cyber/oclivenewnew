@@ -1,6 +1,7 @@
 import type { DesktopKernelMode } from '@oclive/shared/api/kernel'
 import { fetchRoleSnapshot } from '@oclive/shared/api/kernel'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { getChatSendRevision } from '@oclive/shared/stores/chatStoreSend'
 import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
 import { onBeforeUnmount, onMounted } from 'vue'
@@ -35,17 +36,16 @@ export function useRoleSnapshotPoll() {
     }
     const sceneId = roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined
     const generation = ++pollGeneration
+    const sendRevision = getChatSendRevision()
     const snap = await fetchRoleSnapshot(roleId, sceneId)
     if (generation !== pollGeneration
+      || chatStore.isLoading || getChatSendRevision() !== sendRevision
       || roleStore.minimalRoleActive
       || roleStore.currentRoleId !== roleId
       || (roleStore.roleInfo.userPresenceScene ?? roleStore.roleInfo.currentScene ?? undefined) !== sceneId) {
       return
     }
-    if (!snap) {
-      if (kernelConn.status?.healthy) {
-        console.warn('[useKernelStatus] role snapshot poll returned empty', { roleId })
-      }
+    if (!snap || snap.role_id !== roleId) {
       return
     }
     roleStore.roleInfo.favorability = snap.display_metrics?.favor ?? snap.current_favorability

@@ -1,6 +1,7 @@
 import type { AdultInteractionAction, SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
 import { recoverMessage, sendMessage, sendMessageStream, toastAsyncError } from '@oclive/shared/api'
+import { rt } from '@oclive/shared/i18n/runtimeT'
 import {
   cancelAdultBeatQueue,
   resumeAdultBeatQueue,
@@ -54,6 +55,11 @@ export interface ChatStoreSendContext {
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
 let adultScheduleSeq = 0
+
+/** Snapshot consumers must not apply results obtained before a new/abandoned turn. */
+export function getChatSendRevision(): number {
+  return activeSendSeq
+}
 
 export interface ChatStoreSendOptions {
   adultAction?: AdultInteractionAction
@@ -219,6 +225,21 @@ export async function sendChatStoreMessage(
     removeStreamBubbles()
   }
 
+  let stoppedNoticeShown = false
+  function finishAbandonedTurn(): void {
+    cleanupStreamPresentation()
+    if (!stoppedNoticeShown && !adultRequest && (streamAbort.signal.aborted || isStale())
+      && context.getMessageCountForRoleScene(roleId, sid) > 0) {
+      stoppedNoticeShown = true
+      context.addMessage(roleId, sid, {
+        id: `${assistantLocalId}-stopped`,
+        role: 'system',
+        content: rt('chat.receiveStopped'),
+        timestamp: Date.now(),
+      }, { persistIdbCache: false })
+    }
+  }
+
   function resetStreamPresentation(): void {
     cleanupStreamPresentation()
     revealedStreamSegmentIndexes.clear()
@@ -273,7 +294,7 @@ export async function sendChatStoreMessage(
       }
       catch (streamErr) {
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
-          cleanupStreamPresentation()
+          finishAbandonedTurn()
           return
         }
         console.warn('[chat] stream interrupted, recovering the existing turn', streamErr)
@@ -287,7 +308,7 @@ export async function sendChatStoreMessage(
     }
 
     if (isStale()) {
-      cleanupStreamPresentation()
+      finishAbandonedTurn()
       return
     }
 
@@ -407,7 +428,7 @@ export async function sendChatStoreMessage(
   }
   catch (err) {
     if (isAbortError(err, streamAbort.signal) || isStale()) {
-      cleanupStreamPresentation()
+      finishAbandonedTurn()
       return
     }
     if (!options.hideUserMessage)

@@ -4,6 +4,7 @@ import ChatInput from '@oclive/shared/components/chat/ChatInput.vue'
 import ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
 import ErrorNotice from '@oclive/shared/components/ErrorNotice.vue'
 import KernelStatusBar from '@oclive/shared/components/KernelStatusBar.vue'
+import RenderErrorBoundary from '@oclive/shared/components/RenderErrorBoundary.vue'
 import CharacterInfo from '@oclive/shared/components/role/CharacterInfo.vue'
 import RoleIdentityControls from '@oclive/shared/components/role/RoleIdentityControls.vue'
 import RolePackBar from '@oclive/shared/components/RolePackBar.vue'
@@ -226,7 +227,7 @@ function openRecoveryFromNotice(): void {
             {{ t('workspace.retry') }}
           </button>
         </div>
-        <template v-else>
+        <RenderErrorBoundary v-else>
           <ErrorNotice v-if="error" :error="error">
             <button type="button" @click="error = null">
               {{ t('workspace.close') }}
@@ -323,7 +324,7 @@ function openRecoveryFromNotice(): void {
               </div>
             </section>
           </div>
-        </template>
+        </RenderErrorBoundary>
       </section>
     </div>
 

@@ -1,4 +1,8 @@
 export default {
+  applicationError: '应用发生了错误，请查看诊断信息。',
+  regionFailed: '这个区域暂时无法显示。',
+  renderRecoveryHint: '诊断已保留在“帮助与恢复”的本次启动记录中。重试只重新打开这个区域，不会自动重发消息或清除聊天记录；如果仍失败，可展开并复制上方详情。',
+  retryRegion: '重新打开此区域',
   openDirectory: '打开日志目录',
   title: '诊断信息',
   status: '运行状态',

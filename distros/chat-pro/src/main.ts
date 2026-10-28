@@ -1,13 +1,15 @@
+import RenderErrorBoundary from '@oclive/shared/components/RenderErrorBoundary.vue'
 import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { i18n } from '@oclive/shared/i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { installAppErrorReporting } from '@oclive/shared/utils/appErrorReporting'
 import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
 import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { createApp } from 'vue'
+import { createApp, h } from 'vue'
 import App from './App.vue'
 import '@oclive/shared/styles/theme.css'
 import '@oclive/shared/styles/theme-tool.css'
@@ -27,11 +29,9 @@ void (async () => {
     ? Promise.resolve(false)
     : Promise.resolve().then(() => tryReplaceWithDirectoryShell())
 
-  const app = createApp(App)
+  const app = createApp({ render: () => h(RenderErrorBoundary, { root: true }, { default: () => h(App) }) })
   app.use(i18n)
-  app.config.errorHandler = (err, instance, info) => {
-    console.error('[oclive] Vue render error', err, info, instance)
-  }
+  installAppErrorReporting(app)
 
   const tookShell = await shellPromise
   if (tookShell) {

@@ -1,4 +1,5 @@
 export default {
+  receiveStopped: '已停止接收上一轮回复。重新打开对话可查看已保存的内容。',
   switching: '切换中...',
   historyExpandTitle: '在此展开此前的对话',
   historyExpandSub: '每次 {step} 条，可多次展开 · 共 {total} 条',
