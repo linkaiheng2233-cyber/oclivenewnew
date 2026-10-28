@@ -205,8 +205,10 @@ pub async fn backup_db_file(
 ///
 /// Returns an error when restore copy fails.
 pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), String> {
-    if !backup.is_file() {
-        return Ok(());
+    let metadata = retry_windows_sharing_violation(|| std::fs::metadata(backup))
+        .map_err(|error| format!("read backup {}: {error}", backup.display()))?;
+    if !metadata.is_file() {
+        return Err(format!("backup is not a file: {}", backup.display()));
     }
     if let Some(parent) = db_file.parent() {
         std::fs::create_dir_all(parent)
@@ -217,13 +219,31 @@ pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), Strin
     for suffix in ["wal", "shm"] {
         let sidecar = PathBuf::from(format!("{}-{suffix}", db_file.to_string_lossy()));
         if sidecar.is_file() {
-            std::fs::remove_file(&sidecar)
+            retry_windows_sharing_violation(|| std::fs::remove_file(&sidecar))
                 .map_err(|e| format!("remove stale SQLite sidecar {}: {e}", sidecar.display()))?;
         }
     }
-    std::fs::copy(backup, db_file)
+    retry_windows_sharing_violation(|| std::fs::copy(backup, db_file))
         .map_err(|e| format!("restore {} <- {}: {e}", db_file.display(), backup.display()))?;
     Ok(())
+}
+
+// A closed SQLx pool may have a SQLite worker finishing file-handle teardown on Windows.
+// Retry only the observed sharing-violation code, with a 200 ms budget per operation.
+// ACL, missing-file and disk errors return immediately; a persistent owner still fails.
+fn retry_windows_sharing_violation<T>(
+    mut operation: impl FnMut() -> std::io::Result<T>,
+) -> std::io::Result<T> {
+    let mut retries = 0;
+    loop {
+        match operation() {
+            Err(error) if cfg!(windows) && error.raw_os_error() == Some(32) && retries < 10 => {
+                retries += 1;
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            outcome => return outcome,
+        }
+    }
 }
 
 /// Write `migration_failed.json` under app data when migrations fail.
@@ -237,11 +257,40 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
         "failed_at": chrono::Utc::now().to_rfc3339(),
         "message": message,
     });
-    std::fs::write(
-        &path,
-        serde_json::to_string_pretty(&body).unwrap_or_default(),
-    )
-    .map_err(|e| format!("write {}: {e}", path.display()))
+    let bytes = serde_json::to_vec_pretty(&body)
+        .map_err(|error| format!("serialize migration failure marker: {error}"))?;
+    super::file_commit::atomic_write(&path, &bytes)
+        .map_err(|error| format!("write {}: {error}", path.display()))
+}
+
+/// Caller has closed the pool. Preserve the primary error before adding recovery evidence.
+pub(crate) fn record_migration_failure(
+    db_file: &Path,
+    backup: Option<&Path>,
+    app_data_dir: &Path,
+    error: crate::error::AppError,
+) -> crate::error::AppError {
+    use crate::error::AppError;
+    let mut message = match error {
+        AppError::DbMigrationFailed(message) => message,
+        other => other.to_string(),
+    };
+    let recovery = match backup {
+        Some(path) => match restore_db_from_backup(db_file, path) {
+            Ok(()) => format!("Backup restored from {}", path.display()),
+            Err(error) => {
+                tracing::error!(target: "oclive_migrate", %error, "migration backup restore failed");
+                format!("Backup restore failed: {error}")
+            }
+        },
+        None => "Backup restore not attempted: no pre-migration backup".into(),
+    };
+    message.push_str(&format!("\n{recovery}"));
+    if let Err(error) = write_migration_failed_marker(app_data_dir, &message) {
+        tracing::error!(target: "oclive_migrate", %error, "migration failure marker write failed");
+        message.push_str(&format!("\nMigration failure marker write failed: {error}"));
+    }
+    AppError::DbMigrationFailed(message)
 }
 
 fn migration_checksum(sql: &str) -> Vec<u8> {
@@ -382,6 +431,179 @@ pub async fn run_sql_migrations(db: &SqlitePool, migrations_dir: &Path) -> Resul
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn migration_failure_restores_real_snapshot_and_records_primary_error() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let pool = crate::infrastructure::sqlite_pool::connect_file(&database)
+            .await
+            .unwrap();
+        sqlx::query("CREATE TABLE original(value TEXT)")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO original VALUES ('kept')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        let backup = backup_db_file(&pool, &database, temp.path()).await.unwrap();
+        let migrations = temp.path().join("fixture-migrations");
+        std::fs::create_dir(&migrations).unwrap();
+        std::fs::write(migrations.join("001_invalid.sql"), "THIS IS NOT VALID SQL;").unwrap();
+        let original_error = run_sql_migrations(&pool, &migrations).await.unwrap_err();
+        pool.close().await;
+        let error = record_migration_failure(
+            &database,
+            Some(&backup),
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed(original_error.clone()),
+        );
+        assert_eq!(error.code(), "DB_MIGRATION_FAILED");
+        assert!(error.to_string().contains(&original_error));
+        assert!(error.to_string().contains("Backup restored"), "{error}");
+        let marker: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(temp.path().join("migration_failed.json")).unwrap(),
+        )
+        .unwrap();
+        assert!(marker["message"]
+            .as_str()
+            .unwrap()
+            .contains(&original_error));
+        assert!(marker["message"]
+            .as_str()
+            .unwrap()
+            .contains("Backup restored"));
+        let restored = crate::infrastructure::sqlite_pool::connect_file(&database)
+            .await
+            .unwrap();
+        let value: String = sqlx::query_scalar("SELECT value FROM original")
+            .fetch_one(&restored)
+            .await
+            .unwrap();
+        assert_eq!(value, "kept");
+        restored.close().await;
+    }
+
+    #[test]
+    fn migration_failure_reports_missing_backup_without_touching_database_or_wal() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        std::fs::write(&database, "retained database").unwrap();
+        std::fs::write(temp.path().join("app.db-wal"), "retained wal").unwrap();
+        let error = record_migration_failure(
+            &database,
+            Some(&temp.path().join("missing.db")),
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
+        );
+        assert!(error
+            .to_string()
+            .contains("fixture primary failure\nBackup restore failed"));
+        assert_eq!(std::fs::read(&database).unwrap(), b"retained database");
+        assert_eq!(
+            std::fs::read(temp.path().join("app.db-wal")).unwrap(),
+            b"retained wal"
+        );
+        let marker = std::fs::read_to_string(temp.path().join("migration_failed.json")).unwrap();
+        assert!(marker.contains("Backup restore failed"));
+    }
+
+    #[test]
+    fn migration_failure_reports_restore_and_marker_errors_without_losing_primary() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("database-is-a-directory");
+        std::fs::create_dir(&database).unwrap();
+        let backup = temp.path().join("backup.db");
+        std::fs::write(&backup, "backup retained").unwrap();
+        let invalid_app_data = temp.path().join("data-is-a-file");
+        std::fs::write(&invalid_app_data, "unchanged").unwrap();
+        let error = record_migration_failure(
+            &database,
+            Some(&backup),
+            &invalid_app_data,
+            crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
+        );
+        assert_eq!(error.code(), "DB_MIGRATION_FAILED");
+        let message = error.to_string();
+        assert!(message.contains("fixture primary failure\nBackup restore failed"));
+        assert!(message.contains("Migration failure marker write failed"));
+        assert_eq!(std::fs::read(backup).unwrap(), b"backup retained");
+        assert_eq!(std::fs::read(invalid_app_data).unwrap(), b"unchanged");
+    }
+
+    #[test]
+    fn migration_failure_without_backup_is_explicit_and_marker_keeps_existing_shape() {
+        let temp = tempfile::tempdir().unwrap();
+        let error = record_migration_failure(
+            &temp.path().join("app.db"),
+            None,
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed("primary".into()),
+        );
+        assert!(error.to_string().contains("no pre-migration backup"));
+        let marker: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(temp.path().join("migration_failed.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(marker.as_object().unwrap().len(), 2);
+        assert!(marker["failed_at"].is_string());
+        assert!(marker["message"].as_str().unwrap().starts_with("primary\n"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn restore_waits_for_transient_windows_wal_sharing_violation() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::write(&wal, "old wal").unwrap();
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(&wal)
+            .unwrap();
+        assert_eq!(
+            std::fs::remove_file(&wal).unwrap_err().raw_os_error(),
+            Some(32)
+        );
+        let release = std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(60));
+            drop(held);
+        });
+        restore_db_from_backup(&database, &backup).unwrap();
+        release.join().unwrap();
+        assert_eq!(std::fs::read(&database).unwrap(), b"after");
+        assert!(!wal.exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn restore_reports_persistent_windows_lock_and_keeps_database_and_backup() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::write(&wal, "old wal").unwrap();
+        let _held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(&wal)
+            .unwrap();
+        let error = restore_db_from_backup(&database, &backup).unwrap_err();
+        assert!(error.contains("remove stale SQLite sidecar"));
+        assert_eq!(std::fs::read(&database).unwrap(), b"before");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"after");
+    }
 
     #[test]
     fn find_migrations_dir_finds_embedded_or_monorepo() {

@@ -42,7 +42,7 @@ Example:
 <!-- code:DB_ERROR -->
 | `DB_ERROR` | Database error | Corrupt `app.db`, disk full, transaction failure | Ensure data dir is writable; see `Database error` in logs |
 <!-- code:DB_MIGRATION_FAILED -->
-| `DB_MIGRATION_FAILED` | Database migration failed | Migration SQL checksum/version failure, disk not writable | Back up `app.db`; check `migration_failed.json` and startup logs |
+| `DB_MIGRATION_FAILED` | Database migration failed | Migration SQL checksum/version failure, disk not writable | Back up `app.db`. Details preserve the primary migration reason and backup recovery outcome. Check `migration_failed.json` and startup logs; marker-write failure is also appended to the error details |
 <!-- code:CHAT_REQUEST_CONFLICT -->
 | `CHAT_REQUEST_CONFLICT` | A turn ID was reused with different content | Stream and plain retries did not retain the same request | Stop retrying and check history; intentional new sends need new IDs |
 <!-- code:CHAT_REQUEST_UNCONFIRMED -->

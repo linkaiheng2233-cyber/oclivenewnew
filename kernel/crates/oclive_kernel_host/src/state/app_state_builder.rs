@@ -158,19 +158,14 @@ impl AppStateBuilder {
         };
         if let Err(e) = run_migrations(&db, &migrations_dir).await {
             db.close().await;
-            if let Some(ref bak) = backup {
-                if bak.is_file() {
-                    let _ = crate::infrastructure::sql_migrate::restore_db_from_backup(
-                        &self.db_path,
-                        bak,
-                    );
-                }
-            }
-            let _ = crate::infrastructure::sql_migrate::write_migration_failed_marker(
-                &self.app_data_dir,
-                &e.to_string(),
+            return Err(
+                crate::infrastructure::sql_migrate::record_migration_failure(
+                    &self.db_path,
+                    backup.as_deref(),
+                    &self.app_data_dir,
+                    e,
+                ),
             );
-            return Err(e);
         }
 
         let db_manager = Arc::new(DbManager::new(db));
