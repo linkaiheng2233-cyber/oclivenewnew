@@ -12,12 +12,14 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-27** (local `cargo audit --json` against a refreshed advisory-db: **1,380** advisories; **698** dependency entries scanned; 0 vulnerabilities / 11 warnings; exit code **0**) |
+| **Last scan date** | **2026-10-29** (local `cargo audit --json` against a refreshed advisory-db: **1,381** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
-| **Warning-level count** | **11 reported / 12 matched** (`glib`, `tokio`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
+| **Warning-level count** | **10 reported / 11 matched** (`glib`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+On 2026-10-29 the workspace Tokio minimum becomes **1.53.3**, and the lock moves from **1.53.2 → 1.53.3**. Only Tokio's version/checksum change in the lockfile; existing features, dependency edges and every other locked package are preserved, remediating **RUSTSEC-2026-0386**. On the same advisory snapshot, reported warnings decrease from **11 → 10**. An external no-ignore check of the identical lockfile against cached advisories reports **11**; the only additional entry remains `proc-macro-error`, and the main allowlist bytes are unchanged. No direct `AsyncFd` call was found in tracked Rust source, but this is not complete transitive-dependency/Unix reachability acceptance. Removing this advisory from the locked graph does not guarantee security for every runtime configuration. The independent kernel revision migration and installer repackaging remain separate work.
 
 The new-frontend internal package on 2026-10-27 changes the desktop's own version from `0.6.0-rc.1` to `0.6.0-rc.2`. This Cargo.lock delta changes only that workspace package version, with no dependency, checksum, feature or ignore changes. Candidate source `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` passed the release audit; the table uses its original scan. The UI update does not resolve existing warnings. Subsequent documentation-only work reuses that point-in-time evidence without claiming a new scan.
 
@@ -106,7 +108,7 @@ On 2026-10-20 two more upstream advisories (same CVE-2026-111943, emSign root tr
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
-| **RUSTSEC-2026-0386** | `tokio` 1.53.2 | **Open · Unix path** | Safe constructors of `tokio::io::unix::AsyncFd` violate I/O safety; the advisory lists 1.53.3 among the fixed lines. This candidate targets Windows only; no dependency or ignore was changed. Upgrade and inspect affected callers before a Unix release |
+| **RUSTSEC-2026-0386** | `tokio` | **Remediated in locked graph · 1.53.3** | Updated and minimum raised on 2026-10-29; refreshed audit no longer matches, with no new ignore. The Unix `AsyncFd` constructor fix does not replace platform/caller acceptance |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |

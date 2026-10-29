@@ -12,12 +12,14 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-27**（本地 `cargo audit --json` 刷新 advisory-db，共 **1380** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **11**；退出码 **0**） |
+| **最近扫描日期** | **2026-10-29**（本地 `cargo audit --json` 刷新 advisory-db，共 **1381** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit --json` 退出码 **0**） |
-| **警告级命中数** | **报出 11 / 实际命中 12**（`glib`、`tokio`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
+| **警告级命中数** | **报出 10 / 实际命中 11**（`glib`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+2026-10-29 将 workspace Tokio 最低版本收紧到 **1.53.3**，锁文件从 **1.53.2 → 1.53.3**；锁差量仅 Tokio 的 version / checksum，既有 feature、依赖边及其余锁定包全部保留，修补 **RUSTSEC-2026-0386**。同一公告库快照下，主仓报出警告由 **11 → 10**；在仓库外对相同锁文件做无 ignore 的缓存复核为 **11** 条，唯一多出项仍为 `proc-macro-error`，主仓 allowlist 原字节未改。跟踪的 Rust 源码未发现直接 `AsyncFd` 调用，但这不是完整的传递依赖／Unix 可达性验收；锁定图消除此项公告也不等于所有运行配置的安全保证。新独立内核 revision 接入与安装包重打包仍单独进行。
 
 2026-10-27 新前端内测包将桌面自身版本从 `0.6.0-rc.1` 改为 `0.6.0-rc.2`；此轮 Cargo.lock 仅变更该工作区包的版本行，未变更任何依赖、校验和、feature 或忽略项。候选源码 `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` 已按发版门禁审计，上表采用其扫描原件；原有警告未因 UI 更新解决。后续纯文档整理复用此时点证据，不声称重新扫描。
 
@@ -108,7 +110,7 @@
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
-| **RUSTSEC-2026-0386** | `tokio` 1.53.2 | **开放 · Unix 路径** | `tokio::io::unix::AsyncFd` 的安全构造器违反 I/O 安全；advisory 给出的修复线含 1.53.3。当前只准备 Windows 桌面候选版，未改依赖或添加 ignore；Unix 发布前需升级与调用链复验 |
+| **RUSTSEC-2026-0386** | `tokio` | **锁定图已修补 · 1.53.3** | 2026-10-29 升级并收紧最低版本；刷新审计不再命中，未添加 ignore。Unix `AsyncFd` 安全构造器的修补不替代平台与调用链验收 |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
