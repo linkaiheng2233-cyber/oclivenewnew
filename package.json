@@ -115,7 +115,7 @@
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.43",
-    "vue-i18n": "^11.4.8"
+    "vue-i18n": "^11.4.14"
   },
   "overrides": {
     "defu": "6.1.5",

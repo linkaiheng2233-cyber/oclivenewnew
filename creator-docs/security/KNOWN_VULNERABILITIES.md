@@ -143,6 +143,20 @@
 
 ## npm 供应链（滚动时点）
 
+### 2026-10-29 草稿同步后的补丁收口（待目标 SHA 远端验收）
+
+主仓候选 `2fb8b7bd631690c06b4de2c4967d453ae79e156b` 的[草稿 PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225) 首轮 [CI 40837019439](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/40837019439) 在 `npm-audit` 的生产扫描失败。本地同锁复现 production **5 high**、full **4 low / 2 moderate / 6 high / 0 critical**；这些是受影响包的计数，不是独立漏洞条数。旧扫描结果保留为历史，不作为本次通过证据。
+
+| 依赖 / 公告 | 本次限定修补 |
+|---|---|
+| Vue I18n [命名参数转义](https://github.com/advisories/GHSA-8rc2-428q-7ww3)、[srcdoc 转义绕过](https://github.com/advisories/GHSA-83rm-6c8r-g728) | 四份现有 manifest 最低范围统一到 `^11.4.14`；`vue-i18n` 与四个 `@intlify` 包由 **11.4.8 → 11.4.16**，仍在 11.x 补丁线。公告修复下限 11.4.14；不因锁命中宣称产品已出现可达 XSS |
+| 开发链 Undici | jsdom / cheerio 的 **7.30.0 → 7.30.1**、webdriver 的 **6.29.0 → 6.29.1**，均满足既有传递范围；修补内容见上游 [7.30.1](https://github.com/nodejs/undici/releases/tag/v7.30.1) / [6.29.1](https://github.com/nodejs/undici/releases/tag/v6.29.1)，不新增 override |
+| workspace Vitest 残留 | 三个 workspace 由 **4.1.11 → 4.1.12**，与根目录原版本一致；删除其旧副本及未再被引用的旧 `@vitest` 链，复用锁中已有 4.1.12，覆盖[旧 mocker 的 Windows 路径公告](https://github.com/advisories/GHSA-xp26-3454-mjgp) |
+
+原 npm **10.9.8** 的定向锁更新保留了旧 workspace Vitest 节点，原件与日志保存在本轮树外证据目录；仅临时用官方 npm **11.21.0** 同步锁，再用原 npm 10 执行 `npm ci --no-audit --no-fund` 和 `npm ls --all`，均 exit **0**，不更换全局工具链。锁还将既有根 Vite 范围元数据对齐到 manifest 的 `^6.4.5`（解析版未变），并重算 TypeScript 的 `devOptional` 归类（既有 Vue / Pinia 可选 peer，版本与依赖边未变，`npm explain typescript` 已核对）。其余包版本、四条 override、Cargo、CI、审计阈值与产品源码不变。
+
+补丁后本地 production **0**、full **4 low / 0 moderate / 0 high / 0 critical**，两条 `--audit-level=high` 扫描 exit **0**；残余仍是 ESLint Markdown→KaTeX low 链，不是全图零风险。远端结果必须绑定补丁后的完整 SHA；草稿 gate 不替代正式 `ci-gate`，受保护 main 尚未合并，安装包未重打。独立内核的源码预览版及其审计是另一仓库的证据，不代证本主仓。
+
 ### 2026-10-06 新公告修复（本地验证，待目标 SHA CI）
 
 `8cd7d5d1` 的正式 CI [37424944008](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37424944008) 在生产扫描命中三项 high；本机完整扫描另有开发测试链 critical。该失败不归因资源策略源码，也不能把此前扫描的 0 当作当前无风险证据。

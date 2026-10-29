@@ -124,6 +124,20 @@ See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md]
 
 ## npm dependency status (rolling observations)
 
+### 2026-10-29 patches after draft synchronization (target-SHA remote acceptance pending)
+
+The first [CI run 40837019439](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/40837019439) for [draft PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225), at `2fb8b7bd631690c06b4de2c4967d453ae79e156b`, fails the production step of `npm-audit`. Local reproduction on the same lock reports production **5 high**, and full **4 low / 2 moderate / 6 high / 0 critical**. These count affected packages, not distinct advisories. Earlier scans remain historical evidence.
+
+| Dependency / advisory | Limited patch |
+|---|---|
+| Vue I18n [named-parameter escaping](https://github.com/advisories/GHSA-8rc2-428q-7ww3) and [srcdoc escaping bypass](https://github.com/advisories/GHSA-83rm-6c8r-g728) | All four manifests require `^11.4.14`; `vue-i18n` and four `@intlify` packages move **11.4.8 → 11.4.16**, within 11.x. The advisory fix starts at 11.4.14. A lock hit does not prove reachable product XSS |
+| Development-only Undici | jsdom / cheerio **7.30.0 → 7.30.1**, webdriver **6.29.0 → 6.29.1**, within existing ranges; see upstream [7.30.1](https://github.com/nodejs/undici/releases/tag/v7.30.1) / [6.29.1](https://github.com/nodejs/undici/releases/tag/v6.29.1). No new override |
+| Residual workspace Vitest | Three manifests move **4.1.11 → 4.1.12**, matching the existing root version. Their old copies and unreferenced old `@vitest` chain disappear; existing 4.1.12 nodes are reused, covering the [old mocker's Windows-path advisory](https://github.com/advisories/GHSA-xp26-3454-mjgp) |
+
+Native npm **10.9.8** retained old workspace Vitest nodes during the targeted lock update. That intermediate lock and log are preserved outside the repository. Temporary official npm **11.21.0** synchronized the lock; native npm 10 then passed `npm ci --no-audit --no-fund` and `npm ls --all`, both exit **0**. The global toolchain did not change. Root Vite range metadata now matches the existing manifest's `^6.4.5` without changing its resolved version; TypeScript's `devOptional` classification is recalculated for existing Vue / Pinia optional peers, with its version and dependency edges preserved (`npm explain typescript` checked). Other package versions, four overrides, Cargo, workflows, audit thresholds and product source remain unchanged.
+
+Patched local scans report production **0**, full **4 low / 0 moderate / 0 high / 0 critical**; both `--audit-level=high` scans exit **0**. ESLint Markdown→KaTeX low remains; this is not a zero-risk claim. Remote evidence must match the patched full SHA. A draft gate does not replace formal `ci-gate`; protected main is unmerged and installers are not rebuilt. The independent kernel's source prerelease and audit belong to another repository and do not validate this workspace.
+
 ### 2026-10-06 advisory fixes (locally verified; target-SHA CI pending)
 
 The production audit in [CI 37424944008](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37424944008) on `8cd7d5d1` reported three high entries. A local full scan also reported critical development-test dependencies. This is not attributed to resource-policy code, and an earlier zero scan cannot establish current absence of risk.

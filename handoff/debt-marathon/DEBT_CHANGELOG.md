@@ -1135,3 +1135,9 @@ before → after（分别列债务状态与计划/调度/验证，未变写未�
 - **原因 / 授权**：维护者要求收集 SDK 反馈并纳入技术债；v0 已通过 #217/#218 落地，但尚无外部使用者反馈。
 - **登记 / 范围**：[K-SDK-FEEDBACK-01](../TECHNICAL_DEBT_INVENTORY.md#debt-k-sdk-feedback-01) 的完成条件是至少 1–2 位外部模块作者按 [Memory 配方](../../examples/developer-sdk-memory/README.md) 跑通并提供失败命令、源码 SHA 与工具版本；反馈前不新增 facade crate、不发布 crates.io、不承诺 semver，也不把示例的 `literal:` 约定升级为 Base 义务。
 - **证据 / 后续**：当前证据只到 #217 的 e2e 与本地验证；反馈入口沿用 [CLI 指南](../../creator-docs/cli/OCLIVE_CLI_GUIDE.md) 的反馈入口。
+
+### DCL-20261029-115 · 草稿同步后 npm 公告补丁与依赖对齐
+
+- **原因 / 范围**：维护者授权顺序推进仓库完善与同步；草稿 PR #225 的首轮目标 `2fb8b7bd` 在 npm 生产审计失败。仅修已有 I18n / Undici 补丁链与三个 workspace 残留 Vitest；四 manifest、锁及中英安全记录关联同步，不修改 Host、六槽、业务测试、CI、override 或审计阈值。
+- **证据 / 保全**：原始失败日志、同锁全图扫描、npm 10 中间锁与 npm 11 同步记录均存于树外 `oclive-dev-artifacts/github-publication-20261029/`；前后包计数和公告边界由 [KNOWN_VULNERABILITIES](../../creator-docs/security/KNOWN_VULNERABILITIES.md#2026-10-29-草稿同步后的补丁收口待目标-sha-远端验收) 维护。controller 实施及语义自查，independent=false，不将本地修补或独立内核 Release 代证主仓验收。
+- **本地验证 / 出口**：原 npm 安装 exit 0；依赖/审计、前端 lint/typecheck/构建、翻译/UI/模块兼容/Dimension 5/许可共 13 项适用检查 exit 0，含 shared 411、Chat Pro 139、Theater 53 项测试；默认与本次改文链接、中英镜像、旧路径、注册表及债结构门禁通过。完整目标 SHA、命令回执与远端结果以交付记录为准。只更新已有 draft 评审分支，不合并受保护 main、不改内核 pin、不制作安装包、不变更父债状态，也不以 draft gate 判 Done。
