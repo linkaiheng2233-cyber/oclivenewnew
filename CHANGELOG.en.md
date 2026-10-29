@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- **Non-blocking migration recovery**: backup restoration and diagnostic file writes run on a blocking worker, allowing current-thread Tokio to finish releasing connections while transient file sharing is retried. Primary migration errors, recovery outcomes and persistent-lock rejection remain intact.
 - **Host runtime and storage reliability**: reject synchronous RPC on current-thread Tokio with a diagnosable error; preserve primary migration failures, backup recovery outcomes and marker-write errors, with bounded retries for transient Windows sharing violations during restore. Queue chat mirror publication before reading SQLite, atomically replace through a unique temporary file, and retain ordering across cancelled file IO and related deletion so stale background deltas cannot replace newer mirrors.
 - **Role/grant failure protection**: copy and validate overwrite imports before replacement, reject overlapping directory paths, and distinguish pre-commit recovery from post-commit cleanup using quarantined directories and a database marker. Grant/revoke publishes memory only after successful atomic file replacement; write failure keeps the previous state.
 - **Plugin input boundaries**: reject RPC userinfo impersonating loopback, disable redirects for local RPC, reject linked asset escapes, and bound archive entries/actual expanded bytes. Web installation displays a safe source and requires confirmation instead of treating a link request as consent. Trusted publisher signatures and complete manifest pre-review remain unfinished.
@@ -50,6 +51,16 @@
 - **CP-B3-ALL compatibility boundary for the four units**: P is a byte-equivalent refactor; M and E are approved minimal product differences (Memory filters original rows by the current need; Event adds the `analysis` member and narrative requirements to the same prompt), and A changes neither the product output nor the call sequence. None of the new Base views/implementations (the added Prompt Base impl, `QueryMemoryRetrieval`, the crate-private Agent/Event request-binding views) **has a product consumer reading a Base result**: the reference Host still binds `Arc<dyn AgentProvider>` / `Arc<dyn EventEstimator>` and reads only the old ports. This batch is a local implementation with offline verification only: real models/HTTP/streaming, the whole `AppState` or a full turn, database migrations, and desktop/frontend consumers remain unverified and are not product promises for those paths.
 - **Event Stream remains disconnected from runtime behavior**: Stages A.1/A.2.1/A.2.2.1 and A.2.2.2-R0 through R6 add Rust source-level DTOs, test models, design/protocol/sanitized-live fixtures, and explicit developer probes only; the R1–R4 live ACK/recovery samples, R5 synthetic-only local lease SQLite, and R6 networkless fail-closed matrix are not a production QQ adapter or Production store. They add no Stream/outbox/inbox migration, read API, consumer loop, replay, Prompt/proactive input, or second `process_message`; B0 Trace-only remains default-off and behavior-neutral.
 - **Additive Rust source-level facade**: role-pack schemas, HTTP/Tauri wire shapes, database migrations, and Event Ring authority semantics are unchanged. This is not a stable C ABI; Linux/ARM hardware, resource-budget, and long-soak proof remain tracked by `V-EMBED-01`.
+
+## [0.6.0-rc.3] - 2026-10-30
+
+### Changed
+
+- **Local internal candidate**: consolidates the role-workspace frontend and later reliability fixes into Windows x64 installers and an internal package without model runners or weights; the previous desktop rc.2 was verified and archived. Actual delivery and verification boundaries are owned by [PROJECT_CURRENT_STATUS](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md).
+
+### Compatibility
+
+- Desktop SemVer is `0.6.0-rc.3` and MSI numeric version is `0.6.0.3`; CLI, kernel and role-pack contract versions remain independent. Candidates are unsigned; public release and fresh-Windows acceptance are verified separately. Any optional old editor retains its original version and provenance.
 
 ## [0.5.2] - 2026-08-24
 

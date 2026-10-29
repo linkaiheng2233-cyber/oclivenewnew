@@ -12,7 +12,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-29** (local `cargo audit --json` against a refreshed advisory-db: **1,381** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**) |
+| **Last scan date** | **2026-10-30** (local `cargo audit --json` against a refreshed advisory-db: **1,386** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**; this lock change only synchronizes the desktop candidate version and preserves the dependency graph) |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
 | **Warning-level count** | **10 reported / 11 matched** (`glib`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |

@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- **迁移恢复不阻塞运行时**：备份恢复和诊断文件写入在阻塞工作线程执行，等待短暂文件占用时允许当前线程 Tokio 完成连接释放；保留原迁移错误、恢复结果和持久占用的失败边界。
 - **Host 运行与存储可靠性**：当前线程 Tokio 中的同步 RPC 提前返回可诊断错误；迁移失败保留原始原因、备份恢复结果和诊断文件写入失败，恢复中的 Windows 短暂文件占用允许有上限重试。聊天镜像排队后从 SQLite 重建，通过唯一临时文件原子替换；取消中的文件 IO 与关联删除保持顺序，避免旧后台消息覆盖较新的镜像。
 - **角色与授权失败保护**：覆盖导入先复制校验再替换，并拒绝目录源目标重叠；删除通过暂存目录与数据库恢复标记区分提交前恢复、提交后清理。授权/撤销只有完整落盘成功才更新内存，写入失败保留原状态。
 - **插件输入边界**：修正 RPC userinfo 冒充 loopback，禁止本机 RPC 跟随重定向；资产拒绝链接逃逸，角色 ZIP 加入条目及实际展开预算；网页安装先展示安全来源并确认，不再把链接请求当作安装同意。可信作者签名与完整 manifest 预审仍未完成。
@@ -50,6 +51,16 @@
 - **CP-B3-ALL 四单元的兼容边界**：P 是字节等价重构；M 与 E 是已批准的最小产品差异（Memory 命中时按当次需求筛选原件、Event 同次 prompt 增加 `analysis` 成员与叙述要求），A 的产品输出与调用序列未变。本批新增的 Base 视图/实现（Prompt 的附加 Base impl、`QueryMemoryRetrieval`、crate-private 的 Agent/Event 请求绑定视图）**都没有产品消费者读取 Base 结果**：参考 Host 仍绑定 `Arc<dyn AgentProvider>` / `Arc<dyn EventEstimator>` 并只读旧端口。本批是本地实现与离线验证：真实模型/HTTP/流式、完整 `AppState` 与整回合、数据库迁移、桌面与前端消费者均未验证，也不构成这些路径的产品承诺。
 - **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R6 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R4 的真实 ACK/恢复样本、R5 的 synthetic-only 本地 lease SQLite 与 R6 的网络无依赖失败关闭矩阵都不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
+
+## [0.6.0-rc.3] - 2026-10-30
+
+### Changed
+
+- **本地内测候选**：汇总角色工作区前端与后续可靠性修补，提供 Windows x64 安装器及不含运行器/模型权重的内测包；桌面旧 rc.2 校验归档。实际交付与验证口径见 [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)。
+
+### Compatibility
+
+- 桌面 SemVer 为 `0.6.0-rc.3`，MSI 数值为 `0.6.0.3`；CLI、内核与角色包契约版本不联动。候选包未签名，公开发行和全新 Windows 验收分别核对；附带的可选旧编写器明确保留原版本与来源。
 
 ## [0.5.2] - 2026-08-24
 
