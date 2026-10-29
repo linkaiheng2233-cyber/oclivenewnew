@@ -1,196 +1,94 @@
-# A.I.Live — Pluggable Role Artery Loom
+# A.I.Live (OCLive)
 
-> Repository **oclivenewnew** (codename **oclive**) · Open source · Local-first · **Tauri + Vue 3 + Rust**
+**A composable AI character runtime: role packs describe the character; a Host connects the capabilities.**
 
-[中文](README.md)
+[简体中文](README.md) · [Five-minute introduction](human-docs/START_HERE.md) · [User guide](creator-docs-en/getting-started/USER_MANUAL.md) · [Public test releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
 
 [![CI](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml/badge.svg)](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Latest release](https://img.shields.io/github/v/release/linkaiheng2233-cyber/oclivenewnew?include_prereleases&label=release)](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases)
+[![Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Version and candidate status**: the [fact snapshot](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) distinguishes source, internal candidates and public releases; see [CHANGELOG](CHANGELOG.en.md) for user-visible history.
+A.I.Live lets creators write personas, portraits, scenes and identity templates, and lets users run characters locally. Developers can also select the contracts and implementations they need to build their own Host.
 
-![A.I.Live Chat Pro: role space, conversation and local history](creator-docs/assets/chat-pro-chat.jpg)
+**The project is in development and testing.** Public installers, default-branch source and the new frontend candidate are separate snapshots. A source screenshot does not mean an older installer includes that interface. Recent Chat Pro work is in [candidate PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225); consult the [project status](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) and each release's actual assets for versions and acceptance boundaries.
 
-*Chat Pro preview: each character gets its own role space; conversations and memory stay local by default.*
+## Choose an entry point
 
-## Start here
-
-> **New to the project? Read [What is OCLive (5 min)](human-docs/START_HERE.md) first** (Chinese).
-> That page covers what it is, who it is for, what it is not, and which path to take.
-
-| Reader | Entry |
+| Goal | Start here |
 |---|---|
-| **First time here** | **[What is OCLive (5 min)](human-docs/START_HERE.md)** |
-| Human contributor | [Learning path](human-docs-en/README.md) |
-| Rust Base module author | [Kernel foundation setup](creator-docs-en/cli/OCLIVE_CLI_GUIDE.md#kernel-base-start) → [Memory example](human-docs-en/modules/slots/memory.md) |
-| Role / plugin author or integrator | [Documentation index](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) |
-| AI agent / maintainer | [AGENTS](AGENTS.md), then the task-specific [AI index](handoff/AI_READING_INDEX.md) |
-| Checking document authority or status | [Documentation layers and status](handoff/README.md#documentation-status) |
+| Run a character, import a role pack and chat | [User guide](creator-docs-en/getting-started/USER_MANUAL.md) · [Public test releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases) |
+| Create or convert a role pack | [Role-pack editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) · [Creator path](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md) |
+| Use the small kernel, implement a module or build a Host | [Independent OCLive Kernel](https://github.com/linkaiheng2233-cyber/oclive-kernel) · [Source SDK / Memory recipe](examples/developer-sdk-memory/README.md) |
+| Write a plugin or extend the UI | [Plugin author path](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) |
+| Contribute to this repository | [Developer entry](human-docs-en/README.md) · [Contributing](CONTRIBUTING.md) |
 
----
+## Characters, capabilities and runtime
 
-## What is this?
+- **Role packs** carry persona content and assets. The editor supports creation and supported import/conversion formats. Mumu is an example character.
+- **Local first**: the reference runtime stores conversations and character state on the user's machine. A configured local model or a selected remote backend supplies inference; software and external model/service terms are separate.
+- **Replaceable capabilities**: Memory, Prompt, LLM and other capabilities connect through contracts. The Host selects implementations and the call sequence. The six capability categories are not six mandatory steps.
+- **Chat Pro** is the desktop reference Host in this repository. Other entry points, including VS Code, have their own supported scope.
 
-**A.I.Live (OCLive)** is not “yet another fixed AI chat app,” and a centralized platform is not its essence. It is first an **embeddable tool kernel that organizes AI-character capabilities through stable contracts**:
+![Preview of the candidate Chat Pro character workspace](creator-docs/assets/chat-pro-chat.jpg)
 
-- The small Kernel defines six-slot capability contracts, necessary causality, and legality/error boundaries; distro Hosts own composition, scheduling, and domain application ([responsibility SSOT](handoff/MODULE_MAP_AND_HANDOFF.md#kernel-responsibilities))
-- **Six stable capability ports**—memory, emotion, legacy event impact, prompt, LLM, and agent—accept replaceable implementations
-- **Role packs** (persona, scenes, prompts) ship independently
-- **Local-first** by default; cloud APIs optional (BYOK)
+*Candidate frontend preview; actual UI and behavior depend on the version being used.*
 
-This repository also ships a complete reference runtime: concrete slot implementations, SQLite, Event Ring, facilities, HTTP/Tauri, and Chat Pro. Built-in roles such as `mumu` are examples. The runtime, distros, editor, and market can use the kernel, but none defines the minimal core.
+## Developers: choose an integration layer
 
-> **One line**: OCLive = **one tool kernel + six stable capability ports + optional reference assemblies**. Use the whole runtime or take only the interfaces, contracts, and modules you need. “cargo + docker-compose for characters” is an assembly analogy, not platform lock-in.
->
-> Deep positioning: [handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md](handoff/OCLIVE_POSITIONING_DIFFERENTIATION.md)
+The [independent kernel](https://github.com/linkaiheng2233-cyber/oclive-kernel) contains six Rust Base contracts and a default-on, optional character profile. Its [source prerelease](https://github.com/linkaiheng2233-cyber/oclive-kernel/releases/tag/v0.1.0-preview.1) is available for developers starting from a small interface surface.
 
----
+This repository also contains a fuller **reference runtime**: concrete implementations, state application, persistence, permissions and plugin wiring, HTTP/Tauri adapters and distribution UIs. Reusing it does not make its complete orchestration mandatory for every Host.
 
-## Four quick examples (30 seconds)
+Responsibilities and implementation mappings are maintained in the [module and boundary document](handoff/MODULE_MAP_AND_HANDOFF.md). Follow the [integration path](creator-docs-en/getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) and [compatibility notes](creator-docs-en/COMPATIBILITY.md) for the actual integration contract.
 
-### Example 1 · Creator: a talkable OC
+## Start the desktop reference app from source
 
-1. Clone [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) (role pack editor)
-2. Prepare a pack using the [creator golden path](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md), edit its `core_personality.txt`, and save under `distros/chat-pro/roles/your_role_id/`
-3. In this repo: `npm run tauri:dev` → pick role → chat
-
-**Do not touch** blueprint `slot_registry` or six slots on this path. 30-minute guide: [CREATOR_GOLDEN_PATH.md](creator-docs-en/getting-started/CREATOR_GOLDEN_PATH.md).
-
-### Example 2 · Developer: swap LLM only
-
-In `pipeline.ocblueprint`, change **slot 5 (llm)** from `ollama` to `remote` or a **directory plugin** — persona, memory, and prompt formula stay the same. Ollama, llama.cpp sidecars, and OpenAI-compatible APIs are **different plugs on the same slot**.
-
-### Example 3 · Integrator: one pack, many hosts
-
-Reference Hosts, the editor, and CLI reuse loading/validation capabilities, subject to each entry's supported formats. `manifest.json` / `pipeline.ocblueprint` are not mandatory files for every minimal role. The minimal definition expresses persona + visual asset references; local loading preparation does not mean runtime activation is wired ([role-pack boundary](handoff/ROLE_PACK_BOUNDARY.md)). Sharing **`OCLIVE_ROLES_DIR`** / **`app.db`** between desktop and VS Code is a reference-Host continuity arrangement, not an implemented independent Portable Memory contract: [CROSS_HOST_MEMORY.md](creator-docs-en/role-pack/CROSS_HOST_MEMORY.md).
-
-### Example 4 · Module author: new capability only
-
-Fork `examples/directory-plugin-minimal` or `examples/voice-loop-minimal`, implement **one slot** or a **side channel** (e.g. TTS), and reuse the reference host/toolchain for persona, UI, chat loop, validation, and packaging. Directory plugins declaring `process:spawn` / `network:*` / `mcp:*` require **explicit user consent** before execution (otherwise degrade, no silent escalation).
-
-Start: [PLUGIN_AUTHOR_LEARNING_PATH.md](creator-docs-en/plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) · permissions: [PLUGIN_V1.md](creator-docs-en/plugin-and-architecture/PLUGIN_V1.md)
-
----
-
-## How is this different?
-
-| | LangChain / AI SDK | EchoVessel / vertical engines | **OCLive** |
-|--|-------------------|-------------------------------|------------|
-| What you get | Blocks + glue — **write code** | A **finished dish** — fixed memory/affect | **Standard kitchen + plating rules** — **assemble and pack** your engine |
-| Swappable modules | Yes, no role-domain contract | Mostly fixed | **Six slots + builtin/remote/directory** unified contract |
-| Role content distribution | DIY | Bound to product | **`.ocpak` / zip**, editor export, deep-link install |
-| Ceiling | Your code | Vendor implementation | **Not welded to one builtin implementation**; swap modules and models by contract |
-
-**SillyTavern**-class “frontend shell + many backends” (common question):
-
-| | SillyTavern class | **OCLive** |
-|--|-------------------|------------|
-| Core deliverable | Chat UI + API/extensions | **Six-slot contract + blueprint + pack format + cross-host validation** |
-| Module semantics | Extensions ad hoc | **builtin / remote / directory** unified backend surface |
-| Distribution | Community cards/files | **`.ocpak` / zip · SHA-256 · `oclive://` deep links** + market site |
-| Orchestration SSOT | Often frontend/extensions | Rust **`process_message`** in the current reference Host, not a universal Host pipeline |
-
----
-
-## Three distros (one kernel · different HostProfile)
-
-Current reference distros reuse **`process_message`** and **`distro.oclive.toml` HostProfile**. This is a reference-Host maintenance boundary, not a requirement for third-party Hosts to use the same orchestration. Host scheduling must still satisfy capability contracts and necessary causality.
-
-| Distro | `distro_id` | Shape | Status |
-|--------|-------------|-------|--------|
-| **A.I.Live Chat Pro** | `desktop` | This repo's Tauri desktop | Default role workspace; [delivery status](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) |
-| **VS Code Flash** | `vscode` | Sister repo [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | Penetration **pluginized**; core = lightweight chat host |
-| **AI Theater** | `theater` | `distros/theater/` + theater profile | Bundled; mode 2 playtest **unfrozen** |
-| **dev lab** | `desktop-chat` | Experimental profile | Daily dev / low-latency trials |
-
-![A.I.Live Chat Pro role library: pick a role pack and enter its space](creator-docs/assets/chat-pro-roles.jpg)
-
-*Role library: import or select a role pack and enter its space.*
-
-Profile SSOT: [THREE_DISTRO_KERNEL_CLOSURE.md](handoff/THREE_DISTRO_KERNEL_CLOSURE.md) · [DISTRO_CAPABILITY_PROFILE.md](creator-docs-en/kernel/DISTRO_CAPABILITY_PROFILE.md)
-
----
-
-
-## Architecture (one-paragraph version)
-
-OCLive optimizes for **orthogonal layers**, not for stuffing every capability into one app: swapping the LLM does not touch the persona, adding voice does not pollute the main chain, and freezing experimental features does not affect Stable releases.
-
-![OCLive kernel-centric architecture: upper/lower slot layers, the dialogue kernel, persistence and side channels, and compile-time scaffolding](creator-docs/assets/oclive-kernel-centric-architecture.png)
-
-*Kernel-centric view: `memory` / `emotion` / `event` and `prompt` / `llm` / `agent` sit on either side of the dialogue kernel; persistence, directory plugins, remote RPC and MCP attach through explicit compile-time or optional wiring.*
-
-The **kernel** specifies the shape of six capability ports plus a small set of baselines every Host must honour (how failures and errors are expressed, which combinations are illegal); the **Host** decides how to wire them into one turn; the **distro** decides what is installed and enabled by default. The six ports are `memory` / `emotion` / `event` / `prompt` / `llm` / `agent` — **all optional capabilities, not a fixed six-step pipeline**.
-
-| For deeper reading | Read |
-|---|---|
-| How the four layers are cut, and why | [What is OCLive (5 min)](human-docs/START_HERE.md) (Chinese) |
-| How one turn runs in code | [human-docs/01 simple architecture](human-docs/01_ARCHITECTURE_SIMPLE.md) (Chinese) |
-| External architecture narrative, module numbering, facilities | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) |
-| **Module definitions, slot relations, change constraints (single SSOT)** | [MODULE_MAP](handoff/MODULE_MAP_AND_HANDOFF.md) |
-| Role content / blueprint / distro separation | [ROLE_PACK_BOUNDARY](handoff/ROLE_PACK_BOUNDARY.md) |
-| Single-kernel dual-mode (Monolith) | [RFC_OCLIVE_MONOLITH_MODE](creator-docs/rfc/RFC_OCLIVE_MONOLITH_MODE.md) |
-| Distribution mechanics (OOCP, signing, `oclive://` deep links, cross-host memory, kernel factory) | [OCLIVE_ARCHITECTURE_OVERVIEW](creator-docs/getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md) · [CROSS_HOST_MEMORY](creator-docs/role-pack/CROSS_HOST_MEMORY.md) |
-| Roadmap and vision | [VISION_ROADMAP_MONTHLY](creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md) · [VISION_OPEN_LAB](creator-docs/roadmap/VISION_OPEN_LAB.md) |
-| Current progress and outstanding work | [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md) · [TECHNICAL_DEBT_INVENTORY](handoff/TECHNICAL_DEBT_INVENTORY.md) |
-
-**The front page carries positioning and entry points only; it does not restate architecture tables** (G14: link instead of copy). Module definitions live only in MODULE_MAP, public contracts only in creator-docs, progress only in the debt ledger.
-
----
-
-## 30-minute contributor path
+Prepare Node.js 22, Rust and platform desktop build dependencies using the [developer entry](human-docs-en/README.md), then run:
 
 ```bash
 git clone https://github.com/linkaiheng2233-cyber/oclivenewnew.git
 cd oclivenewnew
-npm install
-npm run tauri:dev    # desktop client
-npm run check        # daily gates (build + fmt + clippy + test --lib)
+npm ci
+npm run tauri:dev
 ```
 
-| Prerequisite | Notes |
-|--------------|-------|
-| Node.js 22+, Rust stable | Windows also needs **VS Build Tools (MSVC)** |
-| Model service | Building does not require Ollama; replies need a configured local service or cloud API. Installers exclude model weights. |
-| Cargo artifacts | Default outside repo: `../oclive-dev-artifacts/oclivenewnew-cargo-target/` |
+Before chatting, prepare a working local model backend or configure a remote backend as described in the [user guide](creator-docs-en/getting-started/USER_MANUAL.md). A source checkout or lightweight installer does not imply that model files are included.
 
-**Installers**: public downloads are the actual attachments on GitHub [Releases](https://github.com/linkaiheng2233-cyber/oclivenewnew/releases). Check internal candidates, public installers and source versions separately; the [fact snapshot](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) states the candidate scope and unverified boundaries. Users start with the [manual](creator-docs-en/getting-started/USER_MANUAL.md); source contributors use [CONTRIBUTING](CONTRIBUTING.en.md).
+## Related projects
 
-Step-by-step: [human-docs-en/02_THIRTY_MINUTE_START.md](human-docs-en/02_THIRTY_MINUTE_START.md)
+| Project | Purpose |
+|---|---|
+| [oclive-kernel](https://github.com/linkaiheng2233-cyber/oclive-kernel) | Independent Rust Base library and example Hosts |
+| [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) | Role-pack creation, conversion, validation and export |
+| [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | VS Code character-chat Host; diaries and letters are optional plugins |
+| [Role directory](https://github.com/linkaiheng2233-cyber/awesome-oclive-roles) · [Plugin directory](https://github.com/linkaiheng2233-cyber/awesome-oclive-plugins) | Discover entries and sources; compatibility belongs to the publisher and selected Host |
+| [Physical character-Host project](https://github.com/linkaiheng2233-cyber/oclive-skippy-plan) | P0 hardware research for device events and small-screen character feedback, not a finished device |
 
----
+The historical launcher and paused community-site prototype are separate projects, not required Chat Pro components. See the [documentation index](creator-docs-en/getting-started/DOCUMENTATION_INDEX.md) for further material.
 
-## Ecosystem (sister repos)
+## Feedback, contributions and license
 
-| Repo | Purpose |
-|------|---------|
-| **This repo** | Desktop runtime, Rust kernel, Chat Pro / Theater distros |
-| [oclive-pack-editor](https://github.com/linkaiheng2233-cyber/oclive-pack-editor) | Visual role pack editor · export zip / `.ocpak` |
-| [oclive-vscode](https://github.com/linkaiheng2233-cyber/oclive-vscode) | In-editor companion (penetration pluginized) |
-| [oclive-launcher](https://github.com/linkaiheng2233-cyber/oclive-launcher) | Multi-distro entry · market integration (roadmap) |
-| [oclive-plugin-market](https://github.com/linkaiheng2233-cyber/oclive-plugin-market) | Plugin/pack discovery · **`oclive://` deep links** |
+This is a continuing hobby project. Suggestions are welcome through [Issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) or **ocliveproject@163.com**. Interesting ideas may be adopted; implementation is not guaranteed.
 
----
+See [CONTRIBUTING](CONTRIBUTING.md) for code contributions and [AGENTS](AGENTS.md) for task-specific AI reading paths. Report security concerns privately using [SECURITY](SECURITY.md).
 
-## AI / Agent onboarding
+The main repository uses [Apache-2.0](LICENSE) with [NOTICE](NOTICE). Models, third-party plugins and role assets retain their own source terms; see the [license policy](creator-docs-en/LICENSE_POLICY.md).
 
-**This homepage is for humans.** Cursor, Codex, and other agents should use the dedicated reading index:
 
-| Doc | Purpose |
-|-----|---------|
-| **[handoff/AI_READING_INDEX.md](handoff/AI_READING_INDEX.md)** | **Categorized SSOT index** (architecture · contracts · code anchors · task paths) |
-| [AGENTS.md](AGENTS.md) | **Quick gate** before editing code (task-specific change boundaries) |
-| [human-docs/ai-package/README.md](human-docs/ai-package/README.md) | AI package layout vs human docs |
+<!-- Preserve previously published section bookmarks. -->
+<a id="ailive--pluggable-role-artery-loom"></a>
+<a id="start-here"></a>
+<a id="what-is-this"></a>
+<a id="four-quick-examples-30-seconds"></a>
+<a id="example-1--creator-a-talkable-oc"></a>
+<a id="example-2--developer-swap-llm-only"></a>
+<a id="example-3--integrator-one-pack-many-hosts"></a>
+<a id="example-4--module-author-new-capability-only"></a>
+<a id="how-is-this-different"></a>
+<a id="three-distros-one-kernel--different-hostprofile"></a>
+<a id="architecture-one-paragraph-version"></a>
+<a id="30-minute-contributor-path"></a>
+<a id="ecosystem-sister-repos"></a>
+<a id="ai--agent-onboarding"></a>
+<a id="support--license"></a>
 
----
-
-## Support · license
-
-- **Issues**: [GitHub Issues](https://github.com/linkaiheng2233-cyber/oclivenewnew/issues) (prefix `[bug]` / `[feat]` / `[support]`)
-- **License**: Apache-2.0 · [LICENSE](LICENSE) · [LICENSE_POLICY.md](creator-docs-en/LICENSE_POLICY.md)
-- **Code of conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) · **Security**: [SECURITY.md](SECURITY.md)
-
----
-
-*Human learning ladder: [human-docs-en/README.md](human-docs-en/README.md)*
+Previous section bookmarks are preserved here. The [earlier homepage](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/fb361ff5b878c633ef95dc66d717105d5b5074c0/README.en.md) remains available as historical documentation; use this page and its linked sources for current entry points.
