@@ -271,17 +271,43 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
 }
 
 /// Caller has closed the pool. Preserve the primary error before adding recovery evidence.
-pub(crate) fn record_migration_failure(
+pub(crate) async fn record_migration_failure(
     db_file: &Path,
     backup: Option<&Path>,
     app_data_dir: &Path,
     error: crate::error::AppError,
 ) -> crate::error::AppError {
     use crate::error::AppError;
-    let mut message = match error {
+    let message = match error {
         AppError::DbMigrationFailed(message) => message,
         other => other.to_string(),
     };
+    let primary = message.clone();
+    let db_file = db_file.to_path_buf();
+    let backup = backup.map(Path::to_path_buf);
+    let app_data_dir = app_data_dir.to_path_buf();
+    // SQLx can finish returning/closing connections on this runtime. File-copy
+    // and sharing-violation retries must not block its current-thread executor.
+    match tokio::task::spawn_blocking(move || {
+        record_migration_failure_blocking(&db_file, backup.as_deref(), &app_data_dir, message)
+    })
+    .await
+    {
+        Ok(error) => error,
+        Err(error) => {
+            tracing::error!(target: "oclive_migrate", %error, "migration recovery worker failed");
+            AppError::DbMigrationFailed(format!("{primary}\nRecovery worker failed: {error}"))
+        }
+    }
+}
+
+fn record_migration_failure_blocking(
+    db_file: &Path,
+    backup: Option<&Path>,
+    app_data_dir: &Path,
+    mut message: String,
+) -> crate::error::AppError {
+    use crate::error::AppError;
     let recovery = match backup {
         Some(path) => match restore_db_from_backup(db_file, path) {
             Ok(()) => format!("Backup restored from {}", path.display()),
@@ -465,7 +491,8 @@ mod tests {
             Some(&backup),
             temp.path(),
             crate::error::AppError::DbMigrationFailed(original_error.clone()),
-        );
+        )
+        .await;
         assert_eq!(error.code(), "DB_MIGRATION_FAILED");
         assert!(error.to_string().contains(&original_error));
         assert!(error.to_string().contains("Backup restored"), "{error}");
@@ -492,8 +519,44 @@ mod tests {
         restored.close().await;
     }
 
-    #[test]
-    fn migration_failure_reports_missing_backup_without_touching_database_or_wal() {
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn recovery_allows_runtime_to_release_a_transient_sqlite_handle() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::write(&wal, "old wal").unwrap();
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .share_mode(0)
+            .open(&wal)
+            .unwrap();
+        // This task shares the current-thread runtime with recovery. Synchronous
+        // sharing retries would prevent it from dropping the handle in time.
+        let release = tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            drop(held);
+        });
+        let error = record_migration_failure(
+            &database,
+            Some(&backup),
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
+        )
+        .await;
+        release.await.unwrap();
+        assert!(error.to_string().contains("Backup restored"), "{error}");
+        assert_eq!(std::fs::read(&database).unwrap(), b"after");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"after");
+    }
+
+    #[tokio::test]
+    async fn migration_failure_reports_missing_backup_without_touching_database_or_wal() {
         let temp = tempfile::tempdir().unwrap();
         let database = temp.path().join("app.db");
         std::fs::write(&database, "retained database").unwrap();
@@ -503,7 +566,8 @@ mod tests {
             Some(&temp.path().join("missing.db")),
             temp.path(),
             crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
-        );
+        )
+        .await;
         assert!(error
             .to_string()
             .contains("fixture primary failure\nBackup restore failed"));
@@ -516,8 +580,8 @@ mod tests {
         assert!(marker.contains("Backup restore failed"));
     }
 
-    #[test]
-    fn migration_failure_reports_restore_and_marker_errors_without_losing_primary() {
+    #[tokio::test]
+    async fn migration_failure_reports_restore_and_marker_errors_without_losing_primary() {
         let temp = tempfile::tempdir().unwrap();
         let database = temp.path().join("database-is-a-directory");
         std::fs::create_dir(&database).unwrap();
@@ -530,7 +594,8 @@ mod tests {
             Some(&backup),
             &invalid_app_data,
             crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
-        );
+        )
+        .await;
         assert_eq!(error.code(), "DB_MIGRATION_FAILED");
         let message = error.to_string();
         assert!(message.contains("fixture primary failure\nBackup restore failed"));
@@ -539,15 +604,16 @@ mod tests {
         assert_eq!(std::fs::read(invalid_app_data).unwrap(), b"unchanged");
     }
 
-    #[test]
-    fn migration_failure_without_backup_is_explicit_and_marker_keeps_existing_shape() {
+    #[tokio::test]
+    async fn migration_failure_without_backup_is_explicit_and_marker_keeps_existing_shape() {
         let temp = tempfile::tempdir().unwrap();
         let error = record_migration_failure(
             &temp.path().join("app.db"),
             None,
             temp.path(),
             crate::error::AppError::DbMigrationFailed("primary".into()),
-        );
+        )
+        .await;
         assert!(error.to_string().contains("no pre-migration backup"));
         let marker: serde_json::Value = serde_json::from_slice(
             &std::fs::read(temp.path().join("migration_failed.json")).unwrap(),

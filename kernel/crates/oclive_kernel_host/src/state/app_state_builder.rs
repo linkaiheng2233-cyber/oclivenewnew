@@ -164,7 +164,8 @@ impl AppStateBuilder {
                     backup.as_deref(),
                     &self.app_data_dir,
                     e,
-                ),
+                )
+                .await,
             );
         }
 
