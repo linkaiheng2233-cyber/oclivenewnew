@@ -146,7 +146,7 @@
 | **流程** | 短 **ASCII** 或 **mermaid**（单图够用即止）；不在 prose 里堆箭头链 |
 | **路径** | 仓库根相对路径 + 反引号；monorepo 角色 **`distros/chat-pro/roles/`** |
 | **中英** | 工程 handoff **中文简体**；标识符 / crate / 命令 **英文** |
-| **脚注** | 大段历史放 `archive/` 或文内「已归档」块；正文只保留 **现行** |
+| **脚注** | 过程历史按 [文档分流边界](README.md#documentation-publishing-boundary)外置；正文只保留现行必要结论 |
 | **模板** | 新 handoff 结构对齐 [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) · [`TECHNICAL_DEBT_INVENTORY.md`](./TECHNICAL_DEBT_INVENTORY.md) — **不**另起 DOC_STYLE.md |
 
 ### 4. 收尾自检（动文档后）

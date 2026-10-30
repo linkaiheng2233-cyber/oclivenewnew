@@ -240,7 +240,7 @@
 
 - **记忆衰减写盘批处理（K-PERF-01/06）**：`DbManager::persist_memory_decay_batch` 由「每条记忆一次独立 `UPDATE`」改为「单事务批量提交」；rank 后每回合仅调用一次（衰减写回 + `accessed_at` 触达合并）。见 `long_term_memory.rs` 与 `turn_pipeline/pre.rs`。
 - **前端外壳懒加载（K-PERF-09）**：`App.vue` 改用 `defineAsyncComponent` 动态导入 `FluentShell` / `ToolShell`，仅按 `resolveOcliveShell()` 结果加载当前外壳，未渲染的外壳不再进入首屏主 chunk。
-- **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 `handoff/OPUS_48_PERF_BASELINE.md`。
+- **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 [历史记录：OPUS_48_PERF_BASELINE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/OPUS_48_PERF_BASELINE.md)。
 - **长驻内存/SQLite（K-PERF-07/08/12）**：`SessionCache` 六 map cap+TTL；`personality_vector` 复合索引 migration `033`；`hybrid_store` 去掉多余 `get_chat_session`；`role_cache` LRU(32)；LLM startup probe 后台化。
 - **前端壳内懒加载与轮询退避（K-PERF-10/11）**：`FluentShell`/`ToolShell` 非首屏面板 `defineAsyncComponent`；`useKernelStatus` 在 tab hidden 时 60s 退避。
 - **RoleRuntimeSnapshot 下游复用（K-PERF-20）**：`relation_snapshot` / `post` / `pre` Profile 路径共享快照；每回合 `get_current_emotion` ≤1（写后刷新除外）。
@@ -293,7 +293,7 @@
 
 ### Added
 
-- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
 - **文档**：ROLE_PACK_SPEC §1.1 / §9.7、架构总览「正交能力单元」、USER_MANUAL §3.4–3.5、RFC Phase 2 验收勾选。
 - **遗忘曲线与关系演化（`config.json`）**：艾宾浩斯长期记忆衰减（`memory.decay_halflife_days`）；重复提及强化（`mention_count` + `reinforcement_factor`）；沉浸模式下亲密值疏远与关系阶段降级（`relation.*`）；虚拟时间流速（`time.speed`）与首次沉浸对齐 `life_schedule` 起点；强化记忆微幅推动七维人格 / 可变档案「记忆塑造」。规范见 [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 - **双核质量验收补强**：OOCP 新增可选 **S14**（experimental 合法 DAG 成功路径）；`oocp-test-suite` CI job 现以 `--features dual_core` 构建并执行 `run.mjs --include-dual-core`（覆盖 S13 降级 + S14 成功路径）；新增 `src-tauri/tests/dual_core_happy_path.rs` 集成测验证 `DualPipelineRunner::run_experimental` 成功路径。
@@ -363,7 +363,7 @@
 
 ### Documentation
 
-- [COMPATIBILITY.md](creator-docs/COMPATIBILITY.md)、[PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)、双语 **creator-docs-en** 镜像与蓝图 v2 文档收口。
+- [COMPATIBILITY.md](creator-docs/COMPATIBILITY.md)、[PRODUCT_RELEASE_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)、双语 **creator-docs-en** 镜像与蓝图 v2 文档收口。
 
 ---
 

@@ -2,7 +2,7 @@
 
 Orchestration and business-policy layer. New code should follow these directions (aligned with [ARCHITECTURE_LAYERING.md](../../../../../handoff/ARCHITECTURE_LAYERING.md)).
 
-Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](../../../../../handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md).
+Chinese handoff notes: [COMMENT_ENGLISH_MIGRATION_PLAN.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md).
 
 ## Allowed / forbidden
 

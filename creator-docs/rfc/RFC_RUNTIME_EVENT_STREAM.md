@@ -576,7 +576,7 @@ Runtime Event Stream 本身不扩大当前主动回合的持久化范围。聊�
 - 用户请求删除整个 Session 时不保留分区 tombstone：先阻断新 ingress/lease，再依次删除主库状态与待发 outbox、Stream binding/事件/checkpoint、必需消费者派生数据、启用的 mirror/cache，最后验证所有必需域不存在。任一必需域失败，状态保持 `blocked`，不能返回“已完成”。
 - 外部平台的“撤回”不等于隐私擦除。以 OneBot v11 为例，`delete_msg` 只有消息撤回语义；本地删除完成必须覆盖输出适配器私有 store，外部撤回只能以不可关联的聚合结果报告，不能升级为平台数据已删除的承诺。
 - 删除流程状态固定为 `requested → quiescing → deleting → verifying → completed`，任一步可进入 `blocked` 并幂等重试。最小完成回执不得保存原始 Session/partition/访问主体/角色/event ID 或 payload。
-- 当前 manifest-role 删除已有文件暂存与主库事务恢复标记：提交前失败可恢复目录，提交后以 `cleanup_pending` 标示尚待清理。这是[角色维护修补](../../handoff/debt-marathon/waves/WAVE-20261028-REVIEW-FIXES.md)，没有阻断整个 Session 的 ingress/lease，也没有擦除 Stream、Output 与消费者独立存储，仍不满足本节的多域 Session 隐私删除合同。`delete_role` 的 `role_id` / `cleanup_pending` 结果不可复用为 Session 擦除完成回执；本设计切片没有新增该擦除执行器。
+- 当前 manifest-role 删除已有文件暂存与主库事务恢复标记：提交前失败可恢复目录，提交后以 `cleanup_pending` 标示尚待清理。这是[角色维护修补](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261028-REVIEW-FIXES.md)，没有阻断整个 Session 的 ingress/lease，也没有擦除 Stream、Output 与消费者独立存储，仍不满足本节的多域 Session 隐私删除合同。`delete_role` 的 `role_id` / `cleanup_pending` 结果不可复用为 Session 擦除完成回执；本设计切片没有新增该擦除执行器。
 - “正常运行 append-only”不覆盖法定/用户删除：Production Stream 必须把授权删除作为显式控制面例外，并留下不含可关联原始标识的最小完成证据。
 - 观察/训练用途必须与运行用途分权；“可用于角色运行”不自动等于“可用于模型训练”。
 

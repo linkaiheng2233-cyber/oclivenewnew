@@ -25,7 +25,7 @@ For **directory plugins**, **remote sidecars**, and **host slot** work. Contract
 |-------|------|
 | **Directory plugins** | [DIRECTORY_PLUGINS.md](DIRECTORY_PLUGINS.md) |
 | **Remote** | [REMOTE_PLUGIN_PROTOCOL.md](REMOTE_PLUGIN_PROTOCOL.md) |
-| **Permissions & grants** | [PLUGIN_V1.md](PLUGIN_V1.md) permission section; historical implementation record: [A4 closure](../../handoff/archive/A4_CLOSURE_SUMMARY.md) |
+| **Permissions & grants** | [PLUGIN_V1.md](PLUGIN_V1.md) permission section; historical implementation record: [A4 closure](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A4_CLOSURE_SUMMARY.md) |
 | **Bridge `invoke`** | [BRIDGE_API_REFERENCE.md](BRIDGE_API_REFERENCE.md) |
 
 **Done when:** You can declare required `permissions` and describe UX when grants are missing (error codes / fallback).

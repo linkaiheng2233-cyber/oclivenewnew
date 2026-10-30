@@ -156,7 +156,7 @@ Vue invoke / HTTP --api
 | **产品 / 定位** | OCLIVE_POSITIONING · THREE_DISTRO_KERNEL_CLOSURE · PRODUCT_LINE_TASK_BUCKETS |
 | **发行版子目录** | [theater/](./theater/) · [vscode/](./vscode/) · [launcher/](./launcher/) · [pack-editor/](./pack-editor/) |
 
-**禁止当 truth**：[`handoff/archive/`](./archive/)（含历史 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）
+**禁止当 truth**：[`handoff/archive/`](./archive/)（含历史 [历史记录：04_4.6_PROJECT_TRUTH_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/04_4.6_PROJECT_TRUTH_CHECKLIST.md)，G3）
 
 ---
 

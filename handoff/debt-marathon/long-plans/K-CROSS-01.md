@@ -49,4 +49,4 @@
 - Windows 已声明交付的内置 ASR/TTS：需在支持的宿主路径取得实际 ASR→chat→TTS 正向 smoke 证据。
 - Linux/macOS 已声明 `unsupported` 的内置 sherpa ASR 与 CosyVoice TTS：需核真实宿主/界面按 profile 明确拒绝或禁用，不尝试启动未交付的内置引擎；这不是要求两平台真实出声。
 - 用户自建 `local_http` / `cloud` 端点仅核配置/边界合同；外部服务质量及可用性不由 K-CROSS 保证。
-- 上述证据、具体环境、失败止点与新身份须在新计划中冻结后执行；本册旧 Stage 与 [历史 Wave](../waves/WAVE-20260716-K-CROSS-01-s2.md) 不作为新测试授权。K-VOICE-03 只拥有 CosyVoice TTS 产品化，跨平台 sherpa ASR 仍待独立产品范围，不借其名关闭。
+- 上述证据、具体环境、失败止点与新身份须在新计划中冻结后执行；本册旧 Stage 与 [历史 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260716-K-CROSS-01-s2.md) 不作为新测试授权。K-VOICE-03 只拥有 CosyVoice TTS 产品化，跨平台 sherpa ASR 仍待独立产品范围，不借其名关闭。

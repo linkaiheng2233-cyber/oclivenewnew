@@ -18,7 +18,7 @@
 
 `../oclive-dev-artifacts/oclivenewnew-cargo-target/`
 
-与源码分离。清理前先核实际 `target-dir`、正在运行的构建/调试消费者和冻结证据引用；旧仓内 `target/` 也不能只因目录名或被 Git 忽略就整夹删除。缓存用途、硬链接与维护准入见 [构建债的保留准则](../handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28)。
+与源码分离。清理前先核实际 `target-dir`、正在运行的构建/调试消费者和冻结证据引用；旧仓内 `target/` 也不能只因目录名或被 Git 忽略就整夹删除。缓存用途、硬链接与维护准入见 [构建债的保留准则](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28)。
 
 ## 首次编译预期
 

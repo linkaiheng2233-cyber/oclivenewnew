@@ -8,7 +8,7 @@
 | 与蓝图版本 | 使用当前参考宿主蓝图的同一文件名 **`pipeline.ocblueprint`**；仅冻结的 v3 双核 Beta 增加 `zone` + `pipeline` 段，该格式族的 Stable 新包使用 v4，v2 保持兼容（见 §4） |
 | 受众 | 创作者 / 集成方 / 内核开发者；**普通终端用户无感**（未开启 `--dual-core` 时行为与今日一致） |
 
-**相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[历史 v2 蓝图 RFC](../../handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史设计总结）、[历史术语对齐记录](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)。
+**相关文档**：[RFC_OCLIVE_MONOLITH_MODE.md](RFC_OCLIVE_MONOLITH_MODE.md)（构建宏核态）、[历史 v2 蓝图 RFC](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/RFC_ROLE_BLUEPRINT_V2.md)、[OCLIVE_ARCHITECTURE_OVERVIEW.md](../getting-started/OCLIVE_ARCHITECTURE_OVERVIEW.md)、[handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史设计总结）、[历史术语对齐记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/DUAL_CORE_ALIGNMENT.md)。
 
 [English](../../creator-docs-en/rfc/RFC_OCLIVE_DUAL_CORE_DUAL_MODE.md)
 
@@ -174,7 +174,7 @@ Monolith **不** 替代双核；双核 **不** 替代 Monolith。二者正交。
 | 目录插件 | `manifest` + `provides` / `slot_attachment` | 不变；实例 `zone` 由蓝图或 CLI 写入 |
 | CI / OOCP | 黑盒测 Stable 路径 | 增量：双核开启时的降级用例 |
 
-详见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史对齐进度）与 [归档术语记录](../../handoff/archive/DUAL_CORE_ALIGNMENT.md)。
+详见 [handoff/DUAL_CORE_CURSOR_HANDOFF.md](../../handoff/DUAL_CORE_CURSOR_HANDOFF.md)（历史对齐进度）与 [归档术语记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/DUAL_CORE_ALIGNMENT.md)。
 
 ---
 
@@ -191,7 +191,7 @@ Monolith **不** 替代双核；双核 **不** 替代 Monolith。二者正交。
 
 | 阶段 | 交付物 | 依赖 |
 |------|--------|------|
-| **P0 对齐** | 本 RFC + `DUAL_CORE_CURSOR_HANDOFF.md` + `DUAL_CORE_ALIGNMENT.md` + 文档索引 | 无 |
+| **P0 对齐** | 本 RFC + `DUAL_CORE_CURSOR_HANDOFF.md` + [历史记录：DUAL_CORE_ALIGNMENT.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/DUAL_CORE_ALIGNMENT.md) + 文档索引 | 无 |
 | **P1 契约** | `schema_version` 或 v3 校验、`action` 枚举表、`zone` 默认值 | `oclive_validation` |
 | **P2 调度器** | `DualPipelineRunner` + 快照 MVP + 单测 | P1 |
 | **P3 脚手架** | `oclive init --dual-core` 模板蓝图 | P1 |

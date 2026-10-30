@@ -82,11 +82,11 @@
 
 项目体检仅声明 **Node/Git/Cargo/rg 及静态项目链** 的结论：执行版本探测、两个实际 ratchet、Git 工作树和离线 Cargo workspace metadata，分别输出存在、可用、实际链通过（未运行为 null）。不推断链接器、前端/全部 Rust、语音/实机已可用；不改 `E:\Env`。窄测接 `npm run test:toolchain`，体检接 `npm run check:toolchain`；命令合同测试进入 Dimension 5，综合门禁按上表里程碑运行。
 
-**工具链执行出口**：仓库切片 Locally verified，详细命令和字节依据只在 [工具链 Wave](waves/WAVE-20260928-TOOLCHAIN.md) 维护；缺 `py` 的首次综合失败保留，按既有配置显式选实际 Python 后全链通过。两个父债为 Partial；新环境完整链、外部个人体检联动及目标提交远端 CI 分列，未关闭父债或解冻其他计划。后续构建测量已按下节接续，目标 CI 仍须分别核对。
+**工具链执行出口**：仓库切片 Locally verified，详细命令和字节依据只在 [工具链 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260928-TOOLCHAIN.md) 维护；缺 `py` 的首次综合失败保留，按既有配置显式选实际 Python 后全链通过。两个父债为 Partial；新环境完整链、外部个人体检联动及目标提交远端 CI 分列，未关闭父债或解冻其他计划。后续构建测量已按下节接续，目标 CI 仍须分别核对。
 
 ### 构建成本与缓存切片（2026-09-28）
 
-**尺寸 / 范围**：M 级测量与台账纠偏，base `d30f47c75bc9ef7454fb308204f1997c884b3422`，开场干净；K-BUILD-06/07 仍 OPEN。本轮复用上述独立条件，不启动自动马拉松。配置、源文件和旧证据保持，当前观测与执行出口见 [构建 Wave](waves/WAVE-20260928-BUILD-OBSERVATION.md)。
+**尺寸 / 范围**：M 级测量与台账纠偏，base `d30f47c75bc9ef7454fb308204f1997c884b3422`，开场干净；K-BUILD-06/07 仍 OPEN。本轮复用上述独立条件，不启动自动马拉松。配置、源文件和旧证据保持，当前观测与执行出口见 [构建 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md)。
 
 | 切片 | 合同 / 验收 | 止点 |
 |------|-------------|------|
@@ -108,7 +108,7 @@
 | 实施 / 窄测 | 复用 `tests/common` 的路径 owner，增加统一命令构造点；保持原业务参数、cwd、OCLIVE_ROOT 和 experimental 选择。覆盖全部旧 `cargo run` 启动点，留下生成项目的 `cargo build`；加一条真实缺 Cargo PATH 负控，定向四目标重跑 | 前测非零先归因；每尝试新日志，原失败不覆盖。不扩为生产 CLI 重构，不解除串行测试规则 |
 | 里程碑 | CLI crate 全测（含已有生成项目/release 构建与 bench 夹具）、CLI all-targets/all-features clippy、workspace fmt、分层及本轮文档/债计划/编码/diff 检查；冻结后一次提交/推送，目标 CI 单独绑定 | 全测最多 900 s、clippy 最多 480 s；无真实模型/音频/业务回合/旧证据改写。无公开 Rust API或门禁组合改变，不重复无关全仓业务链；台账不升 Done |
 
-**关联与交接**：测试生产者为本轮 Cargo 编译的 CLI executable，消费者是原集成用例；保留真实 CLI 命令、stdout/stderr 和拒绝行为，消除测试启动器额外 `cargo run`。Kernel/Host/Tauri/shared 的生产路径及发布安装方式已核对无需改。Git HEAD 被 runtime build script 监测属于清单溯源合同，不以减少重编为由删去。执行记录和剩余链接/缓存条件仍写入 [构建 Wave](waves/WAVE-20260928-BUILD-OBSERVATION.md)，不新增状态表。
+**关联与交接**：测试生产者为本轮 Cargo 编译的 CLI executable，消费者是原集成用例；保留真实 CLI 命令、stdout/stderr 和拒绝行为，消除测试启动器额外 `cargo run`。Kernel/Host/Tauri/shared 的生产路径及发布安装方式已核对无需改。Git HEAD 被 runtime build script 监测属于清单溯源合同，不以减少重编为由删去。执行记录和剩余链接/缓存条件仍写入 [构建 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md)，不新增状态表。
 
 ### 单 Host 链接目标绑定（2026-09-28；诊断接续）
 
@@ -194,7 +194,7 @@
 
 ### D-DEBT-LEDGER-01 · 七月 Verification 迁移（2026-09-29）
 
-**尺寸 / 边界**：M，base `5cd50d346f5fab351357af388f8e43f110b65696`、开场干净，上一节引用化已完成本地提交。只迁移主台账首部 20 个 `Verification (2026-07-…)` 段到 `handoff/archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md`，主表保留明确的历史链接。归档不是当前 truth；历史文本除三个相对地址的目录重定位外必须逐字相同，旧 CI/SHA/状态/范围不改。首部其它工程长快照、§5 轮次表与全表状态词不在本轮搬移范围，不因局部迁移关闭父债。
+**尺寸 / 边界**：M，base `5cd50d346f5fab351357af388f8e43f110b65696`、开场干净，上一节引用化已完成本地提交。只迁移主台账首部 20 个 `Verification (2026-07-…)` 段到 [历史记录：TECHNICAL_DEBT_VERIFICATIONS_202607.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md)，主表保留明确的历史链接。归档不是当前 truth；历史文本除三个相对地址的目录重定位外必须逐字相同，旧 CI/SHA/状态/范围不改。首部其它工程长快照、§5 轮次表与全表状态词不在本轮搬移范围，不因局部迁移关闭父债。
 
 **写集 / 验收**：主台账、本计划、DEBT_CHANGELOG、COVERAGE、同一台账 Wave、入口登记及一个 archive 文件。独立证据根 `.cursor/plans/debt-ledger-history-20260929-r0/` 保存原文、迁移映射、native 日志和最终身份。全表 ID/引用/锚点不变，除治理父债的进展文字外状态行原样；20 段顺序、内容与所有外部 URL 保留，归档内相对链接精确指回原目标。出现来源混淆、证据缺失或无法机械重定位的链接即止，不改旧证据/生产/QUEUE。适用默认及七篇改文链接、docs-only 路径、登记、债结构、编码/diff；仅文档不重复 Rust/业务链。分类本地提交，等 Actions 目标 CI 终态后按既有授权一次同步本轮里程碑，新目标独立取证。
 
@@ -210,7 +210,7 @@
 
 ### D-DEBT-LEDGER-01 · 八月工程快照归档（2026-09-29）
 
-**尺寸 / 边界**：M，base `2852b285f6a0b33dbd73aba63037ac6c5f85680a`、开场干净。只将主台账首部第 12–24 行的连续历史块迁至 `handoff/archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md`，原位留下带日期与非当前 truth 边界的链接。历史里的旧 Done、CI、产品冻结与旧排期不能转成当前状态或开工许可；§1–§5、其它首部说明和七月归档不在本轮搬移范围。
+**尺寸 / 边界**：M，base `2852b285f6a0b33dbd73aba63037ac6c5f85680a`、开场干净。只将主台账首部第 12–24 行的连续历史块迁至 [历史记录：TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md)，原位留下带日期与非当前 truth 边界的链接。历史里的旧 Done、CI、产品冻结与旧排期不能转成当前状态或开工许可；§1–§5、其它首部说明和七月归档不在本轮搬移范围。
 
 **写集 / 保全**：主台账、本计划、DEBT_CHANGELOG、COVERAGE、同一台账 Wave、handoff 入口登记及一个新归档。本机独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/` 在编辑前保全七份原文与 HEAD。归档块原文顺序、日期、旧 SHA/CI、外部 URL 和文字除三个相对链接目录重定位外保持；重定位前后必须解析到同一现存文件，逆向重定位后正文逐字节匹配 S0。其余主台账行及既有 ID/引用/状态字段不变，QUEUE、机器计划、产品和旧证据不改。
 
@@ -218,7 +218,7 @@
 
 ### D-DEBT-LEDGER-01 · 六月轮次 16–19 历史表归档（2026-10-02）
 
-**范围 / 基线**：M 级文档切片，base `53479d8cbba6bffe92213dc65fde61fefac24882`、开场工作树干净。主台账 §5 的轮次 16–19 是 2026 年 6 月完成历史，已有部分行写成指向 §1 权威状态的历史引用；迁至 `handoff/archive/TECHNICAL_DEBT_ROUNDS_202606.md`，主表原位保留明确标注“历史、非现行状态”的单一链接。§1–§4、速查坐标、轮次 1–15 提示、旧归档和所有债务当前状态不在迁移范围。
+**范围 / 基线**：M 级文档切片，base `53479d8cbba6bffe92213dc65fde61fefac24882`、开场工作树干净。主台账 §5 的轮次 16–19 是 2026 年 6 月完成历史，已有部分行写成指向 §1 权威状态的历史引用；迁至 [历史记录：TECHNICAL_DEBT_ROUNDS_202606.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_ROUNDS_202606.md)，主表原位保留明确标注“历史、非现行状态”的单一链接。§1–§4、速查坐标、轮次 1–15 提示、旧归档和所有债务当前状态不在迁移范围。
 
 **保真合同 / 写集**：从 `### 轮次 16 Done` 到“轮次 1–15 明细表”之前的四张表原顺序保留，只有九条 `(#debt-…)` 相对锚点改为 `../TECHNICAL_DEBT_INVENTORY.md#debt-…`；K-SUPPLY-DOC-01 行的“本文件 §1.5”作为原始历史措辞留存，归档页头说明其来源。迁移脚本先冻结原文和 SHA，再反向重定位比较全部表格正文；归档末尾仅去掉一个多余空行，核原/新 ID 行及四轮标题一致、锚点仍解析到当前权威行。写集为主台账、新归档、本计划、台账 Wave、DEBT_CHANGELOG、COVERAGE、handoff 入口和 archive 索引；不改产品、脚本、QUEUE、机器计划、旧证据或债务状态。reqwest 暂缓只追加到原计划/事件，单独对账。
 
@@ -402,7 +402,7 @@
 
 ### K-LLM-ENV-02 · 原并发缺陷有限验收（2026-10-03）
 
-先前的停止规则要求不再补排列组合，只核目标 SHA 正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的[正式运行](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646)已 `success`，17/17；本地综合链也已 exit 0。结合可控交错与保存、chat、Theater、canonical seed 的有限路径，按原问题办理 Done。边界和历史阶段口径见[同债 Wave](waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)；不自动扩至真实 provider、跨进程或压力验证。此项只更新治理裁定，不改生产实现或重跑业务测试。
+先前的停止规则要求不再补排列组合，只核目标 SHA 正式 CI。`86cbb2d5a6651da8a0caba594933f8c8a67850b5` 的[正式运行](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/37100060646)已 `success`，17/17；本地综合链也已 exit 0。结合可控交错与保存、chat、Theater、canonical seed 的有限路径，按原问题办理 Done。边界和历史阶段口径见[同债 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261002-K-LLM-ENV-02-CONTENTION.md#2026-10-03--原缺陷的有限收口)；不自动扩至真实 provider、跨进程或压力验证。此项只更新治理裁定，不改生产实现或重跑业务测试。
 
 ### D-CLI-BLUEPRINT-05 · Prompt Base 输入去本地文件耦合（2026-10-03）
 
@@ -462,7 +462,7 @@
 
 **尺寸 / 基线 / 原因**：M 级文档治理，起点 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2`，工作树干净。D-CLI-BLUEPRINT-05 的当前状态格累积多轮历史，先前“未接”的阶段描述与当前实现并列；CLI `pack create` 指南还笼统写生成/识别未实现，不能准确区分已有显式文件准备与没有统一磁盘生成器。整理现行入口，不重新测绘代码或降低产品承诺。
 
-**写集 / 保全**：主台账只缩短 D-CLI-BLUEPRINT-05 的状态格，ID、问题、优先级与完成条件原文不变；将起点整行原文保存到 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md`。同步本计划、台账 Wave、DEBT_CHANGELOG 及 CLI 指南中英的 `create` 说明，共七份文档。当前状态仍唯一由主台账负责，归档仅保留历史；D-CLI-BLUEPRINT-05 与 D-DEBT-LEDGER-01 均不转 Done，QUEUE/机器计划、Rust/模板/门禁和运行原件不动。
+**写集 / 保全**：主台账只缩短 D-CLI-BLUEPRINT-05 的状态格，ID、问题、优先级与完成条件原文不变；将起点整行原文保存到 [历史记录：TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md)。同步本计划、台账 Wave、DEBT_CHANGELOG 及 CLI 指南中英的 `create` 说明，共七份文档。当前状态仍唯一由主台账负责，归档仅保留历史；D-CLI-BLUEPRINT-05 与 D-DEBT-LEDGER-01 均不转 Done，QUEUE/机器计划、Rust/模板/门禁和运行原件不动。
 
 **验收 / CI 节奏 / 止点**：机械比较快照与起点整行、前四列及其它权威行保持原文；核现有 `validate-minimal-local` 与边界 §0.5/§0.9 的主路径即可。默认及改文链接、镜像、docs-only 旧路径、登记、债结构、编码及 diff 通过后形成本地文档提交；不重复 Rust、业务场景或完整本地链，也不为这一小片立即再推送触发全量 CI，随下一实质批次统一推送。上一工程目标的远端结果单独核对，不把它当本文档 HEAD 的验收。主控自行按 diff 复核；完成该行与指南的准确分层即停止，不迁其它长状态、不新增所有未覆盖面的调查任务。
 
@@ -639,7 +639,7 @@
 
 **有界验证 / 出口**：仅新 TempDir 和必要的本地 Git 夹具，零外网 / 真实插件进程 / 用户插件目录。先保留 missing / bad manifest、source 根和同目录问题的失败，再核有效根 / 子目录、原目标 sentinel、依赖拒绝与既有路径。开发用离线 `cargo test --locked -j 1 -p oclive-cli` 定向过滤、局部 fmt、Clippy / diff；独立 reviewer 核验证先于目标写入、source 身份及临时路径归属。工作树共享既有 Cargo target 时串行执行，不装依赖或删缓存。文档合流后跑适用链接、登记、债结构与编码；批次冻结后才一次完整本地链 / 推送 / 精确 SHA 正式 CI。失败只修具体根因，不绕过测试或扩展完整安装安全矩阵；足够支撑本片行动即停，父债保持 Partial。ChatPro 明确任务、工具面、模型与报告消费尚未选择，不由本片替维护者决定。
 
-**同轮接手文档收敛**：controller 登记这批状态时，只将已触及的 `D-CLI-BLUEPRINT-05` 累积长状态行按 `D-DEBT-LEDGER-01` 既有准则分离：新历史快照逐字保全基线原行，前四个登记单元格保持，现行第五列保留 Partial / 已有能力 / 剩余范围，详细逐次证据链出而不继续累加。新快照为 `handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md`，不是第二份活跃状态 SSOT。旧归档不改，不改父债结论或领取更多清单调查；核 raw 行相等、前四列相等、唯一状态行及适用文档门禁。当前 Agent 精确 SHA 的完整结果只在真实终态核对后随本次实质片入账，不制造纯绿灯提交。
+**同轮接手文档收敛**：controller 登记这批状态时，只将已触及的 `D-CLI-BLUEPRINT-05` 累积长状态行按 `D-DEBT-LEDGER-01` 既有准则分离：新历史快照逐字保全基线原行，前四个登记单元格保持，现行第五列保留 Partial / 已有能力 / 剩余范围，详细逐次证据链出而不继续累加。新快照为 [历史记录：TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261005.md)，不是第二份活跃状态 SSOT。旧归档不改，不改父债结论或领取更多清单调查；核 raw 行相等、前四列相等、唯一状态行及适用文档门禁。当前 Agent 精确 SHA 的完整结果只在真实终态核对后随本次实质片入账，不制造纯绿灯提交。
 
 **合流与停止线（2026-10-06）**：两支线已实施并分别保留，安装最终方案有限独立复核通过，controller 主树 13/13 与适用 Clippy / fmt / 模块 / 文档 / 债务 / 编码 / diff 全部 native 0，详情与自主纠偏见 [DCL-43–44](DEBT_CHANGELOG.md#dcl-20261006-43--cli-市场在替换旧安装前共用基础检查)。最小角色归档原行相等、三个触及债项前四列相等；父债仍 Partial。源码、文档与接手记录形成同一相关批次的干净冻结，随后一次完整本地链和一次精确 SHA 正式 CI，不把上游 Agent 绿灯借给本批。实现已足够支撑本片，停止扩证；真实市场安全、完整 schema / IO 事务及新的 Agent 产品选择不在本批自动开工。
 
@@ -804,7 +804,7 @@
 
 **起点 / 真实问题 / 限度**：干净 `6f11a54fef02281f45aef4aeb2301b6b5226d10c` 与实际远端一致。有限筛选剩余 Remote 入口时，已核的 Prompt / Memory / Event / ComplexEmotion 主路径没有新的行为等价收束点，Agent 硬失败和工具循环不强行并入回退策略；达到现有事实即结束该候选。改读接手台账发现 D-CLI-BLUEPRINT-05 第二列还说 HTTP/Tauri/UI 未接通，与同一第五列及 ROLE_PACK_BOUNDARY §0.11–0.19 冲突；K-SUPPLY-10 与 K-EMO-01 仍把已收口片写作目标正式待验。只核到已有契约、生产注册 / UI 接线和两批原 closeout 件即施工，不追全部声明、真实模型 / 音频或故障矩阵。
 
-**精确四路径 / 语义 / 保全**：本计划、DEBT_CHANGELOG、主台账和新 `archive/TECHNICAL_DEBT_HANDOFF_ROWS_20261008.md`。归档逐字保留三个基线原行；台账最小角色第二 / 四列区分已接基础操作与待产品选择的丰富适配，原第五列承诺不变；Supply 只更新第五列过期待验表述并引用原 SHA CI；Emotion 的问题 / 后续列区分已补直接词与未实施外部词库，第五列按原 SHA CI 纠正待验阶段；D-DEBT-LEDGER-01 第五列追加这次有限进展。不复制阶段矩阵、造另一份当前状态或修改历史事件。三个父债仍 Partial，K-EMO-07 OPEN、双核 Frozen / Deferred；共享运行库在小 Kernel 外，Host 自行绑定资源，六槽可替换不等于固定六阶段或任意缺能力也成功。
+**精确四路径 / 语义 / 保全**：本计划、DEBT_CHANGELOG、主台账和新 [历史记录：TECHNICAL_DEBT_HANDOFF_ROWS_20261008.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_HANDOFF_ROWS_20261008.md)。归档逐字保留三个基线原行；台账最小角色第二 / 四列区分已接基础操作与待产品选择的丰富适配，原第五列承诺不变；Supply 只更新第五列过期待验表述并引用原 SHA CI；Emotion 的问题 / 后续列区分已补直接词与未实施外部词库，第五列按原 SHA CI 纠正待验阶段；D-DEBT-LEDGER-01 第五列追加这次有限进展。不复制阶段矩阵、造另一份当前状态或修改历史事件。三个父债仍 Partial，K-EMO-07 OPEN、双核 Frozen / Deferred；共享运行库在小 Kernel 外，Host 自行绑定资源，六槽可替换不等于固定六阶段或任意缺能力也成功。
 
 **验证 / 出口 / 调度**：默认及四文件链接、docs-only 旧路径、登记、镜像、债结构、编码、diff；另核精确写集、归档三行相同、除许可单元格外台账文本相同、计划 / DCL 历史为原文前缀。controller 实施和语义自查，independent=false。保存本地文档 checkpoint，main 保持已正式验收的 6f11a54f；本片不单独推送或重跑完整 CI、不把旧 SHA 绿灯当新文档正式验收。后续相关实质批次再按实际写集收口。没有源代码 / 依赖 / 权限 / 公共 API / CI 变化，零模型、TTS、用户 DB 或历史 CP-INT 重放；接手误判消除且门禁通过即停。
 
@@ -969,7 +969,7 @@
 
 **授权 / 基线 / 目的**：维护者要求按针对模型局限更新后的AI边界及巡检手册二次审核代码质量和过度工程。起点main `89b7fa09812d53ba2cf563d919276d860456a358` 干净；controller第二遍自查，independent=false。快档基线＋近期六槽/消费者/Host/Memory/入口与观察器八个选样，整批至多120分钟，D1足以判断即停，具体语义/权责疑点才做有限D2，不开D3或全仓抽象普查。
 
-**取舍 / 写集**：[本轮报告](waves/WAVE-20261009-SECOND-QUALITY-REVIEW.md)记录实际定义、直接消费者、测试映射与保留理由。没有确认新阻断或需要大重构的冗余；三种Memory语义、六槽独立转发、Host资源借用不能仅因形状相似合并。私有Host教学例子的窄错误投影记作非阻断提醒，不升级公共义务或新债。只写报告、本计划/DCL-81追加和手册滚动记录；代码/API/依赖/配置/队列状态不改。
+**取舍 / 写集**：[本轮报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261009-SECOND-QUALITY-REVIEW.md)记录实际定义、直接消费者、测试映射与保留理由。没有确认新阻断或需要大重构的冗余；三种Memory语义、六槽独立转发、Host资源借用不能仅因形状相似合并。私有Host教学例子的窄错误投影记作非阻断提醒，不升级公共义务或新债。只写报告、本计划/DCL-81追加和手册滚动记录；代码/API/依赖/配置/队列状态不改。
 
 **验收 / 出口**：先核原 `f94069dd` 完整本地链的回执和实现/依赖差量，明确旧SHA证据；本轮直接跑分层、docs+code旧路径、观察器自测/真实JSON和当前SHA的Memory案例3测。原件与Git内容/换行分别登记，不用新checkout字节冒充历史原字节。文档写集跑链接/登记/债结构/编码/diff及历史/边界保全，不重复完整CI。报告足以决定保留或另开有限修复即收口；main仍为起点且干净才FF并在既有授权内备份无PR分支，不推origin/main、不标债Done。未知实机/性能及既定冻结保持，没有新架构决策待维护者裁定。
 
@@ -977,7 +977,7 @@
 
 **授权 / 起点 / 目标**：维护者采纳“有限状态对账→可转让主线里程碑”的推荐并授权连续推进。main 起点 `566a8a69b2433b5e13e1ac6b9f1a1274d4e7843f` 干净，实际远端 `2ef5af051aea57fb76e6cd4d05e3a3468a8b0e63`；其间七提交已经形成外部 Memory 案例、六槽作者导航、辅助限制和二次质量报告。只对 K-LLM-ENV-02 的独立测试隔离片与 K-SUPPLY-12 的 override 撤销片核原收口件并修正过期待验；不重判两个父债，不扩查其它行。
 
-**写集 / 复核 / 保全**：精确五路径为本计划、DEBT_CHANGELOG、TECHNICAL_DEBT_INVENTORY、新 `archive/TECHNICAL_DEBT_HANDOFF_ROWS_20261009.md` 和 `waves/WAVE-20261009-MODULE-AUTHOR-MILESTONE.md`。两条旧权威行逐字归档；台账仅替换对应第五列的过期待验文字，并在 D-DEBT-LEDGER-01 第五列链接本次有限进展；旧计划/DCL只追加。新 Wave 作为交接快照链接现有唯一入口，不再定义契约或维护第二份状态表。尺寸 L（主线正式收口），语义取舍仍限于历史证据对账；controller 实施与语义自查 independent=false，没有独立审查声明。
+**写集 / 复核 / 保全**：精确五路径为本计划、DEBT_CHANGELOG、TECHNICAL_DEBT_INVENTORY、新 [历史记录：TECHNICAL_DEBT_HANDOFF_ROWS_20261009.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_HANDOFF_ROWS_20261009.md) 和 [历史记录：WAVE-20261009-MODULE-AUTHOR-MILESTONE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261009-MODULE-AUTHOR-MILESTONE.md)。两条旧权威行逐字归档；台账仅替换对应第五列的过期待验文字，并在 D-DEBT-LEDGER-01 第五列链接本次有限进展；旧计划/DCL只追加。新 Wave 作为交接快照链接现有唯一入口，不再定义契约或维护第二份状态表。尺寸 L（主线正式收口），语义取舍仍限于历史证据对账；controller 实施与语义自查 independent=false，没有独立审查声明。
 
 **验证 / CI 节奏**：先保存当前磁盘原件与身份，核原目标 SHA 的 run/jobs 终态、已有本地完整回执与本片保留范围；窄测为默认＋五改文显式链接、docs-only旧路径、镜像、登记、债结构、编码/diff及精确写集/两行归档/其它台账单元格/历史前缀保全。适用检查后提交冻结；针对积累批次只跑一次 `npm run check:ci-local`，继承 Voice Python 时只在子进程显式指定已核本机运行时，清理/环境与生成文件差量分别核。无公共签名或doctest示例变化，不额外重复 workspace doctest。所有检查通过且主树/实际远端仍为核定身份才FF并一次 push main；以该冻结完整SHA的正式 ci.yml/ci-gate 终态为出口，失败只定点修复，不无变更 rerun。
 
@@ -1005,7 +1005,7 @@
 
 **授权 / 基线 / 预算**：维护者明确要求完成入口分流、首次准备、练习到源码的过渡，并一起汇报现有指令和能力范围。起点 `6752124d670d8b40a6403a85948f8cd9898d149d`，原工作树干净、main `2b0390cd` 不动。M / 轻，controller 实施和语义自查 independent=false。只核入口、init/scaffold 帮助与直接实现及三项动作；足以完成即停止，不新增 Host/SDK/CI 开发。
 
-**精确十路径 / 关联闭环**：根 README 中英、人类 README 中英、CLI 指南中英、生成 README 模板、计划/DCL 追加、新 Wave `WAVE-20261011-KERNEL-BASE-FIRST-USE.md`。首页只分流链接，CLI 负责首次准备及用途，生成 README 负责实际库迁移步骤；不复制六槽定义表或完整实现。原件及 hash 先保存，plan/DCL 历史仅追加。代码/默认值/契约/锁/消费者/注册/失败与权限语义、现有五运行配方、先前报告和其它支线原样保留。
+**精确十路径 / 关联闭环**：根 README 中英、人类 README 中英、CLI 指南中英、生成 README 模板、计划/DCL 追加、新 Wave [历史记录：WAVE-20261011-KERNEL-BASE-FIRST-USE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-FIRST-USE.md)。首页只分流链接，CLI 负责首次准备及用途，生成 README 负责实际库迁移步骤；不复制六槽定义表或完整实现。原件及 hash 先保存，plan/DCL 历史仅追加。代码/默认值/契约/锁/消费者/注册/失败与权限语义、现有五运行配方、先前报告和其它支线原样保留。
 
 **验收 / CI 节奏 / 停止线**：保存实际 `init --help/--list-templates` 与 `scaffold --help`；实际生成工程，照 README 迁移 Memory 实现到 src 后编译测试（2项通过），串行4项原 E2E核新 README 渲染和原失败路径。默认＋改文/实际生成 README 显式链接、docs-only旧路径、镜像/登记/债结构、编码/diff/精确写集/原件/历史前缀。无公开 API 或生产代码改动，不重复 Clippy/workspace doctest/全量 CI；不把本地通过写成新 SHA 正式验收或技术债 Done。三项完成后冻结本地提交与能力报告，不合入或推送 main，不测试/宣传未来 Host 下载、真实模型或所有发行版。
 
@@ -1013,7 +1013,7 @@
 
 **授权 / 基线 / 范围**：维护者要求只按常用 / 不常用规范分类，让开发者先掌握少量指令。基线 `c33e8a0fa6cd72e710a454da2cbe4892600c13bb`，工作树干净、main `2b0390cd` 不动。M / 轻，controller 实施及语义自查 independent=false。按基础模块作者的开发路径分阅读层次，不改 CLI 名称/可见性/路由、稳定/试验或权限状态，不新增别名/包装命令。
 
-**七路径 / 关联闭环**：CLI 指南中英、CLI crate README、生成 README 模板、计划/DCL 追加、新 Wave `WAVE-20261011-KERNEL-BASE-COMMAND-GUIDE.md`。常用为生成 init、Cargo check/test/fmt与帮助；不常用归入准备选项、脚手架包和参考运行时/插件/角色/维护/实验兼容的按需指引。crate README 的旧两种运行配方范围标明归属；详细用法仍链接 CLI SSOT。先保全六份原件，历史仅追加，不复制新的六槽契约或默认实现。
+**七路径 / 关联闭环**：CLI 指南中英、CLI crate README、生成 README 模板、计划/DCL 追加、新 Wave [历史记录：WAVE-20261011-KERNEL-BASE-COMMAND-GUIDE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-COMMAND-GUIDE.md)。常用为生成 init、Cargo check/test/fmt与帮助；不常用归入准备选项、脚手架包和参考运行时/插件/角色/维护/实验兼容的按需指引。crate README 的旧两种运行配方范围标明归属；详细用法仍链接 CLI SSOT。先保全六份原件，历史仅追加，不复制新的六槽契约或默认实现。
 
 **验收 / 出口**：一次4项原基础E2E核生成README渲染与原行为；实际生成示例并在其根执行 `cargo check`、`cargo test`、`cargo fmt -- --check`，确认常用命令可执行。默认＋改文/实际README链接、镜像、docs-only路径、登记、债结构、编码/diff、精确写集/原件/历史前缀。不写镜像实现测试，不为文档分类重复Clippy/全量CI/公开面doctest。指令分类能指导第一步即停止，本地保存提交，不合入/推送main或改变任何技术债/冻结结论。
 
@@ -1025,13 +1025,13 @@
 
 **验收 / CI节奏**：新空白工程调用先在旧CLI红，再实现到绿；定向单元及基础E2E串行核默认五文件、空白四文件、六trait仍可用、预览一致、错误选项/来源/目录拒绝与取消零写入。实际本地自定义包发现/锁定/预览/生成/Cargo检查，并改源模板但不更新摘要验证拒绝；编辑/更新摘要后的再生成由真实用例核。离线CLI Clippy/fmt、原模板与scaffold回归、分层/module-compat、适用文档/镜像/登记/债结构、编码/写集/历史。未改公开DTO/trait/re-export，不重复workspace doctest或每片完整CI；只作本地提交，不能为main/技术债Done借旧绿灯。真实终端若工具可用则跑一次问答及一次取消，否则如实记未验，不以注入输入冒充TTY。既定冻结、Host及安全语义保持。
 
-**必要关联补充**：例子按原始字节登记source摘要，Windows默认换行转换会使新checkout不匹配；在保全原件后将 `.gitattributes` 纳入第28路径，仅对本例package固定 `text eol=lf`，不改旧规则或其它模板。验证工作区及Git检出副本的摘要与实际生成，不把摘要辅助脚本扩成通用发布工具。[本批报告](waves/WAVE-20261011-KERNEL-BASE-CUSTOMIZATION.md)记录终态与证据边界。
+**必要关联补充**：例子按原始字节登记source摘要，Windows默认换行转换会使新checkout不匹配；在保全原件后将 `.gitattributes` 纳入第28路径，仅对本例package固定 `text eol=lf`，不改旧规则或其它模板。验证工作区及Git检出副本的摘要与实际生成，不把摘要辅助脚本扩成通用发布工具。[本批报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-CUSTOMIZATION.md)记录终态与证据边界。
 
 ### 基础脚手架 · 最终文档审查与收尾（2026-10-11）
 
 **授权 / 基线 / 限度**：维护者确认现阶段脚手架足够使用，要求最后审查文档并收尾，后续收集外部反馈改进。从干净 `65641fddd1324bc1da73d39490be76792c12b1c7` 接续，main `2b0390cd`保持。M / 轻，controller 实施与语义自查 independent=false。只核基础开发入口、常用命令、默认/空白/作者模板、原示例接入与声明边界；足以判断上手路径后停止，不重开代码/全仓质量或其它五槽调查。
 
-**精确六路径**：CLI指南中英、`examples/scaffold-kernel-base-custom/README.md`、本计划/DCL仅追加、新报告 `waves/WAVE-20261011-KERNEL-BASE-CLOSEOUT.md`。五份旧原件和hash先保全于本机 `.cursor/plans/kernel-base-closeout-20261011-r0/`。只补作者模板教程返回源码目录的步骤，明确新参数要求与反馈入口；不改源模板、Rust、公共契约、依赖/锁、权限、CI、旧Wave或债务状态。反馈按现有入口记录目标/平台/版本/模板/命令/预期/实际及最小复现，不新增采集框架或功能承诺。
+**精确六路径**：CLI指南中英、`examples/scaffold-kernel-base-custom/README.md`、本计划/DCL仅追加、新报告 [历史记录：WAVE-20261011-KERNEL-BASE-CLOSEOUT.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-CLOSEOUT.md)。五份旧原件和hash先保全于本机 `.cursor/plans/kernel-base-closeout-20261011-r0/`。只补作者模板教程返回源码目录的步骤，明确新参数要求与反馈入口；不改源模板、Rust、公共契约、依赖/锁、权限、CI、旧Wave或债务状态。反馈按现有入口记录目标/平台/版本/模板/命令/预期/实际及最小复现，不新增采集框架或功能承诺。
 
 **验证 / 收口**：实际执行修正后的目录切换、CLI预览及摘要刷新命令，沿用原源码下Cargo/TTY/回归证据并明确其身份；适用默认＋已改文件链接、docs-only路径、镜像/登记/债结构、UTF-8无BOM、精确写集、原件及历史字节前缀/diff。纯Markdown修正不重复Rust、业务、workspace doctest或全量CI。保存本地收尾提交，main及其它支线保持，不推送或发布；阶段停止在已有基础开发路径可用，下一次脚手架施工由实际反馈/具体开发阻碍驱动。
 
@@ -1039,7 +1039,7 @@
 
 **授权 / 起点 / 尺寸**：维护者在文档收尾后明确要求确认基线、集成验收并推送，然后准备CI分层。干净脚手架分支 `46318810aaa8eda7f6f77b434a9bd3565942d354` 相对本地及实际远端main `2b0390cdecaeed428f9ea1f753098f4aa69f3ebd` 领先六提交，main原正式CI成功。L里程碑，controller实施与语义自查 independent=false。授权仅集成本批和准备下一条CI责任分层；不同时合入SDK草案或其它债分支，不扩脚手架功能、公共契约、发行版能力或冻结项。
 
-**写集 / 审查**：本计划和DCL仅追加，新增 `waves/WAVE-20261011-KERNEL-BASE-INTEGRATION.md` 交接快照；两原件先保全于 ignored `.cursor/plans/kernel-base-integration-20261011-r0/`。审既有49路径合批差量、共享生成/配置流、来源锁和例子依赖边界；入口到测试/文档关联闭环与原五运行配方保持。若验收有确定性失败，仅按首因定点修复及受影响检查，不降低门禁、不重跑已成功无关阶段。
+**写集 / 审查**：本计划和DCL仅追加，新增 [历史记录：WAVE-20261011-KERNEL-BASE-INTEGRATION.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-INTEGRATION.md) 交接快照；两原件先保全于 ignored `.cursor/plans/kernel-base-integration-20261011-r0/`。审既有49路径合批差量、共享生成/配置流、来源锁和例子依赖边界；入口到测试/文档关联闭环与原五运行配方保持。若验收有确定性失败，仅按首因定点修复及受影响检查，不降低门禁、不重跑已成功无关阶段。
 
 **门禁 / 冻结 / 推送**：新增三文适用链接、路径、镜像/登记、债结构、编码/历史/diff先通过，冻结一个最终SHA。准备真实debug内核资源后运行一次 `npm run check:ci-local`；清除子进程继承的CARGO_TARGET_DIR，让生成工程E2E拥有各自缓存，辅助Voice仅在验证子进程显式用已核本机Python。复核原生成bridge字节/Git内容和环境、副作用；有公开枚举增量，显式workspace doctest按原公开面验收口径随该合批执行，不以--lib代替。CLI集成由原串行入口拥有，不另建平行组合。适用本地全部通过且主树/远端身份未漂移时FF main，一次push；等待绑定该完整SHA的正式ci.yml与ci-gate终态，不为绿灯回写制造新HEAD。
 
@@ -1067,7 +1067,7 @@
 
 **授权 / 基线 / 预算**：维护者要求分类详实提交、确认开发基线，再了解CI并对接。接续干净 `2b8d03ae5a2305dc4de081f705c1e0c67ba6fd06`；已有准备与入口实施分别由 `a74e249c`、`2b8d03ae` 拥有，不重写提交。本轮M / 轻，controller实施及语义自查 independent=false；只核已有8组职责的直接workflow、catalog、执行策略、仓库合同入口及同SHA正式证据，D1足以给出下一片形状即停，上限120分钟。不进入逐测试全仓分类或缓存收益研究。
 
-**精确五路径 / 不变量**：现有CI设计中英各扩一节，将执行归属迁移和选择范围扩大分开；本计划、DEBT_CHANGELOG仅追加；新增 `waves/WAVE-20261011-CI-BASELINE-HANDOFF.md` 记录提交分类、main/开发基线与适用证据。四份原件及控制面/入口摘要先保全于ignored `.cursor/plans/ci-baseline-handoff-20261011-r0/`。不改Rust、脚本、package、workflow、catalog/影响图/元数据、selector、required gate、Push/ready策略或债务状态，不合入/推送main，不新建CI框架或第二份架构规则。
+**精确五路径 / 不变量**：现有CI设计中英各扩一节，将执行归属迁移和选择范围扩大分开；本计划、DEBT_CHANGELOG仅追加；新增 [历史记录：WAVE-20261011-CI-BASELINE-HANDOFF.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md) 记录提交分类、main/开发基线与适用证据。四份原件及控制面/入口摘要先保全于ignored `.cursor/plans/ci-baseline-handoff-20261011-r0/`。不改Rust、脚本、package、workflow、catalog/影响图/元数据、selector、required gate、Push/ready策略或债务状态，不合入/推送main，不新建CI框架或第二份架构规则。
 
 **验证 / 出口**：实际读取远端main及正式run终态，区分main已正式验收与开发入口Locally verified；文档默认＋精确五路径链接、docs-only路径、镜像/登记、债结构、严格UTF-8无BOM、历史字节前缀、控制面原摘要及精确diff。纯Markdown对接不重复Rust、入口/业务测试、Dimension5或全量CI；旧入口失败记录与环境收尾更正沿用原证据，不冒充本轮重跑。完成文档本地提交并确认两树干净后，向维护者解释原因和下一片；远端执行迁移仍是待实施，不把本地命令称为整个Kernel验收或分层完成。
 
@@ -1075,7 +1075,7 @@
 
 **目标 / 预算**：接续干净 `c166af791eba58a8649514bcbe837f031394881f`。维护者确认公共Kernel、7B参考Host、具体Host/发行版及小Kernel外共享接入支持的责任方向；本轮先交边界图、当前实现入口、现有CI归属与一片调整建议，对接后才实施。M / 轻，controller实施及语义自查 independent=false。复用前轮五workflow调查，只核六槽/最小消费者/参考Host/ChatPro的直接入口和13个主CI验证job，D1主路径加Memory定点L2；上限120分钟，足以决定首片形状即停，不重开全仓合规或逐测试调查。
 
-**六路径 / 保全**：架构定义与源码对照只扩 `MODULE_MAP_AND_HANDOFF.md` 一节；执行归属与建议只扩CI设计中英；本计划与DEBT_CHANGELOG只追加；新增 `waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md` 记录范围与核验结果。五份磁盘原件及15项控制面/实现摘要先保全于ignored `.cursor/plans/ci-boundary-map-20261011-r0/`。只做文档，不改公共API、crate/目录名、运行行为、workflow、catalog/影响边、required gate或选择策略；不减少覆盖、不转债Done、不解冻既定架构项。
+**六路径 / 保全**：架构定义与源码对照只扩 `MODULE_MAP_AND_HANDOFF.md` 一节；执行归属与建议只扩CI设计中英；本计划与DEBT_CHANGELOG只追加；新增 [历史记录：WAVE-20261011-CI-RESPONSIBILITY-MAP.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md) 记录范围与核验结果。五份磁盘原件及15项控制面/实现摘要先保全于ignored `.cursor/plans/ci-boundary-map-20261011-r0/`。只做文档，不改公共API、crate/目录名、运行行为、workflow、catalog/影响边、required gate或选择策略；不减少覆盖、不转债Done、不解冻既定架构项。
 
 **验收 / 出口**：默认与六路径显式Markdown链接、docs-only旧路径、镜像、登记、债结构、严格UTF-8无BOM/汉字、原件及历史字节前缀、控制面摘要、精确diff；各命令即时保留native exit、stdout/stderr。按纯文档变更不重复Rust/业务/Dimension5/远端矩阵。语义核对四项交付物及混合检查标签；保存本地文档提交，不合入/推送main。远端首片是待讨论建议，迁移前须核原/新执行集合、平台与feature条件、兼容回归及唯一所有权；未满足时保留原执行，不用窄入口排除整crate。
 
@@ -1085,7 +1085,7 @@
 
 **授权 / 基线 / 路由**：维护者同意继续实施并理清执行所有权；接续干净 `5e483aa613265427c246ae23c916a9c5da7ccd07`。本片只迁移contracts/types既有完整检查，保留剩余workspace、Host/发行版组合及现行选择权限。触及主CI编排按L工程出口管理；自适应CI受信基线与失败关闭按重风险复核点审，controller实施及语义自查 independent=false，不声称独立复核。预算180分钟，基于直接目标/配置集合足以判断即停，不追全仓测试或缓存性能。关联主题冻结前一次完整本地 `check:ci-local`；本地切片状态保持Locally verified，正式集成出口仍需目标SHA远端CI，不提前转Done。
 
-**闭环 / 十四路径**：`.github/workflows/ci.yml` 新增Linux/Windows契约责任job并从原rust检查中排除两crate根测试/lint目标；catalog增加受信validator/command且所有原rust profile同时保留新组；shadow corpus只同步新增坐标；package与新 `scripts/check-kernel-contracts.mjs` / `.test.mjs` 提供完整本地链及失败关闭/真实迁移引导负控；`oclive_ci_plan/tests/repository_contract.rs` 核所有权、gate与控制面；CI设计和人类门禁矩阵各中英；本计划/DCL只追加；新增 `waves/WAVE-20261011-CI-CONTRACT-OWNER.md`。十一原件和十二项冻结摘要、Cargo metadata原始目标先保全于ignored `.cursor/plans/ci-contract-owner-20261011-r0/`。
+**闭环 / 十四路径**：`.github/workflows/ci.yml` 新增Linux/Windows契约责任job并从原rust检查中排除两crate根测试/lint目标；catalog增加受信validator/command且所有原rust profile同时保留新组；shadow corpus只同步新增坐标；package与新 `scripts/check-kernel-contracts.mjs` / `.test.mjs` 提供完整本地链及失败关闭/真实迁移引导负控；`oclive_ci_plan/tests/repository_contract.rs` 核所有权、gate与控制面；CI设计和人类门禁矩阵各中英；本计划/DCL只追加；新增 [历史记录：WAVE-20261011-CI-CONTRACT-OWNER.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。十一原件和十二项冻结摘要、Cargo metadata原始目标先保全于ignored `.cursor/plans/ci-contract-owner-20261011-r0/`。
 
 **不变量 / 过渡**：两crate当前无自有feature；新链Clippy仍all-targets/all-features、测试仍完整默认选择并保留适用doctest，不用 `check:kernel-base` 窄链代替。所有原rust选择继续覆盖新公共组；旧受信catalog未识别新所有者时用已有 `trusted_policy_bootstrap` 全量回退，不能在草稿漏掉迁走目标。required `ci-gate`、Push/其它ready全量、现行草稿/docs Canary权限、影响边与业务/API/锁文件保持；迁移后的剩余rust仍混合，不宣称所有内容都是Host或小Kernel。
 
@@ -1157,7 +1157,7 @@
 
 **取证 / 止点**：D1核当前声明、实现与直接证据，具体矛盾才加至多两个D2边界，不自动D3。Git对象核Host/runtime/contracts/types/validation、锁、脚本与CI控制面相对main `08348f31` 未变，读正式run `38199557652` 的目标SHA与21成功job；CLI七源/模板/测试核原受测hash，原115项及Clippy/fmt限域复用；SDK两源、种子锁及十原生命令同样对账。当前分层与docs+code旧路径另实跑，不重建全CI或业务矩阵。验证器首次错把派生锁要求等于种子锁，B2 exit1原样保留，先停后改核种子原件，B2b exit0；不把它归给产品。
 
-**写集 / 验收 / 出口**：八项审查没有确认新的阻断或公共表达缺陷，不为产生“修复”而改代码。只追加PLAN/DCL与新[有限审查报告](waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md)，两份原件先保全；现行使用文、代码、模板、测试、锁、CI、原Wave和债状态不改。默认/三文链接、docs-only旧路径、登记、债结构、编码、三路径/两历史前缀/四份旧冻结上手文与七源码原hash和diff为适用门禁。报告通过后可本地提交，旧tag保持；不合main/push或冒称新SHA正式通过，不重开其它五槽、实机/性能/发行版及既定冻结。达到可行动的八项结论即结束，后续按真实使用反馈或明确的集成范围推进。
+**写集 / 验收 / 出口**：八项审查没有确认新的阻断或公共表达缺陷，不为产生“修复”而改代码。只追加PLAN/DCL与新[有限审查报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-RECENT-QUALITY-REVIEW.md)，两份原件先保全；现行使用文、代码、模板、测试、锁、CI、原Wave和债状态不改。默认/三文链接、docs-only旧路径、登记、债结构、编码、三路径/两历史前缀/四份旧冻结上手文与七源码原hash和diff为适用门禁。报告通过后可本地提交，旧tag保持；不合main/push或冒称新SHA正式通过，不重开其它五槽、实机/性能/发行版及既定冻结。达到可行动的八项结论即结束，后续按真实使用反馈或明确的集成范围推进。
 
 ### 二次复核回传的有限澄清（2026-10-13）
 

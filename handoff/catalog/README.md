@@ -88,4 +88,4 @@ node scripts/ai-docs.mjs check
 
 该命令没有加入 Dimension 5、required CI、自动启动规则或常驻进程。批量读取 Git 对象，不持久化搜索索引、缓存或锁文件。原文、Git index 与登记文件均只读。
 
-当前范围达到“实际任务能找对原文、更新可见、失败可回退”后冻结，后续使用中按具体障碍改进，不开展全仓穷尽审查。历史实施分别见 [初始试点](../debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md) 与 [扩面和实际使用](../debt-marathon/waves/WAVE-20261020-AI-DOCS-EXPANSION.md)；报告不拥有当前规范或债务状态。
+当前范围达到“实际任务能找对原文、更新可见、失败可回退”后冻结，后续使用中按具体障碍改进，不开展全仓穷尽审查。历史实施分别见 [初始试点](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md) 与 [扩面和实际使用](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261020-AI-DOCS-EXPANSION.md)；报告不拥有当前规范或债务状态。

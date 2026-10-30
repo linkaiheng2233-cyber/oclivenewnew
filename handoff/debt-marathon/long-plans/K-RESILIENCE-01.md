@@ -13,7 +13,7 @@
 | **状态** | Closed · 仅本册 Minimal；父债仍 Partial，Full Deferred |
 | **更新** | 2026-10-08（维护者确认 Full 暂缓） |
 
-**对账结论**：本册 Minimal 的清单、示范接线、定向测试与 Partial 证据均已在 [历史 Stage 3 Wave](../waves/WAVE-20260716-K-RESILIENCE-01-s3.md) 登记，并随 [PR #126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 于 2026-07-16 合入；当前 `remote_plugin` 定向测试 29/29 通过。本次只关闭已完成的 Minimal 计划，不重跑旧 Stage，也不改变[主台账](../../TECHNICAL_DEBT_INVENTORY.md)中的父债 Partial。Full ResilienceLayer 仍须单独定义范围与决策。历史阻塞缘由见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)，本次对账见 [DCL-20260930-03](../DEBT_CHANGELOG.md#dcl-20260930-03--k-resilience-01-minimal-历史计划对账收口)。下列 Stage 只作历史坐标，不可重复领取。
+**对账结论**：本册 Minimal 的清单、示范接线、定向测试与 Partial 证据均已在 [历史 Stage 3 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260716-K-RESILIENCE-01-s3.md) 登记，并随 [PR #126](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/126) 于 2026-07-16 合入；当前 `remote_plugin` 定向测试 29/29 通过。本次只关闭已完成的 Minimal 计划，不重跑旧 Stage，也不改变[主台账](../../TECHNICAL_DEBT_INVENTORY.md)中的父债 Partial。Full ResilienceLayer 仍须单独定义范围与决策。历史阻塞缘由见 [DCL-20260928-01](../DEBT_CHANGELOG.md#dcl-20260928-01--初始化审查与调度对账)，本次对账见 [DCL-20260930-03](../DEBT_CHANGELOG.md#dcl-20260930-03--k-resilience-01-minimal-历史计划对账收口)。下列 Stage 只作历史坐标，不可重复领取。
 
 <a id="full-deferred-freeze"></a>
 

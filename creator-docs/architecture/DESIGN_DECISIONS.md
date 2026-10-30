@@ -110,6 +110,6 @@ distros/chat-pro/roles/{id}/pipeline.ocblueprint
 ## 相关文档
 
 - [ROLE_PACK_SPEC.md](../role-pack/ROLE_PACK_SPEC.md) · [PLUGIN_V1.md](../plugin-and-architecture/PLUGIN_V1.md)
-- [历史 trait 审计：KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](../../handoff/archive/KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md)
+- [历史 trait 审计：KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/KERNEL_CONTRACTS_TRAIT_METHOD_AUDIT.md)
 
 [English](../architecture-en/DESIGN_DECISIONS.md)

@@ -13,4 +13,4 @@
 | [PACK_EDITOR_ROADMAP.md](PACK_EDITOR_ROADMAP.md) | 立绘 catalog · 视觉舞台 · 分级导出路线图（主仓副本） |
 | [RFC_PORTRAIT_FACILITY](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md) | 现行设施边界 |
 
-姊妹仓同步副本：`oclive-pack-editor/handoff/PACK_EDITOR_ROADMAP.md`
+姊妹仓同步副本：[历史记录：PACK_EDITOR_ROADMAP.md](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/20f3eb26ff98214ce74a2234f7f1b6181b41de77/handoff/PACK_EDITOR_ROADMAP.md)

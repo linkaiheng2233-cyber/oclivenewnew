@@ -33,10 +33,10 @@
 
 | 主清单锚点 | 内容 | 复杂度说明 |
 |------------|------|----------------|
-| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[历史验收证据](./archive/A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
+| **A5.1** | **对外兼容一页表**：主程序 semver ↔ 编写器/启动器 ↔ `min_runtime_version` ↔ 包 schema（表格 + 破坏性迁移指针） | **基线已入库**（[`COMPATIBILITY.md`](../creator-docs/COMPATIBILITY.md)、[历史验收证据](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A5_CLOSURE_SUMMARY.md)）；姊妹仓版本号仍须发版时人工对拍 |
 | **A1.3（强化）** | **CI 与本地一致**：核对 `.github/workflows` 与 `npm run check:release` 覆盖差；缺则在 CI 或文档补一句「发版前本地补跑」 | CONTRIBUTING 已有 `check:release`，多为 **对齐与文档** |
 | **A6.1（切片）** | **界面无残留中文**：按 **一个垂直域** 扫（如仅设置页 / 仅插件管理），`rg Han` + i18n 键 | 全应用一次扫完工作量大，**按切片收口** |
-| **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 `handoff/archive/A3_CLOSURE_SUMMARY.md` |
+| **A3.2（切片）** | **`KernelErrorBody` JSON `code` + `apiErrors`**：目录插件 `ApiError` 已 JSON 化；未知码 **`UNKNOWN_WITH_CODE`** 兜底；`[CODE]` 仅 legacy | 见 [历史记录：A3_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md) |
 | **A8.1（切片）** | **高频键盘路径**：例如「插件管理打开 / 关闭 / 发送」一条链 | 全 a11y 属硬骨头，先做 **单链** |
 | **A8.2（单点）** | **长任务进度**：例如仅「大包导入」进度与失败态 | 与 A8.1 类似，**单场景**先闭环 |
 | **A4.1（文档先行）** | **高风险能力验收表**：Markdown 表（权限 → 期望弹窗 → 拒绝后行为）+ 手工演示脚本 | 自动化可后移；先 **可演示** |
@@ -49,7 +49,7 @@
 | 主清单锚点 | 内容 | 依赖 / 说明 |
 |------------|------|----------------|
 | **A4.2** | **权限与 manifest 一致性**：`oclive_validation`、运行时、`DIRECTORY_PLUGINS` / manifest 文档 **三面盘点** | 依赖 inventory，可能牵迁移与校验 |
-| **A3.1** | **崩溃与遥测**：Sentry 构建期 DSN、设置页退出、脱敏、README 一致 | 见 `handoff/archive/A3_CLOSURE_SUMMARY.md` |
+| **A3.1** | **崩溃与遥测**：Sentry 构建期 DSN、设置页退出、脱敏、README 一致 | 见 [历史记录：A3_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md) |
 | **A2.2** | **可选环境自检**：首次启动或设置页探测（模型、目录可写等）+ 降级说明 | 与 A2.1 文案衔接；有产品形态设计 |
 | **A7** | **性能与资源**：与 perf handoff 对照，公开冷启动/长会话 **数字或已知限制** | 需测量与文案 |
 
@@ -97,6 +97,6 @@
 
 ## 相关链接
 
-- 历史背景：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](./archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)（仅供追溯，不作现行 truth）
+- 历史背景：[PRODUCT_AND_KERNEL_GAP_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/PRODUCT_AND_KERNEL_GAP_CHECKLIST.md)（仅供追溯，不作现行 truth）
 - 发版习惯：[CONTRIBUTING](../CONTRIBUTING.md) · [版本规则](../creator-docs/development/RELEASE_VERSIONING.md)
 - 贡献与闸门：[CONTRIBUTING.md](../CONTRIBUTING.md)

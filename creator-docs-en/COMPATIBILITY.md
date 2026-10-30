@@ -144,7 +144,7 @@ Env matrix for Remote LLM (`OCLIVE_LLM_BACKEND`, `OCLIVE_REMOTE_LLM_*`, `OCLIVE_
 
 ## Related
 
-- [Historical acceptance evidence: A5_CLOSURE_SUMMARY.md](../handoff/archive/A5_CLOSURE_SUMMARY.md)
+- [Historical acceptance evidence: A5_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A5_CLOSURE_SUMMARY.md)
 - [ui.json.schema.json](../creator-docs/role-pack/ui.json.schema.json)
 - [DIRECTORY_PLUGINS.md](plugin-and-architecture/DIRECTORY_PLUGINS.md)
 - [REMOTE_PLUGIN_PROTOCOL.md](../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) §2.0 — Remote LLM env matrix
