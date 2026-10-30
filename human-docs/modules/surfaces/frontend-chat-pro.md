@@ -4,7 +4,7 @@
 > **读完能做什么**：在不动内核编排的前提下改聊天界面与状态管理。  
 > **耗时**：约 **45 min**  
 > **SSOT 范围**：人类 checklist；invoke 契约见 [tauri-invoke](tauri-invoke.md)  
-> **最后更新**：2026-07-14
+> **最后更新**：2026-10-30（收拢现行国际化接线入口）
 > **下一篇**：[paths/frontend](../../paths/frontend.md) · [08 资料地图](../../08_REFERENCE_MAP.md)
 
 ---
@@ -27,6 +27,12 @@
 | 插件管理面板 · 模型管理面板 | 在 `lib.rs` 堆业务逻辑 |
 
 ---
+
+### 国际化接线
+
+共享入口为 [`distros/shared/src/i18n/index.ts`](../../../distros/shared/src/i18n/index.ts)：使用 `vue-i18n` 的 `legacy: false`，偏好键为 `oclive.appLocale`。`getLocalePreference()` 读取 `system` / `zh-CN` / `en-US`；`resolveLocaleTag()` 把系统偏好解析为实际语言；更新偏好使用 `setLocalePreference()`，缺省回退为 `zh-CN`。
+
+界面词条维护在 `distros/shared/src/i18n/locales/zh-CN.ts` 与 `en-US.ts` 及其 fragments 中。修改共享词条后运行 `npm run verify:shared-i18n`，再按改动面运行前端单测或构建；历史 CJK 扫描结果不代表当前界面已完成翻译。姊妹仓独立核对自身入口与版本，不由旧进度表代证。
 
 ## 3. 阅读清单
 

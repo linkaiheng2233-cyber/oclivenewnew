@@ -78,7 +78,7 @@ distros/chat-pro/roles/{id}/  ──load_role──►  桌面 / VS Code / kerne
 | **`chat_storage.location`** | **`global`** |
 | **演示角色** | **`mumu` v2**；包内须含 **`scenes/vscode/`** |
 | **HTTP 表面** | `GET /health` + `POST /chat` |
-| **测试** | OOCP / Codex 轨道 A（[`CODEX_测试指南.md`](../../dev-notes/codex-testing/CODEX_测试指南.md)） |
+| **测试** | [测试总览](../testing/OVERVIEW.md) · [OOCP HTTP 契约场景](../testing/OOCP_TEST_SUITE.md)；可携带性 Minimal 与 Full 边界见下文 |
 
 **自动化证据（Minimal）**：`node scripts/e2e-distro-kernel.mjs --scenario role-portability` 使用同一 `mumu` 包、同一 app-data 根与 mock LLM，依次在 `desktop` / `vscode` / `theater` profile 下执行 `role/load` + `/chat`。该测试证明内核级可携带；不代替三套 UI、语音、视觉资产和真实模型的 Full 验收。
 

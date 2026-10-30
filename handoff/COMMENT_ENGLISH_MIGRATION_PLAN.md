@@ -28,7 +28,7 @@
    - `creator-docs/**`（中文 SSOT）与 `creator-docs-en/**`（已英文）
    - `handoff/**`（内部交接，含本文件）
    - 根 `README.md` / `CHANGELOG.md` / `CONTRIBUTING.md`（中文版，已有 `.en` 镜像）
-   - `dev-notes/roadshow/项目说明.md`、`通知.markdown`、`handoff/archive/ARCHIVE_PROJECT_HISTORY.md`
+   - 路演、申报与传播制作原稿（已迁出源码）；历史索引 `handoff/archive/ARCHIVE_PROJECT_HISTORY.md`
    - 任何 `roles/**` 内的角色包内容文件（人设文本等）
 4. **doc 注释里的代码链接不要破坏**：例如 `SlotResolver` 的示例目标 `../slot_resolver.rs`、`crate::xxx` 这类 intra-doc link，其**路径与符号保持原样**，只翻译周围的中文描述。
 5. **保留 Markdown/格式**：注释里的 `**加粗**`、反引号代码、列表、代码块原样保留，只替换中文文字。

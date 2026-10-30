@@ -1,7 +1,7 @@
 # handoff · 维护者与 AI 工程入口
 
 **SSOT 范围**：全仓文档的读者分层、状态判读、活跃 handoff 职责与维护/归档规则；不承载运行时业务契约。
-**最后更新**：2026-10-02。
+**最后更新**：2026-10-30（补公开源码文档与本机过程材料的分流边界）。
 **新人开发者**从 [human-docs](../human-docs/README.md) 开始；**创作者**从 [创作者黄金路径](../creator-docs/getting-started/CREATOR_GOLDEN_PATH.md) 开始。
 
 **六槽当前交接状态**：先读 [B1 + B2 阶段总收口](#six-slot-stage-closure)，再查 [B1 绑定](#six-slot-b1-closure) 与 [逐槽实现／验收](#six-slot-b2-adaptation)。较早的“待实施／尚未编译／Event 尚未落实”属于当时记录，不是当前开工指令。
@@ -24,6 +24,16 @@
 | `*-en/` | 英文读者 | 对应中文 SSOT 的镜像 | [creator-docs-en](../creator-docs-en/README.md) · [human-docs-en](../human-docs-en/README.md) |
 
 **人类 / AI 分类是阅读职责，不是两套事实库。** 人类入口解释概念、例子与学习顺序；AI 入口规定改动范围、取证与验收路径。两者都引用同一专题 SSOT。`human-docs/ai-package/` 是保留的导航入口，不再维护第二套 AI 规则；crate README 说明当前物理代码与用法，不决定逻辑 Kernel 边界。
+
+<a id="documentation-publishing-boundary"></a>
+
+### 公开源码与过程材料的边界
+
+公开源码保留使用、接入、兼容、安全与贡献说明，以及维护所需的现行规范、关键决定、冻结边界和机器消费的最小计划。普通用户不必阅读维护规范，不代表这些规范应当删除。
+
+普通会话交接、逐命令执行记录、原始测试输出、机器路径与环境快照、路演和视频筹备稿，默认保存在仓库外的本机或私有维护区；公开文档只保留必要结论、受检 SHA、验证范围及可携带的获取说明，不复制整段运行流水，也不为了交接新增一份波次长文。凭据、聊天正文和运行态目录不得作为公开证据。
+
+现有 `archive/`、`debt-marathon/waves/` 和 `long-plans/` 分批核对引用与脚本消费者后再迁移。控制器仍读取的契约、最小波次恢复记录和当前状态继续保留；原始执行工件外置不等于取消验收或把仅在本机的证据说成他人可复现。删除当前文件不清除 Git 历史。
 
 <a id="documentation-status"></a>
 
