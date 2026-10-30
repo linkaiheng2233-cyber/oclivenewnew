@@ -40,7 +40,6 @@ const HIGH_TRAFFIC_DRIFT_ZH = new Set([
 
 /** ZH paths (posix, from repo root) intentionally without 1:1 EN file yet. */
 const CREATOR_PENDING = new Set([
-  'creator-docs/video-script/PLUGIN_DEVELOPMENT_SCRIPT.md',
   'creator-docs/architecture/DESIGN_DECISIONS.md',
   'creator-docs/rfc/RFC_PORTRAIT_FACILITY.md',
   'creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md',

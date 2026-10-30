@@ -62,6 +62,11 @@ bench_history.json
 # Local directory-plugin runtime state under any roles/fixture root (dev/test)
 .oclive_directory_plugin_data/
 
+# Personal testing, roadshow and video-production records live outside source.
+/dev-notes/
+/creator-docs/video-script/
+/docs/I18N_PROGRESS.md
+
 # Local GGUF/BIN weights (default folder: repo-root models/)
 models/*.gguf
 models/*.bin

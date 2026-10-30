@@ -44,8 +44,7 @@
 | 要改什么 | 入口 |
 |----------|------|
 | 一轮对话主链 | [内核学习路径](../../human-docs/06_KERNEL_LEARNING_PATH.md) · [关键文件锚点](../../handoff/BUS_FACTOR_NOTES.md) |
-| 技术亮点：15 个机制（公开技术说明/视频素材） | [TECHNICAL_HIGHLIGHTS](../architecture/TECHNICAL_HIGHLIGHTS.md) · [视频口播稿](../video-script/TECHNICAL_HIGHLIGHTS_SCRIPT.md) |
-| 对外介绍筹备与首支 Memory 视频（筹备稿） | [开源准备清单与脚本提纲](../video-script/OPEN_SOURCE_INTRO_PREPARATION.md) |
+| 技术亮点：15 个机制（公开技术说明） | [TECHNICAL_HIGHLIGHTS](../architecture/TECHNICAL_HIGHLIGHTS.md) |
 | 模块定义与六槽关系 | [MODULE_MAP](../../handoff/MODULE_MAP_AND_HANDOFF.md) |
 | Event Ring、记忆提案与主动回合授权 | [EVENT_RING](../plugin-and-architecture/EVENT_RING.md) |
 | Runtime Event Stream：分阶段实验、Production 缺口与暂停范围 | [RFC_RUNTIME_EVENT_STREAM](../rfc/RFC_RUNTIME_EVENT_STREAM.md) · [技术债](../../handoff/TECHNICAL_DEBT_INVENTORY.md) |

@@ -12,3 +12,5 @@
 **Don't**: Second LLM call in UI (portrait / chat bypassing slots) · use `response` instead of DTO **`reply`** · stack business logic in `lib.rs`.
 
 **Read next**: [paths/frontend](../../paths/frontend.md) · [tauri-invoke](tauri-invoke.md) · [facilities/visual-stage](../facilities/visual-stage.md) · [NAMING §8](../../../creator-docs/NAMING_CONVENTIONS.md).
+
+**Internationalization**: [the shared i18n entry](../../../distros/shared/src/i18n/index.ts) uses `legacy: false`, the `oclive.appLocale` preference key, and `zh-CN` fallback. Read preferences with `getLocalePreference()`, resolve `system` with `resolveLocaleTag()`, and update with `setLocalePreference()`. Maintain shared `zh-CN` / `en-US` messages and fragments together; run `npm run verify:shared-i18n` and the relevant frontend tests or build. Historical CJK inventories do not establish current translation coverage; check sister repositories independently.

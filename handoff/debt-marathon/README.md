@@ -4,7 +4,7 @@
 **流程 SSOT**：[仓库通用 dev-pipeline](../workflows/dev-pipeline/SKILL.md) → [OCLive 定制](../../.cursor/skills/oclive-dev-pipeline/SKILL.md) → [马拉松 Skill](../../.cursor/skills/oclive-debt-marathon/SKILL.md)
 **变动与接手**：[DEBT_CHANGELOG](DEBT_CHANGELOG.md)；当前状态不在这里双写。
 
-> **长流程计划书正文以本目录为准（进 git）**；通用 Skill 正文位于 `handoff/workflows/dev-pipeline/`，项目 Skill 也已跟踪，Cloud/其他机器无需依赖本机副本。
+> **控制器读取的长流程计划契约以本目录为准（进 Git）**；详细执行日志与普通会话交接按[文档分流边界](../README.md#documentation-publishing-boundary)放到仓库外。通用 Skill 正文位于 `handoff/workflows/dev-pipeline/`，项目 Skill 也已跟踪，Cloud/其他机器无需依赖本机副本。
 
 ---
 
@@ -19,7 +19,7 @@
 | [`LONG_PLAN_TEMPLATE.md`](./LONG_PLAN_TEMPLATE.md) | 长流程计划书模板 |
 | [`WAVE_LOG_TEMPLATE.md`](./WAVE_LOG_TEMPLATE.md) | 波次工作记录模板 |
 | [`long-plans/`](./long-plans/) | 一书一债 |
-| [`waves/`](./waves/) | 波次日志 |
+| [`waves/`](./waves/) | 控制器所需的最小波次恢复记录；已有详细历史待分批整理 |
 | [`ROUND-01-CLOSEOUT.md`](./ROUND-01-CLOSEOUT.md) | 第一轮马拉松收尾证据 |
 | [`ROUND-02-PLAN.md`](./ROUND-02-PLAN.md) | 第二轮解除阻断与再开放计划 |
 
@@ -30,7 +30,7 @@
 1. Cursor IDE 选择 **worktree** 启动 Agent；共享 dirty 工作树不得运行马拉松。
 2. 先按 DEBT_CHANGELOG 接手顺序对账，运行 `npm run check:debt-marathon`；环境、授权和目标 Stage 确认后才运行 `node scripts/cursor-marathon.mjs start --max-turns 30`。结构 PASS 不代替开工前提。
 3. 父 Agent 只跑 `runner=auto`；普通实现 Stage 调用 `oclive-debt-stage`，Wave / QUEUE / TECHNICAL_DEBT 证据 Stage 由父 Agent执行；每轮仍是 **一本债 × 一个 Stage**。
-4. 父 Agent 校验子 Agent 结构化结果，推进计划契约 `currentStage`，同步受影响的状态并写 `waves/`、变动事件和 checkpoint；stop hook 自动进入下一轮。
+4. 父 Agent 校验子 Agent 结构化结果，推进计划契约 `currentStage`，同步受影响的状态并写控制器要求的最小 Wave、变动事件和 checkpoint；详细命令输出及运行环境记录放仓库外，保留证据位置与可携带边界；stop hook 自动进入下一轮。
 5. **默认不 push / 不开合 PR / 不合 main**；能力必须在 dispatch 中显式授予。
 6. 人工 / skip / blocked 项禁止假装做完；证据齐再改 TECHNICAL_DEBT Done。
 
