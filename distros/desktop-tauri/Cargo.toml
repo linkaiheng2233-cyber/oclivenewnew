@@ -1,6 +1,6 @@
 [package]
 name = "oclivenewnew-tauri"
-version = "0.6.0-rc.3"
+version = "0.6.0-rc.4"
 edition = "2021"
 license = "Apache-2.0"
 description = "oclive desktop companion ? Tauri + Vue + Rust dialogue engine"

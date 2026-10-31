@@ -21,6 +21,7 @@
 
 | ID | 项 | 优先级 | 解冻/完成条件 | 状态 |
 |----|-----|--------|----------------|------|
+| <a id="debt-k-store-recovery-01"></a> **K-STORE-RECOVERY-01** | Windows 迁移异常恢复删除待释放 WAL 时拒绝访问（错误码 5） | **P0 · 本次候选发布前** | 真实 delete-pending 回归、持续占用/无效附属文件失败保护、默认 Host 与目标提交正式 CI；新安装器和隔离用户路径绑定修补 SHA，不要求解冻功能或全生态升级 | **候选修补**：rc.4 仅在关闭连接后的 WAL/SHM 删除允许该错误有界等待，保留原错误和备份，不改权限；备份读取与主库复制不扩大重试。旧 main [Windows 失败证据](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/41216153932/job/124581756176) 保留，后续验收按当前目标提交与随包清单判定，不由父提交绿灯代证 |
 | **P0-STRANGER** | Theater 朋友 cohort 试玩（10 人） | **P0** | ≥60% 通过 · [`theater/PLAYTEST_MATRIX.md`](./theater/PLAYTEST_MATRIX.md) | **Done**（朋友 cohort 7/10 · 2026-06-25） |
 | **K-DOC-17** | 注释英文化 batch 3 | P1 | `slot_runner.rs` · `kernel_strategy.rs` 等 | **Done**（轮次 16 复核：上述文件已为英文 `//!`/`///`） |
 | **V-VSCODE-PERF-05** | VS Code F5 / `.vsix` 实机 | P1 | 姊妹仓 `oclive-vscode` 人工排期 | **OPEN**（cross-repo） |

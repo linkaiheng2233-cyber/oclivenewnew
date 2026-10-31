@@ -205,7 +205,7 @@ pub async fn backup_db_file(
 ///
 /// Returns an error when restore copy fails.
 pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), String> {
-    let metadata = retry_windows_sharing_violation(|| std::fs::metadata(backup))
+    let metadata = retry_windows_file_release(|| std::fs::metadata(backup), false)
         .map_err(|error| format!("read backup {}: {error}", backup.display()))?;
     if !metadata.is_file() {
         return Err(format!("backup is not a file: {}", backup.display()));
@@ -218,7 +218,7 @@ pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), Strin
     // created from; retaining it while replacing the main file can replay incompatible pages.
     for suffix in ["wal", "shm"] {
         let sidecar = PathBuf::from(format!("{}-{suffix}", db_file.to_string_lossy()));
-        match retry_windows_sharing_violation(|| std::fs::remove_file(&sidecar)) {
+        match retry_windows_file_release(|| std::fs::remove_file(&sidecar), true) {
             Ok(()) => {}
             // SQLite's closing worker can unlink a sidecar between observation and removal.
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
@@ -230,21 +230,30 @@ pub fn restore_db_from_backup(db_file: &Path, backup: &Path) -> Result<(), Strin
             }
         }
     }
-    retry_windows_sharing_violation(|| std::fs::copy(backup, db_file))
+    retry_windows_file_release(|| std::fs::copy(backup, db_file), false)
         .map_err(|e| format!("restore {} <- {}: {e}", db_file.display(), backup.display()))?;
     Ok(())
 }
 
 // A closed SQLx pool may have a SQLite worker finishing file-handle teardown on Windows.
-// Retry only the observed sharing-violation code, with a 200 ms budget per operation.
-// ACL, missing-file and disk errors return immediately; a persistent owner still fails.
-fn retry_windows_sharing_violation<T>(
+// Sharing violations can occur while a closed SQLx worker releases its handles.
+// SQLite may also have marked a sidecar for deletion: Windows reports access denied
+// until the final handle closes. Allow that ambiguous code only for WAL/SHM deletion,
+// never backup reads or database copies. Keep the 200 ms budget; genuine/persistent
+// denial still returns the original error without changing permissions or the backup.
+fn retry_windows_file_release<T>(
     mut operation: impl FnMut() -> std::io::Result<T>,
+    allow_delete_pending: bool,
 ) -> std::io::Result<T> {
     let mut retries = 0;
     loop {
         match operation() {
-            Err(error) if cfg!(windows) && error.raw_os_error() == Some(32) && retries < 10 => {
+            Err(error)
+                if cfg!(windows)
+                    && (error.raw_os_error() == Some(32)
+                        || (allow_delete_pending && error.raw_os_error() == Some(5)))
+                    && retries < 10 =>
+            {
                 retries += 1;
                 std::thread::sleep(std::time::Duration::from_millis(20));
             }
@@ -622,6 +631,98 @@ mod tests {
         assert_eq!(marker.as_object().unwrap().len(), 2);
         assert!(marker["failed_at"].is_string());
         assert!(marker["message"].as_str().unwrap().starts_with("primary\n"));
+    }
+
+    #[cfg(windows)]
+    fn hold_delete_pending_file(path: &Path) -> std::fs::File {
+        use std::os::windows::fs::OpenOptionsExt;
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(7) // FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+            .open(path)
+            .unwrap();
+        let deleting = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(7)
+            .custom_flags(0x0400_0000) // FILE_FLAG_DELETE_ON_CLOSE
+            .open(path)
+            .unwrap();
+        drop(deleting);
+        assert_eq!(
+            std::fs::remove_file(path).unwrap_err().raw_os_error(),
+            Some(5),
+            "the fixture must reproduce Windows delete-pending access denied"
+        );
+        held
+    }
+
+    #[cfg(windows)]
+    #[tokio::test]
+    async fn recovery_allows_runtime_to_finish_delete_pending_wal() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::write(&wal, "old wal").unwrap();
+        let held = hold_delete_pending_file(&wal);
+        let release = tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(40)).await;
+            drop(held);
+        });
+        let error = record_migration_failure(
+            &database,
+            Some(&backup),
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
+        )
+        .await;
+        release.await.unwrap();
+        assert!(error.to_string().contains("Backup restored"), "{error}");
+        assert!(error.to_string().contains("fixture primary failure"));
+        assert_eq!(std::fs::read(&database).unwrap(), b"after");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"after");
+        assert!(!wal.exists());
+        let marker = std::fs::read_to_string(temp.path().join("migration_failed.json")).unwrap();
+        assert!(marker.contains("fixture primary failure"));
+        assert!(marker.contains("Backup restored"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn restore_reports_persistent_delete_pending_and_keeps_images() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::write(&wal, "old wal").unwrap();
+        let held = hold_delete_pending_file(&wal);
+        let error = restore_db_from_backup(&database, &backup).unwrap_err();
+        assert!(error.contains("remove stale SQLite sidecar"));
+        assert_eq!(std::fs::read(&database).unwrap(), b"before");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"after");
+        drop(held);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn restore_reports_non_file_sidecar_without_changing_images() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        std::fs::write(&database, "before").unwrap();
+        std::fs::write(&backup, "after").unwrap();
+        std::fs::create_dir(&wal).unwrap();
+        std::fs::write(wal.join("keep"), "not a WAL file").unwrap();
+        let error = restore_db_from_backup(&database, &backup).unwrap_err();
+        assert!(error.contains("remove stale SQLite sidecar"));
+        assert_eq!(std::fs::read(&database).unwrap(), b"before");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"after");
+        assert_eq!(std::fs::read(wal.join("keep")).unwrap(), b"not a WAL file");
     }
 
     #[cfg(windows)]
