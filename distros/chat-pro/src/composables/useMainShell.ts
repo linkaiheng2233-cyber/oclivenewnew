@@ -9,13 +9,11 @@ import { useInteractionModeSettings } from '@oclive/shared/composables/useIntera
 import { useRoleSnapshotPoll } from '@oclive/shared/composables/useKernelStatus'
 import { useMinimalRoleSelection } from '@oclive/shared/composables/useMinimalRoleSelection'
 import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
-import { usePluginEvents } from '@oclive/shared/composables/usePluginEvents'
 import { useProgressiveDisclosure } from '@oclive/shared/composables/useProgressiveDisclosure'
 import { useReturnFocusOnClose } from '@oclive/shared/composables/useReturnFocusOnClose'
 import { useSceneDestination } from '@oclive/shared/composables/useSceneDestination'
 import { useSceneTravelBars } from '@oclive/shared/composables/useSceneTravelBars'
 import { usePackUiTheme } from '@oclive/shared/composables/useTheme'
-import { useVoiceAutoTts } from '@oclive/shared/composables/useVoiceAutoTts'
 import { getLocalePreference } from '@oclive/shared/i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useAdultInteractionStore } from '@oclive/shared/stores/adultInteractionStore'
@@ -33,6 +31,7 @@ import { useAppBootstrap } from './useAppBootstrap'
 import { useMainShellChat } from './useMainShellChat'
 import { useMainShellHotkeys } from './useMainShellHotkeys'
 import { useMainShellWindows } from './useMainShellWindows'
+import { useTextOnlyVoiceSettlement } from './useTextOnlyVoiceSettlement'
 
 export const DebugPanel = defineAsyncComponent(() => import('@oclive/shared/components/dev-tools/DebugPanel.vue'))
 export const MarketView = defineAsyncComponent(() => import('../views/MarketView.vue'))
@@ -46,12 +45,15 @@ export const TopBarMorePanel = defineAsyncComponent(() => import('@oclive/shared
 export const AutonomousSceneNotice = defineAsyncComponent(() => import('@oclive/shared/components/AutonomousSceneNotice.vue'))
 
 export function useMainShell() {
+  const roleWorkspaceShell = resolveOcliveShell() === 'fluent'
   const roleStore = useRoleStore()
   const adultStore = useAdultInteractionStore()
   usePackUiTheme()
   const chatStore = useChatStore()
   const debugStore = useDebugStore()
   const uiStore = useUiStore()
+  useTextOnlyVoiceSettlement(() => !roleWorkspaceShell && uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive)
+  const storyUiEnabled = computed(() => !roleWorkspaceShell && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive)
   const pluginStore = usePluginStore()
   const pluginMarketStore = usePluginMarketStore()
   const { t, locale } = useI18n()
@@ -74,6 +76,7 @@ export function useMainShell() {
 
   const leftPaneRef = ref<HTMLElement | null>(null)
   const roleSwitching = ref(false)
+  const roleActivationError = ref<unknown>(null)
   const minimalSelection = useMinimalRoleSelection()
   const presetPickerOpen = ref(false)
   const presetPickerPicking = ref(false)
@@ -125,6 +128,7 @@ export function useMainShell() {
     closeAllSidePanels,
   } = useMainShellWindows({
     pluginMarketStore,
+    advancedFeaturesEnabled: () => !roleWorkspaceShell && uiStore.advancedFeaturesEnabled,
   })
 
   const {
@@ -160,6 +164,18 @@ export function useMainShell() {
       debugStore.toggle()
   }
 
+  watch(() => uiStore.advancedFeaturesEnabled, (enabled) => {
+    if (enabled)
+      return
+    closePluginSurfaces()
+    dismissPostReplySceneBar()
+    dismissTogetherTravelBar()
+    dismissTopBarSceneDialog()
+    dismissAutonomousSceneNotice()
+    progressive.dismissImmersiveIntro()
+    // Do not reset the role mode, scene or history bucket when hiding its controls.
+  }, { flush: 'sync' })
+
   const {
     shortcutHelpOpen,
     openShortcutHelp,
@@ -174,10 +190,10 @@ export function useMainShell() {
     marketPanelVisible: computed(() => pluginMarketStore.marketPanelVisible),
     modelManagerOpen,
     debugVisible: computed(() => debugStore.visible),
-    pluginUiEnabled: computed(() => roleStore.interactionImmersive),
-    debugUiEnabled: computed(() => roleStore.interactionImmersive),
+    pluginUiEnabled: storyUiEnabled,
+    debugUiEnabled: storyUiEnabled,
     settingsUiEnabled: computed(() => !roleStore.minimalRoleActive),
-    voiceInputEnabled: computed(() => !roleStore.minimalRoleActive),
+    voiceInputEnabled: computed(() => !roleWorkspaceShell && uiStore.advancedFeaturesEnabled && !roleStore.minimalRoleActive),
     openPluginManagerPanel,
     openModelManager: () => openModelManager(),
     toggleDebug: () => debugStore.toggle(),
@@ -201,7 +217,7 @@ export function useMainShell() {
   }
 
   function onHostOpenPluginManager(): void {
-    if (!roleStore.interactionImmersive)
+    if (!storyUiEnabled.value)
       return
     openSimplePluginManager(true)
   }
@@ -238,7 +254,7 @@ export function useMainShell() {
   const sidebarRight = computed(() => packLayoutResolved.value.sidebar === 'right')
   const chatInputTop = computed(() => packLayoutResolved.value.chatInput === 'top')
   const roleName = computed(() => roleStore.minimalRoleActive ? t('app.minimalRole.active') : roleStore.roleInfo.name || t('app.defaultRoleName'))
-  const emotion = computed(() => roleStore.minimalRoleActive ? '' : roleStore.roleInfo.currentEmotion || 'neutral')
+  const emotion = computed(() => roleStore.minimalRoleActive ? '' : roleStore.roleInfo.portraitEmotion || roleStore.roleInfo.currentEmotion || 'neutral')
   const portraitAssetRelPath = computed(
     () => roleStore.minimalRoleActive ? null : roleStore.roleInfo.portraitAssetPath ?? null,
   )
@@ -262,7 +278,7 @@ export function useMainShell() {
   })
 
   async function onInteractionModeChange(ev: Event) {
-    if (roleStore.minimalRoleActive)
+    if (!uiStore.advancedFeaturesEnabled || roleStore.minimalRoleActive)
       return
     // Primary in-shell handler for InteractionModeBar (Settings → General is the other user entry).
     const v = (ev.target as HTMLSelectElement).value as 'immersive' | 'pure_chat'
@@ -271,7 +287,9 @@ export function useMainShell() {
       resetPureChatSceneUi()
   }
 
-  useAppBootstrap({
+  const { startupState, startupError, startupErrorDetails, initialize: retryStartup } = useAppBootstrap({
+    deferRoleActivation: roleWorkspaceShell,
+    advancedFeaturesEnabled: () => !roleWorkspaceShell && uiStore.advancedFeaturesEnabled,
     showToast,
     t,
     openPluginManagerPanel,
@@ -325,7 +343,7 @@ export function useMainShell() {
   })
 
   async function onBindMinimalSource(source: MinimalRoleLocalSource): Promise<void> {
-    if (roleSwitching.value)
+    if (!uiStore.advancedFeaturesEnabled || roleSwitching.value)
       return
     roleSwitching.value = true
     try {
@@ -352,29 +370,11 @@ export function useMainShell() {
       minimalSelection.returnToRichRole()
   }
 
-  usePluginEvents({
-    showToast,
-    onQuickActionTravel: onPluginQuickActionTravel,
-    onPureChatMode: resetPureChatSceneUi,
-    onVoiceAsrSubmit: ({ text, mode }) => {
-      if (roleStore.minimalRoleActive || !text?.trim())
-        return
-      if (mode === 'fill') {
-        hostEventBus.emit('chat:set_input_draft', { text: text.trim() })
-        return
-      }
-      if (chatListLoading.value)
-        return
-      void onSend({ content: text.trim() })
-    },
-  })
-
-  useVoiceAutoTts({ showToast })
-
-  async function onSwitchRole(nextRoleId: string) {
-    if (roleSwitching.value || !nextRoleId.trim() || (nextRoleId === roleStore.currentRoleId && !roleStore.minimalRoleActive))
+  async function onSwitchRole(nextRoleId: string, force = false) {
+    if (roleSwitching.value || !nextRoleId.trim() || (!force && nextRoleId === roleStore.currentRoleId && !roleStore.minimalRoleActive))
       return
     const savedLeftScroll = leftPaneRef.value?.scrollTop ?? 0
+    roleActivationError.value = null
     try {
       roleSwitching.value = true
       chatStore.cancelPendingSend()
@@ -384,11 +384,15 @@ export function useMainShell() {
       await chatStore.bootstrapChatForRole(nextRoleId)
       await pluginStore.syncDirectoryPluginBootstrap()
       hostEventBus.emitBuiltin('role:switched', { roleId: nextRoleId })
-      await debugStore.loadDebugData()
+      if (uiStore.advancedFeaturesEnabled)
+        await debugStore.loadDebugData()
       showToast('success', t('app.toast.roleSwitched', { id: nextRoleId }))
+      return true
     }
     catch (err) {
       showToast('error', err instanceof Error ? err.message : String(err))
+      roleActivationError.value = err
+      return false
     }
     finally {
       window.setTimeout(() => {
@@ -452,7 +456,8 @@ export function useMainShell() {
       await roleStore.refreshRoleInfo()
       await roleStore.loadRoles()
       await chatStore.bootstrapChatForRole(roleId)
-      await debugStore.loadDebugData()
+      if (uiStore.advancedFeaturesEnabled)
+        await debugStore.loadDebugData()
       if (roleStore.roleInfo.adultExtensionAvailable) {
         const accepted = window.confirm(
           adultStore.confirmedAdult
@@ -483,7 +488,7 @@ export function useMainShell() {
   }
 
   async function onDebugRefresh() {
-    if (roleStore.minimalRoleActive)
+    if (!uiStore.advancedFeaturesEnabled || roleStore.minimalRoleActive)
       return
     try {
       await debugStore.loadDebugData()
@@ -538,7 +543,7 @@ export function useMainShell() {
       return
     }
     if (tab === 'plugins') {
-      if (!roleStore.interactionImmersive) {
+      if (!storyUiEnabled.value) {
         showToast('info', t('app.toast.pluginsStoryModeOnly'))
         return
       }
@@ -558,6 +563,10 @@ export function useMainShell() {
   }
 
   return {
+    startupState,
+    startupError,
+    startupErrorDetails,
+    retryStartup,
     t,
     localePreference,
     toast,
@@ -570,12 +579,14 @@ export function useMainShell() {
     chatStore,
     debugStore,
     uiStore,
+    storyUiEnabled,
     pluginStore,
     pluginMarketStore,
     chatListRef,
     chatInputRef,
     leftPaneRef,
     roleSwitching,
+    roleActivationError,
     wideSplitLayout,
     relationOptions,
     connectivityPluginIndexDetail,
@@ -614,6 +625,7 @@ export function useMainShell() {
     dismissTopBarSceneDialog,
     confirmTopBarScene,
     onPluginQuickActionTravel,
+    resetPureChatSceneUi,
     onVirtualTimeJumpComplete,
     dismissAutonomousSceneNotice,
     shortcutHelpOpen,
@@ -639,6 +651,7 @@ export function useMainShell() {
     onSwitchRole,
     onChangeRelation,
     onPackImported,
+    onRolePackImported: onPackImported,
     onReloadPolicy,
     onDebugRefresh,
     presetPickerOpen,

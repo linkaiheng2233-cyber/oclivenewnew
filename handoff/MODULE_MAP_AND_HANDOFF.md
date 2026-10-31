@@ -870,10 +870,38 @@ flowchart TB
 
 | 主题 | SSOT / 行为 |
 |------|-------------|
-| **默认壳** | [`resolveOcliveShell()`](../distros/shared/src/composables/useOcliveShell.ts) fallback **`fluent`**；`VITE_OCLIVE_SHELL=tool` → ToolShell；`theater` 走剧场发行版。 |
-| **用户入口** | **Settings → General**（[`SettingsGeneralTab.vue`](../distros/shared/src/components/settings/SettingsGeneralTab.vue)）+ **FluentShell** 输入区上方 [`InteractionModeBar.vue`](../distros/shared/src/components/onboarding/InteractionModeBar.vue)（经 `MAIN_SHELL_KEY.onInteractionModeChange`）。 |
-| **键位绑定** | **Settings → General → Advanced** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
-| **发现 / 编程入口** | 日常聊解锁条 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue) · 首次剧情引导 [`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) · 插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）— **非**并列用户 IA。 |
+| **默认壳** | [`resolveOcliveShell()`](../distros/shared/src/composables/useOcliveShell.ts) fallback **`fluent`** → [`RoleWorkspaceShell.vue`](../distros/chat-pro/src/shells/fluent/RoleWorkspaceShell.vue)：先角色库、用户选择/导入后进入运行空间，各角色拥有自己的最近对话。标准壳不被目录整壳插件替换；`VITE_OCLIVE_SHELL=tool` → 原 ToolShell，`theater` 走剧场发行版。 |
+| **用户入口** | 默认壳以角色包与普通聊天为主，复用模型、身份、数据、外观与恢复组件；剧情控制保留在高级/替代壳路径，非默认输入区。记录线程与角色记忆的区别见 [聊天存储](CHAT_STORAGE_ARCHITECTURE.md#transcript-only-conversations)。 |
+| **设置分区** | [`SettingsView.vue`](../distros/chat-pro/src/views/SettingsView.vue) 在模态与 Tool 嵌入方式中共用分类：外观与语言、聊天体验、角色与身份、对话记录、连接与修复、高级设置。共享 [`SettingsGeneralTab.vue`](../distros/shared/src/components/settings/SettingsGeneralTab.vue) 按页挂载原有设置，语音/插件/成人入口仍沿用能力与原有启用状态判定；标准角色工作区不开放延后能力。异步开关保存期间禁重入、失败回退；错误保留概要、技术详情和手动重试。 |
+| **共享面板交互** | [`UiCloseButton.vue`](../distros/shared/src/components/ui/UiCloseButton.vue) 统一设置、模型、帮助、快捷键、侧栏和可关闭错误的叉号图标、名称与焦点样式；底部取消/返回等业务操作保留文字。默认点击区 34px，Win98 为 24px。复用 [`useModalFocusRestore.ts`](../distros/shared/src/composables/useModalFocusRestore.ts) 处理初始打开、关闭/卸载返回与显式 `trapFocus`；嵌入页不启用模态焦点限制。角色库刷新与导入集中在同一操作组，长说明保留 DOM 原文与 title。 |
+| **交互动效** | [`interaction.css`](../distros/shared/src/styles/interaction.css) 由 Chat Pro 入口加载：局部反馈 120ms、面板进入 160ms，以 opacity/transform 表达，不等待退出动画。默认、深色沿用同一节奏；Win98 不启用面板进入动画；新增动效尊重 `prefers-reduced-motion`。现有业务状态与组件挂载关系不因动画延迟。 |
+| **动漫功能图标** | Chat Pro 专用 [`MumuFeatureIcon.vue`](../distros/chat-pro/src/components/MumuFeatureIcon.vue) 复用 [`mumu-ui/manifest.json`](../distros/chat-pro/src/assets/mumu-ui/manifest.json) 登记的四张透明资源：角色库、模型连接、设置、帮助恢复。导航/面板标题/首次引导/空状态使用固定尺寸和 96/256px 响应式源，加载失败回退简洁符号，始终保留文字标签；沐沐是界面引导形象，不替代当前角色头像。关闭与设置内部分类保持线性图标；Win98 标题图标收紧到 28px，减少动态效果时不启用悬停摆动。 |
+| **通知与排查** | [`ErrorNotice.vue`](../distros/shared/src/components/ErrorNotice.vue) 复用 `toErrorPresentation`，按显式 tone 区分错误/警告/信息/成功，保持概要在前、详情默认折叠；显示与手动复制都经现有诊断脱敏，剪贴板失败保留可选择文本。异步复制结果按当前通知归属，旧通知完成不覆盖新通知。共享 [`Toast.vue`](../distros/shared/src/components/Toast.vue) 采用单层提醒框，错误沿用手动关闭、普通提示可提前关闭；默认角色壳可手动进入帮助与恢复，返回持久导航入口，保留草稿与诊断历史。不得按原始报错字符串推断自动重试。 |
+| **角色预览与滚动** | [`CharacterInfo.vue`](../distros/shared/src/components/role/CharacterInfo.vue) 的 `layout="preview"` 用于角色库、`thumbnail` 用于左侧角色小框；通过 cover 与顶部偏移裁切现有资源，缺图回退角色首字，装饰图片不重复按钮名称。运行空间仍展示完整立绘，不修改角色资产和契约。[`scrollbars.css`](../distros/shared/src/styles/scrollbars.css) 由 Chat Pro 入口加载，统一导航、角色库、聊天、设置、模型与恢复区域；保留原生滚动、稳定空间与键盘翻页，WebView2 采用 12px 点击宽度，Win98 沿用经典 16px 规则。 |
+| **明暗快捷切换** | 默认角色工作区右上角太阳/月亮开关复用 [`useOcliveAppearance.ts`](../distros/shared/src/composables/useOcliveAppearance.ts)，按有效主题直接切换明暗；设置仍可选择跟随系统。偏好、有效主题与缩放在同一窗口共享，首个消费者加载、最后一个卸载时清理系统监听与观察器，设置重挂载不覆盖当前偏好；存储键和 `appearance:changed` 载荷保持原契约。Win98 使用独立经典配色，开关禁用并说明先关闭皮肤。 |
+| **身份与关系持久化** | 连接内核的桌面经 [`kernel_attach/role_state.rs`](../distros/desktop-tauri/src/kernel_attach/role_state.rs) 转发身份与关系操作；权威实现位于 Host [`service/role/identity.rs`](../kernel/crates/oclive_kernel_host/src/service/role/identity.rs) / [`relation.rs`](../kernel/crates/oclive_kernel_host/src/service/role/relation.rs)。不得在桌面临时内存 shell 写入角色选择；连接失败回传原错误，无连接的嵌入服务调用保留原语义。HTTP 路由见 [生命周期接口表](../creator-docs/kernel/DISTRO_KERNEL_LIFECYCLE.md)。 |
+| **键位绑定** | **设置 → 高级设置** · [`keybindings.ts`](../distros/shared/src/lib/keybindings.ts)（动作目录 SSOT）· [`KeybindingsSettingsSection.vue`](../distros/shared/src/components/hotkey/KeybindingsSettingsSection.vue)；全局 OS 快捷键仍经 `save_hotkey_bindings`；`voice.holdToTalk`（默认 **V**）→ `hostEventBus` → VoiceToolbar。 |
+| **发现 / 编程入口** | 原壳保留 [`ImmersiveUnlockBanner`](../distros/shared/src/components/onboarding/ImmersiveUnlockBanner.vue)、[`ImmersiveModeIntro`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) 与插件总线 `com.oclive.mumu.settings-panel:set_interaction_mode`（[`usePluginEvents.ts`](../distros/shared/src/composables/usePluginEvents.ts)）；默认角色库不挂载剧情/语音宿主，隐藏入口不清空旧用户状态。 |
+
+<a id="chatpro-deferred-surfaces"></a>
+
+### 默认聊天版收起与冻结的能力
+
+下表记录从旧的本地小模型参考 Host 界面收起的能力，供内测打包和后续恢复入口核对。**界面隐藏不等于内核停用**，也不把这些 Host 实现写成小 Kernel 的必需职责。旧 Fluent / Tool 壳及共享组件保留源码；默认发行版仍由上表的 RoleWorkspaceShell 接管。
+
+| 能力 | 默认角色工作区的状态 | 保留与恢复锚点 / 注意事项 |
+|------|----------------------|--------------------------------|
+| 剧情/沉浸模式、解锁介绍 | 收起主动切换与引导入口 | `SettingsGeneralTab` 的 `!basicWorkspace && advancedFeaturesEnabled`、`useInteractionModeSettings`；旧壳保留管理路径，隐藏不改角色已保存模式 |
+| 场景移动、异地生活、虚拟时间 | 不挂载日常界面的剧情面板 | `SceneTravelBars`、`AutonomousSceneNotice`、`TimeDial`、`VirtualTimeBar`；旧场景记录不删除、不硬合并 |
+| 历史重新提取记忆 | 基础记录页 `allow-memory-replay=false` | `ChatStorageReplayBar` / `chatStorage` API 保留；普通聊天的记忆读取、提取与持久化仍工作 |
+| 成人扩展、自动节拍与连续生成 | 不向新用户主动开放 | `SettingsView.showAdultSettingsTab` 仍为旧的全局已启用状态保留管理/关闭出口；不因隐藏清空状态，不绕过既有确认与权限 |
+| 语音输入、自动朗读、情感语音、外部 TTS 与模型导入 | 默认壳不挂载语音宿主，基础设置隐藏语音页 | `useVoiceAutoTts`、`useVoiceExpansionWarm`、官方语音目录插件与 `VoiceSettings` 源码保留；打包保留资源不代表功能已向用户开放，也不默认预热语音模型 |
+| 组件管理、市场/分享安装、插件剧情卡与快捷动作 | 基础设置/默认壳收起这些入口 | `SettingsView.showPluginsSettingsTab`、`SimplePluginManagerPanel`、`MarketView`、`PluginSidebarSlots`、`PluginChatHeaderSlots`；依赖、权限和安装复核仍适用，不把旧占位更新检查当可发布能力 |
+| 最小角色源码绑定、内部运行数值与调试面板 | 日常角色库不展示开发面 | `MinimalRoleSourceControls`、`DebugPanel`、`RoleRuntimePanel`；诊断所需的只读状态继续在“帮助与恢复”可达 |
+| 旧 Fluent / Tool 整壳与目录整壳替换 | RoleWorkspace 为默认；Tool 保留显式构建入口，旧 Fluent 文件留存 | `App.vue`、`useOcliveShell`、`directoryShellBootstrap`；保留源码与 Git 基线，不能直接挪走组件目录使引用断裂 |
+| 双核 Beta、配套 expert routing 与 blueprint v3 实验管线 | **真正冻结，默认关闭**，不在本次内测解冻 | `dual_core` Cargo feature、蓝图开关与显式路由配置；暂停维护及 NULL 补偿缺口以 [双核冻结计划](debt-marathon/long-plans/DUAL-CORE-FREEZE.md) 与 [主台账](TECHNICAL_DEBT_INVENTORY.md) 为准。不把普通 LoRA 模型选择或其他高级功能一起视作冻结 |
+
+**继续工作的能力**：六槽接线、正常聊天/停止与故障恢复、角色包导入导出、身份/关系、按角色分开的记录线程、角色记忆连续性、情绪/表情提示与立绘、本地/云端模型连接、资源协调和回复后处理均未因收起入口而删除。LoRA/GGUF 等仍沿用模型面板现有能力与兼容约束；Win98 彩蛋、明暗切换和帮助日志继续开放。技术债、未完成协议与其他实验开关的状态仍由对应台账拥有，本表不授予解冻权限。
 
 ### 13.2 Chat Pro 外观正交轴 `data-skin`
 
@@ -886,9 +914,10 @@ flowchart TB
 | **CSP `connect-src`** | CosyVoice2 侧车默认 `http://127.0.0.1:50000` · `ws://127.0.0.1:50000`（与插件 `local_synth_endpoint` 默认一致） | [`tauri.conf.json`](../distros/desktop-tauri/tauri.conf.json) `security.csp` |
 
 - **范围**：chat-pro **Fluent + Tool**；theater 不纳入。
-- **解锁**：Konami 序列 → `oclive-easteregg-unlocked=1` → 自动启用 Win98；设置 → 常规外观区开关（`v-if` 已解锁）。
+- **解锁**：`↑ ↑ ↓ ↓ ← → ← → B A` → `oclive-easteregg-unlocked=1` → 自动启用 Win98；设置 → 外观与语言开关（`v-if` 已解锁）。解锁资格与当前皮肤分别存储，关闭皮肤保留资格，刷新恢复当前选择。
 - **正交**：皮肤只覆盖 CSS 变量与少量 chrome 类；不改 shell 布局或六槽逻辑。`appearance:changed` 事件 payload 可含 `skin`。壳 / 面板 Win98 覆写 **co-locate 于 SFC unscoped `@import`**，避免与 scoped 样式抢同一属性。
-- **Authentic chrome（Win98 窗口框）**：[`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) 挂载于 FluentShell `.app-frame` / ToolShell `.tool-body__main` 首子节点；启用皮肤时 Tauri `setDecorations(false)` 隐藏原生标题栏，合成栏经 `data-tauri-drag-region` + `allowlist.window`（`minimize` / `maximize` / `unmaximize` / `close` / `startDragging` / `setDecorations`）驱动 ─ □ ✕；关闭皮肤或退出即恢复原生装饰与边缘缩放。对话框 / 侧栏 / 气泡等 Win98 覆写见下表（✕ 仍关对话框，非 OS 窗）。
+- **Authentic chrome（Win98 窗口框）**：[`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) 挂载于默认 RoleWorkspaceShell `.role-app`、旧 FluentShell `.app-frame` / ToolShell `.tool-body__main`；启用皮肤时 Tauri `setDecorations(false)` 隐藏原生标题栏，合成栏经 `data-tauri-drag-region` + Tauri 窗口权限（`minimize` / `maximize` / `unmaximize` / `close` / `startDragging` / `setDecorations`）驱动 ─ □ ✕。关闭皮肤恢复原生装饰；异步装饰请求串行执行并跳过过期请求，防止启动或快速开关后状态倒置。对话框 / 侧栏 / 气泡等 Win98 覆写见下表（✕ 仍关对话框，非 OS 窗）。
+- **角色中心工作区**：保留角色库、最近对话、聊天和响应式布局，通过下表专属样式覆盖导航、卡片、首次模型引导和帮助窗口；共享恢复样式覆盖日志、错误详情及滚动条。立绘原图保持原分辨率，不强制降采样。关闭皮肤后移除限定选择器的影响，角色、对话草稿和模型设置不被重置。行为回归见 [`useEasterEggSkin.test.ts`](../distros/shared/src/composables/useEasterEggSkin.test.ts) / [`Win98TitleBar.test.ts`](../distros/shared/src/components/win98/Win98TitleBar.test.ts)；实际浏览器换肤与恢复路径见 [`win98-workspace.spec.ts`](../distros/chat-pro/e2e/win98-workspace.spec.ts)，浏览器与原生 mock 不代替真实 OS 窗口实测。
 
 **Win98 样式依赖表**（`distros/shared/src/styles/win98/`；规则均以 `html[data-skin="win98"]` 为前缀，`default` 零泄漏）：
 
@@ -897,6 +926,7 @@ flowchart TB
 | `win98/tokens.css` | [`chat-pro/main.ts`](../distros/chat-pro/src/main.ts) | L0 |
 | `win98/primitives.css` | `chat-pro/main.ts` | L1 |
 | `win98/shell-fluent.css` | [`FluentShell.vue`](../distros/chat-pro/src/shells/fluent/FluentShell.vue) | L2 |
+| `win98/shell-role-workspace.css` | [`RoleWorkspaceShell.vue`](../distros/chat-pro/src/shells/fluent/RoleWorkspaceShell.vue) | L2 |
 | `win98/shell-tool.css` | [`ToolShell.vue`](../distros/chat-pro/src/shells/tool/ToolShell.vue) | L2 |
 | `win98/titlebar.css` | [`Win98TitleBar.vue`](../distros/shared/src/components/win98/Win98TitleBar.vue) | L4 |
 | `win98/panel-settings.css` | [`SettingsView.vue`](../distros/chat-pro/src/views/SettingsView.vue) | L3 |
@@ -906,6 +936,7 @@ flowchart TB
 | `win98/component-side-panel.css` | [`UiSidePanel.vue`](../distros/shared/src/components/ui/UiSidePanel.vue) | L3 |
 | `win98/dialogs-shared.css` | [`ShortcutHelp.vue`](../distros/shared/src/components/ShortcutHelp.vue) · [`HotkeyHost.vue`](../distros/shared/src/components/hotkey/HotkeyHost.vue) · [`PluginUiSlotSelectorDialog.vue`](../distros/shared/src/components/PluginUiSlotSelectorDialog.vue) · [`ImmersiveModeIntro.vue`](../distros/shared/src/components/onboarding/ImmersiveModeIntro.vue) · [`TopBarSceneModeDialog.vue`](../distros/shared/src/components/scene/TopBarSceneModeDialog.vue) · [`PresetRolePicker.vue`](../distros/shared/src/components/onboarding/PresetRolePicker.vue) | L3 |
 | `win98/component-chat.css` | [`ChatMessage.vue`](../distros/shared/src/components/chat/ChatMessage.vue) | L3 |
+| `win98/component-recovery.css` | [`SupportDiagnostics.vue`](../distros/shared/src/components/SupportDiagnostics.vue) · [`ErrorNotice.vue`](../distros/shared/src/components/ErrorNotice.vue) | L3 |
 | `win98/component-top-bar.css` | [`TopBarMorePanel.vue`](../distros/shared/src/components/TopBarMorePanel.vue) | L3 |
 | `win98/component-plugin-toolbar.css` | [`ChatPluginToolbarSlots.vue`](../distros/shared/src/components/ChatPluginToolbarSlots.vue) · [`com.oclive.voice.asr` VoiceToolbar](../distros/chat-pro/plugins/com.oclive.voice.asr/slots/VoiceToolbar.vue) | L3 |
 | `win98/component-voice-settings.css` | [`PluginSettingsPanelSlots.vue`](../distros/shared/src/components/PluginSettingsPanelSlots.vue)（`com.oclive.voice.asr` VoiceSettings 插槽） | L3 |

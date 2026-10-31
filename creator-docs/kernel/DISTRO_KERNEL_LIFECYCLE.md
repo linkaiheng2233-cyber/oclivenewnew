@@ -150,6 +150,8 @@ See also `kernel status|promote|rollback`.
 
 ## HTTP routes (kernel)
 
+参考桌面前端的后台角色快照通过既有原生命令 `get_role_info` 及认证 Rust transport 投影；API token 不进入渲染层，也不再由浏览器无认证直连 `/role_snapshot`。消费者在请求前后核对角色、场景、聊天轮次及轮询代次，丢弃过期响应。外部 Host 仍可按认证约定使用下表的 `/role_snapshot`，该路由未删除。
+
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/health` | Liveness + `kernel_manifest` + optional `distro_id` / `distro_profile_hash` / `active_profile_summary` (`Accept: application/json`) |
@@ -166,6 +168,9 @@ See also `kernel status|promote|rollback`.
 | GET | `/user_identity/state` | User identity state |
 | POST | `/user_identity/set` | Set global identity |
 | POST | `/user_identity/scene_set` | Set per-scene identity |
+| POST | `/user_relation/set` | Set global relation (`role_id`, `relation`) |
+| POST | `/user_relation/scene_set` | Set per-scene relation (`role_id`, `scene_id`, `relation`) |
+| POST | `/user_relation/scene_clear` | Clear per-scene relation override (`role_id`, `scene_id`) |
 | POST | `/scene/user_presence` | Set user presence scene |
 | POST | `/event/create` | Create event |
 | GET | `/high_risk/grants` | List high-risk grants |

@@ -2,7 +2,7 @@
 
 **SSOT 范围**：本导航命令、登记格式与维护方式；不定义项目架构、规范权威、技术债状态或验收规则。
 
-**最后更新**：2026-10-20。
+**最后更新**：2026-10-27。
 
 这是可选的本地导航工具。普通查询按次读取 Git 跟踪的文档，同时保留 [records.json](records.json) 的精选入口与限定摘要。现有 [AI 阅读索引](../AI_READING_INDEX.md) 和 [文档状态判读](../README.md#documentation-status) 继续适用；缺卡、失配和未知均可以回原文，不表示没有实现或没有规范。
 
@@ -37,7 +37,7 @@ node scripts/ai-docs.mjs check
 
 ### 质量评测
 
-`node scripts/ai-docs.eval.mjs` 报告两组指标：8 个定位问题在 `limit 8/12/20` 下的召回，以及 3 个字面标记用 `--all` 穷举后与全文基线的完整性对比。用例来自 [`eval.cases.json`](eval.cases.json)（可用 `--cases PATH` 指向别处），所以同一套评测器可以换仓库复用。默认只打印；`--gate` 在 `locate@20` 不足 8/8 或耦合不完整时退出 1。当前基线为 5/8、6/8、8/8，耦合 3/3 完整。它衡量本工具的定位与覆盖，不代表原文正确、实现符合或运行验收，也未接入必需 CI。
+`node scripts/ai-docs.eval.mjs` 报告两组指标：8 个定位问题在 `limit 8/12/20` 下的召回，以及 3 个字面标记用 `--all` 穷举后与全文基线的完整性对比。用例来自 [`eval.cases.json`](eval.cases.json)（可用 `--cases PATH` 指向别处），所以同一套评测器可以换仓库复用。默认只打印；`--gate` 在 `locate@20` 不足 8/8 或耦合不完整时退出 1。**2026-10-20 的历史快照**为 5/8、6/8、8/8，耦合 3/3 完整；原文和排序变化后，当前数字以本轮命令为准，不把旧快照当成永久性能。它衡量本工具的定位与覆盖，不代表原文正确、实现符合或运行验收，也未接入必需 CI。
 
 ### 来源与范围
 
@@ -88,4 +88,4 @@ node scripts/ai-docs.mjs check
 
 该命令没有加入 Dimension 5、required CI、自动启动规则或常驻进程。批量读取 Git 对象，不持久化搜索索引、缓存或锁文件。原文、Git index 与登记文件均只读。
 
-当前范围达到“实际任务能找对原文、更新可见、失败可回退”后冻结，后续使用中按具体障碍改进，不开展全仓穷尽审查。历史实施分别见 [初始试点](../debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md) 与 [扩面和实际使用](../debt-marathon/waves/WAVE-20261020-AI-DOCS-EXPANSION.md)；报告不拥有当前规范或债务状态。
+当前范围达到“实际任务能找对原文、更新可见、失败可回退”后冻结，后续使用中按具体障碍改进，不开展全仓穷尽审查。历史实施分别见 [初始试点](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261020-AI-DOCS-PILOT.md) 与 [扩面和实际使用](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261020-AI-DOCS-EXPANSION.md)；报告不拥有当前规范或债务状态。

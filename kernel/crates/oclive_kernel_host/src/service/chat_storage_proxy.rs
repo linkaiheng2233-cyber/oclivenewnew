@@ -232,6 +232,7 @@ pub async fn execute_chat_storage_proxy(
             let backend_kind = state.conversation_store.backend_kind().to_string();
             let mirror_enabled = backend_kind == "hybrid";
             let caps = ChatStorageCapabilities {
+                supports_chat_threads: true,
                 backend_kind,
                 mirror_enabled,
                 default_max_messages_per_session:

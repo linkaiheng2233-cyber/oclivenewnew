@@ -38,7 +38,7 @@
 <!-- code:DB_ERROR -->
 | `DB_ERROR` | 数据库错误 | `app.db` 损坏、磁盘满、事务失败 | 检查数据目录可写；备份后重建库；见日志 `Database error` |
 <!-- code:DB_MIGRATION_FAILED -->
-| `DB_MIGRATION_FAILED` | 数据库迁移失败 | 迁移 SQL 校验失败、版本冲突、磁盘不可写 | 备份 `app.db`；查看 `migration_failed.json` 与启动日志 |
+| `DB_MIGRATION_FAILED` | 数据库迁移失败 | 迁移 SQL 校验失败、版本冲突、磁盘不可写 | 备份 `app.db`；详情保留原迁移原因及备份恢复结果。查看 `migration_failed.json` 与启动日志；诊断文件写失败也会附在错误详情中 |
 <!-- code:CHAT_REQUEST_CONFLICT -->
 | `CHAT_REQUEST_CONFLICT` | 同一回合标识携带了不同内容 | 流式与普通重试没有保留相同请求 | 停止重试，先核对聊天记录；新发送使用新标识 |
 <!-- code:CHAT_REQUEST_UNCONFIRMED -->
@@ -103,7 +103,7 @@ GUI 侧若仍展示英文底层错误句，属于 **A6** 等持续扫尾；未�
 | **何时启用** | 仅当前端构建注入 **`VITE_SENTRY_DSN`** 时，才可能初始化 `@sentry/vue`；未配置 DSN 则**零上报**。 |
 | **上报范围** | **Vue** 侧未捕获异常；**不含**聊天正文；Rust 仍以本机日志为主。 |
 | **用户退出** | **设置 → 常规** 在带 DSN 的构建中显示 **「崩溃诊断（Sentry）」**；勾选 **禁用崩溃上报** 写入 **`localStorage`** 键 **`oclive.telemetry.sentryOptOut`**（`1` 表示退出），并尝试关闭客户端；取消勾选后需 **重启应用** 再恢复上报。 |
-| **详文** | 根 [README.md](../../README.md)「可观测性与发布」；结项 [A3 中文](../../handoff/archive/A3_CLOSURE_SUMMARY.md) / [A3 English](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md)。 |
+| **详文** | 根 [README.md](../../README.md)「可观测性与发布」；结项 [A3 中文](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md) / [A3 English](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.en.md)。 |
 
 ---
 

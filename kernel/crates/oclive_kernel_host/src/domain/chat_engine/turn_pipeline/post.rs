@@ -748,6 +748,8 @@ pub(crate) async fn run_main_llm_stream(
     // A transport failure must never append the fallback reply to a stale partial prefix on
     // the wire, so the streaming path tracks what was actually forwarded to the client.
     let (tracked_on_token, streamed_token_count) = tracked_token_sink(Arc::clone(&on_token));
+    let display_on_token =
+        crate::domain::emo_marker::display_token_sink(Arc::clone(&tracked_on_token));
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -762,7 +764,7 @@ pub(crate) async fn run_main_llm_stream(
             );
             let streamed = Arc::new(Mutex::new(String::new()));
             let streamed_for_sink = Arc::clone(&streamed);
-            let downstream = Arc::clone(&tracked_on_token);
+            let downstream = Arc::clone(&display_on_token);
             let passthrough_sink: oclive_kernel_contracts::LlmTokenSink = Arc::new(move |token| {
                 if let Ok(mut output) = streamed_for_sink.lock() {
                     output.push_str(token);
@@ -816,7 +818,7 @@ pub(crate) async fn run_main_llm_stream(
                         pl,
                         pre.memory.ollama_model.as_str(),
                         &middle.prompt,
-                        Arc::clone(&tracked_on_token),
+                        Arc::clone(&display_on_token),
                         ollama_opts.as_ref(),
                     )
                     .await
@@ -827,7 +829,7 @@ pub(crate) async fn run_main_llm_stream(
                 pl,
                 pre.memory.ollama_model.as_str(),
                 &middle.prompt,
-                Arc::clone(&tracked_on_token),
+                Arc::clone(&display_on_token),
                 ollama_opts.as_ref(),
             )
             .await
@@ -838,7 +840,7 @@ pub(crate) async fn run_main_llm_stream(
         pl,
         pre.memory.ollama_model.as_str(),
         &middle.prompt,
-        Arc::clone(&tracked_on_token),
+        Arc::clone(&display_on_token),
         ollama_opts.as_ref(),
     );
     let reply_out = match generation.await {
@@ -1122,6 +1124,20 @@ mod stream_fallback_tests {
 
     fn streamed_count(counter: &Arc<Mutex<usize>>) -> usize {
         *counter.lock().unwrap()
+    }
+
+    #[test]
+    fn hidden_metadata_does_not_block_the_first_visible_fallback() {
+        let (sink, seen) = recording_sink();
+        let (tracked, counter) = tracked_token_sink(sink);
+        let display = crate::domain::emo_marker::display_token_sink(Arc::clone(&tracked));
+        display("[EMO]{\"labels\":[\"neutral\"]");
+        assert_eq!(streamed_count(&counter), 0);
+        assert!(seen.lock().unwrap().is_empty());
+        if should_emit_fallback_token(streamed_count(&counter)) {
+            tracked("服务暂时不可用。");
+        }
+        assert_eq!(seen.lock().unwrap().concat(), "服务暂时不可用。");
     }
 
     #[test]

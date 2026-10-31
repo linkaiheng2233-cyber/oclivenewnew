@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { exportRolePack } from '@oclive/shared/api'
+import { toErrorPresentation } from '@oclive/shared/api/helpers'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
 import { useRolePackImport } from '@oclive/shared/composables/useRolePackImport'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
@@ -8,8 +9,9 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ImportProgressModal from './ImportProgressModal.vue'
 
+const props = withDefaults(defineProps<{ canExport?: boolean, disabled?: boolean }>(), { canExport: true, disabled: false })
 const emit = defineEmits<{
-  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string }]
+  notify: [payload: { type: 'success' | 'error' | 'info' | 'warning', message: string, details?: string }]
   imported: [roleId: string]
 }>()
 const { t } = useI18n()
@@ -52,6 +54,9 @@ useModalFocusRestore(conflictOpen, conflictCardRef, {
 })
 
 async function onExport(): Promise<void> {
+  if (props.disabled || !props.canExport || !roleStore.currentRoleId)
+    return
+  const roleId = roleStore.currentRoleId
   try {
     const path = await save({
       filters: [{ name: t('common.rolePack.exportFilterName'), extensions: ['ocpak'] }],
@@ -59,23 +64,27 @@ async function onExport(): Promise<void> {
     })
     if (!path || typeof path !== 'string')
       return
-    await exportRolePack(roleStore.currentRoleId, path)
+    await exportRolePack(roleId, path)
     emit('notify', { type: 'success', message: t('common.rolePack.exported') })
   }
   catch (e) {
+    const failure = toErrorPresentation(e)
     emit('notify', {
       type: 'error',
-      message: e instanceof Error ? e.message : String(e),
+      message: failure.summary,
+      details: failure.details,
     })
   }
 }
 
 function onImport(): void {
-  void runImportWithPicker('archive')
+  if (!props.disabled)
+    void runImportWithPicker('archive')
 }
 
 function onImportFolder(): void {
-  void runImportWithPicker('folder')
+  if (!props.disabled)
+    void runImportWithPicker('folder')
 }
 </script>
 
@@ -84,13 +93,13 @@ function onImportFolder(): void {
     class="pack-bar"
     :title="t('common.rolePack.barTitle')"
   >
-    <button type="button" class="btn" @click="onExport">
+    <button v-if="canExport" type="button" class="btn" :disabled="disabled" @click="onExport">
       {{ t("common.rolePack.export") }}
     </button>
     <button
       type="button"
       class="btn"
-      :disabled="importProgressOpen"
+      :disabled="disabled || importProgressOpen"
       @click="onImport"
     >
       {{ t("common.rolePack.importArchive") }}
@@ -98,7 +107,7 @@ function onImportFolder(): void {
     <button
       type="button"
       class="btn"
-      :disabled="importProgressOpen"
+      :disabled="disabled || importProgressOpen"
       @click="onImportFolder"
     >
       {{ t("common.rolePack.importFolder") }}

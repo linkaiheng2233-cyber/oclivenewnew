@@ -11,7 +11,7 @@
 
 [`.cargo/config.toml`](../.cargo/config.toml) → `../oclive-dev-artifacts/oclivenewnew-cargo-target/`
 
-Before maintenance, check the effective target directory, active build/debug consumers and frozen evidence references. A directory name or Git ignore rule does not establish deletion permission, including an old in-repository `target/`. See the [build-debt retention rules](../handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28) for file identity, hard links and maintenance prerequisites.
+Before maintenance, check the effective target directory, active build/debug consumers and frozen evidence references. A directory name or Git ignore rule does not establish deletion permission, including an old in-repository `target/`. See the [build-debt retention rules](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260928-BUILD-OBSERVATION.md#缓存用途与保留准则2026-09-28) for file identity, hard links and maintenance prerequisites.
 
 First full workspace build: **60–120 minutes** typical.
 

@@ -29,7 +29,7 @@ export default {
     },
     defaultRoleName: '沐沐',
     /** 浏览器页签标题（与 index.html 内联引导脚本保持一致） */
-    documentTitle: '沐沐 - 桌面AI伴侣',
+    documentTitle: 'OCLive Chat Pro',
     more: {
       collapse: '收起',
       more: '更多',
@@ -92,6 +92,8 @@ export default {
       relationSetPerScene: '已设置当前场景身份：{name}',
       relationSetGlobal: '已设置身份：{name}',
       pluginInstalledFromWeb: '已通过网页链接安装插件：{id}',
+      pluginLinkInvalid: '此插件链接不符合要求。请使用不含账号、密码或查询参数的 HTTPS 仓库地址。',
+      pluginProtocolConfirm: '网页请求安装以下仓库中的插件：\n{source}\n\n仓库中的代码尚未验证。仅在信任来源时继续；安装后仍需检查源码与权限，高风险能力需另外授权。是否安装？',
       pluginReviewSource:
         '插件 {id} 已安装至 {path}。运行前请自行查看 manifest.json 与源码；高风险权限需在宿主中显式授权。',
       pluginFilesChanged: '检测到插件变更，已自动刷新',

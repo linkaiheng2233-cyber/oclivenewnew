@@ -172,10 +172,10 @@ async function onApplyDefaultCast() {
       @update:settings-tab="settingsTab = $event"
       @close="closeSettings()"
       @apply-cast="onApplyCast"
-      @notify="(p) => showToast?.(p.type, p.message)"
+      @notify="(p) => showToast?.(p.type, p.message, p.details)"
     />
 
-    <Toast :show="toast.show" :type="toast.type" :message="toast.message" />
+    <Toast :show="toast.show" :type="toast.type" :message="toast.message" :details="toast.details" />
   </main>
 </template>
 

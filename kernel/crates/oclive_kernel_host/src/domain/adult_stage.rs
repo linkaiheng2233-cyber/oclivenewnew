@@ -162,6 +162,7 @@ pub async fn generate_adult_staged_beat(
         user_message: ADULT_CONTINUATION_INPUT.to_string(),
         scene_id: Some(scene_id.clone()),
         session_id: request.session_id.clone(),
+        chat_thread_id: None,
         include_raw_reply: None,
         adult: Some(adult),
     };

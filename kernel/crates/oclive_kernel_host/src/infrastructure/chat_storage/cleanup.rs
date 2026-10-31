@@ -142,14 +142,18 @@ pub async fn apply_auto_cleanup(
 
     let mut bytes_freed = 0u64;
     for sid in &to_delete {
+        db.delete_chat_session(sid).await?;
         if let Some(row) = rows.iter().find(|r| r.session_id == *sid) {
             if let Ok(n) = super::stats::mirror_file_bytes_for_session(storage_root, row).await {
                 bytes_freed = bytes_freed.saturating_add(n);
             }
-            let _ =
-                super::mirror::delete_mirror(storage_root, &row.role_id, &row.scene_id, sid).await;
+            if let Err(error) =
+                super::mirror::delete_mirror(storage_root, &row.role_id, &row.scene_id, sid).await
+            {
+                tracing::warn!(target: "oclive_chat_storage", session_id = %sid, %error,
+                    "auto cleanup mirror removal failed; SQLite deletion already committed");
+            }
         }
-        db.delete_chat_session(sid).await?;
     }
 
     info!(

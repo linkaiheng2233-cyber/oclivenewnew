@@ -6,11 +6,28 @@
 
 ### Fixed
 
+- **迁移恢复不阻塞运行时**：备份恢复和诊断文件写入在阻塞工作线程执行，等待短暂文件占用时允许当前线程 Tokio 完成连接释放；保留原迁移错误、恢复结果和持久占用的失败边界。
+- **Host 运行与存储可靠性**：当前线程 Tokio 中的同步 RPC 提前返回可诊断错误；迁移失败保留原始原因、备份恢复结果和诊断文件写入失败，恢复中的 Windows 短暂文件占用允许有上限重试。聊天镜像排队后从 SQLite 重建，通过唯一临时文件原子替换；取消中的文件 IO 与关联删除保持顺序，避免旧后台消息覆盖较新的镜像。
+- **角色与授权失败保护**：覆盖导入先复制校验再替换，并拒绝目录源目标重叠；删除通过暂存目录与数据库恢复标记区分提交前恢复、提交后清理。授权/撤销只有完整落盘成功才更新内存，写入失败保留原状态。
+- **插件输入边界**：修正 RPC userinfo 冒充 loopback，禁止本机 RPC 跟随重定向；资产拒绝链接逃逸，角色 ZIP 加入条目及实际展开预算；网页安装先展示安全来源并确认，不再把链接请求当作安装同意。可信作者签名与完整 manifest 预审仍未完成。
+- **界面恢复与后台快照**：轮询复用认证原生入口，并拒绝过期角色/场景/轮次结果；渲染异常提供区域/根恢复卡片并记录脱敏诊断。停止接收保留本地提示，不冒充服务端取消、不自动重发、不写入伪造回复。
+- **文档入口**：修正首例人设文件、兼容说明中的旧版本快照、代码锚点及 OOCP 工作目录；当前版本回链现状 SSOT。以上是未发布源码差量，已有 rc.2 安装包不自动更新。
+
+- **Chat Pro 干净源码安装**：修正私有 workspace 包的内部版本引用，避免预发布版在 `npm ci` 时错误地向 registry 查找旧版内部包；同步 lock，未升级第三方依赖。
+- **Chat Pro 云端连接测试**：修改地址、模型或密钥后须先保存再测试，面板明确说明未保存状态。关闭面板、切换角色或编辑配置后，忽略旧探测结果；旧请求不再覆盖新提示或新请求的忙碌状态。保存期间的新输入保留，连通性失败仍与配置保存结果分别报告。
+- **诊断认证信息脱敏**：复制、导出与界面显示统一遮盖完整的 Basic/Bearer 和带引号认证值，保留相邻报错上下文，空认证头不再吞掉下一条日志。
+- **Chat Pro 提醒、角色预览与滚动体验**：报错提示统一状态标识、概要和折叠详情，支持手动复制脱敏信息与直达帮助，剪贴板不可用时可手动选择；警告不再按红色错误显示，通知不再叠套边框。角色库使用现有立绘的局部裁切预览与角色首字缺图回退，运行空间仍保留完整立绘。统一主要页面的原生滚动条，改善辨识与拖动宽度，支持角色库键盘翻页，并保持深色和 Win98 外观。
+- **Chat Pro 交互与阅读体验**：统一常用面板的叉号关闭按钮、点击区、提示和焦点反馈；模型弹窗不再显示文字“关闭”。补齐条件挂载与卸载时的焦点恢复，模型/帮助/快捷键等模态可限制 Tab 范围。角色库将刷新与导入集中排列，提升说明文字的字号、行距和卡片层级；新增短促局部反馈与面板进入效果，减少动态效果偏好和 Win98 保持直接反馈，不改变保存、聊天或模型调用语义。
+- **Chat Pro Win98 彩蛋适配角色中心界面**：统一角色库、导航、聊天工作区、首次模型引导、分类设置及帮助与恢复的经典方形边框、按钮和滚动条；关闭皮肤恢复默认外观，保持对话与配置。串行处理原生标题栏装饰请求并忽略过期请求，修复启动或快速切换时装饰状态可能倒置的问题。补充按键触发、设置关闭、刷新保持、窄窗口及标题栏调用回归。
+- **Chat Pro 发布候选版**：修复安装版的启动、模型故障提示及角色身份/关系持久化路径；安装版角色、插件及桌面辅助状态使用应用数据目录，只补充缺失的内置包，不覆盖用户已有包。聊天流不再短暂展示内部情绪元数据。立绘和情绪文字同步更新，缺图与旧角色包保持回退。独立对话只分离聊天记录，角色记忆与关系仍延续。
 - **供应链：清理 10 条新披露的漏洞级命中**：`quinn-proto` 0.11.17 → **0.11.19**（RUSTSEC-2026-0338 / 0340 / 0343）、`rustls` 0.23.45 → **0.23.46**（RUSTSEC-2026-0346 / 0347 / 0348 / 0349）、`zip` 2.4.2 → **9.0.5**（RUSTSEC-2026-0367 / 0368 / 0369，其中一条 9.1 critical），`cargo audit` 恢复为**漏洞级 0**、`cargo deny check licenses bans` 通过，**未新增任何 ignore**。`zip` 是 `oclive-cli` / `oclive_kernel_host` / `oclivenewnew-tauri` 的直接依赖；9.x 把 `ZipFile::name()` 从 `&str` 改为 `Result<Cow<'_, str>, ZipError>`（同为路径安全加固），`role_pack` 3 处与 `lora_adapters` 2 处读取改为把非法条目名映射到既有错误形态，未放宽任何路径校验。压缩后端保持 flate2 `rust_backend`（不引入 `zlib-rs`），因此 `oclive-cli` 的 gzip 发布产物与既有 zip 写入的压缩实现不变；代价是每个直接依赖 `zip` 的 crate 需同时声明 `flate2`，否则单独构建会因缺后端而失败。三条 `zip` 公告均针对本仓从未调用的 `extract()`。台账见 [creator-docs/security/KNOWN_VULNERABILITIES.md](creator-docs/security/KNOWN_VULNERABILITIES.md)。
 - **明确文本任务与防复读规则的冲突**：内置普通/分段 Prompt 的共用动态尾部明确允许用户主动要求的复述、总结、改写与引用，要求保留主体、否定、限定和条件；日常聊天仍避免机械复读，事实、权限与安全边界不变。同步收紧末尾的去重检查，不再一律禁止成品与原文相同。未新增任务识别器、模型调用或公共接口；模型实际遵循情况仍须真实复验。
 
 ### Added
 
+- **Chat Pro 侧栏头像与明暗快捷切换**：左侧角色小框使用角色包现有立绘的局部裁切，缺图回退角色首字，窄窗口仍保留图片。右上角新增太阳/月亮开关，一次切换明暗并记住偏好；与设置、系统主题和缩放共享状态，避免打开设置时回到旧外观。Win98 保持独立经典配色，快捷开关提示先关闭皮肤。
+- **Chat Pro 动漫功能图标**：为角色库、模型连接、应用设置和帮助恢复增加统一的沐沐插画，复用到面板标题、首次引导和空状态；保留文字标签与简洁的关闭/分类图标，支持透明背景、响应式尺寸、加载失败回退和减少动态效果，兼容默认、深色及 Win98 外观。
+- **Chat Pro 角色中心工作区**：以角色包为入口的角色库、各角色最近对话、分类设置和帮助与恢复日志界面；默认聚焦聊天，延后能力收起，旧启用状态保留管理出口。安装包不捆绑模型权重，首次引导选择本地 GGUF/Ollama 或云端 API；可稍后配置，已有连接保持兼容。当前候选版本、已验与未验范围只见[项目现状](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)，不把本地内测等同于公开发布。
 - **CP-B3-ALL P：内置 Prompt 的共享连接核心**：`oclive_kernel_runtime` 的 `domain/base_prompt.rs` 新增 `concat_prepared_text` 与 `assemble_literal_material`，`prompt_builder` 的准备块（`prepare_prompt_blocks`/`build_prompt`）、`PromptSegments::full()` 与 `BuiltinPromptAssembler` 的 Base 入口改为共用同一连接规则。改前五组输入（含 CRLF、U+3000、空世界观、锚点轮）的逐字节摘要复算不变，产品布局、segments 边界与 `stable_len`、门控行为均未变；`requirements` 非空仍为 `Unsupported`，Base 入口对材料逐字、保序、保重复。此单元是字节等价重构，不是新的 Prompt 能力。
 - **CP-B3-ALL M：内置 Memory 按当次检索需求选择（有限产品差异）**：新增 `oclive_kernel_runtime::domain::query_memory::QueryMemoryRetrieval`，以一个**模块私有**的选择核心同时承担 Host 端口（`MemoryRetrieval`）与 Base 视图（`MemoryBase`）；该核心与其词项 helper 不是公开 API（公开面只有模块、类型与必要 trait impl）。参考 Host 的 `plugin_backends.memory = builtin` 私有工厂改绑该实现。规则是机械关键词匹配（Unicode 小写、按非字母数字分段、非 ASCII 段取相邻标量二元组），命中的**原件**才进入既有加权排序与 `limit`；无命中时保留原全候选加权选择，作为 Host 兼容回落、不算 Base 命中。原件的 id/权重/时间/scene/mention/`accessed_at` 全部保留，不写库、不更新 `accessed_at`、不做语义理解；已知误报（公共子串）与漏报（改写后无共同词）如实登记。这是本批**已批准的最小产品行为变化**之一。
 - **CP-B3-ALL A：内置 Agent 的共享真实执行与 Base 报告**：从 `BuiltinReActAgent::process` 抽出唯一执行核心 `execute_react`（loop 上限 3、function-calling schema、prompt 文本、模型来源、工具调用顺序、trace 保存与 40 条裁剪、fallback 文本、`handled`/空 reply、工具失败后继续、发现/模型 `Err` 传播、权限拒绝与回落策略全部保留），legacy 入口与新增的 crate-private `HostAgentBaseView` 共用它。核心只接受一个**私有的四字段借用视图**（消息/模型/角色/session），Base 路径因此不构造 `AgentInput`，也不会经 `AgentInput::default()` 带入人格向量、关系状态、好感、场景或协议版本等默认领域事实。Base 报告从真实分支事实构建：空任务/无可用工具报"未承接"，最终回答只报"生成了回答"及其内容，无 function call 或循环耗尽只报已观察到的过程与结果；不从 `handled`、reply 空否或关键词反推；它不提供稳定的 Base 机器状态协议，授权、完成或外部效果不得仅由报告关键词推出。非空 `context` 在执行前 `Unsupported`（不替旧 loop 发明上下文执行方式）。产品输出、调用序列与持久化未变；**没有产品消费者读取该报告**。
@@ -34,6 +51,16 @@
 - **CP-B3-ALL 四单元的兼容边界**：P 是字节等价重构；M 与 E 是已批准的最小产品差异（Memory 命中时按当次需求筛选原件、Event 同次 prompt 增加 `analysis` 成员与叙述要求），A 的产品输出与调用序列未变。本批新增的 Base 视图/实现（Prompt 的附加 Base impl、`QueryMemoryRetrieval`、crate-private 的 Agent/Event 请求绑定视图）**都没有产品消费者读取 Base 结果**：参考 Host 仍绑定 `Arc<dyn AgentProvider>` / `Arc<dyn EventEstimator>` 并只读旧端口。本批是本地实现与离线验证：真实模型/HTTP/流式、完整 `AppState` 与整回合、数据库迁移、桌面与前端消费者均未验证，也不构成这些路径的产品承诺。
 - **Event Stream 仍未接入运行时**：Stage A.1/A.2.1/A.2.2.1 与 A.2.2.2-R0～R6 只增加 Rust 源码级 DTO、测试模型、设计/协议/脱敏实测夹具和显式开发者探针；R1～R4 的真实 ACK/恢复样本、R5 的 synthetic-only 本地 lease SQLite 与 R6 的网络无依赖失败关闭矩阵都不等于生产 QQ 适配器或 Production store。仍没有 Stream/outbox/inbox 数据库迁移、读取 API、consumer loop、Replay、Prompt/主动回复输入或第二套 `process_message`，B0 Trace-only 仍默认关闭且行为中性。
 - **纯新增 Rust 源码级门面**：未改变角色包 schema、HTTP/Tauri wire、数据库迁移或 Event Ring 权威语义；这不是稳定 C ABI。Linux/ARM 真机、资源预算与长时硬件验证仍由 `V-EMBED-01` 跟踪。
+
+## [0.6.0-rc.3] - 2026-10-30
+
+### Changed
+
+- **本地内测候选**：汇总角色工作区前端与后续可靠性修补，提供 Windows x64 安装器及不含运行器/模型权重的内测包；桌面旧 rc.2 校验归档。实际交付与验证口径见 [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)。
+
+### Compatibility
+
+- 桌面 SemVer 为 `0.6.0-rc.3`，MSI 数值为 `0.6.0.3`；CLI、内核与角色包契约版本不联动。候选包未签名，公开发行和全新 Windows 验收分别核对；附带的可选旧编写器明确保留原版本与来源。
 
 ## [0.5.2] - 2026-08-24
 
@@ -213,7 +240,7 @@
 
 - **记忆衰减写盘批处理（K-PERF-01/06）**：`DbManager::persist_memory_decay_batch` 由「每条记忆一次独立 `UPDATE`」改为「单事务批量提交」；rank 后每回合仅调用一次（衰减写回 + `accessed_at` 触达合并）。见 `long_term_memory.rs` 与 `turn_pipeline/pre.rs`。
 - **前端外壳懒加载（K-PERF-09）**：`App.vue` 改用 `defineAsyncComponent` 动态导入 `FluentShell` / `ToolShell`，仅按 `resolveOcliveShell()` 结果加载当前外壳，未渲染的外壳不再进入首屏主 chunk。
-- **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 `handoff/OPUS_48_PERF_BASELINE.md`。
+- **热路径 DB 合并（K-PERF-03~06）**：每回合一次 `EffectiveSessionConfig`；`get_role_runtime_snapshot` 单查；`TurnPrefetch` 共享 / `agent=none` 跳过 agent DB；记忆 decay 单事务。基线见 [历史记录：OPUS_48_PERF_BASELINE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/OPUS_48_PERF_BASELINE.md)。
 - **长驻内存/SQLite（K-PERF-07/08/12）**：`SessionCache` 六 map cap+TTL；`personality_vector` 复合索引 migration `033`；`hybrid_store` 去掉多余 `get_chat_session`；`role_cache` LRU(32)；LLM startup probe 后台化。
 - **前端壳内懒加载与轮询退避（K-PERF-10/11）**：`FluentShell`/`ToolShell` 非首屏面板 `defineAsyncComponent`；`useKernelStatus` 在 tab hidden 时 60s 退避。
 - **RoleRuntimeSnapshot 下游复用（K-PERF-20）**：`relation_snapshot` / `post` / `pre` Profile 路径共享快照；每回合 `get_current_emotion` ≤1（写后刷新除外）。
@@ -266,7 +293,7 @@
 
 ### Added
 
-- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
+- **User Identity & Reply Post-Processor Phase 2（收尾）**：HostProfile `[user_identity]` / `[post_process]` 合并；remote/directory 后处理后端；HTTP `/user_identity/*`；桌面与 VS Code 身份切换；`RoleInfo` / `GET /role_info` 后处理只读字段；调试面板后处理状态行。见 [历史 Phase 2 记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/USER_IDENTITY_REPLY_POST_PROCESSOR_PHASE2.md)。
 - **文档**：ROLE_PACK_SPEC §1.1 / §9.7、架构总览「正交能力单元」、USER_MANUAL §3.4–3.5、RFC Phase 2 验收勾选。
 - **遗忘曲线与关系演化（`config.json`）**：艾宾浩斯长期记忆衰减（`memory.decay_halflife_days`）；重复提及强化（`mention_count` + `reinforcement_factor`）；沉浸模式下亲密值疏远与关系阶段降级（`relation.*`）；虚拟时间流速（`time.speed`）与首次沉浸对齐 `life_schedule` 起点；强化记忆微幅推动七维人格 / 可变档案「记忆塑造」。规范见 [ROLE_PACK_SPEC §9](creator-docs/role-pack/ROLE_PACK_SPEC.md)。
 - **双核质量验收补强**：OOCP 新增可选 **S14**（experimental 合法 DAG 成功路径）；`oocp-test-suite` CI job 现以 `--features dual_core` 构建并执行 `run.mjs --include-dual-core`（覆盖 S13 降级 + S14 成功路径）；新增 `src-tauri/tests/dual_core_happy_path.rs` 集成测验证 `DualPipelineRunner::run_experimental` 成功路径。
@@ -336,7 +363,7 @@
 
 ### Documentation
 
-- [COMPATIBILITY.md](creator-docs/COMPATIBILITY.md)、[PRODUCT_RELEASE_CHECKLIST.md](handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)、双语 **creator-docs-en** 镜像与蓝图 v2 文档收口。
+- [COMPATIBILITY.md](creator-docs/COMPATIBILITY.md)、[PRODUCT_RELEASE_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/PRODUCT_RELEASE_CHECKLIST.md)、双语 **creator-docs-en** 镜像与蓝图 v2 文档收口。
 
 ---
 

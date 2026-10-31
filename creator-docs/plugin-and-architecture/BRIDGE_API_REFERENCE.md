@@ -66,6 +66,12 @@
 | `export_conversation` | 导出聊天记录 | `export:conversation` | 是 | `{ "role_id": "...", "format": "json", "session_id": null }` | 与 `export_chat_logs` 一致（如 `content`、`suggested_filename`） |
 | `import_role` | 导入角色包 | `import:role` | 是 | `{ "path": "C:/path/to.pack.zip", "overwrite": false }`，也可用 **`src_path`** | `{ "role_id": "...", "ok": true }` |
 | `delete_role` | 删除本地角色 | `delete:role` | 是 | `{ "role_id": "..." }` 或 `{ "roleId": "..." }` | 与 `delete_role` 命令一致 |
+
+角色 ZIP／ocpak 导入最多 20,000 个条目、单文件展开 256 MiB、总展开 1 GiB；读取实际展开字节时也执行预算，不只信任 ZIP 元数据。预览人设元数据文件另限 4 MiB。目录导入的源目标重叠限制见下文。
+
+角色 ZIP 导入最多 20,000 个条目、单文件展开 256 MiB、总展开 1 GiB；读流时继续累计实际字节，不只信任 ZIP 声明的大小。预览元数据另限 4 MiB。超限时终止导入，旧包不变。
+
+角色覆盖导入先在独立目录复制并校验，再替换旧包；拒绝源、目标同址或互相包含，复制失败保留旧包。删除角色先暂存角色目录和镜像，再将数据库删除与恢复标记一同提交；提交前中断会在重启时恢复目录，提交后只继续清理。`delete_role` 返回 `{ "ok": true, "role_id": "...", "cleanup_pending": false }`；可选的 `cleanup_pending: true` 表示删除已提交，但暂存文件或插件 UI 状态尚待重试／重启清理，不能向用户声称数据库已回滚。旧消费者可忽略该新增字段。不要在恢复期间手动删除 `.oclive-role-import-*`／`.oclive-delete-*` 暂存目录。
 | `update_settings` | 更新应用设置（白名单字段） | `write:settings` | 是 | 见 `update_settings_impl` | 与宿主一致 |
 | `get_conversation_list` | 会话列表元数据 | `read:conversations` | 是 | `{}` | `{ "items": [ { "session_namespace", "turn_count", "last_at" } ] }` |
 | `update_prompt` | 动态提示词片段（预留） | `write:prompt` | 是 | （未接线） | `{ "ok": false, "error": "not_implemented", "message": "..." }` |

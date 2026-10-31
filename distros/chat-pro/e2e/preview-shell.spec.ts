@@ -10,6 +10,6 @@ test.describe('vite preview shell (A1.1b web slice)', () => {
 
   test('document title matches shipped branding', async ({ page }) => {
     await page.goto('/')
-    await expect(page).toHaveTitle(/OCLIVE|沐沐/)
+    await expect(page).toHaveTitle(/OCLive|沐沐/i)
   })
 })

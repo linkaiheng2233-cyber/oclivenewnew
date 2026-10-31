@@ -28,6 +28,7 @@ describe('role portrait state ownership', () => {
 
     expect(role.roleInfo.visualStateId).toBe('happy_moderate')
     expect(role.roleInfo.portraitAssetPath).toBe('assets/images/happy_moderate.png')
+    expect(role.roleInfo.portraitEmotion).toBe('happy')
   })
 
   it('clears transient portrait state when applying another role', () => {
@@ -45,6 +46,7 @@ describe('role portrait state ownership', () => {
     expect(role.roleInfo.visualStateId).toBeUndefined()
     expect(role.roleInfo.portraitAssetPath).toBeUndefined()
     expect(role.portraitStateRoleId).toBe('')
+    expect(role.roleInfo.portraitEmotion).toBeUndefined()
   })
 
   it('keeps the latest catalog portrait when a compatibility response omits visual fields', () => {
@@ -63,5 +65,32 @@ describe('role portrait state ownership', () => {
 
     expect(role.roleInfo.visualStateId).toBe('happy_mild')
     expect(role.roleInfo.portraitAssetPath).toBe('assets/images/happy_mild.png')
+    expect(role.roleInfo.portraitEmotion).toBe('happy')
+  })
+
+  it('keeps the display hint independent of the refreshed analysis emotion', () => {
+    const role = useRoleStore()
+    role.currentRoleId = 'mumu'
+    role.applyRoleInfo(roleInfo('mumu'))
+    role.updateLocalAfterMessage('shy', 12, {
+      visualStateId: 'shy_severe',
+      portraitAssetPath: 'assets/images/shy_severe.png',
+    })
+    role.applyRoleInfo({ ...roleInfo('mumu'), current_emotion: 'neutral' })
+    // Same operation performed by the periodic role snapshot poll.
+    role.roleInfo.currentEmotion = 'neutral'
+    expect(role.roleInfo.portraitEmotion).toBe('shy')
+    expect(role.roleInfo.portraitAssetPath).toBe('assets/images/shy_severe.png')
+    expect(role.roleInfo.currentEmotion).toBe('neutral')
+  })
+
+  it('also preserves legacy filename expressions on a same-role refresh', () => {
+    const role = useRoleStore()
+    role.currentRoleId = 'mumu'
+    role.applyRoleInfo(roleInfo('mumu'))
+    role.updateLocalAfterMessage('excited', 0)
+    role.applyRoleInfo({ ...roleInfo('mumu'), current_emotion: 'neutral' })
+    expect(role.roleInfo.portraitEmotion).toBe('excited')
+    expect(role.roleInfo.portraitAssetPath).toBeUndefined()
   })
 })

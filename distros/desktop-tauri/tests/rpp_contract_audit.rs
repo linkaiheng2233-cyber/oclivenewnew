@@ -168,6 +168,7 @@ async fn directory_rpp_process_returns_display_reply_contract() {
             user_message: "ping".into(),
             scene_id: Some("default".into()),
             session_id: None,
+            chat_thread_id: None,
             include_raw_reply: Some(true),
             adult: None,
         },

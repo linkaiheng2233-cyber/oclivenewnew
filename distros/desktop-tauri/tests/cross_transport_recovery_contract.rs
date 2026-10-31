@@ -51,6 +51,7 @@ fn sample_request() -> SendMessageRequest {
         user_message: USER_TEXT.to_string(),
         scene_id: Some("home".to_string()),
         session_id: None,
+        chat_thread_id: None,
         include_raw_reply: None,
         adult: None,
     }
@@ -90,7 +91,8 @@ fn sample_response_json() -> Value {
 /// §1 身份与语义：两个传输共用同一个 turn，却各自使用 Host 认可的不同字段名。
 #[test]
 fn stream_and_recover_bodies_share_one_turn_identity() {
-    let req = sample_request();
+    let mut req = sample_request();
+    req.chat_thread_id = Some("b1a27229-4f57-4456-b37f-fbc41b026871".into());
     let stream = KernelHttpClient::chat_api_body(Path::new(ROLE_PACK_PATH), &req);
     let recover = KernelHttpClient::chat_recover_body(&req).expect("recover body serializes");
 
@@ -106,6 +108,7 @@ fn stream_and_recover_bodies_share_one_turn_identity() {
     assert_eq!(recover["role_id"], json!("mumu"));
     assert_eq!(stream["scene_id"], recover["scene_id"]);
     assert_eq!(stream["session_id"], recover["session_id"]);
+    assert_eq!(stream["chat_thread_id"], recover["chat_thread_id"]);
     assert_eq!(stream["include_raw_reply"], recover["include_raw_reply"]);
     assert_eq!(stream["adult"], recover["adult"]);
 

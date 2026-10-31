@@ -48,6 +48,9 @@ pub const API_TOKEN_HEADER: &str = "x-oclive-api-token";
 
 #[derive(Debug, Deserialize)]
 pub struct ChatApiRequest {
+    /// Transcript-only identity; role memory continues across these threads.
+    #[serde(default)]
+    pub chat_thread_id: Option<String>,
     /// Logical turn identity shared by stream/plain requests; omitted by legacy clients.
     #[serde(default)]
     pub client_request_id: Option<String>,
@@ -175,6 +178,15 @@ pub fn api_router_with_auth(app_state: Arc<AppState>, api_token: Option<String>)
         .route("/time/jump", post(role::jump_time_route))
         .route("/scene/switch", post(role::switch_scene_route))
         .route("/user_identity/set", post(role::set_user_identity_route))
+        .route("/user_relation/set", post(role::set_user_relation_route))
+        .route(
+            "/user_relation/scene_set",
+            post(role::set_scene_user_relation_route),
+        )
+        .route(
+            "/user_relation/scene_clear",
+            post(role::clear_scene_user_relation_route),
+        )
         .route(
             "/user_identity/scene_set",
             post(role::set_scene_user_identity_route),

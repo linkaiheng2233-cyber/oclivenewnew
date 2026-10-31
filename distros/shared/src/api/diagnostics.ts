@@ -1,5 +1,23 @@
 import { invokeWithFriendlyError } from './helpers'
 
+export interface SupportLogFile {
+  name: string
+  sizeBytes: number
+  modifiedAtEpochMs: number
+}
+
+export interface SupportLogSnapshot {
+  directory: string
+  files: SupportLogFile[]
+  selectedFile: string | null
+  text: string
+  truncated: boolean
+}
+
+export async function readSupportLogs(fileName?: string): Promise<SupportLogSnapshot> {
+  return invokeWithFriendlyError<SupportLogSnapshot>('read_support_logs', { fileName: fileName || null })
+}
+
 export interface EnvironmentDiagnostics {
   ollamaBaseUrl: string
   ollamaReachable: boolean

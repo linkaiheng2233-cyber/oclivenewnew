@@ -263,14 +263,19 @@ mod invoke_rpc_tests {
 
     #[test]
     fn directory_rpc_rejects_non_loopback_url() {
-        let err = invoke_directory_plugin_rpc_blocking(
+        for url in [
             "http://evil.example/rpc",
-            "test.method",
-            serde_json::json!({}),
-            RemoteRpcChannel::Plugin,
-            None,
-        )
-        .unwrap_err();
-        assert!(matches!(err, AppError::HighRiskCapabilityNotGranted { .. }));
+            "http://127.0.0.1:80@evil.example/rpc",
+        ] {
+            let err = invoke_directory_plugin_rpc_blocking(
+                url,
+                "test.method",
+                serde_json::json!({}),
+                RemoteRpcChannel::Plugin,
+                None,
+            )
+            .unwrap_err();
+            assert!(matches!(err, AppError::HighRiskCapabilityNotGranted { .. }));
+        }
     }
 }

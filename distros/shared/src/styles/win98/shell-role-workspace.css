@@ -1,0 +1,183 @@
+/* Win98 skin — see MODULE_MAP §13.2. Imported unscoped by RoleWorkspaceShell.vue. */
+/* Keep the role-first layout; only classic chrome changes under data-skin. */
+
+html[data-skin="win98"] .role-app {
+  box-sizing: border-box;
+  border: 2px outset #dfdfdf;
+  background: #c0c0c0;
+  font-family: var(--font-ui);
+}
+
+html[data-skin="win98"] .role-app .role-nav {
+  background: #c0c0c0;
+  border-right: 2px groove #dfdfdf;
+}
+
+html[data-skin="win98"] .role-app :is(.brand-mark, .role-initial) {
+  border: 2px inset #dfdfdf;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000080;
+}
+
+html[data-skin="win98"] .role-app :is(.nav-button, .nav-role-title, .nav-conversations button) {
+  border-radius: 0;
+}
+
+html[data-skin="win98"] .role-app .nav-button .mumu-feature-icon {
+  transition: none;
+  transform: none;
+}
+
+html[data-skin="win98"] .role-app .theme-toggle {
+  border:2px outset #dfdfdf;
+  border-radius:0;
+  background:#c0c0c0;
+  color:#000000;
+}
+
+html[data-skin="win98"] .role-app :is(.nav-button:hover, .nav-role-title:hover) {
+  background: #dfdfdf;
+}
+
+html[data-skin="win98"] .role-app :is(.nav-button.active, .nav-role-title.active, .nav-conversations button.selected) {
+  background: #000080;
+  color: #ffffff;
+}
+
+html[data-skin="win98"] .role-app :is(.workspace-header, .conversation-header, .workspace-composer) {
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .role-app :is(.workspace-header, .conversation-header) {
+  border-bottom: 2px groove #dfdfdf;
+}
+
+html[data-skin="win98"] .role-app :is(.library-page, .workspace-messages) {
+  background: #ffffff;
+}
+
+html[data-skin="win98"] .role-app .role-card {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .role-app .card-portrait {
+  background: #ffffff;
+}
+
+html[data-skin="win98"] .role-app :is(.primary, .conversation-header button, .stop-button, .setup-options button, .pack-bar .btn, .library-tools > button, .workspace-composer .send, .workspace-composer .adult-exit) {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .role-app :is(.primary, .conversation-header button, .stop-button, .setup-options button, .pack-bar .btn, .library-tools > button, .workspace-composer .send, .workspace-composer .adult-exit):active:not(:disabled) {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .role-app .kernel-status {
+  border: 2px inset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .role-app .library-actions .pack-bar .btn {
+  border-radius: 0;
+}
+
+html[data-skin="win98"] .role-app .card-conversation:hover {
+  background: #000080;
+  color: #ffffff;
+}
+
+html[data-skin="win98"] .role-app .card-conversation:hover span {
+  color: inherit;
+}
+
+html[data-skin="win98"] .role-app .runtime-role {
+  background: #c0c0c0;
+  border-right: 2px groove #dfdfdf;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .role-app .runtime-grid--sidebar-right .runtime-role {
+  border-right: 0;
+  border-left: 2px groove #dfdfdf;
+}
+
+html[data-skin="win98"] .role-app .runtime-role select {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+html[data-skin="win98"] .role-app .model-setup {
+  border: 2px groove #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+}
+
+html[data-skin="win98"] .role-app .setup-options button[aria-pressed="true"] {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .role-app :is(button, summary):focus-visible,
+html[data-skin="win98"] .workspace-help button:focus-visible {
+  outline: 1px dotted #000000;
+  outline-offset: -4px;
+}
+
+html[data-skin="win98"] .workspace-modal-backdrop {
+  background: rgb(0 0 0 / 25%);
+  backdrop-filter: none;
+}
+
+html[data-skin="win98"] .workspace-help {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  box-shadow: 1px 1px 0 #000000;
+}
+
+html[data-skin="win98"] .workspace-help .workspace-help-header {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  color: #ffffff;
+  border-bottom: 0;
+}
+
+html[data-skin="win98"] .workspace-help .workspace-help-header p {
+  color: #ffffff;
+}
+
+html[data-skin="win98"] .workspace-help :is(button, .workspace-help-close) {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+}
+
+html[data-skin="win98"] .workspace-help button:active:not(:disabled) {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .workspace-help .workspace-help-footer {
+  background: #c0c0c0;
+  border-top: 2px groove #dfdfdf;
+}
+
+html[data-skin="win98"] .role-app :is(.role-nav, .nav-role-list, .library-page, .runtime-role, .workspace-messages) {
+  scrollbar-width: auto;
+  scrollbar-color: #808080 #c0c0c0;
+}
+
+@media (max-width: 760px) {
+  html[data-skin="win98"] .role-app .runtime-role--open {
+    border: 2px outset #dfdfdf;
+  }
+}

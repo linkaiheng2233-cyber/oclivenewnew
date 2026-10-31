@@ -1,12 +1,15 @@
+import RenderErrorBoundary from '@oclive/shared/components/RenderErrorBoundary.vue'
 import { hydrateLayoutWidths } from '@oclive/shared/composables/useLayoutWidths'
+import { resolveOcliveShell } from '@oclive/shared/composables/useOcliveShell'
 import { i18n } from '@oclive/shared/i18n'
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
+import { installAppErrorReporting } from '@oclive/shared/utils/appErrorReporting'
 import { tryReplaceWithDirectoryShell } from '@oclive/shared/utils/directoryShellBootstrap'
 import { shouldLoadSentry } from '@oclive/shared/utils/telemetrySentry'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
-import { createApp } from 'vue'
+import { createApp, h } from 'vue'
 import App from './App.vue'
 import '@oclive/shared/styles/theme.css'
 import '@oclive/shared/styles/theme-tool.css'
@@ -15,17 +18,20 @@ import '@oclive/shared/styles/chat-tool.css'
 import '@oclive/shared/styles/global.css'
 import '@oclive/shared/styles/win98/tokens.css'
 import '@oclive/shared/styles/win98/primitives.css'
+import '@oclive/shared/styles/interaction.css'
+import '@oclive/shared/styles/scrollbars.css'
 
 hydrateLayoutWidths()
 
 void (async () => {
-  const shellPromise = Promise.resolve().then(() => tryReplaceWithDirectoryShell())
+  // The standard product owns its startup/library. Custom full shells remain in alternate builds.
+  const shellPromise = resolveOcliveShell() === 'fluent'
+    ? Promise.resolve(false)
+    : Promise.resolve().then(() => tryReplaceWithDirectoryShell())
 
-  const app = createApp(App)
+  const app = createApp({ render: () => h(RenderErrorBoundary, { root: true }, { default: () => h(App) }) })
   app.use(i18n)
-  app.config.errorHandler = (err, instance, info) => {
-    console.error('[oclive] Vue render error', err, info, instance)
-  }
+  installAppErrorReporting(app)
 
   const tookShell = await shellPromise
   if (tookShell) {
@@ -40,13 +46,7 @@ void (async () => {
   app.use(pinia)
 
   const chatStore = useChatStore()
-  try {
-    await chatStore.hydrateFromStorage()
-    chatStore.migrateAllLegacyMessageBuckets()
-  }
-  catch (e) {
-    console.error('[oclive] chat history hydrate failed; continuing without persisted messages', e)
-  }
+  // Mount first. Bootstrap hydrates records behind a visible loading/recovery interface.
 
   if (typeof window !== 'undefined') {
     const flushChat = () => {

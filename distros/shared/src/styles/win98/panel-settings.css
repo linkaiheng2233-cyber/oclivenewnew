@@ -4,6 +4,7 @@
 
 html[data-skin="win98"] .sv-backdrop {
   background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: none;
 }
 
 html[data-skin="win98"] .sv-dialog {
@@ -61,38 +62,73 @@ html[data-skin="win98"] .sv-nav-btn[aria-current="page"] {
   color: #000000;
 }
 
-html[data-skin="win98"] .sv-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 16px;
-  height: 14px;
-  min-width: 16px;
-  padding: 0;
-  border: 2px outset #dfdfdf;
-  border-radius: 0;
-  background: #c0c0c0;
-  color: #000000;
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: bold;
-  line-height: 1;
-  cursor: default;
-  box-shadow: none;
-}
-
-html[data-skin="win98"] .sv-close:hover {
-  background: #c0c0c0;
-}
-
-html[data-skin="win98"] .sv-close:active {
-  border-style: inset;
-}
-
 /* Embedded mode in Tool shell — keep flat chrome, no dialog frame */
 html[data-skin="win98"] .sv-embedded {
   border: none;
   box-shadow: none;
   background: transparent;
+}
+
+/* Keep the categorized layout while using classic square chrome. */
+html[data-skin="win98"] .sv-dialog {
+  overflow: hidden;
+}
+html[data-skin="win98"] .sv-page-head,
+html[data-skin="win98"] .sv-nav {
+  background: #c0c0c0;
+}
+html[data-skin="win98"] .sv-content .ui-section {
+  border: 2px groove #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+}
+html[data-skin="win98"] .ui-toggle__track,
+html[data-skin="win98"] .ui-toggle__track > span {
+  border-radius: 0;
+}
+
+/* The categorized settings use deep scoped rules; match their actual controls. */
+html[data-skin="win98"] .sv-dialog .sv-content .ui-btn {
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
+  background: #c0c0c0;
+  color: #000000;
+  box-shadow: none;
+}
+
+html[data-skin="win98"] .sv-dialog .sv-content .ui-btn:active:not(:disabled) {
+  border-style: inset;
+}
+
+html[data-skin="win98"] .sv-dialog .sv-content .ui-select {
+  border: 2px inset #808080;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+}
+
+html[data-skin="win98"] .sv-dialog .sv-local-badge {
+  border-radius: 0;
+}
+
+html[data-skin="win98"] .sv-dialog :is(.sv-nav, .sv-body, pre) {
+  scrollbar-width: auto;
+  scrollbar-color: #808080 #c0c0c0;
+}
+
+html[data-skin="win98"] .sv-dialog :is(.sv-nav, .sv-body, pre)::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+html[data-skin="win98"] .sv-dialog :is(.sv-nav, .sv-body, pre)::-webkit-scrollbar-track {
+  background: #c0c0c0;
+  margin: 0;
+}
+
+html[data-skin="win98"] .sv-dialog :is(.sv-nav, .sv-body, pre)::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  background-clip: border-box;
+  border: 2px outset #dfdfdf;
+  border-radius: 0;
 }

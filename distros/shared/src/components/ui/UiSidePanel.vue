@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import UiCloseButton from './UiCloseButton.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -42,14 +43,11 @@ watch(
       <h2 class="ui-side-panel__title">
         {{ title }}
       </h2>
-      <button
-        type="button"
+      <UiCloseButton
         class="ui-side-panel__close"
-        :aria-label="t('settings.closeAria')"
+        :label="t('settings.closeAria')"
         @click="emit('close')"
-      >
-        ×
-      </button>
+      />
     </header>
     <div v-if="$slots.tabs" class="ui-side-panel__tabs">
       <slot name="tabs" />
@@ -99,24 +97,6 @@ watch(
   margin: 0;
   font-size: var(--tool-fs-lg, 15px);
   font-weight: 600;
-  color: var(--tool-text, var(--text-primary));
-}
-
-.ui-side-panel__close {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: var(--tool-radius, 4px);
-  background: transparent;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--tool-text-muted, var(--text-secondary));
-  transition: var(--tool-transition, var(--control-transition));
-}
-
-.ui-side-panel__close:hover {
-  background: color-mix(in srgb, var(--tool-border, var(--border-light)) 45%, transparent);
   color: var(--tool-text, var(--text-primary));
 }
 

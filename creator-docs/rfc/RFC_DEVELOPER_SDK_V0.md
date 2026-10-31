@@ -33,7 +33,7 @@
 | 消费者接入 | 作者实现真实经过现有消费者调用；生成调用为零 | 每轮必须执行六槽或已注册到参考 Host 的丰富后端 |
 | 目标功能 | 由模块作者及目标 Host 补实际场景验收 | 本例已经替所有发行版验收 |
 
-本片 Windows PowerShell 树外试验的源码输入为 `08348f31b8f3459537c13227302bf4b8e273baa8`；使用已准备的依赖缓存离线执行。操作与结果见 [本轮记录](../../handoff/debt-marathon/waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md)。这是有限本地证据，不借该输入 SHA 的正式 CI 为新的文档提交盖章；其它平台的独立工程配方本片未执行。
+本片 Windows PowerShell 树外试验的源码输入为 `08348f31b8f3459537c13227302bf4b8e273baa8`；使用已准备的依赖缓存离线执行。操作与结果见 [本轮记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md)。这是有限本地证据，不借该输入 SHA 的正式 CI 为新的文档提交盖章；其它平台的独立工程配方本片未执行。
 
 ## 接入前继续由作者决定的事项
 
@@ -65,7 +65,7 @@ Kernel / Host  ✗→  SDK
 
 ### 配方自动回归（有限）
 
-第一条源码接入路径已有实际消费者案例，现在通过[CLI集成回归](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs)重复检查生成、显式添加runtime、复制canonical示例、派生锁和check/test/run。维护者执行入口见[操作指南](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression)。实施写集与停止条件见[开发计划](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13)，本轮实际结果见[实施记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md)；[准备记录](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md)保留当时尚未实施的状态。这是现有Cargo测试入口，不是新SDK命令。
+第一条源码接入路径已有实际消费者案例，现在通过[CLI集成回归](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs)重复检查生成、显式添加runtime、复制canonical示例、派生锁和check/test/run。维护者执行入口见[操作指南](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression)。实施写集与停止条件见[开发计划](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13)，本轮实际结果见[实施记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md)；[准备记录](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md)保留当时尚未实施的状态。这是现有Cargo测试入口，不是新SDK命令。
 
 | 回归项 | 有限覆盖 |
 |---|---|

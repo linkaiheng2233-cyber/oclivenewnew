@@ -1,13 +1,13 @@
 # `narrative_hint` 全链路契约（方案 A / B M1）
 
 **状态**：与 `oclive_kernel_host` 共景路径、`oclive_kernel_runtime::PromptBuilder` 及桌面对接文档 v1.22 一致。
-**最后更新**：2026-09-04
+**最后更新**：2026-10-26
 
 ## 1. 数据形状与存储
 
 | 阶段 | 类型 / 存储 | 契约 |
 |------|-------------|------|
-| 主 LLM 输出 | `[EMO]...[/EMO]` | `labels[]` + 可选 `narrative_hint`；标记在返回用户前移除 |
+| 主 LLM 输出 | `[EMO]...[/EMO]` | `labels[]` + 可选 `narrative_hint`；标记在返回用户前移除；可选的外显表情见[立绘设施](../rfc/RFC_PORTRAIT_FACILITY.md#2-管线位置) |
 | 插件降级输出 | `ComplexEmotionOutput` | remote / directory 插件在标记缺失或无效时提供 `labels[]` 与 `narrative_hint` |
 | 持久化 | SQLite `complex_emotion_hint` + 会话缓存 | 按 `srid` 保存，24 小时 TTL；缓存不是唯一真相源 |
 | Prompt 输入 | `PromptInput::previous_complex_emotion_narrative_hint` | 只读取上一轮已持久化的 hint，并据此输出不含原文的连续性信号 |
@@ -43,6 +43,7 @@
 - 对启用后端：缺少或无效标记时保持上一轮 hint；有效标记中 `narrative_hint` 缺失或为空时清除已存 hint。
 - remote / directory 插件输出与主标记共用相同的最终长度与持久化边界。
 - Fast 路径不生成或写入新 hint；若后端启用，已有 hint 仍可触发去内容连续性信号。
+- 流式展示在 Host 侧增量屏蔽内部标记，保留可能构成标记的尾部前缀，避免分词后的 `[E` 或 JSON 闪现；完整原始结果仍交由同一解析器处理。格式错误的内部尾部也不进入 token 事件。合法正文中暂时无法判定的前缀，由最终回复补齐；前端不另写情绪解析器。
 
 ## 5. Prompt 注入规则（`PromptBuilder`）
 

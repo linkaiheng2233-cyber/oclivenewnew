@@ -23,10 +23,11 @@
 
 | Task | Path |
 |------|------|
+| Default role workspace | `distros/chat-pro/src/App.vue` → `shells/fluent/RoleWorkspaceShell.vue`; [MODULE_MAP §13.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia) owns the shell/deferred-entry map |
 | Send message | `distros/shared/src/api/chat.ts` → `send_message` |
 | Chat state | `distros/shared/src/stores/chatStore.ts` |
-| Plugin manager | `Ctrl+Shift+F` → `SimplePluginManagerPanel.vue` |
-| Model manager | `Ctrl+Shift+M` → `ModelManagerPanel.vue` |
+| Plugin manager | `SimplePluginManagerPanel.vue`; capability/legacy-shell entry, hidden in the default workspace. A shortcut is not proof of mounting. |
+| Model manager | Workspace Model & connection → `ModelManagerPanel.vue` |
 | All Tauri commands | `distros/desktop-tauri/src/lib.rs` `generate_handler!` |
 
 ---

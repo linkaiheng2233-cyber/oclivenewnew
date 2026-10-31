@@ -119,6 +119,7 @@ description: >-
 
 ### ⑥
 - handoff/README §文档分责；G11；MODULE_MAP / PLUGIN_V1 不互拷  
+- 公开资料与本机过程材料按 [文档分流边界](../../../handoff/README.md#documentation-publishing-boundary)处理：公开保留必要规范与最小结论，普通会话流水和原始执行工件默认仓库外；不得为交接新增波次长文。
 - `check-doc-registry` · `check-markdown-links`（默认为人类模块入口＋关键 AI/SSOT；本轮改文显式检查，不扩到全历史）· `check-stale-paths` · applicable `check-doc-mirror`
 - 债务事实变化同一检查点同步 owner、计划/队列与 DEBT_CHANGELOG；文案修正不冒充业务债结案。
 
@@ -167,7 +168,7 @@ description: >-
 ## 技术债马拉松（长计划书 · 分阶段子 Agent）
 
 多 Stage / 长时间债偿还：另载 [`oclive-debt-marathon`](../oclive-debt-marathon/SKILL.md)。  
-计划书与波次日志 Git SSOT：[`handoff/debt-marathon/`](../../../handoff/debt-marathon/README.md)。
+控制器消费的计划契约与最小波次恢复记录见 [`handoff/debt-marathon/`](../../../handoff/debt-marathon/README.md)；详细执行工件遵守上述文档分流边界。
 
 触发语另见该 Skill（「债偿还马拉松」「长流程计划书」等）。普通短债收口仍用本文件即可。
 

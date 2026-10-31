@@ -10,7 +10,7 @@
 | `CONTRIBUTING.md` | 禁止别名 `memory_backend` |
 | `creator-docs/roadmap/VISION_ROADMAP_MONTHLY.md` | 禁止别名 `memory_backend` |
 | `creator-docs/role-pack/PACK_VERSIONING.md` | 禁止别名 `memory_backend` |
-| `handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md` | 遗留路径 `src-tauri/src/domain` |
+| [历史记录：COMMENT_ENGLISH_MIGRATION_PLAN.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/COMMENT_ENGLISH_MIGRATION_PLAN.md) | 遗留路径 `src-tauri/src/domain` |
 
 ## 2. Rust / Cargo 路径（Phase 1）
 

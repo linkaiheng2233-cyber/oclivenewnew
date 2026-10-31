@@ -4,7 +4,9 @@ import {
 } from '@oclive/shared/api/generated/kernelErrorCodes'
 
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
+import { recordDiagnostic } from '@oclive/shared/composables/useDiagnosticHistory'
 import { i18n } from '@oclive/shared/i18n/index'
+import { redactDiagnosticText } from '@oclive/shared/utils/diagnosticText'
 import { invoke } from '@tauri-apps/api/core'
 
 function translateApiError(code: string): string | undefined {
@@ -27,6 +29,8 @@ function parseBackendError(err: unknown): {
   raw: string
   kernel?: KernelErrorPayload
 } {
+  if (err instanceof ApiInvokeError)
+    return { code: err.code, raw: err.raw, kernel: err.kernel }
   const raw = err instanceof Error
     ? err.message
     : typeof err === 'string'
@@ -76,8 +80,8 @@ export class ApiInvokeError extends Error {
   readonly raw: string
   readonly kernel?: KernelErrorPayload
 
-  constructor(friendly: FriendlyError) {
-    super(friendly.message)
+  constructor(friendly: FriendlyError, options?: ErrorOptions) {
+    super(friendly.message, options)
     this.name = 'ApiInvokeError'
     this.code = friendly.code
     this.raw = friendly.raw
@@ -218,27 +222,56 @@ export function toFriendlyError(err: unknown): FriendlyError {
   }
 }
 
+export interface ErrorPresentation {
+  summary: string
+  details: string
+}
+
+/** One parser, two reading levels. Never infer recovery behavior from message text. */
+export function toErrorPresentation(err: unknown, summary?: string): ErrorPresentation {
+  if (err == null)
+    return { summary: redactDiagnosticText(summary || String(i18n.global.t('errorUi.generic'))), details: '' }
+  const friendly = toFriendlyError(err)
+  const key = `errorUi.summary.${friendly.code}`
+  const shortText = friendly.message.trim()
+  const heading = summary || (friendly.code && i18n.global.te(key)
+    ? String(i18n.global.t(key))
+    : shortText && shortText.length <= 100 && !shortText.includes('\n') && !friendly.kernel
+      ? shortText
+      : String(i18n.global.t('errorUi.generic')))
+  const details = [
+    friendly.code,
+    friendly.raw !== heading ? friendly.raw : '',
+    friendly.message !== friendly.raw && friendly.message !== heading ? friendly.message : '',
+    friendly.kernel?.hint,
+    err instanceof Error && err.cause ? toFriendlyError(err.cause).raw : '',
+  ].filter(Boolean).join('\n\n')
+  return { summary: redactDiagnosticText(heading), details: redactDiagnosticText(details) }
+}
+
 /** Show a user-visible toast for an async failure (safe inside Pinia actions). */
 export function toastAsyncError(err: unknown): void {
   const { showToast } = useAppToast()
-  const message
-    = err instanceof ApiInvokeError
-      ? err.message
-      : err instanceof Error
-        ? err.message
-        : String(err)
-  showToast('error', message)
+  const failure = toErrorPresentation(err)
+  showToast('error', failure.summary, failure.details)
 }
 
 export async function invokeWithFriendlyError<T>(
   command: string,
   payload: Record<string, unknown> = {},
+  signal?: AbortSignal,
 ): Promise<T> {
   try {
     return await invoke<T>(command, payload)
   }
   catch (err) {
+    // The caller owns transport cancellation and normalizes the rejection to AbortError.
+    // An abandoned request must not trigger the global error toast first.
+    if (signal?.aborted)
+      throw err
     const friendly = toFriendlyError(err)
+    const display = toErrorPresentation(new ApiInvokeError(friendly))
+    recordDiagnostic({ level: 'error', source: command, code: friendly.code, ...display })
     // Friendly message may hide backend detail; see console for full raw when debugging
     console.error(`[tauri:${command}]`, friendly.code ?? '?', friendly.raw)
     if (errorReporter) {

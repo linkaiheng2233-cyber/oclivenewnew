@@ -20,6 +20,14 @@
 
 ## Ordinary user-turn identity and result recovery
 
+### Transcript-only conversations
+
+`SendMessageRequest.chat_thread_id` optionally carries a canonical, non-nil UUID. It selects a separate chat log under `{uuid}:chat:{state_namespace}`; it does **not** change the memory, relationship, identity or turn-lock namespace. The separator is forbidden in portable role IDs, preventing collisions with another role's legacy transcript; the UUID-first prefix is portable for mirror filenames. The existing `session_id` retains its independent-runtime meaning. Omitting `chat_thread_id` keeps legacy transcript IDs and requires no database migration. Both ordinary and Agent-shortcut persistence paths honor the thread; staged adult interactions reject it.
+
+`get_chat_storage_capabilities.supports_chat_threads` advertises support. Clients must check it before creating/continuing transcript-only threads: older hosts may ignore unknown request fields. The same typed request, including `chat_thread_id`, passes through Tauri, `/chat`, `/chat/stream` and recovery. It remains part of the request fingerprint, so changing threads cannot silently reuse a completed request identity. Chat Pro reads the selected transcript exactly, never merging a different transcript or IndexedDB scene cache into it. Legacy runtime-isolated histories remain accessible through data management.
+
+### Request receipts
+
 `SendMessageRequest.client_request_id` is optional for legacy callers. An identified ordinary user send uses a canonical non-nil UUID, created once per intentional send and retained across transports. Host admission in `chat_engine/request_receipt.rs` precedes the entire turn pipeline: a durable SQLite receipt keys the role/session scope and UUID, checks the typed request payload hash, and admits only its first caller. Matching running requests wait up to 30 seconds; matching completed requests return the stored `SendMessageResponse`. A changed payload produces `CHAT_REQUEST_CONFLICT`. Staged adult generations retain their separate identity protocol.
 
 `POST /chat/recover` accepts `SendMessageRequest` (`role_id`, not `role_path`); Tauri exposes the same operation as `recover_message`. Recovery only reads/waits for an existing receipt: it does not load a role, claim a request, start generation, or apply turn state. The frontend reuses the original request after a stream transport failure and calls this recovery operation. A missing receipt, unavailable older endpoint, unresolved execution, or unreadable result produces `CHAT_REQUEST_UNCONFIRMED`; the UI asks the user to check history. Even if the initial request never reached Host, automatic recovery does not resend it.
@@ -27,6 +35,10 @@
 Migration `040_chat_request_receipts.sql` stores the full authoritative response after turn completion, before returning it. Admission and all turn side effects are **not** one transaction: a crash, cancellation, persistence failure or receipt-write failure may leave an uncertain result. There is no lease takeover, TTL reclamation, or automatic re-execution. This is an at-most-once admission boundary for identified requests, not an exactly-once delivery guarantee. Calls without an identity preserve their legacy behavior.
 
 History-row deletion invalidates responses referencing those rows. Explicit session/role/scene clearing also invalidates matching receipts even when no history rows exist; scene clearing conservatively invalidates all pending receipts for that role because their final validated scene is not yet known. Tombstones retain consumed identities while removing cached response text. Clearing does not cancel an already executing pipeline; it prevents recovery from its invalidated receipt. Receipts are local coordination state and are excluded from chat/persona/memory exports.
+
+### Renderer cancellation
+
+Renderer cancellation removes unfinished assistant stream bubbles and leaves one transient system notice in the captured role/scene bucket. It does not persist a fabricated assistant reply or a cancellation notice to the authoritative transcript, publish `message:sent`, retry the model, or claim server-side cancellation. Reopening the conversation reads saved backend content. This presentation repair does not close the remaining cancellation/recovery windows in `D-HOST-RECOVERY-01`.
 
 ## Portable-state boundary
 
@@ -70,6 +82,12 @@ Selection order:
 `get_chat_storage_capabilities.backend_kind` still reports `hybrid`|`file`|`sqlite` for UI compatibility; internally only mirror differs.
 
 Implementation: `hybrid_store.rs` + `factory.rs::resolve_mirror_enabled`.
+
+### Mirror publication and ordering
+
+Background turn persistence, edits, imports, explicit rebuilds and JSON export publish a fresh SQLite snapshot after entering the mirror IO queue. They do not replay a captured turn delta over a newer mirror. The queue is shared across store instances by canonical storage root; different roots remain independent. The current bound is process-local, relying on the existing single-writer Host ownership rather than providing a cross-process filesystem lock.
+
+Snapshot reads happen inside the queue. Complete bytes are written and synced to a unique same-directory temporary file before replacement. A blocking file worker retains the queue until IO finishes even if its async caller is cancelled. Session, scene and role mirror deletion use that queue; normal role-file quarantine also waits for active publication before its DB commit. Auto-cleanup deletes the authoritative session before removing its mirror. JSON remains best-effort and never becomes the chat truth. Full multi-domain Session erasure, root migration coordination, server cancellation and power-loss guarantees remain outside this ordering repair.
 
 ## Legacy “three backends” note
 
@@ -224,7 +242,7 @@ Under `{root}/{role_id}/{scene_id}/{created_at_compact}_{session_id_prefix}.json
 
 ## Code map
 
-- `distros/desktop-tauri/migrations/027_chat_storage.sql`
+- `kernel/crates/oclive_kernel_host/migrations/027_chat_storage.sql`
 - `kernel/crates/oclive_kernel_host/src/infrastructure/chat_storage/` (`store_trait.rs`, `factory.rs`, `replay.rs`, `backends/`, …)
 - `kernel/crates/oclive-cli/src/role_pack.rs` — `config.json` with `chat_storage.backend`
 - `distros/shared/src/components/settings/ChatStorageSettingsPanel.vue`

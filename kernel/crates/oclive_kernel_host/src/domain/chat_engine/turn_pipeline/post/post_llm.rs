@@ -167,6 +167,8 @@ async fn analyze_bot_emotion_and_policy(
     recent_events.push(event.clone());
     recent_events.extend(pre.memory.recent_events_for_event.iter().cloned());
     Ok(PostTurnPolicy {
+        portrait_emotion_str: bot_emotion_str.clone(),
+        portrait_intensity: None,
         bot_emotion,
         bot_emotion_str,
         event,
@@ -450,7 +452,9 @@ pub(crate) async fn post_llm(
 
     let t_post_llm = Instant::now();
     let reply = llm.reply.clone();
-    let (clean_reply, emo_marker) = crate::domain::emo_marker::parse_and_strip(&reply);
+    let parsed_reply = crate::domain::emo_marker::parse_reply(&reply);
+    let clean_reply = parsed_reply.reply;
+    let emo_marker = parsed_reply.emotion;
     let mut effective_complex_emotion =
         resolve_effective_complex_emotion(ctx, mode, pre, middle, emo_marker.as_ref()).await?;
     effective_complex_emotion.narrative_hint =
@@ -490,7 +494,7 @@ pub(crate) async fn post_llm(
             )
     });
 
-    let policy = analyze_bot_emotion_and_policy(
+    let mut policy = analyze_bot_emotion_and_policy(
         state,
         scene_id,
         srid,
@@ -504,6 +508,16 @@ pub(crate) async fn post_llm(
         llm.main_llm_fallback,
     )
     .await?;
+
+    // This display hint never changes the persisted emotion/relationship policy.
+    // Invalid analysis labels cannot invalidate an independently valid display
+    // hint. Missing hints and failed main-model calls keep the old fallback.
+    if matches!(mode, TurnMode::CoPresent) && !llm.main_llm_fallback {
+        if let Some(hint) = parsed_reply.portrait_hint {
+            policy.portrait_emotion_str = hint.emotion.to_string();
+            policy.portrait_intensity = hint.intensity;
+        }
+    }
 
     if !ctx.persists_user_state() {
         let (display_reply, raw_reply, adult_beat) =
@@ -541,11 +555,13 @@ pub(crate) async fn post_llm(
         let persist = PostPersistOutcome {
             favor_current: pre.relation.favorability_before,
             movement: false,
-            portrait_emotion_str: policy.bot_emotion_str.clone(),
+            portrait_emotion_str: policy.portrait_emotion_str.clone(),
             visual_state_id: resolve_visual_state_for_role(
                 role,
-                policy.bot_emotion_str.as_str(),
-                Some(effective_complex_emotion.intensity),
+                policy.portrait_emotion_str.as_str(),
+                policy
+                    .portrait_intensity
+                    .or(Some(effective_complex_emotion.intensity)),
                 state.host_profile.visual_presentation_mode.as_deref(),
             ),
         };
@@ -699,6 +715,7 @@ pub(crate) async fn post_llm(
         Some(&effective_complex_emotion),
         reply_presentation.as_ref().map(|p| p.segments.as_slice()),
         reply_presentation.as_ref().map(|p| p.delays_ms.as_slice()),
+        ctx.req.chat_thread_id.as_deref(),
     )
     .await;
 

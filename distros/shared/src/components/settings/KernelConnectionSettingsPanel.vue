@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { KernelDiagnostics } from '@oclive/shared/api'
 import { getKernelDiagnostics } from '@oclive/shared/api'
+import { toErrorPresentation } from '@oclive/shared/api/helpers'
 import { useAppToast } from '@oclive/shared/composables/useAppToast'
 import { useKernelConnectionStore } from '@oclive/shared/stores/kernelConnectionStore'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import ErrorNotice from '../ErrorNotice.vue'
 import UiButton from '../ui/UiButton.vue'
 
 const props = defineProps<{
@@ -16,6 +18,8 @@ const { showToast } = useAppToast()
 const kernelStore = useKernelConnectionStore()
 
 const loading = ref(false)
+const error = ref<unknown>(null)
+let generation = 0
 const kernelDiag = ref<KernelDiagnostics | null>(null)
 const statusLabel = computed(() => t(kernelStore.display.labelKey))
 const statusDetail = computed(() =>
@@ -45,21 +49,35 @@ watch(
         void refreshDiagnostics()
       }
     }
+    else {
+      generation++
+      loading.value = false
+    }
   },
   { immediate: true },
 )
+onBeforeUnmount(() => {
+  generation++
+})
 
 async function refreshDiagnostics(): Promise<void> {
+  const attempt = ++generation
   loading.value = true
+  error.value = null
   try {
-    kernelDiag.value = await getKernelDiagnostics()
+    const result = await getKernelDiagnostics()
+    if (attempt !== generation || !props.active)
+      return
+    kernelDiag.value = result
     kernelStore.applyStatus(kernelDiag.value.status)
   }
   catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
+    if (attempt === generation && props.active)
+      error.value = err
   }
   finally {
-    loading.value = false
+    if (attempt === generation)
+      loading.value = false
   }
 }
 
@@ -71,8 +89,11 @@ async function onReconnect(): Promise<void> {
     return
   }
   loading.value = true
+  error.value = null
   try {
     const status = await kernelStore.reconnect()
+    if (!status)
+      throw new Error(kernelStore.lastError || t('kernel.status.offlineTapReconnect'))
     if (status) {
       kernelDiag.value = kernelDiag.value
         ? { ...kernelDiag.value, status }
@@ -81,7 +102,9 @@ async function onReconnect(): Promise<void> {
     showToast('info', t('kernel.status.reconnect'))
   }
   catch (err) {
-    showToast('error', err instanceof Error ? err.message : String(err))
+    error.value = err
+    const failure = toErrorPresentation(err)
+    showToast('error', failure.summary, failure.details)
   }
   finally {
     loading.value = false
@@ -91,6 +114,7 @@ async function onReconnect(): Promise<void> {
 
 <template>
   <div class="kernel-panel">
+    <ErrorNotice v-if="error" :error="error" dismissible @dismiss="error = null" />
     <div
       class="kernel-panel__status"
       :class="`kernel-panel__status--${statusTone}`"

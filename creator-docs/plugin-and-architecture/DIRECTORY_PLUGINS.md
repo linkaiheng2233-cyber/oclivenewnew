@@ -8,6 +8,10 @@
 
 **`manifest.id` 安全约束**：1–128 字节；首尾必须为 ASCII 字母或数字；中间仅允许 ASCII 字母、数字、`.`、`_`、`-`，且禁止 `..`。该 id 会同时进入 URL、授权表与插件目录名，宿主在扫描/安装前统一校验，路径分隔符与穿越片段会直接拒绝。
 
+**地址与文件边界**：目录 RPC 使用标准 URL 解析识别真正的 loopback host，拒绝 userinfo 冒充本机的地址；本机 JSON-RPC 不自动跟随重定向，也不因本机客户端创建失败退回继承代理的客户端。插件静态资源核对最终 canonical 路径，并拒绝链接组件，防止 junction/symlink 逃出插件目录。条件开放的网页安装入口只接受不含凭据、查询参数或 fragment 的 HTTPS 仓库地址；先展示来源并取得明确确认，取消不安装，安装后仍须检查源码和单独授予高风险能力。来源确认不是可信作者签名或完整 manifest 权限预审。
+
+**地址与文件边界**：目录 RPC 使用标准 URL 解析识别真正的 loopback host，拒绝 userinfo 冒充本机的地址；本机 JSON-RPC 不自动跟随重定向，也不因本机客户端创建失败退回继承代理的客户端。插件静态资源核对最终 canonical 路径，并拒绝链接组件，防止 junction/symlink 逃出插件目录。条件开放的网页安装入口只接受不含凭据、查询参数或 fragment 的 HTTPS 仓库地址；先展示来源并取得明确确认，取消不安装，安装后仍须检查源码和单独授予高风险能力。来源确认不是可信作者签名或完整 manifest 权限预审。
+
 ---
 
 ## 1. 目录布局与扫描顺序
@@ -55,7 +59,7 @@
 
 用户可在 **设置 → 插件与后端 → Agent 调试** 中查看/授予/撤销（调用 `list_high_risk_grants`、`grant_high_risk_capability`、`revoke_high_risk_capability`）。自动化或 CI 可设 **`OCLIVE_SKIP_HIGH_RISK_GRANTS=1`** 跳过检查（勿用于面向用户的生产场景）。
 
-**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 **`mcp:http`** / **`mcp:stdio`** 授权项。**Remote 侧车**（`OCLIVE_REMOTE_*`）出站前需要 **`network:*`**（grant id **`remote:plugin`** / **`remote:llm`**）。历史验收证据见 [`A4_CLOSURE_SUMMARY.md`](../../handoff/archive/A4_CLOSURE_SUMMARY.md)。
+**MCP**：`{app_data}/mcp-servers/*.json` 的 **`http`** / **`stdio`** 传输分别需要 **`mcp:http`** / **`mcp:stdio`** 授权项。**Remote 侧车**（`OCLIVE_REMOTE_*`）出站前需要 **`network:*`**（grant id **`remote:plugin`** / **`remote:llm`**）。历史验收证据见 [历史记录：A4_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A4_CLOSURE_SUMMARY.md)。
 
 ---
 

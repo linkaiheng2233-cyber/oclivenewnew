@@ -85,7 +85,7 @@ const EXPLICIT_TEXT_TASK_INSTRUCTION: &str = "【明确文本任务】若最新�
 /// outrank the actual turn at the generation boundary.
 const FINAL_TURN_INSTRUCTION: &str = "【本轮最终指令】仅回应紧邻上方的最新用户消息。生成前无声检查：复述、总结或改写用户的话时，用“你”指用户，不把用户的“我”说成角色自己的经历；逐项保留否定、仅限、未决选择的“是否”和条件等明确事实；直接引用才可保留原文第一人称，并标明来源；已完成本轮明确任务；其余闲聊不机械重复用户原句或上一轮助手回复；没有带入已经结束的历史问题。若任一项不满足，先重写再输出。只输出当前角色的一轮台词，再按前述格式附加一条内部情绪标记，然后停止；不要展示检查过程。";
 
-const EMO_OUTPUT_INSTRUCTION: &str = "【内部情绪标记】台词结束后另起一行附加一条标记，不要在台词中提及或解释它。普通分析和问候通常用 neutral（0.2—0.4）；明确开心用 joy，低落用 sadness，立边界时可用 anger，只有突发意外才用 surprise。\n格式示例：[EMO]{\"labels\":[\"neutral\"],\"intensity\":0.3}[/EMO]\nlabels 只能从 joy/sadness/anger/fear/surprise/disgust/neutral 中选 1—3 个；intensity 为 0—1。narrative_hint 可省略；若填写，只能描述不带话题、动作、称呼与台词的纯情绪状态，禁止照抄本轮回复。";
+const EMO_OUTPUT_INSTRUCTION: &str = "【内部情绪标记】台词结束后另起一行附加一条标记，不要在台词中提及或解释它。普通分析和问候通常用 neutral（0.2—0.4）；明确开心用 joy，低落用 sadness，立边界时可用 anger，只有突发意外才用 surprise。\n格式示例：[EMO]{\"labels\":[\"neutral\"],\"intensity\":0.3,\"portrait_hint\":\"neutral\"}[/EMO]\nlabels 只能从 joy/sadness/anger/fear/surprise/disgust/neutral 中选 1—3 个；intensity 为 0—1。portrait_hint 是独立的外显表情，只能选 happy/sad/angry/neutral/excited/confused/shy；害羞、羞赧或不好意思时选 shy，普通开心选 happy；激动、雀跃、迫不及待选 excited；不解、迷茫、没弄懂选 confused；无明确情绪时选 neutral，不能把 shy 写进 labels。两种开心的区别：普通微笑可用 labels=[joy]、intensity=0.4、portrait_hint=happy；兴奋地欢呼、雀跃或迫不及待时用 labels=[joy]、intensity=0.9、portrait_hint=excited。表情描述当前角色自己，不描述用户；整条标记必须以 [/EMO] 闭合。narrative_hint 可省略；若填写，只能描述不带话题、动作、称呼与台词的纯情绪状态，禁止照抄本轮回复。";
 
 const PROMPT_BLOCK_GUIDE: &str = "以下为语气/内容层次，请按序理解";
 

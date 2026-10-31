@@ -229,6 +229,7 @@ impl KernelHttpClient {
             "session_id": req.session_id,
             "scene_id": req.scene_id,
             "include_raw_reply": req.include_raw_reply,
+            "chat_thread_id": req.chat_thread_id,
             "adult": req.adult,
         })
     }

@@ -14,6 +14,81 @@ use oclive_kernel_types::models::dto::{SendMessageRequest, TurnOrigin};
 use std::sync::Arc;
 
 #[tokio::test]
+async fn transcript_threads_share_role_state_but_keep_independent_durable_logs() {
+    let state = AppState::new_in_memory_with_llm(
+        Arc::new(MockLlmClient {
+            reply: "Understood.".to_string(),
+        }),
+        common::roles_dir(),
+    )
+    .await
+    .expect("state");
+    let a = "b1a27229-4f57-4456-b37f-fbc41b026871";
+    let b = "b1a27229-4f57-4456-b37f-fbc41b026872";
+    for thread in [a, b, a] {
+        let req = SendMessageRequest {
+            role_id: "mumu".into(),
+            user_message: "hello".into(),
+            scene_id: Some("home".into()),
+            chat_thread_id: Some(thread.into()),
+            client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+            ..Default::default()
+        };
+        let result = process_message(&state, &req).await.expect("turn");
+        let replay = process_message(&state, &req)
+            .await
+            .expect("same request recovery");
+        assert_eq!(result.assistant_message_id, replay.assistant_message_id);
+    }
+    assert_eq!(
+        state
+            .db_manager
+            .get_chat_message_count(&format!("{a}:chat:mumu"))
+            .await
+            .unwrap(),
+        4
+    );
+    assert_eq!(
+        state
+            .db_manager
+            .get_chat_message_count(&format!("{b}:chat:mumu"))
+            .await
+            .unwrap(),
+        2
+    );
+    assert_eq!(
+        state
+            .db_manager
+            .get_chat_message_count("mumu")
+            .await
+            .unwrap(),
+        0
+    );
+    assert!(state
+        .db_manager
+        .get_role_runtime_snapshot("mumu")
+        .await
+        .unwrap()
+        .is_some());
+    assert!(state
+        .db_manager
+        .get_role_runtime_snapshot(&format!("{a}:chat:mumu"))
+        .await
+        .unwrap()
+        .is_none());
+    assert!(state
+        .db_manager
+        .get_role_runtime_snapshot(&format!("{b}:chat:mumu"))
+        .await
+        .unwrap()
+        .is_none());
+    assert_eq!(
+        state.db_manager.get_events("mumu", 10).await.unwrap().len(),
+        3
+    );
+}
+
+#[tokio::test]
 async fn sensor_turn_is_side_effect_free_while_user_turn_keeps_existing_behavior() {
     let llm = Arc::new(MockLlmClient {
         reply: "收到。[EMO]{\"labels\":[\"anger\"],\"intensity\":0.8}[/EMO]".to_string(),

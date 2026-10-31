@@ -43,7 +43,7 @@ base `245d6ca98edfa8ebb354e2609d556a455336cc73`，开场工作树干净。本机
 
 ## 七月 Verification 迁移（2026-09-29）
 
-第二个 M 级切片取 base `5cd50d346f5fab351357af388f8e43f110b65696` 的干净状态，不重写上一根证据。新根 `.cursor/plans/debt-ledger-history-20260929-r0/` 的 S0 冻结六份原文。首部 20 段七月 Verification 正文共 10827 个 UTF-8 字节（不含段间空行），移到 [历史归档](../../archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md)，主表只留带边界的链接。
+第二个 M 级切片取 base `5cd50d346f5fab351357af388f8e43f110b65696` 的干净状态，不重写上一根证据。新根 `.cursor/plans/debt-ledger-history-20260929-r0/` 的 S0 冻结六份原文。首部 20 段七月 Verification 正文共 10827 个 UTF-8 字节（不含段间空行），移到 [历史归档](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_VERIFICATIONS_202607.md)，主表只留带边界的链接。
 
 历史 SHA、原日期/次序、外部 URL、旧状态词和 soft/hard 范围均保留。唯一正文差量是五次相对链接重定位，三类地址在归档目录下精确指向原文件：`REMOTE_PLUGIN_PROTOCOL.md`、`openai_compatible_llm_http_roundtrip.rs`、`TAURI_V2_MIGRATION_INVENTORY.md`。这不是仓库总体体积优化或重新验证七月 CI；归档明确标注非当前 truth。
 
@@ -57,7 +57,7 @@ base `245d6ca98edfa8ebb354e2609d556a455336cc73`，开场工作树干净。本机
 
 ## 八月工程快照归档（2026-09-29）
 
-本切片从干净的 `2852b285f6a0b33dbd73aba63037ac6c5f85680a` 开始，编辑前将主台账、第二轮计划、变动记录、覆盖、台账 Wave、handoff 入口及七月旧归档七份原文保全于独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/`。迁移对象严格为主台账原第 12–24 行的连续八月历史块，原始正文 6620 B / SHA256 `D145162908F5E2726CF0C07601AEF2065740FCC06BE01C8B371366BBF9853D49`；新 [八月归档](../../archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md) 明确不是现行状态或当前 HEAD 验收。
+本切片从干净的 `2852b285f6a0b33dbd73aba63037ac6c5f85680a` 开始，编辑前将主台账、第二轮计划、变动记录、覆盖、台账 Wave、handoff 入口及七月旧归档七份原文保全于独立忽略根 `.cursor/plans/debt-ledger-aug-history-20260929-r0/`。迁移对象严格为主台账原第 12–24 行的连续八月历史块，原始正文 6620 B / SHA256 `D145162908F5E2726CF0C07601AEF2065740FCC06BE01C8B371366BBF9853D49`；新 [八月归档](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_CLOSEOUT_SNAPSHOTS_202608.md) 明确不是现行状态或当前 HEAD 验收。
 
 正文只把三个相对链接从 `handoff/` 基准改到 `handoff/archive/` 基准：`AI_AND_PIPELINE_GATES.md`、`theater/MODE2_UNFREEZE.md`、`AI_VERIFICATION_PROTOCOL.md`。三个链接前后解析为同一现存仓库文件；逆向重定位后归档正文逐字节等于 S0，外部 URL 次序及文字不变。主台账原位只留下带历史边界的链接；此外只更新导语和治理父债进展，D-DEBT-LEDGER-01 保持 Partial，旧评分、旧排期和旧 CI 不升级为当前裁定。§5 轮次、其它长快照、全表状态词和自由文本语义仍是明确剩余范围。
 
@@ -92,7 +92,7 @@ base `245d6ca98edfa8ebb354e2609d556a455336cc73`，开场工作树干净。本机
 
 ## 六月轮次 16–19 历史表归档（2026-10-02）
 
-base `53479d8cbba6bffe92213dc65fde61fefac24882`，开场工作树干净。主台账迁前原文 SHA256 `49DCAD75909783AD1BB749031CD3639100208AE514F12F2B293F59E3A8A2BA05`；本机原始副本在忽略根 `.cursor/plans/debt-ledger-june-20261002-r0/inventory-before.md`，迁移脚本同根保留，不随 Git 携带。只迁 §5 的轮次 16–19 四张表到 [六月归档](../../archive/TECHNICAL_DEBT_ROUNDS_202606.md)，主表原位留历史链接。四个标题和原文顺序保持，九处相对锚点重定位；逆向还原九处链接及归档末尾的一个段间空行后旧表正文逐字相同，主表将替换行换回后也逐字相同。迁出使登记结构历史-only 行 5→0、历史引用 9→0；146 条当前独立行、18 锚点及 9 例外不变。这是入口降噪，不是父债 Done、旧结果重验或现行状态变化。
+base `53479d8cbba6bffe92213dc65fde61fefac24882`，开场工作树干净。主台账迁前原文 SHA256 `49DCAD75909783AD1BB749031CD3639100208AE514F12F2B293F59E3A8A2BA05`；本机原始副本在忽略根 `.cursor/plans/debt-ledger-june-20261002-r0/inventory-before.md`，迁移脚本同根保留，不随 Git 携带。只迁 §5 的轮次 16–19 四张表到 [六月归档](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_ROUNDS_202606.md)，主表原位留历史链接。四个标题和原文顺序保持，九处相对锚点重定位；逆向还原九处链接及归档末尾的一个段间空行后旧表正文逐字相同，主表将替换行换回后也逐字相同。迁出使登记结构历史-only 行 5→0、历史引用 9→0；146 条当前独立行、18 锚点及 9 例外不变。这是入口降噪，不是父债 Done、旧结果重验或现行状态变化。
 
 写集限定主台账、新归档、第二轮计划、本 Wave、DEBT_CHANGELOG、COVERAGE、handoff 入口与归档索引；用户已选择暂缓 reqwest，另只更新其原计划/事件。无产品、门禁、QUEUE、机器计划、旧归档或运行树改动。后续仍需处理其它长快照和自由文本语义；结构门禁不能代替这些审查。
 
@@ -100,11 +100,11 @@ base `53479d8cbba6bffe92213dc65fde61fefac24882`，开场工作树干净。主台
 
 ## K-LLM-ENV-02 长状态行收敛（2026-10-03）
 
-针对近期不断增长的 K-LLM-ENV-02 权威状态格，将起点 `7b0b41a145847bfefcedd642f29b1e16d3ad52cc` 的[完整原行](../../archive/TECHNICAL_DEBT_LLM_ENV_STATUS_20261003.md)保留为历史，主台账只显示原问题的修复状态、有限证据、当前验收入口和停止线。原 ID、问题、优先级与完成条件保持原文；该债仍为 Partial，历史提交与测试结论没有在此轮重判。目标是减少当前登记的读取负担，不以长文本缩减宣称新增产品修复。
+针对近期不断增长的 K-LLM-ENV-02 权威状态格，将起点 `7b0b41a145847bfefcedd642f29b1e16d3ad52cc` 的[完整原行](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_LLM_ENV_STATUS_20261003.md)保留为历史，主台账只显示原问题的修复状态、有限证据、当前验收入口和停止线。原 ID、问题、优先级与完成条件保持原文；该债仍为 Partial，历史提交与测试结论没有在此轮重判。目标是减少当前登记的读取负担，不以长文本缩减宣称新增产品修复。
 
 ## 最小角色长状态与当前接手入口（2026-10-04）
 
-将 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2` 的 D-CLI-BLUEPRINT-05 [完整原行](../../archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md)逐字保留；当前状态格只列已实现的本地准备、基础 Host/生成库入口和剩余真实发行版接入。ID、问题、优先级与完成条件保持原文，其它业务债行不改；治理父债只记该次迁移。中英 CLI 指南的 `create` 说明同步区分“没有统一磁盘生成器”和“已有显式定义文件准备”，链接现有能力 SSOT，不创建第二套角色格式或验收表。
+将 `5dc3d1d0d7e43d6ee30c3ca3cbb194e36786cae2` 的 D-CLI-BLUEPRINT-05 [完整原行](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/TECHNICAL_DEBT_MINIMAL_ROLE_STATUS_20261004.md)逐字保留；当前状态格只列已实现的本地准备、基础 Host/生成库入口和剩余真实发行版接入。ID、问题、优先级与完成条件保持原文，其它业务债行不改；治理父债只记该次迁移。中英 CLI 指南的 `create` 说明同步区分“没有统一磁盘生成器”和“已有显式定义文件准备”，链接现有能力 SSOT，不创建第二套角色格式或验收表。
 
 本片仅整理已经取得的事实；D-CLI-BLUEPRINT-05 与 D-DEBT-LEDGER-01 继续 Partial。结构/保全/链接/编码等适用检查后停止，不运行新业务场景、重新调查所有发行版，或仅为补证运行全量 CI；工程提交 `5dc3d1d0` 的远端结果与本地文档提交分开。
 

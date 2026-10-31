@@ -3,8 +3,10 @@ import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
 import { useModelManagerBody } from './useModelManagerBody'
 
+const props = defineProps<{ initialProvider?: 'local' | 'cloud' }>()
 const emit = defineEmits<{
   openSettings: []
+  saved: [roleId: string]
 }>()
 
 const {
@@ -13,6 +15,7 @@ const {
   cloudModelHistory,
   cloudModelOptions,
   cloudModelsLoading,
+  cloudProbeNeedsSave,
   effectiveModel,
   formatAdapterSize,
   globalDefaultModel,
@@ -54,7 +57,7 @@ const {
   settings,
   t,
   toggleLora,
-} = useModelManagerBody()
+} = useModelManagerBody({ initialProvider: props.initialProvider, onSaved: roleId => emit('saved', roleId) })
 </script>
 
 <template>
@@ -68,7 +71,7 @@ const {
     </p>
 
     <template v-else>
-      <section class="mm-panel mm-global-default">
+      <section v-if="providerTab === 'local'" class="mm-panel mm-global-default">
         <h3 class="mm-h3">
           {{
             settings?.localRuntimeMode === "performance"
@@ -97,10 +100,11 @@ const {
             :disabled="modelsLoading || savingGlobal"
           >
             <option
-              v-if="!globalDefaultModel && ollamaModels.length === 0"
+              v-if="!globalDefaultModel"
               value=""
+              disabled
             >
-              {{ t("modelManager.noLocalModels") }}
+              {{ t(ollamaModels.length ? 'modelManager.chooseModel' : 'modelManager.noLocalModels') }}
             </option>
             <option v-for="m in ollamaModels" :key="`global-${m}`" :value="m">
               {{ m }}
@@ -291,8 +295,8 @@ const {
             class="mm-select"
             :disabled="localModelSelectOptions.length === 0 && !modelsLoading"
           >
-            <option v-if="localModelSelectOptions.length === 0" value="">
-              {{ t("modelManager.noLocalModels") }}
+            <option v-if="!selectedLocalModel" value="" disabled>
+              {{ t(localModelSelectOptions.length ? 'modelManager.chooseModel' : 'modelManager.noLocalModels') }}
             </option>
             <optgroup
               v-if="selectableModelFiles.length"
@@ -419,7 +423,7 @@ const {
               type="button"
               class="mm-btn"
               :disabled="loading || loraMutating || loraImporting"
-              @click="loadSettings"
+              @click="loadSettings()"
             >
               {{ t("modelManager.loraRefresh") }}
             </button>
@@ -664,6 +668,9 @@ const {
         </div>
       </section>
 
+      <p v-if="providerTab === 'cloud' && cloudProbeNeedsSave" id="mm-probe-save-hint" class="mm-hint" role="status">
+        {{ t('modelManager.probeNeedSave') }}
+      </p>
       <footer class="mm-footer">
         <UiButton
           size="sm"
@@ -677,7 +684,8 @@ const {
           v-if="providerTab === 'cloud'"
           size="sm"
           variant="ghost"
-          :disabled="probing || saving || loading"
+          :disabled="probing || saving || loading || cloudProbeNeedsSave"
+          :aria-describedby="cloudProbeNeedsSave ? 'mm-probe-save-hint' : undefined"
           @click="onProbeCloud"
         >
           {{
@@ -698,12 +706,13 @@ const {
   min-height: 0;
   overflow: auto;
   font-size: 13px;
+  line-height: 1.65;
   color: var(--text-primary);
 }
 .mm-lead {
   margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.7;
   color: var(--text-secondary);
 }
 .mm-muted {
@@ -1024,6 +1033,7 @@ const {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: flex-end;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
@@ -1034,6 +1044,8 @@ const {
   background: var(--bg-elevated);
   cursor: pointer;
   font-size: 12px;
+  min-height: 34px;
+  line-height: 1.5;
 }
 .mm-btn:disabled {
   opacity: 0.55;

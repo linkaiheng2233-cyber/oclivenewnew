@@ -115,7 +115,15 @@ fn main() {
             std::process::exit(run_repair(resource_dir, report_path));
         }
         LaunchMode::Desktop => {
-            let _log_guard = oclivenewnew_tauri::init_tracing();
+            // Keep startup failures available to Help & recovery even before the sidecar starts.
+            let _log_guard =
+                if std::env::var("OCLIVE_LOG_DIR").is_ok_and(|value| !value.trim().is_empty()) {
+                    oclivenewnew_tauri::init_tracing()
+                } else {
+                    oclivenewnew_tauri::init_tracing_with_log_dir(Some(
+                        &oclive_kernel_runtime::find_app_data_dir_for_host(),
+                    ))
+                };
             oclivenewnew_tauri::run();
         }
     }

@@ -1,6 +1,7 @@
 import type { AppToastFn } from '@oclive/shared/composables/useAppToast'
 import type { Ref } from 'vue'
 import type { ComposerTranslation } from 'vue-i18n'
+import { toErrorPresentation } from '@oclive/shared/api/helpers'
 import { useNarrativeScene } from '@oclive/shared/composables/useNarrativeScene'
 import { useChatStore } from '@oclive/shared/stores/chatStore'
 import { useDebugStore } from '@oclive/shared/stores/debugStore'
@@ -17,6 +18,7 @@ export function useChatSend(options: {
   offerSceneBarsAfterReply: (together: boolean, destination: boolean) => void
   onTurnRecorded?: (userText: string) => void
   isContextChanging?: () => boolean
+  debugDataEnabled?: () => boolean
 }) {
   const chatStore = useChatStore()
   const minimal = useMinimalRoleChatStore()
@@ -33,7 +35,7 @@ export function useChatSend(options: {
     try {
       if (roleStore.minimalRoleActive) {
         await minimal.sendMessage(userText)
-        return
+        return { status: 'sent' as const }
       }
       const sceneId = effectiveChatSceneId(
         roleStore.roleInfo.interactionMode,
@@ -42,28 +44,37 @@ export function useChatSend(options: {
       const res = await chatStore.sendMessage(userText, sceneId)
       if (!res)
         return
-      await roleStore.refreshRoleInfo()
-      applyResolvedNarrativeScene()
-      await debugStore.loadDebugData()
+      try {
+        await roleStore.refreshRoleInfo()
+        applyResolvedNarrativeScene()
+        if (options.debugDataEnabled?.() !== false)
+          await debugStore.loadDebugData()
+      }
+      catch (err) {
+        const failure = toErrorPresentation(err, options.t('errorUi.refreshAfterReply'))
+        options.showToast('warning', failure.summary, failure.details)
+      }
       if (res.reply_is_fallback) {
         const detail = res.llm_fallback_reason?.trim()
-        options.showToast('info', detail || options.t('app.toast.fallbackReply'))
+        const failure = toErrorPresentation(detail, options.t('app.toast.fallbackReply'))
+        options.showToast('info', failure.summary, failure.details)
       }
       if (res.chat_persist_failed) {
         const detail = res.chat_persist_error?.trim()
-        options.showToast(
-          'warning',
-          detail || options.t('app.toast.chatPersistFailed'),
-        )
+        const failure = toErrorPresentation(detail, options.t('app.toast.chatPersistFailed'))
+        options.showToast('warning', failure.summary, failure.details)
       }
       options.offerSceneBarsAfterReply(
         res.offer_together_travel ?? false,
         res.offer_destination_picker ?? false,
       )
       options.onTurnRecorded?.(userText)
+      return { status: 'sent' as const }
     }
     catch (err) {
-      options.showToast('error', err instanceof Error ? err.message : String(err))
+      const failure = toErrorPresentation(err)
+      options.showToast('error', failure.summary, failure.details)
+      return { status: 'failed' as const, error: err }
     }
     finally {
       options.chatInputRef.value?.focusInput?.()
@@ -83,10 +94,12 @@ export function useChatSend(options: {
       if (!res)
         return
       await roleStore.refreshRoleInfo()
-      await debugStore.loadDebugData()
+      if (options.debugDataEnabled?.() !== false)
+        await debugStore.loadDebugData()
     }
     catch (err) {
-      options.showToast('error', err instanceof Error ? err.message : String(err))
+      const failure = toErrorPresentation(err)
+      options.showToast('error', failure.summary, failure.details)
     }
     finally {
       options.chatInputRef.value?.focusInput?.()

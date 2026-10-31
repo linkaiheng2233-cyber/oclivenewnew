@@ -33,7 +33,7 @@ The three crates currently have version `0.2.0`. This delivery uses source path 
 | Consumer integration | Author implementation actually called through the existing consumer; zero generation calls | A mandatory six-slot turn sequence or rich reference Host registration |
 | Target functionality | Author and target Host supply their own scenario acceptance | Acceptance for every distribution |
 
-Windows PowerShell probes used source input `08348f31b8f3459537c13227302bf4b8e273baa8` and prepared dependencies, offline. See the [wave record](../../handoff/debt-marathon/waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md). These are limited local results; CI for that source SHA does not certify a new documentation commit. The standalone recipe was not executed on other platforms in this slice.
+Windows PowerShell probes used source input `08348f31b8f3459537c13227302bf4b8e273baa8` and prepared dependencies, offline. See the [wave record](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SOURCE-SDK-FIRST-PATH.md). These are limited local results; CI for that source SHA does not certify a new documentation commit. The standalone recipe was not executed on other platforms in this slice.
 
 ## Author responsibilities
 
@@ -65,7 +65,7 @@ Kernel / Host  ✗→  SDK
 
 ### Recipe regression (limited)
 
-The first source path already has a real consumer example. A [CLI integration regression](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs) now exercises generation, explicit runtime addition, canonical source copies, a derived lock and check/test/run. See the [maintainer command](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression), [implementation plan](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13) and [execution record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md). The earlier [preparation record](../../handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md) preserves its not-yet-implemented state. This is an existing Cargo test entry, not a new SDK command.
+The first source path already has a real consumer example. A [CLI integration regression](../../kernel/crates/oclive-cli/tests/e2e_source_sdk.rs) now exercises generation, explicit runtime addition, canonical source copies, a derived lock and check/test/run. See the [maintainer command](../../examples/developer-sdk-memory/README.md#维护者回归入口--maintainer-regression), [implementation plan](../../handoff/debt-marathon/ROUND-02-PLAN.md#源码-sdk-memory-配方自动回归实施2026-10-13) and [execution record](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SDK-RECIPE-REGRESSION.md). The earlier [preparation record](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261013-SDK-READINESS.md) preserves its not-yet-implemented state. This is an existing Cargo test entry, not a new SDK command.
 
 | Regression | Limited coverage |
 |---|---|

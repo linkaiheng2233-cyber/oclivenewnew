@@ -5,7 +5,7 @@
 >
 > **核心信条**：保证地基稳固才能走得远。但**地基是为了承载维护者当前选定的开发目标与可体验结果，不是为了自身完美**——见文末「§9 元纪律」。
 >
-> **创建**：2026-06-09 · **最后更新**：2026-10-09（覆盖语义、每轮核对与有限收束） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
+> **创建**：2026-06-09 · **最后更新**：2026-10-27（默认界面坐标与文档专项入账；巡检规则不变） · **维护者**：项目维护者 · **状态**：活跃手册（§8 仅保留最近五轮，完整历史见 Git）
 
 ---
 
@@ -17,7 +17,7 @@
 |----|------|--------|
 | **内核与参考运行时** | [`kernel/`](../kernel/)（`kernel/crates/`、`kernel/fuzz/`、`examples/oocp-test-suite/` 等） | `process_message`、六槽端口与实现、迁移、OOCP、HTTP API |
 | **共享桌面 UI** | [`distros/shared/`](../distros/shared/) | API 封装、stores、通用 chat 组件 |
-| **Chat Pro** | [`distros/chat-pro/`](../distros/chat-pro/) | ToolShell / FluentShell、roles、plugins |
+| **Chat Pro** | [`distros/chat-pro/`](../distros/chat-pro/) | 默认 RoleWorkspaceShell；旧 Tool / Fluent 壳、roles、plugins 保留，入口范围查 [MODULE_MAP §13.1](MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces) |
 | **AI Theater** | [`distros/theater/`](../distros/theater/) | TheaterShell、剧场 composables |
 | **Tauri 宿主** | [`distros/desktop-tauri/`](../distros/desktop-tauri/) | invoke 薄壳、打包资源、bundled kernel |
 | **契约文档** | 根 `creator-docs/`、`handoff/` | 工具内核与参考运行时 SSOT；发行版索引见 [`handoff/distros/README.md`](distros/README.md) |
@@ -253,7 +253,7 @@ git status                                      # 确认工作树状态 / 与 or
 - [ ] CI / 脚本 / `examples` 中 `OCLIVE_ROLES_DIR`、`cd fuzz`(应 `kernel/fuzz`)、Playwright `testDir`、`check:license` 插件路径与新布局一致
 
 **2. AI 入口文档时效（每轮快档必跑）**
-- [ ] `.cursor/rules/oclivenewnew.mdc` 不指向**已归档**文档（如 `04_4.6`）或失效路径（如根 `handoff/WEEKLY_DEV_GUIDE.md`）
+- [ ] `.cursor/rules/oclivenewnew.mdc` 不指向**已归档**文档（如 `04_4.6`）或失效路径（如根 [历史记录：WEEKLY_DEV_GUIDE.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/WEEKLY_DEV_GUIDE.md)）
 - [ ] `AGENTS.md` 与源码无硬冲突（迁移目录、HTTP API 存在性、`process_message` 所在 crate、re-export 现状）
 - [ ] 同一事实只有一个数字 SSOT（如 invoke 热路径条数以 `INVOKE_HOTPATH_MATRIX.md` 为准,AGENTS/CHANGELOG 引用不另造数字）
 - [ ] 已归档文档在 README / DOCUMENTATION_INDEX / `.cursor/rules` 处**显式标注归档**,不再被当当前 truth
@@ -353,11 +353,11 @@ npm run check:rust                               # fmt + clippy(-D warnings) + t
 
 | 轮次 | 日期 | 档位 | 基线 | 综合评分 | 关键发现 / 新增债 | 备注 |
 |------|------|------|------|----------|-------------------|------|
-| 29 | 2026-08-02 | 远端收口 + 文档对账 | PASS（remote） | A− | 冻结实现 `728219e7` 的主 CI [`30714475985`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714475985) **16/16** success，完整 Nightly [`30714480898`](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/30714480898) 的视觉、fuzz、Loom、CLI benchmark、原生窗口与汇总 **6/6** success；据此关闭 **K-SUPPLY-12** 与 **D-CI-EXECUTION-02** 的远端待验状态。修正供应链、CI 路线图、轻量化与内核集成中英文档的旧配置/旧路径；明确完整 `process_message` 在 `oclive_kernel_host`，纯 library 仍是 V-EMBED-01 Partial，未改模块边界或生产代码 | K-VOICE-09 的 20-token 有界长段策略把 TTFC p50/p95(max) 从 **4135/4473ms** 降至 **3643/3826ms**，改善 **11.9%/14.5%**；短句 10/10 保持旧策略。仍缺 30 分钟真实矩阵与人工听感，故保持 **In progress**；历史 **9514ms** 尾样本也未被删除。K-CI-IMPACT-01 仍为 Shadow + 2 个真实 Compare 样本，未借本轮放开选择性门禁 |
-| 30 | 2026-09-27 | 半（限定） | PASS（显式设置 `OCLIVE_VOICE_PYTHON`；默认环境缺 `py`，首次 TTS ratchet FAIL） | 未评分（半档） | 受检 HEAD `62fe6575`：Dimension 5 28 项 PASS、Host lib 634/634、分层 use-import 3/FQ 1 均未上涨；包级依赖方向符合既有边界。TTFT/TTFC 专项 SSOT 最近实测仍为 2026-08-02，当前 HEAD 未重新测这两项；修正 `PERF_PHASES.md` 的现行桌面流式传输口径 | `c41aa921` 限定接入标签保持不变；本轮仅做离线门禁、静态依赖抽查和文档校正，未启动真实模型/语音、服务或长时 soak；默认 Python launcher 缺失作为本机环境前提记录，不写成产品回退 |
 | 31 | 2026-09-28 | 快（AI 边界 / 流水线交叉审查） | PASS（local；`OCLIVE_VOICE_PYTHON` 指向已安装 Python 3.12） | 未评分（快档） | 受检 HEAD `876b95d1a601499db86bc942dd4978c86d8b53fe`：Dimension 5 **PASS (28 checks)**；`cargo test -p oclive_kernel_host --lib --locked --offline -j 1` **634/634**；分层 use-import **3/3**、FQ **1/1**，host re-export **75/75**；`check-stale-paths` docs+code PASS。对照 AI 边界、核实协议与工程流水线发现本手册两组 ratchet 数字过期、发现即入债和历史评分口径过宽，已只改手册流程。 | `AGENTS.md`、`.cursor/rules` 与 `handoff/README.md` 的入口链接可达；[`ci.yml` run 36326312754](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/36326312754) 对**受检旧 HEAD** 为 success，不证明本次未推送的手册修改；未跑真实模型/语音性能、完整架构/债务复核或长时 soak；未新增技术债或更改旧结论。 |
 | 32 | 2026-09-28 | 快档基线＋架构/队列/文档专项 | PASS（本地工程）/ HOLD（债务自动派工） | 未评分（限定审查） | 受检代码起点 `6da23955`：`check:ci-local` exit 0，shared/Chat Pro 单测 **243/92** 通过，模块兼容与债务结构检查通过；静态依赖方向和分层 ratchet 未回退。修正本手册 D-PORT-02、`extra_sections` 的过期表述及核实协议的档位冲突；队列 5 条 `pr-open` 与当前远端 PR 状态待对账。 | 详见 [`ROUND-02-PLAN.md`](./debt-marathon/ROUND-02-PLAN.md#启动前基线审查2026-09-28限定范围)；本轮未给全档评分、未启真实模型/语音、未重跑 Chat Pro live，也未变更债务状态。通用 `dev-pipeline/SKILL.md` 本机缺失；父提交的远端 CI success 不代表本轮文档 HEAD。 |
-| 33 | 2026-10-09 | 快档基线＋代码质量/过度工程专题 | PASS（原代码证据复用＋本轮适用检查） | 未评分 | 受检 `89b7fa09812d53ba2cf563d919276d860456a358`：八项有限复核未确认新阻断；当前Memory案例3测、分层3/1、旧路径docs+code、观察器自测/JSON通过。旧完整链的Dimension 5 31项、Host lib 637、runtime lib 273仍绑定 `f94069dd`；已核运行体/锁图一致，新增观察工具另验。 | [二次审核报告](./debt-marathon/waves/WAVE-20261009-SECOND-QUALITY-REVIEW.md)；controller自查 independent=false。教学Host窄错误投影记非阻断提醒，不因单实现/行数机械重构。跨checkout LF/CRLF核对首次失败保留并纠正；未新跑完整CI、业务live或全档实机，不改债务状态或既定冻结。 |
+| 33 | 2026-10-09 | 快档基线＋代码质量/过度工程专题 | PASS（原代码证据复用＋本轮适用检查） | 未评分 | 受检 `89b7fa09812d53ba2cf563d919276d860456a358`：八项有限复核未确认新阻断；当前Memory案例3测、分层3/1、旧路径docs+code、观察器自测/JSON通过。旧完整链的Dimension 5 31项、Host lib 637、runtime lib 273仍绑定 `f94069dd`；已核运行体/锁图一致，新增观察工具另验。 | [二次审核报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261009-SECOND-QUALITY-REVIEW.md)；controller自查 independent=false。教学Host窄错误投影记非阻断提醒，不因单实现/行数机械重构。跨checkout LF/CRLF核对首次失败保留并纠正；未新跑完整CI、业务live或全档实机，不改债务状态或既定冻结。 |
+| 34 | 2026-10-27 | 快档基线＋文档体系/入口专项 | PASS（复用同 SHA 代码证据＋文档定向检查） | 未评分 | 起点 `b4341eb22e987ffef4a19ccad3784e2402cd2bd1`；盘点 701 份跟踪 Markdown，修正冻结证据断链、版本重复与用户手册/前端入口漂移，核对精选导航引用。 | [专项报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261027-DOCUMENTATION-SYSTEM.md)；controller 自查 independent=false。程序门禁仍绑定原候选 SHA，本轮只改文档与导航元数据；未作全仓语义认证、真实模型/硬件测试或债务状态迁移。 |
+| 35 | 2026-10-27 | 快档基线＋Chat Pro 八项专项 | PASS（现有依赖基线）；发现干净安装阻断 | 未评分 | 受检 `8aee17cc03a0979efdc4d0b4ebb04bda55963665`；确认 1 条 P1、3 条 P2。后经授权修复至源码 `f03be6f8`，干净 npm 安装通过，shared/Chat Pro/Theater 为 397/133/53，浏览器 41 项通过。 | [发现与修复续接](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261027-CHATPRO-ROUND-REVIEW.md)；controller 自查 independent=false。前端通过不代表真实模型、原生安装或远端 CI；既有安装包仍绑定 `b4341eb2`，不改技术债状态。 |
 
 ---
 

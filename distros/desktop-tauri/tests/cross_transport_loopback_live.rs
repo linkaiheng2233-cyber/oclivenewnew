@@ -963,6 +963,7 @@ fn recover_request(turn_id: &str, user_message: &str) -> SendMessageRequest {
         user_message: user_message.to_string(),
         scene_id: Some(SCENE_ID.to_string()),
         session_id: None,
+        chat_thread_id: None,
         include_raw_reply: None,
         adult: None,
     }

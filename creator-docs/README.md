@@ -1,7 +1,7 @@
 # OCLive 用户、创作者与插件文档
 
 **本文范围**：用户/创作者/集成文档的导航。各专题拥有自己的现行契约，本页不另定义架构或格式。
-**最后更新**：2026-09-11。
+**最后更新**：2026-10-27。
 **主仓开发者**从 [human-docs](../human-docs/README.md) 开始；维护者 / AI 从 [handoff](../handoff/README.md) 开始。
 
 区分 [文档状态](../handoff/README.md#documentation-status)：现行参考 Host 的接口/格式可继续使用，但不自动等于未来最小 Kernel API；RFC、计划与历史图按其标注范围阅读。
@@ -10,7 +10,7 @@
 
 | 我是谁 | 第一篇 | 接下来 |
 |--------|--------|--------|
-| 普通用户 | [用户手册](getting-started/USER_MANUAL.md) | [FAQ](FAQ.md) · [错误排查](getting-started/ERROR_CODES.md) |
+| 普通用户 | [当前角色工作区用户手册](getting-started/USER_MANUAL.md) | [版本与内测状态](getting-started/PROJECT_CURRENT_STATUS.md) · [错误排查](getting-started/ERROR_CODES.md)；[FAQ](FAQ.md) 面向作者 |
 | 角色包创作者 | [30 分钟黄金路径](getting-started/CREATOR_GOLDEN_PATH.md) | [创作者学习路径](role-pack/CREATOR_LEARNING_PATH.md) · [角色包规范](role-pack/ROLE_PACK_SPEC.md) |
 | 插件作者 | [插件作者学习路径](plugin-and-architecture/PLUGIN_AUTHOR_LEARNING_PATH.md) | [PLUGIN_V1](plugin-and-architecture/PLUGIN_V1.md) |
 | 硬件 / 无头集成方 | [内核集成路径](getting-started/KERNEL_INTEGRATOR_LEARNING_PATH.md) | [HostProfile](kernel/DISTRO_CAPABILITY_PROFILE.md) |

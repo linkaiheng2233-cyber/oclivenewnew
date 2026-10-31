@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import ModelManagerBody from '@oclive/shared/components/model/ModelManagerBody.vue'
+import UiCloseButton from '@oclive/shared/components/ui/UiCloseButton.vue'
 import { useModalFocusRestore } from '@oclive/shared/composables/useModalFocusRestore'
-import { ref, toRef } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import MumuFeatureIcon from '../components/MumuFeatureIcon.vue'
 
 const props = withDefaults(
   defineProps<{
     visible: boolean
     embedded?: boolean
+    initialProvider?: 'local' | 'cloud'
   }>(),
   { embedded: false },
 )
@@ -15,11 +18,12 @@ const props = withDefaults(
 const emit = defineEmits<{
   close: []
   openSettings: []
+  saved: [roleId: string]
 }>()
 
 const { t } = useI18n()
 const dialogRef = ref<HTMLElement | null>(null)
-useModalFocusRestore(toRef(props, 'visible'), dialogRef)
+useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef, { trapFocus: true })
 </script>
 
 <template>
@@ -41,14 +45,13 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
         @keydown.escape.stop="emit('close')"
       >
         <header v-if="!embedded" class="mm-header">
+          <MumuFeatureIcon name="model" size="heading" />
           <h2 class="mm-heading">
             {{ t("modelManager.title") }}
           </h2>
-          <button type="button" class="mm-close" @click="emit('close')">
-            {{ t("modelManager.close") }}
-          </button>
+          <UiCloseButton class="mm-close" :label="t('modelManager.close')" @click="emit('close')" />
         </header>
-        <ModelManagerBody @open-settings="emit('openSettings')" />
+        <ModelManagerBody :initial-provider="initialProvider" @saved="emit('saved', $event)" @open-settings="emit('openSettings')" />
       </div>
     </div>
   </component>
@@ -66,12 +69,12 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
   background: color-mix(in srgb, #000 45%, transparent);
 }
 .mm-dialog {
-  width: min(640px, 100%);
-  max-height: min(88vh, 720px);
+  width: min(760px, 100%);
+  max-height: min(88dvh, 800px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 14px 16px;
+  padding: 0;
   border-radius: var(--radius-app);
   border: 1px solid var(--border-light);
   background: var(--bg-primary);
@@ -95,22 +98,24 @@ useModalFocusRestore(toRef(props, 'visible'), dialogRef)
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 .mm-heading {
+  flex: 1;
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
 }
-.mm-close {
-  padding: 4px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-elevated);
-  cursor: pointer;
-  font-size: 12px;
+.mm-dialog :deep(.mm-root) {
+  padding: 18px 22px 22px;
+  scrollbar-gutter: stable;
+}
+@media (max-width: 600px) {
+  .mm-header { padding: 14px 16px; }
+  .mm-dialog :deep(.mm-root) { padding: 14px 16px 18px; }
 }
 </style>
 

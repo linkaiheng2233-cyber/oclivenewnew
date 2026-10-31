@@ -4,7 +4,7 @@
 > **读完能做什么**：在不动内核编排的前提下改聊天界面与状态管理。  
 > **耗时**：约 **45 min**  
 > **SSOT 范围**：人类 checklist；invoke 契约见 [tauri-invoke](tauri-invoke.md)  
-> **最后更新**：2026-07-14
+> **最后更新**：2026-10-30（收拢现行国际化接线入口）
 > **下一篇**：[paths/frontend](../../paths/frontend.md) · [08 资料地图](../../08_REFERENCE_MAP.md)
 
 ---
@@ -12,6 +12,7 @@
 ## 1. 你插在哪
 
 - **代码根**：`distros/chat-pro/` + `distros/shared/`  
+- **默认界面**：`App.vue` 当前把 `fluent` 标识接到 `RoleWorkspaceShell.vue`，不是旧 `FluentShell.vue`；Tool 为显式替代入口。界面职责和收起能力只查 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。
 - **发消息链**：`distros/shared/src/api/chat.ts` → `send_message`  
 - **状态**：`distros/shared/src/stores/chatStore.ts`  
 - **不进**：`process_message.rs` 编排（业务下沉内核）
@@ -27,6 +28,12 @@
 | 插件管理面板 · 模型管理面板 | 在 `lib.rs` 堆业务逻辑 |
 
 ---
+
+### 国际化接线
+
+共享入口为 [`distros/shared/src/i18n/index.ts`](../../../distros/shared/src/i18n/index.ts)：使用 `vue-i18n` 的 `legacy: false`，偏好键为 `oclive.appLocale`。`getLocalePreference()` 读取 `system` / `zh-CN` / `en-US`；`resolveLocaleTag()` 把系统偏好解析为实际语言；更新偏好使用 `setLocalePreference()`，缺省回退为 `zh-CN`。
+
+界面词条维护在 `distros/shared/src/i18n/locales/zh-CN.ts` 与 `en-US.ts` 及其 fragments 中。修改共享词条后运行 `npm run verify:shared-i18n`，再按改动面运行前端单测或构建；历史 CJK 扫描结果不代表当前界面已完成翻译。姊妹仓独立核对自身入口与版本，不由旧进度表代证。
 
 ## 3. 阅读清单
 
@@ -48,6 +55,26 @@
 ---
 
 ## 5. 验收
+
+首次模型引导复用 `ModelManagerBody` 的连接设置，不附带或自动下载模型。先从角色库选择角色，再设置本地模型或云端 API；可稍后设置，并从“模型与连接”重新打开。验证新安装、已有配置、读取/保存失败、切换角色时的迟到响应，以及跳过后不会误开先前选择的设置。保存成功只代表配置已写入，模型可用性仍以连接检测和真实聊天为准。
+
+Chat Pro 安装版启动时，将缺失的内置角色和插件补充到应用数据目录的 `roles/`、`plugins/`，不覆盖已有包；导入、内核启动和文件监听共用这个可写角色库。桌面轻量状态的数据库仍在内存中，辅助文件使用应用数据目录，聊天持久化继续由独立内核负责。源码开发目录和有效的 `OCLIVE_ROLES_DIR` 覆盖值不迁移；其他发行版不采用这项 Chat Pro 默认库策略。
+
+默认角色工作区的“帮助与恢复”接入 `SupportDiagnostics.vue`：内核/环境状态、本次启动最近 60 条 API/界面报错、应用日志尾部（最多 200 行 / 96 KB）及手动复制/保存。日志通过 `read_support_logs` 只读命令读取固定应用数据目录的 `logs/`，不接受任意路径；不会自动上传、清理或修复。显示和导出遮蔽常见密钥格式，分享前仍需查看本机路径和日志文字。
+
+设置的分类与两壳入口见 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。验证设置改动时，除保存成功，还需检查读取失败、保存失败回退、手动重试、保存中换页、窄窗与键盘操作。布尔偏好统一使用 `UiToggle.vue`，原有多选或清理参数保持各自含义；不要把“开关看起来变了”当成已经保存成功。默认角色工作区不显示仅对旧壳生效的面板宽度重置。
+
+Win98 彩蛋的样式依赖和触发/恢复约定见 [MODULE_MAP §13.2](../../../handoff/MODULE_MAP_AND_HANDOFF.md#132-chat-pro-外观正交轴-data-skin)。修改角色工作区或新增弹窗时，同时检查默认与 Win98 外观、关闭恢复、刷新保持和窄窗口；复古样式不应改变角色记录、草稿或模型选择。原生窗口按钮的 mock 测试只证明调用接线，真实标题栏操作需另做安装版验证。
+
+面板右上角关闭使用共享 `UiCloseButton`，保留可访问名称与提示，不再各自写文字“关闭”、不同叉号字形或单独的点击区；业务取消/返回仍按操作含义展示文字。交互与动效的入口见 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。动效用于解释状态，不延迟关闭或保存；验证初次打开、Esc、Tab/Shift+Tab、组件卸载后的焦点返回、减少动态效果和 Win98。模型、设置或帮助改变层级时，保存中的归属检查、错误反馈和草稿保持仍需回归。
+
+角色身份和关系的改动还需做重启恢复检查：有独立内核时，读写必须走内核持久化，不应依赖桌面临时内存状态；错误时也不能悄悄改成本地成功。
+
+动漫功能图标的资源与消费边界见 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。新增图标时检查透明背景、深色/Win98/窄窗、真实加载与失败回退；文字标签继续承担可访问名称，插画不要挤占表单阅读空间或冒充用户选择的角色。
+
+通知、角色库局部预览和统一滚动的实现入口同见 [MODULE_MAP §13.1](../../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia)。修改这些界面时，检查错误/警告语义、详情显示与复制脱敏、剪贴板失败、帮助返回焦点和草稿保持；局部预览不得裁改原始文件或影响运行空间完整立绘。滚动既要检查样式，也要验证滚轮、键盘翻页和窄窗可用。
+
+侧栏角色缩略图与明暗快捷切换也沿用上述入口；检查缺图首字、名字可访问性和窄窗，不把缩略图当成另一个可点击入口。外观改动需验证快捷开关与设置同步、刷新保持、跟随系统及多个消费者卸载顺序，避免设置重挂载重置当前主题。Win98 的独立配色仍遵循 §13.2。
 
 - [ ] invoke 键 camelCase · 响应读 **`reply`**  
 - [ ] 未在内核 api 层堆编排  

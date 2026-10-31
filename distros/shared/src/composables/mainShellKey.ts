@@ -16,6 +16,7 @@ export interface MainShellContext {
   closeModelManager: () => void
   openSettingsToGeneral: () => void
   onInteractionModeChange: (event: Event) => Promise<void> | void
+  onRolePackImported?: (roleId: string) => Promise<void> | void
 }
 
 export const MAIN_SHELL_KEY: InjectionKey<MainShellContext> = Symbol('ocliveMainShell')

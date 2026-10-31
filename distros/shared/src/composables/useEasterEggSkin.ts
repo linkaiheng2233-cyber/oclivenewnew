@@ -26,6 +26,8 @@ const win98Enabled = ref(false)
 let mountCount = 0
 let konamiIndex = 0
 let keydownHandler: ((e: KeyboardEvent) => void) | undefined
+let decorationGeneration = 0
+let decorationQueue = Promise.resolve()
 
 function readUnlocked(): boolean {
   try {
@@ -50,15 +52,23 @@ function isTauriWebview(): boolean {
 }
 
 async function syncNativeDecorations(skinEnabled: boolean): Promise<void> {
+  const generation = ++decorationGeneration
   if (!isTauriWebview())
     return
-  try {
-    const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow')
-    await getCurrentWebviewWindow().setDecorations(!skinEnabled)
-  }
-  catch {
-    /* web build or permission denied */
-  }
+  // Initial mounting and fast toggles can overlap the lazy import or a native
+  // invocation. Skip stale requests and finish in order so the final frame
+  // always follows the currently selected skin.
+  decorationQueue = decorationQueue.then(async () => {
+    try {
+      const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow')
+      if (generation === decorationGeneration)
+        await getCurrentWebviewWindow().setDecorations(!skinEnabled)
+    }
+    catch {
+      /* web build or permission denied */
+    }
+  })
+  await decorationQueue
 }
 
 function applySkinToDocument(enabled: boolean): void {

@@ -90,7 +90,7 @@ Vue invoke / HTTP --api
 | Tauri 命令注册 | `distros/desktop-tauri/src/lib.rs`（仅 `generate_handler!`） |
 | 前端 invoke 封装 | `distros/shared/src/api/`（**camelCase**） |
 
-详情：[`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)（**13** 条热路径）
+详情：[`BUS_FACTOR_NOTES.md`](./BUS_FACTOR_NOTES.md) · [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)（范围和验证入口以矩阵为准）
 
 ---
 
@@ -156,7 +156,7 @@ Vue invoke / HTTP --api
 | **产品 / 定位** | OCLIVE_POSITIONING · THREE_DISTRO_KERNEL_CLOSURE · PRODUCT_LINE_TASK_BUCKETS |
 | **发行版子目录** | [theater/](./theater/) · [vscode/](./vscode/) · [launcher/](./launcher/) · [pack-editor/](./pack-editor/) |
 
-**禁止当 truth**：[`handoff/archive/`](./archive/)（含历史 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）
+**禁止当 truth**：[`handoff/archive/`](./archive/)（含历史 [历史记录：04_4.6_PROJECT_TRUTH_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/04_4.6_PROJECT_TRUTH_CHECKLIST.md)，G3）
 
 ---
 
@@ -226,9 +226,9 @@ Vue invoke / HTTP --api
 ### 改 Tauri / 前端 Chat Pro
 
 1. [`INVOKE_HOTPATH_MATRIX.md`](./INVOKE_HOTPATH_MATRIX.md)  
-2. [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（v1→v2 对照 · 版本 · CI 留 v1；K-PLATFORM-01）  
+2. [`distros/TAURI_V2_MIGRATION_INVENTORY.md`](./distros/TAURI_V2_MIGRATION_INVENTORY.md)（v1→v2 对照与迁移记录；现行版本核对 manifest / workflow，勿沿用旧 CI 标注）
 3. `distros/desktop-tauri/src/api/*.rs`（薄封装）  
-4. `distros/shared/src/stores/` · `distros/chat-pro/src/shells/`  
+4. `distros/shared/src/stores/` · [`App.vue`](../distros/chat-pro/src/App.vue) → 默认 [`RoleWorkspaceShell.vue`](../distros/chat-pro/src/shells/fluent/RoleWorkspaceShell.vue)；`fluent` 是壳标识，旧 `FluentShell.vue` 与 Tool 源码保留，入口范围查 [MODULE_MAP §13.1](MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces)。
 5. [`human-docs/modules/surfaces/frontend-chat-pro.md`](../human-docs/modules/surfaces/frontend-chat-pro.md)
 
 ### 内核集成 / 新发行版

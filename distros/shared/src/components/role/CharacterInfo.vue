@@ -15,17 +15,20 @@ const props = withDefaults(
     emotion: string
     /** Catalog / directive relative asset path (e.g. assets/images/happy.webp) */
     portraitAssetRelPath?: string | null
-    layout?: 'stack' | 'sidebar'
+    layout?: 'stack' | 'sidebar' | 'preview' | 'thumbnail'
   }>(),
   { layout: 'stack' },
 )
 
 const { t, te } = useI18n()
+const compactPortrait = computed(() => props.layout === 'preview' || props.layout === 'thumbnail')
 
 const portraitSrc = ref<string | null>(null)
 const portraitBlobUrl = ref<string | null>(null)
 const portraitLoadFailed = ref(false)
 let portraitGeneration = 0
+let portraitRoleId = ''
+let loadedCatalogRel = ''
 
 function isTauri(): boolean {
   return (
@@ -41,6 +44,13 @@ function revokeBlob(): void {
   }
 }
 
+function showPortrait(src: string, isBlob = false): void {
+  revokeBlob()
+  portraitBlobUrl.value = isBlob ? src : null
+  portraitSrc.value = src
+  portraitLoadFailed.value = false
+}
+
 function emotionKey(): string {
   return props.emotion.trim().toLowerCase() || 'neutral'
 }
@@ -51,28 +61,30 @@ const emotionDisplayLabel = computed(() => {
   return te(path) ? t(path) : props.emotion.trim() || key
 })
 
-async function tryLoadRelativeAsset(rel: string, gen: number): Promise<void> {
+async function tryLoadRelativeAsset(rel: string, gen: number): Promise<boolean> {
   let path: string | null
   try {
     path = await resolveRoleAssetPath(props.roleId, rel)
   }
   catch (e) {
     if (gen !== portraitGeneration)
-      return
+      return false
     console.warn('[CharacterInfo] catalog asset resolve failed', e)
-    return
+    return false
   }
   if (!path)
-    return
+    return false
+  if (gen !== portraitGeneration)
+    return false
 
   const filename = rel.split('/').pop() ?? rel
   if (isTauri()) {
     try {
       const bytes = await readRoleAssetBytes(props.roleId, rel)
       if (gen !== portraitGeneration)
-        return
+        return false
       if (!bytes)
-        return
+        return false
       const mime = filename.endsWith('.webp')
         ? 'image/webp'
         : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
@@ -82,9 +94,8 @@ async function tryLoadRelativeAsset(rel: string, gen: number): Promise<void> {
             : 'image/png'
       const blob = new Blob([new Uint8Array(bytes)], { type: mime })
       const url = URL.createObjectURL(blob)
-      portraitBlobUrl.value = url
-      portraitSrc.value = url
-      return
+      showPortrait(url, true)
+      return true
     }
     catch (e) {
       console.warn('[CharacterInfo] catalog readRoleAssetBytes failed', e)
@@ -93,27 +104,39 @@ async function tryLoadRelativeAsset(rel: string, gen: number): Promise<void> {
 
   try {
     if (gen !== portraitGeneration)
-      return
-    portraitSrc.value = convertFileSrc(path)
+      return false
+    showPortrait(convertFileSrc(path))
+    return true
   }
   catch (e) {
     console.warn('[CharacterInfo] catalog convertFileSrc failed', e)
+    return false
   }
 }
 
 async function refreshPortrait(): Promise<void> {
-  const gen = ++portraitGeneration
-  portraitLoadFailed.value = false
-  revokeBlob()
-  portraitSrc.value = null
-
   const catalogRel = props.portraitAssetRelPath?.trim()
+  if (catalogRel && loadedCatalogRel === catalogRel && portraitRoleId === props.roleId && !portraitLoadFailed.value)
+    return
+  const gen = ++portraitGeneration
+  loadedCatalogRel = ''
+  portraitLoadFailed.value = false
+  // Keep the current portrait while a same-role replacement loads. A role
+  // change must clear it immediately, so another character is never shown.
+  if (portraitRoleId !== props.roleId) {
+    revokeBlob()
+    portraitSrc.value = null
+    portraitRoleId = props.roleId
+  }
+
   if (catalogRel) {
-    await tryLoadRelativeAsset(catalogRel, gen)
+    const loadedCatalog = await tryLoadRelativeAsset(catalogRel, gen)
     if (gen !== portraitGeneration)
       return
-    if (portraitSrc.value)
+    if (loadedCatalog) {
+      loadedCatalogRel = catalogRel
       return
+    }
   }
 
   const key = emotionKey()
@@ -135,6 +158,8 @@ async function refreshPortrait(): Promise<void> {
     }
     if (!path)
       continue
+    if (gen !== portraitGeneration)
+      return
 
     /* Prefer Tauri command + Blob: avoids custom asset protocol and net::ERR_CONNECTION_REFUSED */
     if (isTauri()) {
@@ -153,8 +178,7 @@ async function refreshPortrait(): Promise<void> {
               : 'image/png'
         const blob = new Blob([new Uint8Array(bytes)], { type: mime })
         const url = URL.createObjectURL(blob)
-        portraitBlobUrl.value = url
-        portraitSrc.value = url
+        showPortrait(url, true)
         loaded = true
         break
       }
@@ -169,7 +193,7 @@ async function refreshPortrait(): Promise<void> {
     try {
       if (gen !== portraitGeneration)
         return
-      portraitSrc.value = convertFileSrc(path)
+      showPortrait(convertFileSrc(path))
       loaded = true
       break
     }
@@ -198,13 +222,14 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  ++portraitGeneration
   revokeBlob()
 })
 </script>
 
 <template>
   <!-- Match oclive-new .main-content: hero image + name + emotion (affinity in bottom .status-bar) -->
-  <div class="hero" :class="{ 'hero--sidebar': props.layout === 'sidebar' }">
+  <div class="hero" :class="{ 'hero--sidebar': props.layout === 'sidebar', 'hero--preview': props.layout === 'preview', 'hero--thumbnail': props.layout === 'thumbnail' }" :aria-hidden="compactPortrait ? 'true' : undefined">
     <div class="avatar-wrap">
       <img
         v-if="portraitSrc && !portraitLoadFailed"
@@ -212,14 +237,15 @@ onBeforeUnmount(() => {
         class="avatar"
         :src="portraitSrc"
         alt=""
+        decoding="async"
         @error="onPortraitError"
       >
-      <span v-else class="avatar-fallback">{{ emotionToEmoji[emotionKey()] ?? "😐" }}</span>
+      <span v-else class="avatar-fallback">{{ compactPortrait ? props.name.trim().slice(0, 1) || '◇' : emotionToEmoji[emotionKey()] ?? "😐" }}</span>
     </div>
-    <h2 class="title">
+    <h2 v-if="!compactPortrait" class="title">
       {{ props.name }}
     </h2>
-    <p class="emotion-line">
+    <p v-if="!compactPortrait" class="emotion-line">
       <span :key="emotionKey()" class="icon">{{ emotionToEmoji[emotionKey()] ?? "😐" }}</span>
       <span>{{ emotionDisplayLabel }}</span>
     </p>
@@ -335,4 +361,15 @@ onBeforeUnmount(() => {
 .hero--sidebar .icon {
   font-size: 18px;
 }
+
+/* Library framing crops only the display. Runtime portraits keep their original layout. */
+.hero--preview { width:100%;height:100%;padding:0;overflow:hidden; }
+.hero--preview .avatar-wrap { width:100%;height:100%;max-width:none;margin:0;overflow:hidden; }
+.hero--preview .avatar { width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:50% 18%;animation:none; }
+.hero--preview .avatar-fallback { width:100%;height:100%;min-height:0;font-size:48px;font-weight:650;color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--bg-primary)); }
+.hero--thumbnail { width:100%;height:100%;padding:0;overflow:hidden;background:transparent; }
+.hero--thumbnail .avatar-wrap { width:100%;height:100%;margin:0;max-width:none;overflow:hidden; }
+.hero--thumbnail .avatar { width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:50% 18%;animation:none; }
+.hero--thumbnail .avatar-fallback { width:100%;height:100%;min-height:0;font-size:12px;line-height:1;font-weight:650;color:var(--accent); }
+@media(prefers-reduced-motion:reduce) { .avatar,.icon { animation:none; } }
 </style>

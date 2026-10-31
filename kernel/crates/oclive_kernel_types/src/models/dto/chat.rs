@@ -52,6 +52,11 @@ pub struct SendMessageRequest {
     /// Optional: distinguishes multiple sessions for the same role (e.g. HTTP trial chat "new session"); combined with `role_id` as the internal DB namespace.
     #[serde(default)]
     pub session_id: Option<String>,
+    /// Optional canonical non-nil UUID separating chat transcripts only. Memory,
+    /// identity and relationship state still use the `session_id` namespace.
+    /// Omitted by legacy clients. Hosts must advertise `supports_chat_threads`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chat_thread_id: Option<String>,
     /// When `true`, response may include `raw_reply` if post-processor changed the LLM text.
     #[serde(default)]
     pub include_raw_reply: Option<bool>,

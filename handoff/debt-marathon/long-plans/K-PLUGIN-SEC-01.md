@@ -185,4 +185,4 @@
 
 ## 下一跳
 
-Stage 3 的 Windows 原生补充证据、目标 SHA 的 Ubuntu WebDriver 与主线 CI 结果见 [2026-09-30 Wave](../waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。Stage 4 的可信安装身份由 K-SUPPLY-09 前置能力决定；维护者已选择暂缓签名架构、先做其他债务，故机器计划阻塞于 Stage 4，不将父债记为 Done。
+Stage 3 的 Windows 原生补充证据、目标 SHA 的 Ubuntu WebDriver 与主线 CI 结果见 [2026-09-30 Wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20260930-K-PLUGIN-SEC-01-s3.md)。Stage 4 的可信安装身份由 K-SUPPLY-09 前置能力决定；维护者已选择暂缓签名架构、先做其他债务，故机器计划阻塞于 Stage 4，不将父债记为 Done。

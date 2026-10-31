@@ -628,8 +628,12 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
     cfg: VoiceRuntimeConfig,
     generation: number,
   ): Promise<void> {
-    if (!await canAutoSpeakRole(cfg, roleId))
+    if (!await canAutoSpeakRole(cfg, roleId)
+      || generation !== speakGeneration
+      || roleStore.minimalRoleActive
+      || roleId !== roleStore.currentRoleId) {
       return
+    }
     const [directive] = await Promise.all([
       prefetchVoiceDirective(roleId, cfg.director_profile, 'neutral'),
       // Profile metadata is needed by the first streamed phrase too. Resolve it
@@ -682,6 +686,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
       || !cfg
       || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+      || generation !== speakGeneration
+      || roleStore.minimalRoleActive
+      || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
     ) {
       return
     }
@@ -703,6 +710,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
       || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
       || !cfg
       || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+      || generation !== speakGeneration
+      || roleStore.minimalRoleActive
+      || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
     ) {
       return
     }
@@ -785,6 +795,9 @@ export function useVoiceAutoTts(options: { showToast: AppToastFn }) {
         generation !== speakGeneration
         || !cfg
         || !await canAutoSpeakRole(cfg, payloadRoleId || roleStore.currentRoleId)
+        || generation !== speakGeneration
+        || roleStore.minimalRoleActive
+        || (payloadRoleId && payloadRoleId !== roleStore.currentRoleId)
       ) {
         return
       }

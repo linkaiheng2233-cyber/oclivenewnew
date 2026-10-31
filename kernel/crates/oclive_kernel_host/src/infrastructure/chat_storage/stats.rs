@@ -297,9 +297,7 @@ pub async fn delete_mirror_scene_dir(
     } else {
         0
     };
-    if dir.is_dir() {
-        fs::remove_dir_all(&dir).await.map_err(AppError::IoError)?;
-    }
+    super::mirror_io::delete_tree(storage_root, dir).await?;
     Ok(bytes)
 }
 

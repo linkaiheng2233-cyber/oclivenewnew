@@ -258,7 +258,7 @@ rg '<ModuleName>' distros/desktop-tauri/tests
 
 | 禁止作 truth | 改用 |
 |--------------|------|
-| `handoff/archive/*` · `04_4.6_PROJECT_TRUTH_CHECKLIST.md` | BUS_FACTOR + 源码 |
+| `handoff/archive/*` · [历史记录：04_4.6_PROJECT_TRUTH_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/04_4.6_PROJECT_TRUTH_CHECKLIST.md) | BUS_FACTOR + 源码 |
 | 已完成 Phase closure（如 USER_IDENTITY Phase2 设计报告） | 源码 + MODULE_MAP §11 |
 | AGENTS 内核长节（未与 MODULE_MAP 对齐的段落） | [`MODULE_MAP_AND_HANDOFF.md`](./MODULE_MAP_AND_HANDOFF.md) |
 | 复制 MODULE_MAP 表格到其他 handoff 新文 | **链接** MODULE_MAP |

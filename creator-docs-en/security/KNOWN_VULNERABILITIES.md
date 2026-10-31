@@ -12,12 +12,18 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-10-22** (local `cargo audit` against a refreshed advisory-db: **1,348** advisories; **696** dependency entries scanned; 0 vulnerabilities / 10 allowed warnings) |
+| **Last scan date** | **2026-10-30** (local `cargo audit --json` against a refreshed advisory-db: **1,386** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**; this lock change only synchronizes the desktop candidate version and preserves the dependency graph) |
 | **Scan path** | Workspace root `Cargo.lock` |
-| **Vulnerability-level count** | **0** (`cargo audit --no-fetch --stale` exit code **0**) |
-| **Warning-level count** | **10 reported / 11 matched** (the 10 reported are `glib` · five `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`, all *unmaintained*/*unsound* and not counted as vulnerabilities; the 11th, `proc-macro-error` RUSTSEC-2024-0370, is suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
+| **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
+| **Warning-level count** | **10 reported / 11 matched** (`glib`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+On 2026-10-29 the workspace Tokio minimum becomes **1.53.3**, and the lock moves from **1.53.2 → 1.53.3**. Only Tokio's version/checksum change in the lockfile; existing features, dependency edges and every other locked package are preserved, remediating **RUSTSEC-2026-0386**. On the same advisory snapshot, reported warnings decrease from **11 → 10**. An external no-ignore check of the identical lockfile against cached advisories reports **11**; the only additional entry remains `proc-macro-error`, and the main allowlist bytes are unchanged. No direct `AsyncFd` call was found in tracked Rust source, but this is not complete transitive-dependency/Unix reachability acceptance. Removing this advisory from the locked graph does not guarantee security for every runtime configuration. The independent kernel revision migration and installer repackaging remain separate work.
+
+The new-frontend internal package on 2026-10-27 changes the desktop's own version from `0.6.0-rc.1` to `0.6.0-rc.2`. This Cargo.lock delta changes only that workspace package version, with no dependency, checksum, feature or ignore changes. Candidate source `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` passed the release audit; the table uses its original scan. The UI update does not resolve existing warnings. Subsequent documentation-only work reuses that point-in-time evidence without claiming a new scan.
+
+The 2026-10-27 candidate changes the desktop version to `0.6.0-rc.1` and constrains the property-test-only `proptest` dependency to `~1.11.0`, sharing `bit-set/bit-vec 0.8` with Tauri's `dom_query`. Test counts and duplicate-dependency limits are not relaxed. Existing package dependency edges are preserved; new random-number dependencies serve only this test toolchain, and no ignore entries are added. The newly observed Tokio warning concerns Unix `AsyncFd`, which is not callable in this Windows installer. It still requires separate remediation before a Unix release; Windows verification cannot establish Unix safety.
 
 The 2026-09-27 lockfile change only updated `rustls` from 0.23.43 to 0.23.45 (version and checksum), fixing RUSTSEC-2026-0285; no other package or dependency edge changed in that batch. The earlier optional `media-png` edge belongs to the 2026-09-05 scan. This is point-in-time evidence, not a guarantee for every runtime configuration.
 
@@ -102,6 +108,7 @@ On 2026-10-20 two more upstream advisories (same CVE-2026-111943, emSign root tr
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **Fixed · K-SUPPLY-11** | Lockfile upgraded to **5.4.2** on 2026-08-01; both SQLx and zbus/Tauri paths now resolve to the fixed release, without an ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `fxhash` in Tauri 2 lock graph |
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
+| **RUSTSEC-2026-0386** | `tokio` | **Remediated in locked graph · 1.53.3** | Updated and minimum raised on 2026-10-29; refreshed audit no longer matches, with no new ignore. The Unix `AsyncFd` constructor fix does not replace platform/caller acceptance |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
@@ -116,6 +123,20 @@ See [`.cargo/audit.toml`](../../.cargo/audit.toml) and [SECURITY_AUDIT_SCOPE.md]
 ---
 
 ## npm dependency status (rolling observations)
+
+### 2026-10-29 patches after draft synchronization (target-SHA remote acceptance pending)
+
+The first [CI run 40837019439](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/40837019439) for [draft PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225), at `2fb8b7bd631690c06b4de2c4967d453ae79e156b`, fails the production step of `npm-audit`. Local reproduction on the same lock reports production **5 high**, and full **4 low / 2 moderate / 6 high / 0 critical**. These count affected packages, not distinct advisories. Earlier scans remain historical evidence.
+
+| Dependency / advisory | Limited patch |
+|---|---|
+| Vue I18n [named-parameter escaping](https://github.com/advisories/GHSA-8rc2-428q-7ww3) and [srcdoc escaping bypass](https://github.com/advisories/GHSA-83rm-6c8r-g728) | All four manifests require `^11.4.14`; `vue-i18n` and four `@intlify` packages move **11.4.8 → 11.4.16**, within 11.x. The advisory fix starts at 11.4.14. A lock hit does not prove reachable product XSS |
+| Development-only Undici | jsdom / cheerio **7.30.0 → 7.30.1**, webdriver **6.29.0 → 6.29.1**, within existing ranges; see upstream [7.30.1](https://github.com/nodejs/undici/releases/tag/v7.30.1) / [6.29.1](https://github.com/nodejs/undici/releases/tag/v6.29.1). No new override |
+| Residual workspace Vitest | Three manifests move **4.1.11 → 4.1.12**, matching the existing root version. Their old copies and unreferenced old `@vitest` chain disappear; existing 4.1.12 nodes are reused, covering the [old mocker's Windows-path advisory](https://github.com/advisories/GHSA-xp26-3454-mjgp) |
+
+Native npm **10.9.8** retained old workspace Vitest nodes during the targeted lock update. That intermediate lock and log are preserved outside the repository. Temporary official npm **11.21.0** synchronized the lock; native npm 10 then passed `npm ci --no-audit --no-fund` and `npm ls --all`, both exit **0**. The global toolchain did not change. Root Vite range metadata now matches the existing manifest's `^6.4.5` without changing its resolved version; TypeScript's `devOptional` classification is recalculated for existing Vue / Pinia optional peers, with its version and dependency edges preserved (`npm explain typescript` checked). Other package versions, four overrides, Cargo, workflows, audit thresholds and product source remain unchanged.
+
+Patched local scans report production **0**, full **4 low / 0 moderate / 0 high / 0 critical**; both `--audit-level=high` scans exit **0**. ESLint Markdown→KaTeX low remains; this is not a zero-risk claim. Remote evidence must match the patched full SHA. A draft gate does not replace formal `ci-gate`; protected main is unmerged and installers are not rebuilt. The independent kernel's source prerelease and audit belong to another repository and do not validate this workspace.
 
 ### 2026-10-06 advisory fixes (locally verified; target-SHA CI pending)
 

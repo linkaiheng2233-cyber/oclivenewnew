@@ -7,9 +7,11 @@
 pub mod api;
 pub mod desktop_host;
 pub mod desktop_integration;
+mod desktop_library;
 pub mod installation_repair;
 pub mod kernel_attach;
 pub mod kernel_lifecycle;
+mod support_logs;
 
 pub use oclive_kernel_host::{
     command_error, env_flags, http_api, init_tracing, init_tracing_with_log_dir, run_api_server,
@@ -242,8 +244,6 @@ pub fn run() {
             }
             seed_pending_install_urls_from_args(std::env::args());
             let resource_dir = app.path().resource_dir().ok();
-            let roles_dir = state::find_roles_dir(resource_dir.as_deref());
-            let roles_for_watcher = roles_dir.clone();
             let (app_state, kernel_conn, _api_port) = desktop_host::bootstrap_desktop_blocking(
                 resource_dir.clone(),
             )
@@ -255,6 +255,7 @@ pub fn run() {
                 );
                 e
             })?;
+            let roles_for_watcher = app_state.storage.roles_dir().to_path_buf();
             app.manage(kernel_conn.clone());
             app.manage(app_state.clone());
             // In-flight renderer stream transports for the authenticated chat stream bridge.
@@ -319,6 +320,7 @@ pub fn run() {
             api::high_risk::revoke_high_risk_capability,
             // ?? diagnostics ??
             api::diagnostics::run_environment_diagnostics,
+            api::diagnostics::read_support_logs,
             api::diagnostics::run_environment_repair,
             api::kernel::get_kernel_connection_status,
             api::kernel::get_kernel_diagnostics,

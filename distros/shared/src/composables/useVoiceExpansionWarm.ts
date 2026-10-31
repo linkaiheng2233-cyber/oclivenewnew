@@ -5,6 +5,7 @@ import { hasAnyExplicitVoiceRoleEnabled } from '@oclive/shared/lib/voiceRolePoli
 const DEFAULT_TTS_PROFILE = 'bundled-cosyvoice2-zh'
 const warmPromises = new Map<string, Promise<void>>()
 const cachedSidecarEndpoints = new Map<string, string>()
+let warmGeneration = 0
 
 export interface VoiceWarmDirective {
   emo_text?: string
@@ -83,8 +84,9 @@ export function resetVoiceSidecarEndpoint(profile?: string): void {
     cachedSidecarEndpoints.clear()
 }
 
-/** Clear in-flight warm (e.g. after voice settings change). */
+/** Invalidate pending warm scheduling/results; already-issued Host RPCs may still finish. */
 export function resetVoiceExpansionWarmSchedule(): void {
+  warmGeneration += 1
   warmPromises.clear()
   resetVoiceSidecarEndpoint()
 }
@@ -108,7 +110,10 @@ function startBackgroundWarm(
   profile: string,
   directive?: VoiceWarmDirective,
   knownProbe?: VoiceWarmResult | null,
+  generation = warmGeneration,
 ): void {
+  if (generation !== warmGeneration)
+    return
   const key = warmKey(profile, directive)
   if (warmPromises.has(key))
     return
@@ -116,6 +121,8 @@ function startBackgroundWarm(
     const probe = knownProbe === undefined
       ? await probeTtsSidecar(profile)
       : knownProbe
+    if (generation !== warmGeneration)
+      return
     if (probe)
       rememberSidecarEndpoint(profile, probe)
     const roleDirective = normalizeWarmDirective(directive)
@@ -130,6 +137,8 @@ function startBackgroundWarm(
       profile,
       ...(roleDirective ? { directive: roleDirective } : {}),
     })
+    if (generation !== warmGeneration)
+      return
     rememberSidecarEndpoint(profile, result, true)
   })().catch(() => {}).finally(() => {
     if (warmPromises.get(key) === promise)
@@ -146,10 +155,13 @@ export async function scheduleVoiceExpansionWarm(
   isPluginDisabled: (id: string) => boolean = () => false,
   options: VoiceWarmOptions = {},
 ): Promise<void> {
+  const generation = warmGeneration
   if (isPluginDisabled(VOICE_ASR_PLUGIN_ID))
     return
   try {
     const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
+    if (generation !== warmGeneration || isPluginDisabled(VOICE_ASR_PLUGIN_ID))
+      return
     const cfg = ui.config ?? {}
     if (cfg.tts_expansion_enabled !== true)
       return
@@ -160,6 +172,8 @@ export async function scheduleVoiceExpansionWarm(
         ? cfg.tts_profile.trim()
         : DEFAULT_TTS_PROFILE)
     const probe = await probeTtsSidecar(profile)
+    if (generation !== warmGeneration || isPluginDisabled(VOICE_ASR_PLUGIN_ID))
+      return
     if (probe)
       rememberSidecarEndpoint(profile, probe)
     const roleDirective = normalizeWarmDirective(options.directive)
@@ -170,7 +184,7 @@ export async function scheduleVoiceExpansionWarm(
     ) {
       return
     }
-    startBackgroundWarm(profile, roleDirective, probe)
+    startBackgroundWarm(profile, roleDirective, probe, generation)
     if (cachedSidecarEndpoints.has(profile))
       return
   }
@@ -186,22 +200,27 @@ export async function resolveVoiceSidecarEndpoint(
   _fallbackEndpoint: string,
   isPluginDisabled: (id: string) => boolean = () => false,
 ): Promise<string | null> {
+  const generation = warmGeneration
   const cachedEndpoint = cachedSidecarEndpoints.get(profile)
   if (cachedEndpoint)
     return cachedEndpoint
 
   if (!isPluginDisabled(VOICE_ASR_PLUGIN_ID)) {
     const probe = await probeTtsSidecar(profile)
+    if (generation !== warmGeneration || isPluginDisabled(VOICE_ASR_PLUGIN_ID))
+      return null
     if (probe)
       rememberSidecarEndpoint(profile, probe)
     if (!isSidecarAlreadyWarmed(probe)) {
       try {
         const ui = await getPluginSettingsUi(VOICE_ASR_PLUGIN_ID)
+        if (generation !== warmGeneration || isPluginDisabled(VOICE_ASR_PLUGIN_ID))
+          return null
         if (
           ui.config?.tts_expansion_enabled === true
           && hasAnyExplicitVoiceRoleEnabled(ui.config) !== false
         ) {
-          startBackgroundWarm(profile, undefined, probe)
+          startBackgroundWarm(profile, undefined, probe, generation)
         }
       }
       catch {

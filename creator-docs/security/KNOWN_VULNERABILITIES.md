@@ -12,12 +12,18 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-22**（本地 `cargo audit` 刷新 advisory-db，共 **1348** 条；扫描 **696** 个依赖条目；漏洞级 **0**、警告级 **10**） |
+| **最近扫描日期** | **2026-10-30**（本地 `cargo audit --json` 刷新 advisory-db，共 **1386** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**；本轮锁文件仅同步桌面候选版本，依赖锁定图不变） |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
-| **漏洞级命中数** | **0**（`cargo audit --no-fetch --stale` 退出码 **0**） |
-| **警告级命中数** | **报出 10 / 实际命中 11**（报出的 10 条为 `glib` · 5 个 `unic-*` · `zbus_names`/`zvariant`/`zvariant_derive` · `unsafe-libyaml`，均为 *unmaintained*/*unsound*，不计入漏洞数；第 11 条 `proc-macro-error` RUSTSEC-2024-0370 由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
+| **漏洞级命中数** | **0**（`cargo audit --json` 退出码 **0**） |
+| **警告级命中数** | **报出 10 / 实际命中 11**（`glib`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+2026-10-29 将 workspace Tokio 最低版本收紧到 **1.53.3**，锁文件从 **1.53.2 → 1.53.3**；锁差量仅 Tokio 的 version / checksum，既有 feature、依赖边及其余锁定包全部保留，修补 **RUSTSEC-2026-0386**。同一公告库快照下，主仓报出警告由 **11 → 10**；在仓库外对相同锁文件做无 ignore 的缓存复核为 **11** 条，唯一多出项仍为 `proc-macro-error`，主仓 allowlist 原字节未改。跟踪的 Rust 源码未发现直接 `AsyncFd` 调用，但这不是完整的传递依赖／Unix 可达性验收；锁定图消除此项公告也不等于所有运行配置的安全保证。新独立内核 revision 接入与安装包重打包仍单独进行。
+
+2026-10-27 新前端内测包将桌面自身版本从 `0.6.0-rc.1` 改为 `0.6.0-rc.2`；此轮 Cargo.lock 仅变更该工作区包的版本行，未变更任何依赖、校验和、feature 或忽略项。候选源码 `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` 已按发版门禁审计，上表采用其扫描原件；原有警告未因 UI 更新解决。后续纯文档整理复用此时点证据，不声称重新扫描。
+
+2026-10-27 候选版将桌面应用自身版本更新为 `0.6.0-rc.1`，并把仅用于属性测试的 `proptest` 限定为 `~1.11.0`，与 Tauri 的 `dom_query` 共用 `bit-set/bit-vec 0.8`；未降低测试数量或放宽重复依赖门禁。锁文件保留既有包的依赖边，新随机数依赖只服务于该测试工具链；未增加忽略项。新发现的 Tokio 警告针对 Unix `AsyncFd`，不属于本次 Windows 安装包的可调用接口；跨平台发布前仍须独立处理，不能把本次 Windows 验证外推到 Unix。
 
 2026-09-27 锁文件仅将 `rustls` 从 0.23.43 更新到 0.23.45（版本和校验和两行），修复 RUSTSEC-2026-0285；该轮没有改动其他 package 或依赖边。此前可选 `media-png` 依赖边的记录属于 2026-09-05 扫描。扫描结果是时点证据，不构成所有运行配置的安全保证。
 
@@ -104,6 +110,7 @@
 | **RUSTSEC-2026-0221** | `event-listener` 5.4.1 | **已修复 · K-SUPPLY-11** | 2026-08-01 锁文件升级至 **5.4.2**；SQLx 与 zbus/Tauri 两条路径均已解析到修复版，未加入 ignore |
 | **RUSTSEC-2025-0057** | `fxhash` | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 锁图无 `fxhash` |
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
+| **RUSTSEC-2026-0386** | `tokio` | **锁定图已修补 · 1.53.3** | 2026-10-29 升级并收紧最低版本；刷新审计不再命中，未添加 ignore。Unix `AsyncFd` 安全构造器的修补不替代平台与调用链验收 |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
@@ -135,6 +142,20 @@
 ---
 
 ## npm 供应链（滚动时点）
+
+### 2026-10-29 草稿同步后的补丁收口（待目标 SHA 远端验收）
+
+主仓候选 `2fb8b7bd631690c06b4de2c4967d453ae79e156b` 的[草稿 PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225) 首轮 [CI 40837019439](https://github.com/linkaiheng2233-cyber/oclivenewnew/actions/runs/40837019439) 在 `npm-audit` 的生产扫描失败。本地同锁复现 production **5 high**、full **4 low / 2 moderate / 6 high / 0 critical**；这些是受影响包的计数，不是独立漏洞条数。旧扫描结果保留为历史，不作为本次通过证据。
+
+| 依赖 / 公告 | 本次限定修补 |
+|---|---|
+| Vue I18n [命名参数转义](https://github.com/advisories/GHSA-8rc2-428q-7ww3)、[srcdoc 转义绕过](https://github.com/advisories/GHSA-83rm-6c8r-g728) | 四份现有 manifest 最低范围统一到 `^11.4.14`；`vue-i18n` 与四个 `@intlify` 包由 **11.4.8 → 11.4.16**，仍在 11.x 补丁线。公告修复下限 11.4.14；不因锁命中宣称产品已出现可达 XSS |
+| 开发链 Undici | jsdom / cheerio 的 **7.30.0 → 7.30.1**、webdriver 的 **6.29.0 → 6.29.1**，均满足既有传递范围；修补内容见上游 [7.30.1](https://github.com/nodejs/undici/releases/tag/v7.30.1) / [6.29.1](https://github.com/nodejs/undici/releases/tag/v6.29.1)，不新增 override |
+| workspace Vitest 残留 | 三个 workspace 由 **4.1.11 → 4.1.12**，与根目录原版本一致；删除其旧副本及未再被引用的旧 `@vitest` 链，复用锁中已有 4.1.12，覆盖[旧 mocker 的 Windows 路径公告](https://github.com/advisories/GHSA-xp26-3454-mjgp) |
+
+原 npm **10.9.8** 的定向锁更新保留了旧 workspace Vitest 节点，原件与日志保存在本轮树外证据目录；仅临时用官方 npm **11.21.0** 同步锁，再用原 npm 10 执行 `npm ci --no-audit --no-fund` 和 `npm ls --all`，均 exit **0**，不更换全局工具链。锁还将既有根 Vite 范围元数据对齐到 manifest 的 `^6.4.5`（解析版未变），并重算 TypeScript 的 `devOptional` 归类（既有 Vue / Pinia 可选 peer，版本与依赖边未变，`npm explain typescript` 已核对）。其余包版本、四条 override、Cargo、CI、审计阈值与产品源码不变。
+
+补丁后本地 production **0**、full **4 low / 0 moderate / 0 high / 0 critical**，两条 `--audit-level=high` 扫描 exit **0**；残余仍是 ESLint Markdown→KaTeX low 链，不是全图零风险。远端结果必须绑定补丁后的完整 SHA；草稿 gate 不替代正式 `ci-gate`，受保护 main 尚未合并，安装包未重打。独立内核的源码预览版及其审计是另一仓库的证据，不代证本主仓。
 
 ### 2026-10-06 新公告修复（本地验证，待目标 SHA CI）
 

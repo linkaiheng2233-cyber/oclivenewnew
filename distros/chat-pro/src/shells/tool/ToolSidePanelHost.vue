@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import UiSidePanel from '@oclive/shared/components/ui/UiSidePanel.vue'
 import { useRoleStore } from '@oclive/shared/stores/roleStore'
+import { useUiStore } from '@oclive/shared/stores/uiStore'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const roleStore = useRoleStore()
+const uiStore = useUiStore()
 
 const panelTitle = computed(() => {
   if (props.activeTab === 'settings')
@@ -44,13 +46,15 @@ const outerTabs = computed<Array<{ id: SidePanelTab, label: string }>>(() => {
   const tabs: Array<{ id: SidePanelTab, label: string }> = [
     { id: 'settings', label: t('settings.title') },
   ]
-  if (roleStore.interactionImmersive)
+  if (uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive)
     tabs.push({ id: 'plugins', label: t('simplePluginManager.title') })
   tabs.push({ id: 'models', label: t('modelManager.title') })
   return tabs
 })
 
 function selectTab(tab: SidePanelTab): void {
+  if (tab === 'plugins' && (!uiStore.advancedFeaturesEnabled || !roleStore.interactionImmersive))
+    return
   if (tab !== props.activeTab)
     emit('update:activeTab', tab)
 }
@@ -93,14 +97,14 @@ watch(
     </template>
 
     <SettingsView
-      v-if="activeTab === 'settings'"
+      v-if="open && activeTab === 'settings'"
       embedded
       :visible="open"
       :focus-tab="settingsFocusTab"
       @close="emit('close')"
     />
     <SimplePluginManagerPanel
-      v-else-if="activeTab === 'plugins'"
+      v-else-if="open && activeTab === 'plugins' && uiStore.advancedFeaturesEnabled && roleStore.interactionImmersive"
       embedded
       :visible="open"
       :subview="pluginsSubview"
@@ -109,7 +113,7 @@ watch(
       @open-market="emit('update:pluginsSubview', 'market')"
     />
     <ModelManagerPanel
-      v-else-if="activeTab === 'models'"
+      v-else-if="open && activeTab === 'models'"
       embedded
       :visible="open"
       @close="emit('close')"

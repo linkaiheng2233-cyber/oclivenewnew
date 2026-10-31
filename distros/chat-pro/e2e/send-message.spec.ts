@@ -7,7 +7,7 @@ test.describe('send message (preview + invoke mock)', () => {
     await page.locator('#chat-user-message').fill('Hello from E2E')
     await page.getByRole('button', { name: /Send|发送/i }).click()
     await expect(page.getByText('Hello from E2E', { exact: true })).toBeVisible()
-    await expect(page.getByText('Echo: Hello from E2E')).toBeVisible()
+    await expect(page.locator('.workspace-messages').getByText('Echo: Hello from E2E', { exact: true })).toBeVisible()
   })
 
   test('blocks empty message send', async ({ page }) => {

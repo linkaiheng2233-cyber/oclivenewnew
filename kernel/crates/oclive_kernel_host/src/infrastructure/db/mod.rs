@@ -261,6 +261,15 @@ impl DbManager {
         &self,
         manifest_role_id: &str,
     ) -> Result<Vec<String>> {
+        self.delete_role_data_and_mark_cleanup(manifest_role_id, None)
+            .await
+    }
+
+    pub(crate) async fn delete_role_data_and_mark_cleanup(
+        &self,
+        manifest_role_id: &str,
+        cleanup: Option<(&str, &str)>,
+    ) -> Result<Vec<String>> {
         let mid = manifest_role_id.trim();
         if mid.is_empty() {
             return Err(AppError::InvalidParameter(
@@ -309,18 +318,33 @@ impl DbManager {
                     .await
                     .map_err(|e| AppError::DatabaseError(e.to_string()))?;
             }
-            for id in &ids {
-                self.long_term_row_counts.remove(id);
-                self.short_term_row_counts.remove(id);
-            }
         }
 
         self.delete_chat_data_for_manifest_role_in_tx(mid, &mut tx)
             .await?;
 
+        if let Some((key, committed_record)) = cleanup {
+            let updated = sqlx::query("UPDATE app_settings SET value = ? WHERE key = ?")
+                .bind(committed_record)
+                .bind(key)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+            if updated.rows_affected() != 1 {
+                return Err(AppError::DatabaseError(
+                    "role deletion recovery record missing".into(),
+                ));
+            }
+        }
+
         tx.commit()
             .await
             .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        for id in &ids {
+            self.long_term_row_counts.remove(id);
+            self.short_term_row_counts.remove(id);
+        }
 
         Ok(ids)
     }

@@ -12,6 +12,10 @@ export async function gotoApp(page: Page): Promise<void> {
   })
   await page.goto('/')
   await expect(page.locator('#app')).toBeVisible({ timeout: 60_000 })
+  const enterRole = page.locator('.role-card').first().getByRole('button', { name: /Enter workspace/i })
+  await expect(enterRole.or(page.locator('#chat-user-message'))).toBeVisible({ timeout: 60_000 })
+  if (await enterRole.isVisible())
+    await enterRole.click()
   await expect(page.locator('#chat-user-message')).toBeVisible({ timeout: 60_000 })
 }
 

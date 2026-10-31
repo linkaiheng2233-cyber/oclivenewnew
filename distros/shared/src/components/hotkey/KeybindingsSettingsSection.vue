@@ -26,6 +26,7 @@ import UiButton from '../ui/UiButton.vue'
 import UiFieldRow from '../ui/UiFieldRow.vue'
 import UiSection from '../ui/UiSection.vue'
 import UiSelect from '../ui/UiSelect.vue'
+import UiToggle from '../ui/UiToggle.vue'
 
 const { t } = useI18n()
 const { showToast } = useAppToast()
@@ -389,13 +390,7 @@ function isGlobalRow(b: UnifiedBinding): boolean {
                 </div>
               </UiFieldRow>
               <UiFieldRow :label="t('keybindings.enabled')">
-                <label class="kb-chk">
-                  <input
-                    type="checkbox"
-                    :checked="ensureRowForAction(row.action.id).enabled"
-                    @change="setBindingEnabled(ensureRowForAction(row.action.id).id, ($event.target as HTMLInputElement).checked)"
-                  >
-                </label>
+                <UiToggle compact :model-value="ensureRowForAction(row.action.id).enabled" :label="t(row.action.titleKey)" @update:model-value="setBindingEnabled(ensureRowForAction(row.action.id).id, $event)" />
               </UiFieldRow>
             </template>
 
@@ -438,13 +433,7 @@ function isGlobalRow(b: UnifiedBinding): boolean {
               >
             </UiFieldRow>
             <UiFieldRow :label="t('keybindings.enabled')">
-              <label class="kb-chk">
-                <input
-                  type="checkbox"
-                  :checked="b.enabled"
-                  @change="setBindingEnabled(b.id, ($event.target as HTMLInputElement).checked)"
-                >
-              </label>
+              <UiToggle compact :model-value="b.enabled" :label="t(getKeybindingAction(b.actionId)?.titleKey ?? 'keybindings.enabled')" @update:model-value="setBindingEnabled(b.id, $event)" />
             </UiFieldRow>
             <template v-if="b.actionId === 'plugin.openSlot'">
               <UiFieldRow :label="t('keybindings.pluginId')">

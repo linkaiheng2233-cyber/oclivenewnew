@@ -3,12 +3,17 @@ import { defineStore } from 'pinia'
 export const useUiStore = defineStore('ui', {
   state: () => ({
     sceneId: 'home',
+    advancedFeaturesEnabled: false,
+    modelSetupDismissed: false,
     connectivityBanner: null as null | {
       kind: 'plugin_index_offline'
       detail?: string
     },
   }),
   actions: {
+    setAdvancedFeaturesEnabled(enabled: boolean) {
+      this.advancedFeaturesEnabled = enabled
+    },
     setScene(sceneId: string) {
       this.sceneId = sceneId
     },
@@ -28,6 +33,6 @@ export const useUiStore = defineStore('ui', {
     },
   },
   persist: {
-    pick: ['sceneId'],
+    pick: ['sceneId', 'advancedFeaturesEnabled', 'modelSetupDismissed'],
   },
 })

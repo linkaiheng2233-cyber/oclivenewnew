@@ -47,7 +47,7 @@ Sidecars use **JSON-RPC numeric `code` + lowercase snake `message` names**; see 
 
 - Rust: [`kernel/crates/oclive_kernel_types/src/error.rs`](../../kernel/crates/oclive_kernel_types/src/error.rs) (`KernelErrorBody`, `AppError`, `http_chat_codes`).
 - HTTP: `kernel/crates/oclive_kernel_host/src/http_api/` (route modules such as `mod.rs`, `chat.rs`).
-- Patch summary: `handoff/A2_KERNEL_JSON_ERROR_PATCH.md`.
-- **A3 (crash reporting & user-visible error polish)**: [`handoff/archive/A3_CLOSURE_SUMMARY.en.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.en.md) · [`handoff/archive/A3_CLOSURE_SUMMARY.md`](../../handoff/archive/A3_CLOSURE_SUMMARY.md).
+- Patch summary: [历史记录：A2_KERNEL_JSON_ERROR_PATCH.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A2_KERNEL_JSON_ERROR_PATCH.md).
+- **A3 (crash reporting & user-visible error polish)**: [历史记录：A3_CLOSURE_SUMMARY.en.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.en.md) · [历史记录：A3_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md).
 
 [中文原文](../../creator-docs/getting-started/KERNEL_ERROR_CODE_CONVENTION.md)

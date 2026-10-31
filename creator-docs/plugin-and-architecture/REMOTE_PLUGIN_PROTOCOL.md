@@ -2,6 +2,8 @@
 
 **实现状态**：宿主在 `kernel/crates/oclive_kernel_host/src/infrastructure/remote_plugin/` 中实现 **HTTP POST + JSON-RPC 2.0** 客户端。角色包将子系统设为 `remote` 且配置环境变量后，请求发往侧车。**网络错误、HTTP 非 2xx、JSON-RPC `error`**按调用失败处理；是否回退内置由运行时闸门与各方法规则决定，不能据此承诺所有失败均可继续。高风险授权拒绝不回退；成功 `result` 的解码或形状处理保留各方法语义，见下方代码锚点及 §4。
 
+**当前参考 Host 的 Rust 调用边界**：同步 RPC 只支持无活动 Tokio runtime，或已有多线程 runtime 的调用者。在当前线程 runtime 中，同步调用会在发出请求前返回 `REMOTE_SERVICE_UNAVAILABLE`，提示使用异步 API；应改用既有异步 adapter / `call_async`。这不是侧车协议限制，也不为 generic future 额外增加 `Send` 或 `'static` 约束。原有回退开关与授权拒绝规则保持有效。
+
 ### 测试覆盖（2026-07-14）
 
 | 范围 | 状态 | 说明 |

@@ -40,32 +40,3 @@ html[data-skin="win98"] .ui-side-panel__scroll {
 html[data-skin="win98"] .ui-side-panel__scroll--flush {
   padding: 0;
 }
-
-html[data-skin="win98"] .ui-side-panel__close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 16px;
-  height: 14px;
-  min-width: 16px;
-  padding: 0;
-  border: 2px outset #dfdfdf;
-  border-radius: 0;
-  background: #c0c0c0;
-  color: #000000;
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: bold;
-  line-height: 1;
-  cursor: default;
-  box-shadow: none;
-}
-
-html[data-skin="win98"] .ui-side-panel__close:hover {
-  background: #c0c0c0;
-}
-
-html[data-skin="win98"] .ui-side-panel__close:active {
-  border-style: inset;
-}

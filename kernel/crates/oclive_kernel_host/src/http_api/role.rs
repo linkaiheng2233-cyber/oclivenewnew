@@ -1,5 +1,8 @@
 use super::{api_error, ApiError};
 use crate::models::dto::{
+    ClearSceneUserRelationRequest, SetSceneUserRelationRequest, SetUserRelationRequest,
+};
+use crate::models::dto::{
     CreateEventRequest, CreateEventResponse, DisplayMetricsDto, GetDisplayMetricsRequest,
     GetRoleInfoRequest, GetUserIdentityStateRequest, JumpTimeRequest, JumpTimeResponse, RoleInfo,
     SetRoleInteractionModeRequest, SetSceneUserIdentityRequest, SetUserIdentityRequest,
@@ -7,6 +10,9 @@ use crate::models::dto::{
     UserIdentityStateResponse,
 };
 use crate::models::role::PersonalitySource;
+use crate::service::role::relation::{
+    clear_scene_user_relation_impl, set_scene_user_relation_impl, set_user_relation_impl,
+};
 use crate::service::{
     get_display_metrics_impl, get_role_info_impl, get_time_state_impl,
     get_user_identity_state_impl, jump_time_impl, load_role_impl, set_role_interaction_mode_impl,
@@ -221,6 +227,51 @@ pub(crate) async fn get_user_identity_state_route(
         let k = e.kernel_error_body();
         api_error(axum::http::StatusCode::BAD_REQUEST, k)
     })
+}
+
+pub(crate) async fn set_user_relation_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetUserRelationRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    set_user_relation_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|error| {
+            api_error(
+                axum::http::StatusCode::BAD_REQUEST,
+                error.kernel_error_body(),
+            )
+        })
+}
+
+pub(crate) async fn set_scene_user_relation_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<SetSceneUserRelationRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    set_scene_user_relation_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|error| {
+            api_error(
+                axum::http::StatusCode::BAD_REQUEST,
+                error.kernel_error_body(),
+            )
+        })
+}
+
+pub(crate) async fn clear_scene_user_relation_route(
+    State(state): State<Arc<AppState>>,
+    Json(req): Json<ClearSceneUserRelationRequest>,
+) -> Result<Json<RoleInfo>, ApiError> {
+    clear_scene_user_relation_impl(&state, &req)
+        .await
+        .map(Json)
+        .map_err(|error| {
+            api_error(
+                axum::http::StatusCode::BAD_REQUEST,
+                error.kernel_error_body(),
+            )
+        })
 }
 
 pub(crate) async fn set_user_presence_scene_route(

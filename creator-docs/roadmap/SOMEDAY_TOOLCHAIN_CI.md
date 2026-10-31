@@ -107,7 +107,7 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types --doc
 
 contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出；上述Clippy/doctest按当前crate编译面覆盖，不宣称所有内容均属小Kernel。该入口只验证已有Base/最小角色相关契约及编译文档；不覆盖Kernel所有硬边界、模块目标质量、共享消费者运行、Host业务或所有发行版。真实公开面变更仍按[核实协议](../../handoff/AI_VERIFICATION_PROTOCOL.md)显式跑workspace doctest，不能以这个窄入口替代。
 
-**有限实施与后续出口**：同一命令链的成功、失败非零传播及目标crate实际依赖按[本片报告](../../handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md)记录；使用指南见[本地门禁矩阵](../../human-docs/08_PR_GATE_MATRIX.md)。不复制Base测试、生成新DTO/trait或机械补六套包装。达到本地入口可用即停；只有下一片真正需要远端接入时，才同步受信catalog、本地命令、workflow所有权与仓库合同测试。保留旧组合回归；要从原 `rust` job中迁走测试时先证明覆盖与唯一所有权，不能先新增一份重复高成本测试再称分层完成。ready选择类别扩展仍受真实Compare与正式gate约束。未知的更深测试归属、缓存/并发收益和发布矩阵另排，不成为本地入口的前置调查。
+**有限实施与后续出口**：同一命令链的成功、失败非零传播及目标crate实际依赖按[本片报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-KERNEL-BASE-LOCAL-CHECK.md)记录；使用指南见[本地门禁矩阵](../../human-docs/08_PR_GATE_MATRIX.md)。不复制Base测试、生成新DTO/trait或机械补六套包装。达到本地入口可用即停；只有下一片真正需要远端接入时，才同步受信catalog、本地命令、workflow所有权与仓库合同测试。保留旧组合回归；要从原 `rust` job中迁走测试时先证明覆盖与唯一所有权，不能先新增一份重复高成本测试再称分层完成。ready选择类别扩展仍受真实Compare与正式gate约束。未知的更深测试归属、缓存/并发收益和发布矩阵另排，不成为本地入口的前置调查。
 
 ### 2.5 执行通道约定
 
@@ -163,7 +163,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 **后续单独评估：选择范围。** 执行归属稳定后，才依据目标SHA的真实Compare与契约回归讨论某类ready PR能否选择性执行。不因本地窄测更快、一次主CI通过或责任对照表就移除影响边。缓存、性能矩阵和未判定的细粒度归属不是首片前置调查；开发切片定向验证，同主题里程碑才做适用完整验收。
 
-历史分类提交与正式基线见[2026-10-11交接快照](../../handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；所有权实施和当时的适用本地验证见[首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。该首片现已合入/推送main `12bc7dc8`，具体集成范围见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。默认Host入口和新CI所有者作为后续同主题批次，见[本片报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，不与main的正式验收混算；K-CI-IMPACT-01仍为In progress。
+历史分类提交与正式基线见[2026-10-11交接快照](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-BASELINE-HANDOFF.md)；所有权实施和当时的适用本地验证见[首片报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)。该首片现已合入/推送main `12bc7dc8`，具体集成范围见[三层交接](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。默认Host入口和新CI所有者作为后续同主题批次，见[本片报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，不与main的正式验收混算；K-CI-IMPACT-01仍为In progress。
 
 <a id="ci-responsibility-map"></a>
 
@@ -171,7 +171,7 @@ contracts/types自身没有Host/runtime/Tauri依赖，但仍携带兼容导出�
 
 架构承诺与实际入口统一见[MODULE_MAP §0.3.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#kernel-reference-host-distro-boundaries)。原13-job对照冻结于 `5e483aa6`，其依据的workflow与当时正式main `24f62303` 相同；已集成公共首片为14个验证job，下表包含后续默认Host片的[主workflow](../../.github/workflows/ci.yml)15个验证job配置。crate名、目录名、profile名或执行平台不直接等于架构层。**MIXED** 表示一个执行出口覆盖多个责任，不表示违规或可删。
 
-2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链并集成/推送 `12bc7dc8`，正式CI只认冻结目标SHA；详细结果在[三层集成交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
+2026-10-12维护者确认主层次为“纯净Kernel / 特化运行工程的Host / 基于该工程的发行版”，具体含义只由上述架构SSOT定义。下表公共契约、参考Host、发行版按此口径读；共享接入、工具、治理和发布组合继续单列。执行所有权首片已完成本地完整链并集成/推送 `12bc7dc8`，正式CI只认冻结目标SHA；详细结果在[三层集成交接](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)和最终交付中披露，不提前把Host/发行版混合job标为已拆开。
 
 | 现有验证job | 责任归属 | 实际检查与不能外推的范围 |
 |---|---|---|
@@ -220,7 +220,7 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types
 
 第一批的收益是公共检查不必先准备前端/Tauri资源，并有可解释的执行所有者；**不是节省时间比例承诺**。检查集合已对齐，不长期保留重复两crate测试；各job仍可能编译共有依赖。到这片即可停止，不以全仓完全分离、全部混合job拆开或job数减少为完成条件。共享Memory调用案例继续作为小Kernel外的接入证据；细粒度性能、real模型/TTS、实机及全部崩溃窗口另有目标才验。
 
-实施与当时适用本地验证见[所有权首片报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)，集成/推送见[三层交接](../../handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。正式目标SHA CI结果单列，不回写历史报告来制造新证据。未改影响图/ready晋升类别/公共API/运行语义，不关闭K-CI-IMPACT-01。原责任调查的证据边界保留于[前轮报告](../../handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)。
+实施与当时适用本地验证见[所有权首片报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-CONTRACT-OWNER.md)，集成/推送见[三层交接](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-CI-THREE-LAYER-INTEGRATION.md)。正式目标SHA CI结果单列，不回写历史报告来制造新证据。未改影响图/ready晋升类别/公共API/运行语义，不关闭K-CI-IMPACT-01。原责任调查的证据边界保留于[前轮报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261011-CI-RESPONSIBILITY-MAP.md)。
 
 <a id="reference-host-local-check"></a>
 
@@ -230,13 +230,13 @@ cargo test --locked -p oclive_kernel_contracts -p oclive_kernel_types
 
 该入口选择Host当前默认feature（`default=[]`），Clippy不加 `--all-features`，测试不筛选lib或集成目标。`tauri-commands`、`dual_core`、`test-faults`与桌面依赖的feature组合未由它验收；manifest的 `doctest=false` 保持，不把默认测试说成含Host doctest。依赖仍可能编译，不能称为独立部署的纯净Host或整个发行版验收。
 
-例如只改参考Host的会话材料绑定，先运行此入口取得默认配置反馈，再按实际影响补HTTP、持久化、桌面或产品回归。[入口首片](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)只交付本地反馈并登记feature耦合；下述后续片将原命令接入CI。现有 `rust` all-feature/桌面组合和dual_core job继续保留，未因新组获得少跑权限。
+例如只改参考Host的会话材料绑定，先运行此入口取得默认配置反馈，再按实际影响补HTTP、持久化、桌面或产品回归。[入口首片](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-LOCAL-CHECK.md)只交付本地反馈并登记feature耦合；下述后续片将原命令接入CI。现有 `rust` all-feature/桌面组合和dual_core job继续保留，未因新组获得少跑权限。
 
 <a id="reference-host-default-owner"></a>
 
 **默认Host执行所有权（后续本地配置）**：真实Cargo tree显示独立Host是 `default`，workspace默认测试是 `default,tauri-commands`；默认分支是已支持的无桌面使用路径，需以自己的配置验证。新 `reference-host-default` 组调用原样本地入口，旧workspace命令/资源前置逐字保留。两种feature条件分别验，不再为证明可机械迁移而穷尽cfg；多配置回归与相同条件下重复执行同一检查分别判读。
 
-catalog新增validator和有限command ID，五个原workspace profile保守携带它；gate选中/全量时要求成功。受信comparison base中任一新所有者缺失、映射混合/种类错误或JSON损坏时，走原 `trusted_policy_bootstrap` 全量，不允许PR目录批准少跑。影子21样本只增加对应坐标，现有docs选择、影响图和ready晋升类别不变。本片结果及未验边界见[默认Host所有者报告](../../handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，新21-job配置仍须冻结目标SHA正式CI，不以父提交19/19盖章。
+catalog新增validator和有限command ID，五个原workspace profile保守携带它；gate选中/全量时要求成功。受信comparison base中任一新所有者缺失、映射混合/种类错误或JSON损坏时，走原 `trusted_policy_bootstrap` 全量，不允许PR目录批准少跑。影子21样本只增加对应坐标，现有docs选择、影响图和ready晋升类别不变。本片结果及未验边界见[默认Host所有者报告](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261012-REFERENCE-HOST-DEFAULT-OWNER.md)，新21-job配置仍须冻结目标SHA正式CI，不以父提交19/19盖章。
 
 第三层的前端开发反馈已有 **`npm run check:frontend`**，直接复用：lint、typecheck、shared/ChatPro单测、Theater smoke及ChatPro E2E构建。它不调用Cargo或替代桌面Rust/IPC、Linux预览E2E、打包及真实音频验收；不是完整发行版验收。此处只把既有入口与三层责任对齐，不新增第二个前端执行器。发行版若使用自有Host，仍需对自己的产品和实际组合另定义检查。
 

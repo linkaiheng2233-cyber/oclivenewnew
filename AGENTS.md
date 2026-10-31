@@ -33,17 +33,9 @@
 
 ---
 
-## 发版版本（`main`，2026-08-24）
+## 版本与发布状态
 
-| 产物 | 版本 | 位置 |
-|------|------|------|
-| **桌面宿主** | **0.5.2** | 根 `package.json`、`distros/desktop-tauri/Cargo.toml` |
-| **角色包编写器** | **0.5.1** | 姊妹仓 `oclive-pack-editor` |
-| **VS Code 扩展** | **0.5.0** | 姊妹仓 `oclive-vscode` |
-| **`oclive-cli`** | **0.1.0** | `kernel/crates/oclive-cli/Cargo.toml` |
-| **`oclive_kernel_runtime`** | **0.2.0** | `kernel/crates/oclive_kernel_runtime/Cargo.toml` |
-
-变更见 [CHANGELOG.md](CHANGELOG.md) **`[0.5.2]`** · SemVer [RELEASE_VERSIONING.md](creator-docs/development/RELEASE_VERSIONING.md)。
+当前版本、候选包基线与未验边界只查 [PROJECT_CURRENT_STATUS](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)，再核对应源码 manifest；本页不缓存另一张版本表。独立 SemVer 与 MSI 映射规则查 [RELEASE_VERSIONING](creator-docs/development/RELEASE_VERSIONING.md)，用户可见历史查 [CHANGELOG](CHANGELOG.md)。本地内测包、源码版本和公开发布附件须分别核对，不能互相代证；姊妹仓版本在该仓单独确认。
 
 ---
 
@@ -59,7 +51,7 @@
 | 发行版 HostProfile | [DISTRO_CAPABILITY_PROFILE.md](creator-docs/kernel/DISTRO_CAPABILITY_PROFILE.md) |
 | 活跃债 / 冻结 | [主台账](handoff/TECHNICAL_DEBT_INVENTORY.md)；变动与续跑先读 [DEBT_CHANGELOG](handoff/debt-marathon/DEBT_CHANGELOG.md)，不另建状态表 |
 | 文档总索引 | [DOCUMENTATION_INDEX.md](creator-docs/getting-started/DOCUMENTATION_INDEX.md) |
-| 人类接手阶梯 L0–L8 | [human-docs/README.md](human-docs/README.md) |
+| 人类接手阶梯 L0–L7 | [human-docs/README.md](human-docs/README.md) |
 
 **主编排**：`kernel/crates/oclive_kernel_host/.../process_message.rs` → `co_present` · 蓝图 **`steps[]` 不调度** · Tauri 命令只在 `distros/desktop-tauri/src/api/*.rs` · 回复字段 **`reply`**。
 
@@ -69,7 +61,7 @@
 
 - 审查汇报前：[AI_VERIFICATION_PROTOCOL.md](handoff/AI_VERIFICATION_PROTOCOL.md)
 - OOCP S0–S12（+ 可选 S13/S14）：[OOCP_TEST_SUITE.md](creator-docs/testing/OOCP_TEST_SUITE.md)
-- invoke 热路径 **13** 条：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
+- invoke 热路径范围与验证入口：[INVOKE_HOTPATH_MATRIX.md](handoff/INVOKE_HOTPATH_MATRIX.md)
 - Dimension 5 门禁：`node scripts/dimension5-acceptance.mjs --ci`；检查项总数以脚本结尾 `PASS (N checks)` 为准（`--ci` 跳过 sample lib tests，但仍计入结果）。
 - 日常 `npm run check:rust` **不含 doctest**；发版 `npm run check:release` **含**
 
@@ -93,4 +85,4 @@
 - **Remotion 演示**：独立仓 `oclive-remotion-demo`，勿在主仓根跑 `npm run preview`
 - **姊妹仓**：`oclive-pack-editor` · `oclive-launcher` · `oclive-plugin-market` · `oclive-vscode`（各仓 `AGENTS.md` 指回本索引）
 
-**禁止当 truth**：`handoff/archive/*`（含已归档的 `04_4.6_PROJECT_TRUTH_CHECKLIST.md`，G3）
+**禁止当 truth**：`handoff/archive/*`（含已归档的 [历史记录：04_4.6_PROJECT_TRUTH_CHECKLIST.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/04_4.6_PROJECT_TRUTH_CHECKLIST.md)，G3）

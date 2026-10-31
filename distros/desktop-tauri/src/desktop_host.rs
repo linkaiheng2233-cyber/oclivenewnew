@@ -5,9 +5,9 @@ use crate::kernel_lifecycle::{
     DesktopKernelMode, EnsureKernelOptions, KernelConnection, SharedKernelConnection, StatusEmit,
 };
 use oclive_kernel_host::infrastructure::MockLlmClient;
-use oclive_kernel_host::state::{AppState, SharedAppState};
+use oclive_kernel_host::state::{AppState, AppStateBuilder, SharedAppState};
 use oclive_kernel_runtime::{resolve_api_port, shared_kernel_binary_path};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::AppHandle;
 
@@ -40,6 +40,25 @@ fn bundled_kernel_binary(resource_dir: Option<&std::path::Path>) -> Option<PathB
     ]
     .into_iter()
     .find(|candidate| candidate.is_file())
+}
+
+async fn build_ui_shell(
+    roles_dir: PathBuf,
+    app_data: &Path,
+) -> oclive_kernel_host::error::Result<AppState> {
+    // Keep the shell database in memory, but put its auxiliary files in the
+    // writable application-data directory rather than the installed role bundle.
+    AppStateBuilder::in_memory_test(
+        Arc::new(MockLlmClient {
+            reply: String::new(),
+        }),
+        roles_dir,
+        None,
+    )
+    .with_app_data_dir(app_data)
+    .with_host_profile(oclive_kernel_host::domain::host_profile::load_host_profile_from_env())
+    .build()
+    .await
 }
 
 /// Run [`bootstrap_desktop`] on a dedicated Tokio runtime (safe inside Tauri `.setup`).
@@ -75,9 +94,24 @@ pub async fn bootstrap_desktop(
 ) -> Result<(SharedAppState, SharedKernelConnection, u16), Box<dyn std::error::Error + Send + Sync>>
 {
     let port = resolve_api_port(None);
-    let roles_dir = oclive_kernel_host::state::find_roles_dir(resource_dir);
-    let canonical_models = oclive_kernel_host::state::ensure_models_dir_for_roles(&roles_dir);
+    let resolved_roles = oclive_kernel_host::state::find_roles_dir(resource_dir);
     let app_data = oclive_kernel_runtime::find_app_data_dir_for_host();
+    let explicit_roles_override = std::env::var("OCLIVE_ROLES_DIR")
+        .ok()
+        .filter(|path| !path.trim().is_empty())
+        .is_some_and(|path| Path::new(path.trim()).is_dir());
+    let distro = oclive_kernel_host::domain::host_profile::load_host_profile_from_env();
+    let roles_dir = if matches!(distro.distro_id.as_str(), "default" | "desktop") {
+        crate::desktop_library::prepare_desktop_library(
+            resource_dir,
+            &resolved_roles,
+            &app_data,
+            explicit_roles_override,
+        )?
+    } else {
+        resolved_roles
+    };
+    let canonical_models = oclive_kernel_host::state::ensure_models_dir_for_roles(&roles_dir);
     oclive_kernel_host::state::reconcile_legacy_models_layout(&canonical_models, &app_data);
     crate::api::llm_settings::sync_canonical_db_models_dir(&canonical_models, &app_data).await;
     let base_url = format!("http://127.0.0.1:{port}");
@@ -94,11 +128,8 @@ pub async fn bootstrap_desktop(
         "desktop kernel client initialized; cold bring-up scheduled in background"
     );
 
-    let llm = Arc::new(MockLlmClient {
-        reply: String::new(),
-    });
     // UI-only in-memory shell — not an authoritative DB/chat writer; kernel HTTP owns persistence.
-    let shell = AppState::new_in_memory_with_llm(llm, roles_dir).await?;
+    let shell = build_ui_shell(roles_dir, &app_data).await?;
     crate::api::llm_settings::seed_shell_llm_from_canonical(&shell).await;
     Ok((Arc::new(shell), kernel, port))
 }
@@ -157,7 +188,26 @@ pub fn finish_desktop_setup(
 
 #[cfg(test)]
 mod tests {
-    use super::bundled_kernel_binary;
+    use super::{build_ui_shell, bundled_kernel_binary};
+
+    #[tokio::test]
+    async fn ui_shell_keeps_auxiliary_state_out_of_the_installed_role_bundle() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let bundle = temp.path().join("bundled-role-packs");
+        let app_data = temp.path().join("user-data");
+        std::fs::create_dir_all(&bundle).expect("create bundle fixture");
+
+        let shell = build_ui_shell(bundle.clone(), &app_data)
+            .await
+            .expect("initialize shell");
+
+        assert_eq!(shell.directory_plugins.app_data_dir(), app_data.as_path());
+        assert!(app_data.is_dir());
+        assert_eq!(
+            std::fs::read_dir(bundle).expect("inspect bundle").count(),
+            0
+        );
+    }
 
     fn kernel_name() -> &'static str {
         if cfg!(windows) {

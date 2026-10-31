@@ -1,0 +1,48 @@
+/* Chat Pro chrome only. Native scrolling remains in charge of wheel, touch and keys. */
+html:not([data-skin="win98"]) {
+  --ui-scroll-track:color-mix(in srgb,var(--bg-secondary) 65%,var(--bg-primary));
+  --ui-scroll-thumb:color-mix(in srgb,var(--text-secondary) 62%,var(--bg-secondary));
+  --ui-scroll-thumb-hover:color-mix(in srgb,var(--accent) 80%,var(--text-secondary));
+}
+
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast) {
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:var(--ui-scroll-thumb) var(--ui-scroll-track);
+}
+html:not([data-skin="win98"]) .toast { scrollbar-gutter:auto; }
+
+/* Chromium/WebView2 support the wider pointer hit area; other engines keep native thin bars. */
+.library-page:focus-visible { outline:2px solid var(--accent);outline-offset:-3px; }
+@supports selector(::-webkit-scrollbar) {
+  html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast) {
+    scrollbar-width:auto;
+    scrollbar-color:auto;
+  }
+}
+
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast)::-webkit-scrollbar {
+  width:12px;
+  height:12px;
+}
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast)::-webkit-scrollbar-track {
+  background:var(--ui-scroll-track);
+  border-radius:12px;
+  margin-block:4px;
+}
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast)::-webkit-scrollbar-thumb {
+  background:var(--ui-scroll-thumb);
+  border:3px solid transparent;
+  background-clip:padding-box;
+  border-radius:12px;
+  min-height:36px;
+}
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast)::-webkit-scrollbar-thumb:hover {
+  background-color:var(--ui-scroll-thumb-hover);
+}
+html:not([data-skin="win98"]) :is(.nav-role-list,.library-page,.runtime-role,.workspace-messages,.chat-list,.virtual-scroll-root,.sv-nav,.sv-body,.mm-root,.support-scroll,.support-log-view,.support-diagnostics pre,.error-notice-details pre,.toast)::-webkit-scrollbar-corner {
+  background:transparent;
+}
+@media(forced-colors:active) {
+  html:not([data-skin="win98"]) { --ui-scroll-track:Canvas;--ui-scroll-thumb:ButtonText;--ui-scroll-thumb-hover:Highlight; }
+}

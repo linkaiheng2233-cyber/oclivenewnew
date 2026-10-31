@@ -4,6 +4,8 @@
 
 [中文](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md)
 
+**Rust call boundary in the current reference Host**: synchronous RPC supports callers with no active Tokio runtime or a multi-thread runtime. On a current-thread runtime it returns `REMOTE_SERVICE_UNAVAILABLE` before sending a request and directs callers to the existing async adapter / `call_async`. This is not a sidecar wire-protocol restriction and adds no `Send` or `'static` bounds to generic futures. Existing fallback gates and grant-denial rules still apply.
+
 ### Test coverage & LLM env matrix
 
 - **JSON-RPC / OpenAI-compatible Remote LLM tests**, the full **`OCLIVE_LLM_*` / `OCLIVE_REMOTE_LLM_*` / OpenAI alias** matrix, and **second-local (localhost OpenAI-compat ∥ directory/llamacpp) selection**: authoritative Chinese SSOT → [REMOTE_PLUGIN_PROTOCOL.md §2.0](../../creator-docs/plugin-and-architecture/REMOTE_PLUGIN_PROTOCOL.md) (do not duplicate tables here).

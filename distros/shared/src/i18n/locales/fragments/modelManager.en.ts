@@ -36,6 +36,7 @@ export const modelManagerEn = {
   refreshModels: 'Refresh Ollama list',
   refreshingModels: 'Refreshing…',
   localModelLabel: 'Model',
+  chooseModel: 'Choose a model',
   baseRatingGeneral: 'General base',
   baseRatingAdult: 'Adult base (18+)',
   baseLicense: 'License: {license}',

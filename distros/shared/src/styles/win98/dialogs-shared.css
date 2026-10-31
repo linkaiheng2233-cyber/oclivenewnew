@@ -91,7 +91,6 @@ html[data-skin="win98"] .css-modal > :not(:first-child) {
 }
 
 html[data-skin="win98"] .hk-close,
-html[data-skin="win98"] .sh-close,
 html[data-skin="win98"] .spm-close,
 html[data-skin="win98"] .close-x,
 html[data-skin="win98"] .debug > .title > button {

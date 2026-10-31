@@ -1,6 +1,7 @@
 import type { AdultInteractionAction, SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
 import { recoverMessage, sendMessage, sendMessageStream, toastAsyncError } from '@oclive/shared/api'
+import { rt } from '@oclive/shared/i18n/runtimeT'
 import {
   cancelAdultBeatQueue,
   resumeAdultBeatQueue,
@@ -9,6 +10,7 @@ import {
 import { hostEventBus } from '@oclive/shared/lib/hostEventBus'
 import { waitForVoicePlaybackSettled } from '@oclive/shared/lib/voicePlaybackSettlement'
 import { isChatStreamEnabled } from '@oclive/shared/utils/chatStreamSettings'
+import { effectiveChatSceneId } from '@oclive/shared/utils/pureChatScene'
 import { getRelationUpgradeMessage } from '@oclive/shared/utils/relation'
 import { presentationFromSendResponse } from '@oclive/shared/utils/replyPresentation'
 import { draftsFromPresentation, segmentMessageIds, splitReplyBySeparatorLine } from '@oclive/shared/utils/replySegments'
@@ -23,6 +25,7 @@ import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
 
 export interface ChatStoreSendContext {
+  getChatThreadId?: (roleId: string, sceneId: string) => string | null | undefined
   sceneHistorySplitIndex: SceneHistorySplitIndex
   setLoading: (loading: boolean) => void
   getMessageCountForRoleScene: (roleId: string, sceneId: string) => number
@@ -52,6 +55,11 @@ export interface ChatStoreSendContext {
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
 let adultScheduleSeq = 0
+
+/** Snapshot consumers must not apply results obtained before a new/abandoned turn. */
+export function getChatSendRevision(): number {
+  return activeSendSeq
+}
 
 export interface ChatStoreSendOptions {
   adultAction?: AdultInteractionAction
@@ -85,9 +93,20 @@ export async function sendChatStoreMessage(
   const adultStore = useAdultInteractionStore()
   const uiStore = useUiStore()
   const roleId = roleStore.currentRoleId
+  const interactionMode = roleStore.roleInfo.interactionMode
   const sid = sceneId || 'default'
+  const chatThreadId = context.getChatThreadId?.(roleId, sid)
+  const sendSeq = ++activeSendSeq
+  const isStale = () =>
+    sendSeq !== activeSendSeq
+    || context.getChatThreadId?.(roleId, sid) !== chatThreadId
+    || roleStore.currentRoleId !== roleId
+    || roleStore.roleInfo.interactionMode !== interactionMode
+    || effectiveChatSceneId(roleStore.roleInfo.interactionMode, uiStore.sceneId) !== sid
   if (options.adultAction !== 'continue')
     await cancelAdultBeatQueue(roleId, sid)
+  if (isStale())
+    return
   const adultRequest = roleStore.roleInfo.adultExtensionAvailable
     ? adultStore.requestFor(roleId, sid, options.adultAction ?? 'message')
     : undefined
@@ -96,12 +115,6 @@ export async function sendChatStoreMessage(
   cancelAdultBeatSchedule()
   const countBeforeTurn = context.getMessageCountForRoleScene(roleId, sid)
   const userLocalId = `u-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-  const sendSeq = ++activeSendSeq
-  const isStale = () =>
-    sendSeq !== activeSendSeq
-    || roleStore.currentRoleId !== roleId
-    || (uiStore.sceneId || 'default') !== sid
-
   inFlightStreamAbort?.abort()
   const streamAbort = new AbortController()
   inFlightStreamAbort = streamAbort
@@ -212,6 +225,21 @@ export async function sendChatStoreMessage(
     removeStreamBubbles()
   }
 
+  let stoppedNoticeShown = false
+  function finishAbandonedTurn(): void {
+    cleanupStreamPresentation()
+    if (!stoppedNoticeShown && !adultRequest && (streamAbort.signal.aborted || isStale())
+      && context.getMessageCountForRoleScene(roleId, sid) > 0) {
+      stoppedNoticeShown = true
+      context.addMessage(roleId, sid, {
+        id: `${assistantLocalId}-stopped`,
+        role: 'system',
+        content: rt('chat.receiveStopped'),
+        timestamp: Date.now(),
+      }, { persistIdbCache: false })
+    }
+  }
+
   function resetStreamPresentation(): void {
     cleanupStreamPresentation()
     revealedStreamSegmentIndexes.clear()
@@ -226,6 +254,7 @@ export async function sendChatStoreMessage(
       role_id: roleId,
       user_message: content,
       scene_id: sid || null,
+      ...(chatThreadId ? { chat_thread_id: chatThreadId } : {}),
       adult: adultRequest,
       ...(!adultRequest ? { client_request_id: crypto.randomUUID() } : {}),
     }
@@ -265,13 +294,13 @@ export async function sendChatStoreMessage(
       }
       catch (streamErr) {
         if (isAbortError(streamErr, streamAbort.signal) || isStale()) {
-          cleanupStreamPresentation()
+          finishAbandonedTurn()
           return
         }
         console.warn('[chat] stream interrupted, recovering the existing turn', streamErr)
         // Recovery reads/waits for the original result and never starts a new turn.
         resetStreamPresentation()
-        res = await recoverMessage(request)
+        res = await recoverMessage(request, streamAbort.signal)
       }
     }
     else {
@@ -279,7 +308,7 @@ export async function sendChatStoreMessage(
     }
 
     if (isStale()) {
-      cleanupStreamPresentation()
+      finishAbandonedTurn()
       return
     }
 
@@ -399,7 +428,7 @@ export async function sendChatStoreMessage(
   }
   catch (err) {
     if (isAbortError(err, streamAbort.signal) || isStale()) {
-      cleanupStreamPresentation()
+      finishAbandonedTurn()
       return
     }
     if (!options.hideUserMessage)
@@ -409,7 +438,7 @@ export async function sendChatStoreMessage(
   }
   finally {
     clearStreamSegmentTimers()
-    if (!isStale())
+    if (sendSeq === activeSendSeq)
       context.setLoading(false)
     if (inFlightStreamAbort === streamAbort)
       inFlightStreamAbort = null

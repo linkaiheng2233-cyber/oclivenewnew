@@ -56,6 +56,8 @@ interface RoleInfoState {
   adultExtensionError: string | null
   favorability: number
   currentEmotion: string
+  /** Latest display expression; role-info/snapshot refreshes carry analysis only. */
+  portraitEmotion?: string | null
   /** Latest catalog visual_state_id from send_message (optional). */
   visualStateId?: string | null
   /** Resolved portrait asset path from performance_directive or catalog. */
@@ -329,7 +331,7 @@ export const useRoleStore = defineStore(
       } as RoleInfoState,
     }),
     actions: {
-      async loadRoles() {
+      async loadRoles(selectDefault = true) {
         const rows = await listRoles()
         this.roles = rows.map(r => ({
           id: r.id,
@@ -343,6 +345,10 @@ export const useRoleStore = defineStore(
           adultExtensionAvailable: r.adult_extension_available ?? false,
           adultExtensionError: r.adult_extension_error ?? undefined,
         }))
+        if (!selectDefault) {
+          this.currentRoleId = ''
+          return
+        }
         if (this.roles.length === 0) {
           this.currentRoleId = ''
           return
@@ -386,10 +392,12 @@ export const useRoleStore = defineStore(
         const preservePortrait = !!rid && rid === this.portraitStateRoleId
         const visualStateId = preservePortrait ? this.roleInfo.visualStateId : null
         const portraitAssetPath = preservePortrait ? this.roleInfo.portraitAssetPath : null
+        const portraitEmotion = preservePortrait ? this.roleInfo.portraitEmotion : null
         this.roleInfo = mapRoleInfo(info)
         if (preservePortrait) {
           this.roleInfo.visualStateId = visualStateId
           this.roleInfo.portraitAssetPath = portraitAssetPath
+          this.roleInfo.portraitEmotion = portraitEmotion
         }
         else {
           this.portraitStateRoleId = ''
@@ -413,12 +421,17 @@ export const useRoleStore = defineStore(
       ) {
         this.roleInfo.currentEmotion = emotion
         this.roleInfo.favorability = favorabilityCurrent
+        const hasVisualUpdate = visual?.visualStateId !== undefined || visual?.portraitAssetPath !== undefined
+        // Compatibility responses without visual fields retain the displayed
+        // catalog image and its label as a pair. Legacy filename-only portraits
+        // still follow the latest expression.
+        if (hasVisualUpdate || !this.roleInfo.portraitAssetPath)
+          this.roleInfo.portraitEmotion = emotion
         if (visual?.visualStateId !== undefined)
           this.roleInfo.visualStateId = visual.visualStateId
         if (visual?.portraitAssetPath !== undefined)
           this.roleInfo.portraitAssetPath = visual.portraitAssetPath
-        if (visual?.visualStateId !== undefined || visual?.portraitAssetPath !== undefined)
-          this.portraitStateRoleId = this.currentRoleId
+        this.portraitStateRoleId = this.currentRoleId
       },
       updateRelationState(relationState: string) {
         this.roleInfo.relationState = relationState

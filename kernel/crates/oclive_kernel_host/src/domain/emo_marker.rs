@@ -10,6 +10,9 @@ use crate::models::Emotion;
 use oclive_kernel_runtime::domain::complex_emotion::ComplexEmotionOutput;
 use serde::Deserialize;
 
+mod stream;
+pub(crate) use stream::display_token_sink;
+
 /// Opening marker. Keep in sync with the prompt instruction in
 /// `oclive_kernel_runtime::domain::prompt_builder`.
 pub const EMO_MARKER_OPEN: &str = "[EMO]";
@@ -21,6 +24,30 @@ pub const EMO_MARKER_CLOSE: &str = "[/EMO]";
 /// producing the required `[EMO]{...}[/EMO]` block.  The payload cannot be
 /// trusted as structured emotion, but it must never reach the visible reply.
 const ESCAPED_EMO_MARKER_OPEN: &str = r"\[EMO\]";
+const MALFORMED_OPENERS: [&str; 6] = [
+    ESCAPED_EMO_MARKER_OPEN,
+    r"\[EMO]",
+    r"[EMO\]",
+    "［EMO]",
+    "［EMO］",
+    "[EMO］",
+];
+const LABEL_PREFIXES: [&str; 4] = [
+    r#""label":"#,
+    r#""labels":"#,
+    r#"\"label\":"#,
+    r#"\"labels\":"#,
+];
+const INTERNAL_STATUS_MARKERS: [&str; 8] = [
+    "[@思考中...]",
+    "[@思考中…]",
+    "[思考中...]",
+    "[思考中…]",
+    "（思考中...）",
+    "（思考中…）",
+    "[分析中...]",
+    "[生成中...]",
+];
 /// `ComplexEmotionOutput.source` for marker-derived output.
 pub const EMO_MARKER_SOURCE: &str = "llm_emo_marker";
 /// `ComplexEmotionOutput.source` for the degraded keep branch (no marker, non-plugin backend).
@@ -29,12 +56,6 @@ pub const DEGRADED_KEEP_SOURCE: &str = "degraded_keep";
 pub const MAX_NARRATIVE_HINT_CHARS: usize = 200;
 
 fn markerless_emo_tail_start(reply: &str) -> Option<usize> {
-    const LABEL_PREFIXES: [&str; 4] = [
-        r#""label":"#,
-        r#""labels":"#,
-        r#"\"label\":"#,
-        r#"\"labels\":"#,
-    ];
     const EMOTION_VALUES: [&str; 7] = [
         "joy", "sadness", "anger", "fear", "surprise", "disgust", "neutral",
     ];
@@ -53,19 +74,8 @@ fn markerless_emo_tail_start(reply: &str) -> Option<usize> {
 }
 
 fn strip_internal_status_markers(reply: &str) -> String {
-    const INTERNAL_SUFFIXES: [&str; 8] = [
-        "[@思考中...]",
-        "[@思考中…]",
-        "[思考中...]",
-        "[思考中…]",
-        "（思考中...）",
-        "（思考中…）",
-        "[分析中...]",
-        "[生成中...]",
-    ];
-
     let mut cleaned = reply.to_string();
-    for marker in INTERNAL_SUFFIXES {
+    for marker in INTERNAL_STATUS_MARKERS {
         cleaned = cleaned.replace(marker, "");
     }
     cleaned.trim_end().to_string()
@@ -230,6 +240,22 @@ impl EmoMarker {
 /// the attempted markers are still stripped for display hygiene.
 #[must_use]
 pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
+    let parsed = parse_reply(reply);
+    (parsed.reply, parsed.emotion)
+}
+
+pub(crate) struct ParsedReply {
+    pub reply: String,
+    pub emotion: Option<EmoMarker>,
+    pub portrait_hint: Option<PortraitHint>,
+}
+
+pub(crate) struct PortraitHint {
+    pub emotion: Emotion,
+    pub intensity: Option<f64>,
+}
+
+pub(crate) fn parse_reply(reply: &str) -> ParsedReply {
     let mut blocks = Vec::new();
     let mut unclosed_start = None;
     let mut scan = 0;
@@ -246,39 +272,53 @@ pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
         scan = close_end;
     }
 
-    let escaped_start = [
-        ESCAPED_EMO_MARKER_OPEN,
-        r"\[EMO]",
-        r"[EMO\]",
-        "［EMO]",
-        "［EMO］",
-        "[EMO］",
-    ]
-    .into_iter()
-    .filter_map(|candidate| reply.find(candidate))
-    .min();
+    let escaped_start = MALFORMED_OPENERS
+        .into_iter()
+        .filter_map(|candidate| reply.find(candidate))
+        .min();
     let markerless_start = markerless_emo_tail_start(reply).filter(|candidate| {
         !blocks
             .iter()
             .any(|(start, _, _, close_end)| candidate >= start && candidate < close_end)
     });
 
-    let marker =
+    let payload =
         if unclosed_start.is_some() || escaped_start.is_some() || markerless_start.is_some() {
             None
         } else {
             blocks
                 .last()
                 .copied()
-                .and_then(|(_, body_start, body_end, _)| parse_marker(&reply[body_start..body_end]))
+                .and_then(|(_, body_start, body_end, _)| {
+                    serde_json::from_str::<serde_json::Value>(&reply[body_start..body_end]).ok()
+                })
         };
+    // Both fields share one JSON parse, but validate independently: a small
+    // model can give a valid display hint alongside an invalid analysis label.
+    let portrait_hint = payload.as_ref().and_then(|value| {
+        Some(PortraitHint {
+            emotion: value.get("portrait_hint")?.as_str()?.parse().ok()?,
+            intensity: value
+                .get("intensity")
+                .and_then(serde_json::Value::as_f64)
+                .filter(|value| value.is_finite())
+                .map(|value| value.clamp(0.0, 1.0)),
+        })
+    });
+    let marker = payload
+        .and_then(|value| serde_json::from_value::<EmoMarkerRaw>(value).ok())
+        .and_then(parse_marker);
 
     if blocks.is_empty()
         && unclosed_start.is_none()
         && escaped_start.is_none()
         && markerless_start.is_none()
     {
-        return (strip_internal_status_markers(reply), None);
+        return ParsedReply {
+            reply: strip_internal_status_markers(reply),
+            emotion: None,
+            portrait_hint: None,
+        };
     }
 
     let mut cleaned = reply.to_string();
@@ -297,12 +337,15 @@ pub fn parse_and_strip(reply: &str) -> (String, Option<EmoMarker>) {
         cleaned.replace_range(start..close_end, "");
     }
     let cleaned = strip_internal_status_markers(&cleaned);
-    (cleaned, marker)
+    ParsedReply {
+        reply: cleaned,
+        emotion: marker,
+        portrait_hint,
+    }
 }
 
 /// Parses and validates the JSON payload; returns `None` on any violation.
-fn parse_marker(raw: &str) -> Option<EmoMarker> {
-    let parsed: EmoMarkerRaw = serde_json::from_str(raw).ok()?;
+fn parse_marker(parsed: EmoMarkerRaw) -> Option<EmoMarker> {
     if parsed.labels.is_empty() || parsed.labels.len() > 3 {
         return None;
     }
@@ -361,6 +404,48 @@ mod tests {
             intensity,
             narrative_hint: hint.map(str::to_string),
         }
+    }
+
+    #[test]
+    fn display_hint_is_independent_and_invalid_hints_do_not_break_analysis() {
+        for hint in [
+            serde_json::json!("shy"),
+            serde_json::json!("bad"),
+            serde_json::json!(false),
+            serde_json::Value::Null,
+        ] {
+            let raw = format!("你好[EMO]{{\"labels\":[\"joy\"],\"intensity\":0.5,\"portrait_hint\":{hint}}}[/EMO]");
+            let parsed = parse_reply(&raw);
+            let marker = parsed
+                .emotion
+                .expect("valid analysis despite a bad display hint");
+            assert_eq!(parsed.reply, "你好");
+            assert_eq!(marker.dominant_emotion(), Emotion::Happy);
+            assert_eq!(marker.to_complex_emotion_output().labels, ["joy"]);
+            assert_eq!(
+                parsed.portrait_hint.map(|hint| hint.emotion),
+                if hint == "shy" {
+                    Some(Emotion::Shy)
+                } else {
+                    None
+                }
+            );
+        }
+    }
+
+    #[test]
+    fn valid_display_hint_survives_an_invalid_analysis_label_but_not_a_broken_envelope() {
+        let raw =
+            "台词[EMO]{\"labels\":[\"shy\"],\"intensity\":0.5,\"portrait_hint\":\"shy\"}[/EMO]";
+        let parsed = parse_reply(raw);
+        assert!(parsed.emotion.is_none());
+        let hint = parsed.portrait_hint.expect("independent display hint");
+        assert_eq!(hint.emotion, Emotion::Shy);
+        assert_eq!(hint.intensity, Some(0.5));
+        assert_eq!(parsed.reply, "台词");
+        assert!(parse_reply(raw.trim_end_matches("[/EMO]"))
+            .portrait_hint
+            .is_none());
     }
 
     #[test]

@@ -60,7 +60,6 @@ When you change runtime or author-facing contracts (slots, `plugin_backends`, br
 | `studio/` | 1 | **Mirrored** | USER_GUIDE |
 | `development/` | 2 | **Mirrored** | RELEASE_VERSIONING, LIGHTWEIGHT_PROFILE |
 | `dual-core/` | 2 | **Mirrored** | DEVELOPER_GUIDE, METHOD_REGISTRY |
-| `video-script/` | 1 | **Pending** | Chinese-only script (index-only) |
 | `architecture/` | 1 | **Mirrored** | [`DESIGN_DECISIONS`](../creator-docs/architecture-en/DESIGN_DECISIONS.md) (EN lives under `creator-docs/architecture-en/`) |
 | Root | 3 | **Mirrored** | FAQ, LICENSE_POLICY, COMPATIBILITY, NAMING_CONVENTIONS |
 

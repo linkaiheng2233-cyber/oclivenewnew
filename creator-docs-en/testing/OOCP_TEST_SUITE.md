@@ -49,7 +49,7 @@
 
 ## Conformance report
 
-`npm run test:json` emits JSON; field set is defined in `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`. The report includes:
+From the repository root, `npm --prefix examples/oocp-test-suite run test:json` emits JSON (or enter that example directory before running `npm run test:json`). The field set is defined in `examples/oocp-test-suite/schemas/oclive.protocol_conformance_report.v1.schema.json`. The report includes:
 
 - a `dual_core` summary section (enabled flag, S13/S14 switches, executed dual-core scenarios),
 - a `ci_context` section (generation timestamp plus CI metadata: `github_run_id` / `github_sha` / `github_ref`).

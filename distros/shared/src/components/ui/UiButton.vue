@@ -40,7 +40,7 @@ withDefaults(
   font-family: var(--font-ui);
   line-height: var(--tool-line, 1.5);
   cursor: pointer;
-  transition: var(--tool-transition, var(--control-transition));
+  transition: background var(--ui-motion-fast,120ms) ease-out, border-color var(--ui-motion-fast,120ms) ease-out, transform var(--ui-motion-fast,120ms) ease-out;
   white-space: nowrap;
 }
 
@@ -94,4 +94,8 @@ withDefaults(
 .ui-btn:focus-visible {
   box-shadow: 0 0 0 1px var(--tool-accent, var(--accent));
 }
+.ui-btn:active:not(:disabled) { transform:translateY(1px); }
+@media(prefers-reduced-motion:reduce) { .ui-btn { transition:none; }.ui-btn:active:not(:disabled) { transform:none; } }
+:global(html[data-skin="win98"] .ui-btn) { transition:none; }
+:global(html[data-skin="win98"] .ui-btn:active:not(:disabled)) { transform:none; }
 </style>

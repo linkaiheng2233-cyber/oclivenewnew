@@ -22,10 +22,11 @@
 
 | 任务 | 路径 |
 |------|------|
+| 默认角色工作区 | `distros/chat-pro/src/App.vue` → `shells/fluent/RoleWorkspaceShell.vue`；壳/延后入口的权威映射见 [MODULE_MAP §13.1](../../handoff/MODULE_MAP_AND_HANDOFF.md#131-chat-pro-壳与互动模式-ia) |
 | 发消息 | `distros/shared/src/api/chat.ts` → `send_message` |
 | 聊天状态 | `distros/shared/src/stores/chatStore.ts` |
-| 插件管理 | `Ctrl+Shift+F` → `SimplePluginManagerPanel.vue` |
-| 模型管理 | `Ctrl+Shift+M` → `ModelManagerPanel.vue` |
+| 插件管理 | `SimplePluginManagerPanel.vue`；按 Host 能力/旧壳入口调试，默认角色工作区收起，不用快捷键证明挂载 |
+| 模型管理 | 工作区“模型与连接” → `ModelManagerPanel.vue` |
 | Tauri 命令全集 | `distros/desktop-tauri/src/lib.rs` `generate_handler!` |
 
 ---

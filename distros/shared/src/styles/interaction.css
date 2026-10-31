@@ -1,0 +1,42 @@
+/* Chat Pro interaction rhythm. Existing layout and business state stay in their owners. */
+:root {
+  --ui-motion-fast: 120ms;
+  --ui-motion-panel: 160ms;
+}
+
+@keyframes oclive-panel-enter {
+  from { opacity: 0; transform: translateY(6px) scale(.99); }
+  to { opacity: 1; transform: none; }
+}
+
+html:not([data-skin="win98"]) :is(.sv-dialog, .mm-dialog, .workspace-help, .sh-dialog, .spm-dialog, .mk-dialog) {
+  animation: oclive-panel-enter var(--ui-motion-panel) ease-out;
+  transform-origin: center top;
+}
+
+html:not([data-skin="win98"]) .role-app :is(.nav-button, .nav-role-title, .card-conversation, .primary, .library-actions button) {
+  transition: background var(--ui-motion-fast) ease-out, border-color var(--ui-motion-fast) ease-out, color var(--ui-motion-fast) ease-out;
+}
+
+html:not([data-skin="win98"]) .role-app .role-card {
+  transition: border-color var(--ui-motion-fast) ease-out, box-shadow var(--ui-motion-fast) ease-out;
+}
+
+html:not([data-skin="win98"]) .role-app .role-card:is(:hover, :focus-within) {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-sm);
+}
+
+html:not([data-skin="win98"]) .role-app :is(.primary, .library-actions button):active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --ui-motion-fast: 0ms; --ui-motion-panel: 0ms; }
+  html:not([data-skin="win98"]) :is(.sv-dialog, .mm-dialog, .workspace-help, .sh-dialog, .spm-dialog, .mk-dialog) {
+    animation: none;
+  }
+  html:not([data-skin="win98"]) .role-app :is(.primary, .library-actions button):active:not(:disabled) {
+    transform: none;
+  }
+}

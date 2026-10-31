@@ -205,6 +205,9 @@ pub struct ReplayProgress {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChatStorageCapabilities {
+    /// Transcript-only threads keep the existing role memory namespace.
+    #[serde(default)]
+    pub supports_chat_threads: bool,
     pub backend_kind: String,
     /// Whether JSON mirror files are written alongside SQLite (`hybrid` vs mirror-off `sqlite`).
     pub mirror_enabled: bool,

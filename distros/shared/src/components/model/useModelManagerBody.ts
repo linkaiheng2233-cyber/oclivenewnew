@@ -6,6 +6,7 @@ import type {
   LocalModelFile,
   LoraContentRating,
 } from '@oclive/shared/api/llmSettings'
+import { toastAsyncError, toErrorPresentation } from '@oclive/shared/api/helpers'
 import {
   activateLocalLoraAdapter,
   deleteLocalLoraAdapter,
@@ -35,7 +36,10 @@ import {
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-export function useModelManagerBody() {
+export function useModelManagerBody(options: {
+  initialProvider?: 'local' | 'cloud'
+  onSaved?: (roleId: string) => void
+} = {}) {
   const roleStore = useRoleStore()
   const { t } = useI18n()
   const { showToast } = useAppToast()
@@ -53,6 +57,7 @@ export function useModelManagerBody() {
   const loraReplaceExisting = ref(false)
   const globalDefaultModel = ref('')
   const settings = ref<LlmUserSettings | null>(null)
+  const settingsRoleId = ref<string | null>(null)
   const ollamaModels = ref<string[]>([])
   const folderModelFiles = ref<LocalModelFile[]>([])
 
@@ -70,6 +75,10 @@ export function useModelManagerBody() {
   let cloudModelsLoadGeneration = 0
   let settingsSaveGeneration = 0
   let globalSaveGeneration = 0
+  let cloudProbeGeneration = 0
+  let cloudFormGeneration = 0
+  let disposed = false
+  let initialProvider = options.initialProvider
 
   function formatAdapterSize(bytes: number): string {
     if (!Number.isFinite(bytes) || bytes <= 0)
@@ -206,6 +215,16 @@ export function useModelManagerBody() {
     )
   }
 
+  const cloudProbeNeedsSave = computed(() => {
+    const saved = settings.value
+    return loading.value || !saved || settingsRoleId.value !== roleStore.currentRoleId
+      || saved.provider !== 'cloud' || providerTab.value !== 'cloud'
+      || !remoteUrl.value.trim() || !remoteModel.value.trim() || !saved.remoteTokenConfigured
+      || remoteUrl.value.trim() !== saved.remoteUrl.trim()
+      || remoteModel.value.trim() !== (saved.remoteModel || saved.sessionOllamaModel || '').trim()
+      || remoteToken.value.trim().length > 0
+  })
+
   const effectiveModel = computed(() =>
     settings.value?.localRuntimeMode === 'performance'
     && settings.value.localModelPath?.trim()
@@ -235,7 +254,7 @@ export function useModelManagerBody() {
     }
     catch (e) {
       if (generation === globalSaveGeneration)
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
     }
     finally {
       if (generation === globalSaveGeneration)
@@ -243,7 +262,10 @@ export function useModelManagerBody() {
     }
   }
 
-  async function loadSettings(): Promise<void> {
+  async function loadSettings({ preserveForm = false }: { preserveForm?: boolean } = {}): Promise<void> {
+    if (disposed)
+      return
+    invalidateCloudProbe()
     const generation = ++settingsLoadGeneration
     const roleId = roleStore.currentRoleId
     // A role switch owns all loading indicators from this point onward. Older
@@ -268,10 +290,7 @@ export function useModelManagerBody() {
           generation === settingsLoadGeneration
           && roleStore.currentRoleId === roleId
         ) {
-          showToast(
-            'error',
-            error instanceof Error ? error.message : String(error),
-          )
+          toastAsyncError(error)
         }
       })
     try {
@@ -283,7 +302,11 @@ export function useModelManagerBody() {
         return
       }
       settings.value = s
-      providerTab.value = s.provider === 'cloud' ? 'cloud' : 'local'
+      settingsRoleId.value = roleId
+      if (preserveForm)
+        return
+      providerTab.value = initialProvider ?? (s.provider === 'cloud' ? 'cloud' : 'local')
+      initialProvider = undefined
       ollamaBaseUrl.value = s.ollamaBaseUrl
       localModelsDir.value = s.localModelsDir
       folderModelFiles.value = s.localModelFiles ?? []
@@ -303,7 +326,7 @@ export function useModelManagerBody() {
         generation === settingsLoadGeneration
         && roleStore.currentRoleId === roleId
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {
@@ -364,7 +387,7 @@ export function useModelManagerBody() {
     }
     catch (e) {
       if (generation === cloudModelsLoadGeneration && !opts?.silent)
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
     }
     finally {
       if (generation === cloudModelsLoadGeneration)
@@ -400,7 +423,7 @@ export function useModelManagerBody() {
         generation === ollamaModelsLoadGeneration
         && settings.value?.localRuntimeMode !== 'performance'
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {
@@ -410,20 +433,25 @@ export function useModelManagerBody() {
   }
 
   async function pickModelsFolder(): Promise<void> {
-    const picked = await openDialog({
-      directory: true,
-      multiple: false,
-      defaultPath: localModelsDir.value || undefined,
-    })
-    if (!picked || Array.isArray(picked)) {
-      return
+    try {
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        defaultPath: localModelsDir.value || undefined,
+      })
+      if (!picked || Array.isArray(picked)) {
+        return
+      }
+      localModelsDir.value = picked
+      folderModelFiles.value = await scanLocalModelFiles(picked)
+      if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
+        const first = folderModelFiles.value[0]
+        if (first)
+          selectedLocalModel.value = `file:${first.path}`
+      }
     }
-    localModelsDir.value = picked
-    folderModelFiles.value = await scanLocalModelFiles(picked)
-    if (folderModelFiles.value.length > 0 && !selectedLocalModel.value) {
-      const first = folderModelFiles.value[0]
-      if (first)
-        selectedLocalModel.value = `file:${first.path}`
+    catch (err) {
+      toastAsyncError(err)
     }
   }
 
@@ -432,7 +460,12 @@ export function useModelManagerBody() {
       showToast('info', t('modelManager.pickFolderFirst'))
       return
     }
-    folderModelFiles.value = await scanLocalModelFiles(localModelsDir.value)
+    try {
+      folderModelFiles.value = await scanLocalModelFiles(localModelsDir.value)
+    }
+    catch (err) {
+      toastAsyncError(err)
+    }
   }
 
   async function openModelsFolder(): Promise<void> {
@@ -440,7 +473,12 @@ export function useModelManagerBody() {
       showToast('info', t('modelManager.pickFolderFirst'))
       return
     }
-    await openPathInFileManager(localModelsDir.value)
+    try {
+      await openPathInFileManager(localModelsDir.value)
+    }
+    catch (err) {
+      toastAsyncError(err)
+    }
   }
 
   async function importSelectedFileToOllama(): Promise<void> {
@@ -459,7 +497,7 @@ export function useModelManagerBody() {
       await refreshOllamaModels()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       importing.value = false
@@ -512,7 +550,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraImporting.value = false
@@ -551,7 +589,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraMutating.value = false
@@ -582,7 +620,7 @@ export function useModelManagerBody() {
       await loadSettings()
     }
     catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
+      toastAsyncError(e)
     }
     finally {
       loraMutating.value = false
@@ -609,17 +647,50 @@ export function useModelManagerBody() {
     }
   }
 
-  async function runCloudProbeAfterSave(): Promise<void> {
+  function invalidateCloudProbe(): void {
+    cloudProbeGeneration += 1
+    probing.value = false
+  }
+
+  async function probeCloudConnection(source: 'manual' | 'saved'): Promise<boolean> {
+    if (disposed)
+      return false
+    const generation = ++cloudProbeGeneration
+    const roleId = roleStore.currentRoleId
+    const isCurrent = () => !disposed && generation === cloudProbeGeneration && roleId === roleStore.currentRoleId
+    probing.value = true
     try {
-      await probeCloudLlm(roleStore.currentRoleId)
-      showToast('info', t('modelManager.probeOk'))
+      await probeCloudLlm(roleId)
+      if (isCurrent())
+        showToast(source === 'saved' ? 'info' : 'success', t('modelManager.probeOk'))
     }
     catch (e) {
-      showToast('warning', e instanceof Error ? e.message : String(e))
+      if (isCurrent()) {
+        if (source === 'saved') {
+          const failure = toErrorPresentation(e)
+          showToast('warning', failure.summary, failure.details)
+        }
+        else {
+          toastAsyncError(e)
+        }
+      }
     }
+    finally {
+      if (isCurrent())
+        probing.value = false
+    }
+    // A closed/changed form loses permission to update UI, even if the remote
+    // probe physically finishes. This does not assert cancellation upstream.
+    return isCurrent()
+  }
+
+  async function runCloudProbeAfterSave(): Promise<boolean> {
+    return probeCloudConnection('saved')
   }
 
   async function onProbeCloud(): Promise<void> {
+    if (disposed || probing.value || saving.value || loading.value)
+      return
     if (!remoteUrl.value.trim()) {
       showToast('error', t('modelManager.needRemoteUrl'))
       return
@@ -635,22 +706,19 @@ export function useModelManagerBody() {
       showToast('error', t('modelManager.needApiKey'))
       return
     }
-    probing.value = true
-    try {
-      await probeCloudLlm(roleStore.currentRoleId)
-      showToast('success', t('modelManager.probeOk'))
+    if (cloudProbeNeedsSave.value) {
+      showToast('info', t('modelManager.probeNeedSave'))
+      return
     }
-    catch (e) {
-      showToast('error', e instanceof Error ? e.message : String(e))
-    }
-    finally {
-      probing.value = false
-    }
+    await probeCloudConnection('manual')
   }
 
   async function onSave(): Promise<void> {
+    if (disposed || saving.value || loading.value)
+      return
     const generation = ++settingsSaveGeneration
     const roleId = roleStore.currentRoleId
+    const formGeneration = cloudFormGeneration
     saving.value = true
     try {
       if (providerTab.value === 'local') {
@@ -729,19 +797,28 @@ export function useModelManagerBody() {
           return
         }
         roleStore.applyRoleInfo(info)
-        rememberCloudModel(remoteModel.value.trim())
+        rememberCloudModel(req.remoteModel ?? '')
         cloudModelHistory.value = getCloudModelHistory()
         showToast('success', t('modelManager.saveOk'))
-        await runCloudProbeAfterSave()
+        if (formGeneration !== cloudFormGeneration) {
+          await loadSettings({ preserveForm: true })
+          return
+        }
+        if (!await runCloudProbeAfterSave())
+          return
       }
-      await loadSettings()
+      if (disposed || generation !== settingsSaveGeneration || roleStore.currentRoleId !== roleId)
+        return
+      options.onSaved?.(roleId)
+      if (!disposed && generation === settingsSaveGeneration && roleStore.currentRoleId === roleId)
+        await loadSettings()
     }
     catch (e) {
       if (
         generation === settingsSaveGeneration
         && roleStore.currentRoleId === roleId
       ) {
-        showToast('error', e instanceof Error ? e.message : String(e))
+        toastAsyncError(e)
       }
     }
     finally {
@@ -766,12 +843,27 @@ export function useModelManagerBody() {
   })
 
   watch(
+    [providerTab, remoteUrl, remoteModel, remoteToken],
+    () => {
+      cloudFormGeneration += 1
+      invalidateCloudProbe()
+    },
+    { flush: 'sync' },
+  )
+
+  watch(
     () => roleStore.currentRoleId,
-    () => void loadSettings(),
-    { immediate: true },
+    () => {
+      settingsSaveGeneration += 1
+      saving.value = false
+      void loadSettings()
+    },
+    { immediate: true, flush: 'sync' },
   )
 
   onBeforeUnmount(() => {
+    disposed = true
+    invalidateCloudProbe()
     settingsLoadGeneration += 1
     ollamaModelsLoadGeneration += 1
     cloudModelsLoadGeneration += 1
@@ -787,6 +879,7 @@ export function useModelManagerBody() {
     cloudModels,
     cloudModelsLoadGeneration,
     cloudModelsLoading,
+    cloudProbeNeedsSave,
     effectiveModel,
     folderModelFiles,
     formatAdapterSize,

@@ -193,8 +193,7 @@ impl ConversationStore for HybridConversationStore {
     async fn append_turn(&self, input: TurnPersistInput) -> Result<AppendTurnResult> {
         let scene_id = normalize_scene_id(&input.scene_id);
         let max = load_max_messages_per_session(input.max_messages_per_session);
-        let session = self
-            .db
+        self.db
             .upsert_chat_session(&input.session_id, &input.role_id, &scene_id)
             .await?;
 
@@ -281,44 +280,18 @@ impl ConversationStore for HybridConversationStore {
         let turn = NewTurnMessages {
             user_id: user_id.clone(),
             assistant_id: assistant_id.clone(),
-            user_content: input.user_message.clone(),
-            assistant_content: input.assistant_reply.clone(),
-            user_metadata: Some(user_meta_str.clone()),
-            assistant_metadata: Some(assistant_meta_str.clone()),
+            user_content: input.user_message,
+            assistant_content: input.assistant_reply,
+            user_metadata: Some(user_meta_str),
+            assistant_metadata: Some(assistant_meta_str),
             assistant_emotion_source: input.bot_emotion_source,
             user_created_at: user_ts.clone(),
             assistant_created_at: assistant_ts.clone(),
         };
 
-        let inserted = self
-            .db
+        self.db
             .insert_chat_turn_messages(&input.session_id, turn, max)
             .await?;
-        let turn_index = inserted.turn_index;
-
-        let user_row = MessageRow {
-            id: user_id.clone(),
-            session_id: input.session_id.clone(),
-            turn_index,
-            sender: "user".into(),
-            content: input.user_message,
-            metadata: Some(user_meta_str),
-            created_at: user_ts.clone(),
-        };
-        let assistant_row = MessageRow {
-            id: assistant_id.clone(),
-            session_id: input.session_id.clone(),
-            turn_index,
-            sender: "assistant".into(),
-            content: input.assistant_reply,
-            metadata: Some(assistant_meta_str),
-            created_at: assistant_ts.clone(),
-        };
-        let new_rows = [user_row, assistant_row];
-
-        let mut session_after = session;
-        session_after.message_count = inserted.message_count;
-        session_after.updated_at = assistant_ts.clone();
 
         let storage_root =
             self.role_storage_root(&input.role_id, Some(&input.chat_storage_location));
@@ -326,18 +299,23 @@ impl ConversationStore for HybridConversationStore {
         let role_id_spawn = input.role_id.clone();
         let cleanup_cfg = input.auto_cleanup_config.clone();
         let db_spawn = Arc::clone(&self.db);
+        let session_id_spawn = input.session_id;
         let mirror_enabled = self.mirror_enabled;
         tokio::spawn(async move {
             if mirror_enabled {
-                if let Err(e) =
-                    mirror::sync_mirror_append(&storage_root, &session_after, &new_rows, max_spawn)
-                        .await
+                if let Err(e) = mirror::rebuild_mirror(
+                    db_spawn.as_ref(),
+                    &storage_root,
+                    &session_id_spawn,
+                    max_spawn,
+                )
+                .await
                 {
                     tracing::warn!(
                         target: "oclive_chat_storage",
-                        session_id = %session_after.session_id,
+                        session_id = %session_id_spawn,
                         error = %e,
-                        "sync_mirror_append failed"
+                        "background mirror rebuild failed; SQLite write already committed"
                     );
                 }
             }
