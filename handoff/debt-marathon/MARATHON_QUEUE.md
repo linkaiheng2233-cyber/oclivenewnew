@@ -7,6 +7,8 @@
 **状态台账 SSOT：** [`../TECHNICAL_DEBT_INVENTORY.md`](../TECHNICAL_DEBT_INVENTORY.md)  
 **规程 Skill：** `.cursor/skills/oclive-debt-marathon/SKILL.md` + `oclive-dev-pipeline`
 
+**本次发布前定点维护**：维护者已明确授权处理 [K-STORE-RECOVERY-01](../TECHNICAL_DEBT_INVENTORY.md#debt-k-store-recovery-01)，并做本机隔离数据验收与新版交付；使用通常的 L 门禁，不借此 claim 后续自动 Stage、解冻高级功能或重启历史待办。当前状态仍由主台账维护。
+
 ---
 
 ## 硬规则

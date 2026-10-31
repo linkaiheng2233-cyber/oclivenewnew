@@ -12,7 +12,8 @@
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-10-30**（本地 `cargo audit --json` 刷新 advisory-db，共 **1386** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**；本轮锁文件仅同步桌面候选版本，依赖锁定图不变） |
+| **最近扫描日期** | **2026-11-01**（本地 `cargo audit --json` 刷新 advisory-db，共 **1395** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**；本轮锁文件仅同步桌面 rc.4 版本，第三方依赖锁定图不变） |
+| **本轮 npm 扫描** | 生产依赖 **0**；完整依赖图 **3 low / 43 moderate / 0 high / 0 critical**。该新公告快照不改写旧扫描结果；现行 production/full `--audit-level=high` 标准保持，未扩 ignore 或升级无关依赖 |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit --json` 退出码 **0**） |
 | **警告级命中数** | **报出 10 / 实际命中 11**（`glib`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |

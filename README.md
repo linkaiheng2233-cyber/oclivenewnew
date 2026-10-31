@@ -9,7 +9,7 @@
 
 A.I.Live 让创作者编写人设、立绘、场景与身份模板，让用户在本地运行自己的角色；开发者也可以只使用所需的契约和模块，构建自己的 Host。
 
-**项目仍在开发与内测。** 本仓公开安装包、默认分支源码和新前端候选分别维护，不能用源码截图推断旧安装包已经包含同样功能。近期 Chat Pro 优化见[候选 PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225)；版本与验收边界查[项目状态](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)，可下载文件以各条 Release 的附件为准。
+**项目仍在开发与内测。** 本仓公开安装包、默认分支源码和新前端候选分别维护，不能用源码截图推断旧安装包已经包含同样功能。近期 Chat Pro 优化见[已合入 PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225)；版本与验收边界查[项目状态](creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)，可下载文件以各条 Release 的附件为准。
 
 ## 选择你的入口
 
