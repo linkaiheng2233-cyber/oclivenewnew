@@ -31,4 +31,4 @@ media-png = ["dep:png"]
 tempfile = { workspace = true }
 # Match Tauri's dom_query bit-set/bit-vec 0.8 until both support the newer family.
 # This only constrains the property-test toolchain; production dependencies are unchanged.
-proptest = "~1.11.0"
+proptest = "~1.12.0"
