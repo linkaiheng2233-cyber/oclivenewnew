@@ -282,7 +282,7 @@ JSON Schema：`kernel/crates/oclive-cli/schemas/pipeline.ocblueprint.v2.schema.j
 | 会话槽覆盖 | `set_session_slot_override` 内存 overlay；改包默认经 `save_role_slot_registry` 写盘 | `set_session_plugin_backend` 仅为默认六实例薄封装 |
 | Monolith 焊接 | **仅** 脚手架 `monolith.toml` / `process_message_monolith.rs`，**不**随角色包分发 | 同左 |
 
-校验：`cargo run -p oclive-cli -- pack validate <dir>`（按声明精确分派 **v2/v3/v4**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [[历史记录：BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
+校验：`cargo run -p oclive-cli -- pack validate <dir>`（按声明精确分派 **v2/v3/v4**）；legacy 包用 `--profile legacy`。另：`blueprint validate <dir>`。历史实施路线图见 [历史记录：BLUEPRINT_V2_IMPLEMENTATION_PLAN.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/BLUEPRINT_V2_IMPLEMENTATION_PLAN.md)。
 
 ---
 

@@ -1,7 +1,7 @@
 # 编写器能力路线图（立绘 catalog · 视觉舞台）
 
 **状态**：2026-06-13 与 RFC 对齐；现行设施边界见 [立绘 RFC](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) 与 [视觉表现 RFC](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)。
-**姊妹仓编写器副本**：[[历史记录：PACK_EDITOR_ROADMAP.md](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/20f3eb26ff98214ce74a2234f7f1b6181b41de77/handoff/PACK_EDITOR_ROADMAP.md)](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/20f3eb26ff98214ce74a2234f7f1b6181b41de77/handoff/PACK_EDITOR_ROADMAP.md)
+**姊妹仓编写器副本**：[历史记录：PACK_EDITOR_ROADMAP.md](https://github.com/linkaiheng2233-cyber/oclive-pack-editor/blob/20f3eb26ff98214ce74a2234f7f1b6181b41de77/handoff/PACK_EDITOR_ROADMAP.md)
 
 **RFC**： [RFC_PORTRAIT_FACILITY.md](../../creator-docs/rfc/RFC_PORTRAIT_FACILITY.md) · [RFC_VISUAL_PRESENTATION_FACILITY.md](../../creator-docs/rfc/RFC_VISUAL_PRESENTATION_FACILITY.md)
 

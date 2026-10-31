@@ -207,7 +207,7 @@
 | **dual_core** / **expert_routing** / **blueprint v3** | 实验管线 | **维护冻结 · 默认仍关**（2026-10-07 维护者决定；既有显式 opt-in 实现保留，2026-07-24 LoRA directory LLM 选择链已接通的历史不撤销；仍须 Cargo feature + 蓝图 `dual_core.enabled` + 角色包 `expert_routing.json` 显式配置。NULL 缺口未解决；不自动扩面或重启 Beta 维护。见 [DUAL-CORE-FREEZE](debt-marathon/long-plans/DUAL-CORE-FREEZE.md)） |
 | **D-READ-03** | `dual_pipeline` 表驱动 | 随 `dual_core` opt-in |
 | <a id="debt-d-port-03"></a> **D-PORT-03** | `BackendRegistry` UFCS 转发层 | 等第二 remote policy 实现或对应 RFC 再评估；D-PORT-02 / D-SLOT-01 已完成，不再以旧双实现为由解冻 |
-| **§3.1** | 纯 library API 对称化 | 历史 [[历史记录：RFC_OCLIVE_KERNEL_LIBRARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/RFC_OCLIVE_KERNEL_LIBRARY.md)](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
+| **§3.1** | 纯 library API 对称化 | 历史 [历史记录：RFC_OCLIVE_KERNEL_LIBRARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/RFC_OCLIVE_KERNEL_LIBRARY.md) T0 |
 | **模式 3** | 用户大纲演绎 / Mode 3 `send_message` 长对话 | 模式 2 playtest 扩展后另开计划 |
 | <a id="debt-mega-sd-01"></a> **MEGA-SD-01** | `scene_director.rs` 拆 `theater/parse/` + `theater/modes/` | 模式 2 playtest 稳定 **或** 生产段 >2500 行 **或** 第二 remote 剧场插件 |
 | <a id="debt-mega-ts-01"></a> **MEGA-TS-01** | `useTheaterShell.ts` 拆 poke/cast/outline composable | 同上；Shell 仅编排。轮次 29 已先行外移纯辅助函数（`useTheaterShellUtil.ts`），主体拆分仍冻结 |

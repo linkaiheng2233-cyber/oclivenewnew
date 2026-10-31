@@ -46,7 +46,7 @@
 - Rust：[`kernel/crates/oclive_kernel_types/src/error.rs`](../../kernel/crates/oclive_kernel_types/src/error.rs)（`KernelErrorBody`、`AppError`、`http_chat_codes`）。
 - HTTP：`kernel/crates/oclive_kernel_host/src/http_api/`（路由模块 `mod.rs`、`chat.rs` 等）。
 - 补丁摘要：[历史记录：A2_KERNEL_JSON_ERROR_PATCH.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A2_KERNEL_JSON_ERROR_PATCH.md)。
-- **A3（崩溃上报与用户可见错误扫尾）**：[[历史记录：A3_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md)](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md) · [[历史记录：A3_CLOSURE_SUMMARY.en.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.en.md)](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.en.md)。
+- **A3（崩溃上报与用户可见错误扫尾）**：[历史记录：A3_CLOSURE_SUMMARY.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.md) · [历史记录：A3_CLOSURE_SUMMARY.en.md](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/archive/A3_CLOSURE_SUMMARY.en.md)。
 
 ## 7. 目录插件 RPC 字符串 → `ApiError` 映射
 
