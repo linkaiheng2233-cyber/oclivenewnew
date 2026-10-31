@@ -9,7 +9,7 @@
 
 A.I.Live lets creators write personas, portraits, scenes and identity templates, and lets users run characters locally. Developers can also select the contracts and implementations they need to build their own Host.
 
-**The project is in development and testing.** Public installers, default-branch source and the new frontend candidate are separate snapshots. A source screenshot does not mean an older installer includes that interface. Recent Chat Pro work is in [candidate PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225); consult the [project status](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) and each release's actual assets for versions and acceptance boundaries.
+**The project is in development and testing.** Public installers, default-branch source and the new frontend candidate are separate snapshots. A source screenshot does not mean an older installer includes that interface. Recent Chat Pro work is in [merged PR #225](https://github.com/linkaiheng2233-cyber/oclivenewnew/pull/225); consult the [project status](creator-docs-en/getting-started/PROJECT_CURRENT_STATUS.md) and each release's actual assets for versions and acceptance boundaries.
 
 ## Choose an entry point
 
