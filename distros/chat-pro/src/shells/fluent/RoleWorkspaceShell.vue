@@ -344,7 +344,7 @@ function openRecoveryFromNotice(): void {
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
     <Teleport to="body">
       <div v-if="helpOpen" class="workspace-modal-backdrop" @click.self="helpOpen = false">
-        <section ref="helpCard" class="workspace-help" role="dialog" aria-modal="true" aria-labelledby="workspace-help-title" tabindex="-1" @keydown.esc="helpOpen = false">
+        <section ref="helpCard" class="workspace-help" role="dialog" aria-modal="true" aria-labelledby="workspace-help-title" tabindex="-1" @keydown.esc.stop="helpOpen = false">
           <header class="workspace-help-header">
             <MumuFeatureIcon name="help" size="heading" />
             <div class="workspace-help-title-copy">

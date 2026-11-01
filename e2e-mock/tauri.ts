@@ -9,7 +9,14 @@ export async function invoke<T>(
   command: string,
   args: Record<string, unknown> = {},
 ): Promise<T> {
-  const hold = ({ import_role_pack_command: 'Import', send_message: 'Send' } as Record<string, string>)[command]
+  const hold = ({
+    import_role_pack_command: 'Import',
+    peek_role_pack_command: 'Peek',
+    send_message: 'Send',
+    get_llm_user_settings: 'Settings',
+    get_global_ollama_model: 'Global',
+    list_roles: 'Library',
+  } as Record<string, string>)[command]
   if (hold && localStorage.getItem(`oclive.e2e.hold${hold}`) === '1') {
     await new Promise<void>((resolve) => {
       window.addEventListener(`oclive:e2e:release-${hold.toLowerCase()}`, () => resolve(), { once: true })

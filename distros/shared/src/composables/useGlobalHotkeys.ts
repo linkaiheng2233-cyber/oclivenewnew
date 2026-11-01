@@ -167,7 +167,7 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
         shortcutHelpOpen.value = false
         return
       }
-      if (opts.marketPanelVisible) {
+      if (opts.marketPanelVisible.value) {
         e.preventDefault()
         opts.closeMarketPanel()
         return
@@ -187,7 +187,7 @@ export function useGlobalHotkeys(opts: UseGlobalHotkeysOptions) {
         opts.topMoreOpen.value = false
         return
       }
-      if (opts.debugVisible) {
+      if (opts.debugVisible.value) {
         e.preventDefault()
         opts.toggleDebug()
         return
