@@ -83,6 +83,8 @@ const rolePanelOpen = ref(false)
 const browserFixture = import.meta.env.MODE === 'e2e'
 const helpCard = ref<HTMLElement | null>(null)
 const helpOpener = ref<HTMLButtonElement | null>(null)
+const modelManagerPanel = ref<{ focus: () => void } | null>(null)
+const settingsPanel = ref<{ focus: () => void } | null>(null)
 useModalFocusRestore(helpOpen, helpCard, { trapFocus: true })
 const blocked = computed(() => busy.value || roleSwitching.value || startupState.value !== 'ready')
 const runtimeReady = computed(() => page.value === 'chat' && !!activeSession.value && !!roleStore.currentRoleId)
@@ -124,8 +126,17 @@ function notify(payload: { type: 'success' | 'error' | 'warning' | 'info', messa
 }
 
 function openRecoveryFromNotice(): void {
-  // Use a persistent opener so closing Help restores a useful keyboard position.
-  helpOpener.value?.focus({ preventScroll: true })
+  if (helpOpen.value) {
+    helpCard.value?.focus({ preventScroll: true })
+    return
+  }
+  // Preserve the current form and return focus to its dialog after diagnosis.
+  if (modelManagerOpen.value)
+    modelManagerPanel.value?.focus()
+  else if (settingsViewOpen.value)
+    settingsPanel.value?.focus()
+  else
+    helpOpener.value?.focus({ preventScroll: true })
   helpOpen.value = true
 }
 </script>
@@ -181,7 +192,7 @@ function openRecoveryFromNotice(): void {
           <button class="nav-button" type="button" @click="openSettingsView">
             <MumuFeatureIcon name="settings" />{{ t('workspace.settings') }}
           </button>
-          <button ref="helpOpener" class="nav-button" type="button" @click="helpOpen = true">
+          <button ref="helpOpener" class="nav-button" type="button" @click="openRecoveryFromNotice">
             <MumuFeatureIcon name="help" />{{ t('workspace.help') }}
           </button>
           <small class="local-note">{{ t('workspace.local') }}</small>
@@ -328,8 +339,8 @@ function openRecoveryFromNotice(): void {
       </section>
     </div>
 
-    <ModelManagerPanel v-if="modelManagerOpen" :visible="modelManagerOpen" :initial-provider="initialProvider" @saved="onModelSaved" @close="closeModelManager" @open-settings="() => { closeModelManager(); openSettingsView() }" />
-    <SettingsView v-if="settingsViewOpen" basic-workspace :visible="settingsViewOpen" :focus-tab="settingsFocusTab" :storage-role-id="roleStore.currentRoleId" @close="settingsViewOpen = false" />
+    <ModelManagerPanel v-if="modelManagerOpen" ref="modelManagerPanel" :visible="modelManagerOpen" :initial-provider="initialProvider" @saved="onModelSaved" @close="closeModelManager" @open-settings="() => { closeModelManager(); openSettingsView() }" />
+    <SettingsView v-if="settingsViewOpen" ref="settingsPanel" basic-workspace :visible="settingsViewOpen" :focus-tab="settingsFocusTab" :storage-role-id="roleStore.currentRoleId" @close="settingsViewOpen = false" />
     <ShortcutHelp v-model="shortcutHelpOpen" :bootstrap-epoch="pluginStore.bootstrapEpoch" />
     <Teleport to="body">
       <div v-if="helpOpen" class="workspace-modal-backdrop" @click.self="helpOpen = false">
