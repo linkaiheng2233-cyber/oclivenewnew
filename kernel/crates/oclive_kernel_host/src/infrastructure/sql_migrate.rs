@@ -281,11 +281,16 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
 
 async fn close_migration_pool(db: &SqlitePool, timeout: std::time::Duration) -> Result<(), String> {
     let close_and_drain = async {
-        db.close().await;
         // SQLx 0.8.6 can return from close after closing an idle connection while
         // another is still checked out/being returned. Do not replace its files
         // until those workers have finished closing as well.
-        while db.size() != 0 {
+        loop {
+            // A return already awaiting its health check can enqueue a late idle
+            // connection after close. Drain that queue again, not just the count.
+            db.close().await;
+            if db.size() == 0 {
+                break;
+            }
             tokio::time::sleep(std::time::Duration::from_millis(10)).await;
         }
     };
@@ -631,6 +636,53 @@ mod tests {
         assert_eq!(value, "kept");
         restored.close().await;
         assert!(backup.is_file());
+    }
+
+    #[tokio::test]
+    async fn migration_pool_drain_closes_late_returned_connections() {
+        use std::sync::Arc;
+        use tokio::sync::Notify;
+        let entered = Arc::new(Notify::new());
+        let release = Arc::new(Notify::new());
+        let entered_hook = entered.clone();
+        let release_hook = release.clone();
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .min_connections(2)
+            .max_connections(2)
+            .after_release(move |_, _| {
+                let entered = entered_hook.clone();
+                let release = release_hook.clone();
+                Box::pin(async move {
+                    entered.notify_one();
+                    release.notified().await;
+                    Ok(true)
+                })
+            })
+            .connect("sqlite::memory:")
+            .await
+            .unwrap();
+        let held = pool.acquire().await.unwrap();
+        drop(held);
+        tokio::time::timeout(std::time::Duration::from_secs(1), entered.notified())
+            .await
+            .unwrap();
+        let return_after_close = async {
+            while !pool.is_closed() {
+                tokio::task::yield_now().await;
+            }
+            release.notify_one();
+        };
+        let (result, ()) = tokio::join!(
+            close_migration_pool(&pool, std::time::Duration::from_secs(2)),
+            return_after_close
+        );
+        // Clean up on assertion failure too; do not leave a checked-in worker.
+        pool.close().await;
+        assert!(
+            result.is_ok(),
+            "late idle connection was not closed: {result:?}"
+        );
+        assert_eq!(pool.size(), 0);
     }
 
     #[tokio::test]
