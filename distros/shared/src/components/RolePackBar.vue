@@ -46,11 +46,12 @@ const {
   onNotify: payload => emit('notify', payload),
 })
 
-const conflictPrimaryRef = ref<HTMLButtonElement | null>(null)
+const conflictCancelRef = ref<HTMLButtonElement | null>(null)
 const conflictCardRef = ref<HTMLElement | null>(null)
 
 useModalFocusRestore(conflictOpen, conflictCardRef, {
-  primary: conflictPrimaryRef,
+  primary: conflictCancelRef,
+  trapFocus: true,
 })
 
 async function onExport(): Promise<void> {
@@ -145,6 +146,7 @@ function onImportFolder(): void {
           </p>
           <div class="modal-actions">
             <button
+              ref="conflictCancelRef"
               type="button"
               class="btn btn-ghost"
               :disabled="importProgressOpen"
@@ -153,7 +155,6 @@ function onImportFolder(): void {
               {{ t("common.cancel") }}
             </button>
             <button
-              ref="conflictPrimaryRef"
               type="button"
               class="btn btn-danger"
               :disabled="importProgressOpen"
@@ -190,7 +191,7 @@ function onImportFolder(): void {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 10070;
   display: flex;
   align-items: center;
   justify-content: center;

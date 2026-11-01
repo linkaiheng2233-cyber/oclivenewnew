@@ -7,6 +7,9 @@ export function setNextOpenPath(path: string): void {
 export async function open(options?: {
   multiple?: boolean
 }): Promise<string | string[] | null> {
+  const selected = typeof localStorage === 'undefined' ? null : localStorage.getItem('oclive.e2e.dialog.open')
+  if (selected !== null)
+    return JSON.parse(selected) as string | string[] | null
   if (options?.multiple)
     return [nextOpenPath]
   return nextOpenPath

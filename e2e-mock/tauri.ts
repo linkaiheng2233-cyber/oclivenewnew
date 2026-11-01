@@ -9,6 +9,12 @@ export async function invoke<T>(
   command: string,
   args: Record<string, unknown> = {},
 ): Promise<T> {
+  const hold = ({ import_role_pack_command: 'Import', send_message: 'Send' } as Record<string, string>)[command]
+  if (hold && localStorage.getItem(`oclive.e2e.hold${hold}`) === '1') {
+    await new Promise<void>((resolve) => {
+      window.addEventListener(`oclive:e2e:release-${hold.toLowerCase()}`, () => resolve(), { once: true })
+    })
+  }
   const result = mockInvoke(command, args)
   if (result === null && command !== 'find_role_asset_path') {
     console.warn(`[e2e-mock] unhandled invoke: ${command}`, args)
