@@ -31,6 +31,7 @@ function defaultExportFilename(): string {
 
 const {
   conflictOpen,
+  importBusy,
   pendingPeek,
   importProgressOpen,
   importPercent,
@@ -55,7 +56,7 @@ useModalFocusRestore(conflictOpen, conflictCardRef, {
 })
 
 async function onExport(): Promise<void> {
-  if (props.disabled || !props.canExport || !roleStore.currentRoleId)
+  if (props.disabled || importBusy.value || conflictOpen.value || !props.canExport || !roleStore.currentRoleId)
     return
   const roleId = roleStore.currentRoleId
   try {
@@ -94,13 +95,13 @@ function onImportFolder(): void {
     class="pack-bar"
     :title="t('common.rolePack.barTitle')"
   >
-    <button v-if="canExport" type="button" class="btn" :disabled="disabled" @click="onExport">
+    <button v-if="canExport" type="button" class="btn" :disabled="disabled || importBusy || conflictOpen" @click="onExport">
       {{ t("common.rolePack.export") }}
     </button>
     <button
       type="button"
       class="btn"
-      :disabled="disabled || importProgressOpen"
+      :disabled="disabled || importBusy || conflictOpen"
       @click="onImport"
     >
       {{ t("common.rolePack.importArchive") }}
@@ -108,11 +109,15 @@ function onImportFolder(): void {
     <button
       type="button"
       class="btn"
-      :disabled="disabled || importProgressOpen"
+      :disabled="disabled || importBusy || conflictOpen"
       @click="onImportFolder"
     >
       {{ t("common.rolePack.importFolder") }}
     </button>
+
+    <span v-if="importBusy && !importProgressOpen && !conflictOpen" class="pack-busy" role="status">
+      {{ t('common.preparing') }}
+    </span>
 
     <ImportProgressModal
       :open="importProgressOpen"
@@ -149,7 +154,7 @@ function onImportFolder(): void {
               ref="conflictCancelRef"
               type="button"
               class="btn btn-ghost"
-              :disabled="importProgressOpen"
+              :disabled="importBusy"
               @click="closeConflict"
             >
               {{ t("common.cancel") }}
@@ -157,7 +162,7 @@ function onImportFolder(): void {
             <button
               type="button"
               class="btn btn-danger"
-              :disabled="importProgressOpen"
+              :disabled="importBusy"
               @click="confirmOverwrite"
             >
               {{ t("common.rolePack.overwrite") }}
@@ -174,6 +179,11 @@ function onImportFolder(): void {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+.pack-busy {
+  align-self: center;
+  font-size: 11px;
+  color: var(--text-secondary);
 }
 .btn {
   font-size: 11px;
