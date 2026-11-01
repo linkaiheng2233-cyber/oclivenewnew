@@ -5,6 +5,8 @@ export const modelManagerZh = {
   close: '关闭',
   lead: '本地模型按当前发行版的运行模式执行；云端使用 OpenAI 兼容接口。保存后对本会话生效。',
   loading: '加载中…',
+  settingsLoadFailed: '未能读取模型设置。请重试后继续配置当前角色。',
+  retryLoadSettings: '重新读取设置',
   globalDefaultModelLabel: '全局默认模型',
   ollamaFallbackModelLabel: 'Ollama 降级模型',
   ollamaFallbackModelLead: '仅在 llama.cpp 尚未输出首个 token 就发生故障时接管本轮回复；不会加载当前 LoRA。',

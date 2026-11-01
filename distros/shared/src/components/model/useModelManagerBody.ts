@@ -65,6 +65,8 @@ export function useModelManagerBody(options: {
   const globalDefaultModel = ref('')
   const settings = ref<LlmUserSettings | null>(null)
   const settingsRoleId = ref<string | null>(null)
+  const settingsLoadError = ref<unknown>(null)
+  const settingsReady = computed(() => settings.value !== null && settingsRoleId.value === roleStore.currentRoleId)
   const ollamaModels = ref<string[]>([])
   const folderModelFiles = ref<LocalModelFile[]>([])
 
@@ -233,7 +235,7 @@ export function useModelManagerBody(options: {
 
   const cloudProbeNeedsSave = computed(() => {
     const saved = settings.value
-    return loading.value || !saved || settingsRoleId.value !== roleStore.currentRoleId
+    return loading.value || settingsLoadError.value !== null || !saved || settingsRoleId.value !== roleStore.currentRoleId
       || saved.provider !== 'cloud' || providerTab.value !== 'cloud'
       || !remoteUrl.value.trim() || !remoteModel.value.trim() || !saved.remoteTokenConfigured
       || remoteUrl.value.trim() !== saved.remoteUrl.trim()
@@ -282,6 +284,7 @@ export function useModelManagerBody(options: {
     if (disposed)
       return
     invalidateCloudProbe()
+    settingsLoadError.value = null
     const generation = ++settingsLoadGeneration
     const roleId = roleStore.currentRoleId
     // A role switch owns all loading indicators from this point onward. Older
@@ -341,6 +344,7 @@ export function useModelManagerBody(options: {
         generation === settingsLoadGeneration
         && roleStore.currentRoleId === roleId
       ) {
+        settingsLoadError.value = e
         toastAsyncError(e)
       }
     }
@@ -352,6 +356,10 @@ export function useModelManagerBody(options: {
         loading.value = false
       }
     }
+  }
+
+  async function retryLoadSettings(): Promise<void> {
+    await loadSettings({ preserveForm: settingsReady.value })
   }
 
   async function refreshCloudModels(opts?: {
@@ -740,7 +748,7 @@ export function useModelManagerBody(options: {
   }
 
   async function onSave(): Promise<void> {
-    if (disposed || saving.value || loading.value)
+    if (disposed || saving.value || loading.value || !settingsReady.value || settingsLoadError.value !== null)
       return
     const generation = ++settingsSaveGeneration
     const roleId = roleStore.currentRoleId
@@ -959,6 +967,9 @@ export function useModelManagerBody(options: {
     selectedLocalModel,
     selectedLocalModelFile,
     settings,
+    settingsLoadError,
+    settingsReady,
+    retryLoadSettings,
     settingsLoadGeneration,
     settingsSaveGeneration,
     showToast,

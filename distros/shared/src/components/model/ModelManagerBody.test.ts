@@ -531,9 +531,42 @@ describe('model manager async ownership', () => {
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-b'
     await flushMicrotasks()
-    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeDefined()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(true)
+    expect(wrapper.find('.mm-footer').exists()).toBe(false)
     expect(mocks.probe).not.toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it('makes a failed initial settings read retryable without exposing an unknown form for saving', async () => {
+    mocks.getSettings.mockRejectedValueOnce(new Error('[IO_ERROR] model settings read failed')).mockResolvedValueOnce(cloudSettings())
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-load-error').text()).toContain('modelManager.settingsLoadFailed')
+    expect(wrapper.find('.mm-footer').exists()).toBe(false)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    await wrapper.get('.mm-load-error button.ui-btn').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(false)
+    expect(wrapper.get<HTMLInputElement>('input[list="mm-cloud-model-list"]').element.value).toBe('saved-model')
+    expect(wrapper.get('.mm-footer button').attributes('disabled')).toBeUndefined()
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('keeps same-role edits through a failed settings refresh and its retry', async () => {
+    const original = { ...settingsFor('http://original.test'), localRuntimeMode: 'performance' as const }
+    mocks.getSettings.mockResolvedValueOnce(original).mockRejectedValueOnce(new Error('refresh temporarily failed')).mockResolvedValueOnce(original)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.get('input[type="url"].mm-input').setValue('http://unsaved.test')
+    await wrapper.get('.mm-lora-heading button').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(true)
+    expect(wrapper.get('.mm-footer button').attributes('disabled')).toBeDefined()
+    await wrapper.get('.mm-load-error button.ui-btn').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.get<HTMLInputElement>('input[type="url"].mm-input').element.value).toBe('http://unsaved.test')
+    expect(wrapper.find('.mm-load-error').exists()).toBe(false)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
   })
 
   it.each([

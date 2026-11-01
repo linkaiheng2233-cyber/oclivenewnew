@@ -6,6 +6,8 @@ export const modelManagerEn = {
   lead:
     'Local models follow this distro’s runtime mode; cloud models use an OpenAI-compatible API. Saves apply to this session.',
   loading: 'Loading…',
+  settingsLoadFailed: 'Model settings could not be loaded. Retry to continue configuring this role.',
+  retryLoadSettings: 'Retry loading settings',
   globalDefaultModelLabel: 'Global default model',
   globalDefaultModelLead: 'All roles use this Ollama model unless overridden per session. Takes effect immediately after save.',
   ollamaFallbackModelLabel: 'Ollama fallback model',
