@@ -31,6 +31,8 @@ const {
   loraMutating,
   loraReplaceExisting,
   modelsLoading,
+  ollamaListState,
+  ollamaListStatusKey,
   ollamaBaseUrl,
   ollamaModels,
   onProbeCloud,
@@ -136,7 +138,7 @@ const {
             type="button"
             class="mm-btn"
             :disabled="modelsLoading || savingGlobal"
-            @click="refreshOllamaModels"
+            @click="refreshOllamaModels({ userInitiated: true })"
           >
             {{
               modelsLoading
@@ -265,7 +267,7 @@ const {
             type="button"
             class="mm-btn"
             :disabled="modelsLoading || saving"
-            @click="refreshOllamaModels"
+            @click="refreshOllamaModels({ userInitiated: true })"
           >
             {{
               modelsLoading
@@ -275,16 +277,14 @@ const {
           </button>
           <span
             v-if="settings"
+            id="mm-ollama-list-status"
             class="mm-status"
-            :class="settings.ollamaReachable ? 'mm-ok' : 'mm-bad'"
+            role="status"
+            aria-live="polite"
+            :data-state="ollamaListState"
+            :class="{ 'mm-ok': ollamaListState === 'ready', 'mm-bad': ollamaListState === 'error' }"
           >
-            {{
-              settings.ollamaReachable
-                ? t("settings.envCheckOllamaOk")
-                : settings.localRuntimeMode === "performance"
-                  ? t("modelManager.ollamaFallbackUnavailable")
-                  : t("settings.envCheckOllamaFail")
-            }}
+            {{ t(ollamaListStatusKey) }}
           </span>
         </div>
 
@@ -293,6 +293,7 @@ const {
           <select
             v-model="selectedLocalModel"
             class="mm-select"
+            :aria-describedby="!selectedLocalIsFile ? 'mm-ollama-list-status' : undefined"
             :disabled="localModelSelectOptions.length === 0 && !modelsLoading"
           >
             <option v-if="!selectedLocalModel" value="" disabled>

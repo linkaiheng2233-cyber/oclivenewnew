@@ -135,10 +135,13 @@ export async function getLlmUserSettings(
   })
 }
 
-export async function listOllamaModels(ollamaBaseUrl?: string): Promise<string[]> {
+export async function listOllamaModels(ollamaBaseUrl?: string, options?: {
+  signal?: AbortSignal
+  errorSummary?: string
+}): Promise<string[]> {
   return invokeWithFriendlyError<string[]>('list_ollama_models', {
     ollamaBaseUrl: ollamaBaseUrl?.trim() || null,
-  })
+  }, options?.signal, { errorSummary: options?.errorSummary, reportToGlobal: false })
 }
 
 export async function listCloudModels(opts?: {
