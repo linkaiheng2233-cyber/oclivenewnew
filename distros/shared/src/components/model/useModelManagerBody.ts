@@ -89,6 +89,8 @@ export function useModelManagerBody(options: {
   let disposed = false
   let initialProvider = options.initialProvider
   let ollamaListRequest: AbortController | null = null
+  // The global read can outlive the main settings read; retain their shared owner.
+  let settingsReadRequest: AbortController | null = null
 
   function invalidateOllamaModels(preserveStatus = false): void {
     ollamaListRequest?.abort()
@@ -283,6 +285,9 @@ export function useModelManagerBody(options: {
   async function loadSettings({ preserveForm = false }: { preserveForm?: boolean } = {}): Promise<void> {
     if (disposed)
       return
+    settingsReadRequest?.abort()
+    const readRequest = new AbortController()
+    settingsReadRequest = readRequest
     invalidateCloudProbe()
     settingsLoadError.value = null
     const generation = ++settingsLoadGeneration
@@ -294,7 +299,7 @@ export function useModelManagerBody(options: {
     cloudModelsLoadGeneration += 1
     cloudModelsLoading.value = false
     loading.value = true
-    void getGlobalOllamaModel()
+    void getGlobalOllamaModel({ signal: readRequest.signal })
       .then((global) => {
         if (
           generation === settingsLoadGeneration
@@ -312,7 +317,7 @@ export function useModelManagerBody(options: {
         }
       })
     try {
-      const s = await getLlmUserSettings(roleId)
+      const s = await getLlmUserSettings(roleId, undefined, { signal: readRequest.signal })
       if (
         generation !== settingsLoadGeneration
         || roleStore.currentRoleId !== roleId
@@ -899,6 +904,8 @@ export function useModelManagerBody(options: {
 
   onBeforeUnmount(() => {
     disposed = true
+    settingsReadRequest?.abort()
+    settingsReadRequest = null
     invalidateCloudProbe()
     settingsLoadGeneration += 1
     invalidateOllamaModels()

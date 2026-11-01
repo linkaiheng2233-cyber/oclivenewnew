@@ -209,12 +209,12 @@ describe('model manager async ownership', () => {
     )
     const wrapper = mountManager()
     await flushMicrotasks()
-    expect(mocks.getSettings).toHaveBeenCalledWith('role-a')
+    expect(mocks.getSettings).toHaveBeenCalledWith('role-a', undefined, expect.objectContaining({ signal: expect.anything() }))
 
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-b'
     await flushMicrotasks()
-    expect(mocks.getSettings).toHaveBeenCalledWith('role-b')
+    expect(mocks.getSettings).toHaveBeenCalledWith('role-b', undefined, expect.objectContaining({ signal: expect.anything() }))
 
     roleB.resolve(settingsFor('http://role-b.test'))
     await flushMicrotasks()
@@ -535,6 +535,34 @@ describe('model manager async ownership', () => {
     expect(wrapper.find('.mm-footer').exists()).toBe(false)
     expect(mocks.probe).not.toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it.each(['role switch', 'unmount'])('abandons the settings and global reads together after %s', async (action) => {
+    const previous = deferred<LlmUserSettings>()
+    mocks.getSettings.mockReturnValueOnce(previous.promise).mockResolvedValue(settingsFor('http://next.test'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const read = mocks.getSettings.mock.calls[0][2] as { signal: AbortSignal }
+    const globalRead = mocks.getGlobal.mock.calls[0][0] as { signal: AbortSignal }
+    try {
+      expect(read.signal.aborted).toBe(false)
+      expect(globalRead.signal).toBe(read.signal)
+      if (action === 'unmount') {
+        wrapper.unmount()
+      }
+      else {
+        const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+        useRoleStore().currentRoleId = 'role-b'
+        await flushMicrotasks()
+      }
+      expect(read.signal.aborted).toBe(true)
+    }
+    finally {
+      mocks.showToast.mockClear()
+      previous.reject(new Error('abandoned settings failure'))
+      await flushMicrotasks()
+    }
+    expect(mocks.showToast).not.toHaveBeenCalled()
   })
 
   it('makes a failed initial settings read retryable without exposing an unknown form for saving', async () => {

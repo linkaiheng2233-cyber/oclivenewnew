@@ -112,8 +112,8 @@ export async function deleteLocalLoraAdapter(adapterId: string): Promise<void> {
   })
 }
 
-export async function getGlobalOllamaModel(): Promise<{ model: string }> {
-  return invokeWithFriendlyError<{ model: string }>('get_global_ollama_model')
+export async function getGlobalOllamaModel(options?: { signal?: AbortSignal }): Promise<{ model: string }> {
+  return invokeWithFriendlyError<{ model: string }>('get_global_ollama_model', {}, options?.signal)
 }
 
 export async function setGlobalOllamaModel(
@@ -128,11 +128,12 @@ export async function setGlobalOllamaModel(
 export async function getLlmUserSettings(
   roleId: string,
   sessionId?: string | null,
+  options?: { signal?: AbortSignal },
 ): Promise<LlmUserSettings> {
   return invokeWithFriendlyError<LlmUserSettings>('get_llm_user_settings', {
     roleId,
     sessionId: sessionId ?? null,
-  })
+  }, options?.signal)
 }
 
 export async function listOllamaModels(ollamaBaseUrl?: string, options?: {
