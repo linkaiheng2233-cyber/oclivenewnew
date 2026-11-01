@@ -12,7 +12,7 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-11-01** (local `cargo audit --json` against a refreshed advisory-db: **1,395** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**; this lock change only synchronizes the desktop rc.4 version and preserves the third-party dependency graph) |
+| **Last scan date** | **2026-11-01** (local `cargo audit --json` against a refreshed advisory-db: **1,395** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**; this lock change only synchronizes the desktop rc.5 version and preserves the third-party dependency graph) |
 | **Current npm scan** | Production **0**; full graph **3 low / 43 moderate / 0 high / 0 critical**. This new advisory snapshot does not rewrite earlier observations. Existing production/full `--audit-level=high` gates remain; no ignore expansion or unrelated dependency upgrade |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |

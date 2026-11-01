@@ -12,8 +12,8 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.6.0-rc.4** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
-| Windows MSI numeric version | **0.6.0.4**, mapped to the desktop candidate independently of CLI/kernel versions |
+| Desktop app semver | **0.6.0-rc.5** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
+| Windows MSI numeric version | **0.6.0.5**, mapped to the desktop candidate independently of CLI/kernel versions |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**; [CLI](../../kernel/crates/oclive-cli/Cargo.toml), [runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml), [validation](../../kernel/crates/oclive_validation/Cargo.toml) manifests |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
@@ -22,7 +22,7 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **2026-11-01 rc.4 patch candidate**: bound retries for Windows access-denied errors while deleting SQLite WAL/SHM files awaiting their final closing handle after a failed migration. Persistent failures retain the primary error and backup; backup reads and database copies do not gain broader retries. Gates, builds and acceptance must bind this candidate's final SHA and package manifest rather than inherit rc.3 results. The maintainer selected an isolated-user-data acceptance path on this computer; a fresh Windows OS remains unverified.
+- **2026-11-01 rc.5 patch candidate**: after closing the migration pool, confirm that every pool connection has exited within a total of 10 seconds. Persistent use skips restoration and retains the database, backup and primary migration error. The rc.4 isolated native UI path passed, but post-merge Ubuntu CI exposed a reconnect failure after recovery; this candidate therefore requires its own formal CI, build and installed acceptance evidence rather than inheriting completed-delivery status. First-run acceptance still uses isolated user data on this computer as selected by the maintainer; a fresh Windows OS remains unverified.
 
 - **2026-10-30 rc.3 internal candidate**: this candidate consolidates the role workspace and later reliability fixes; execution and packaging boundaries are owned by the [rc.3 wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md). The old desktop rc.2 directory and ZIP were verified and archived. Installer, bundled kernel and guides must bind the same frozen commit, identified by `PACKAGE-MANIFEST.txt` and `SHA256SUMS.txt`. No public release.
 
