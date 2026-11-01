@@ -279,8 +279,30 @@ pub fn write_migration_failed_marker(app_data_dir: &Path, message: &str) -> Resu
         .map_err(|error| format!("write {}: {error}", path.display()))
 }
 
-/// Caller has closed the pool. Preserve the primary error before adding recovery evidence.
+async fn close_migration_pool(db: &SqlitePool, timeout: std::time::Duration) -> Result<(), String> {
+    let close_and_drain = async {
+        db.close().await;
+        // SQLx 0.8.6 can return from close after closing an idle connection while
+        // another is still checked out/being returned. Do not replace its files
+        // until those workers have finished closing as well.
+        while db.size() != 0 {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    };
+    tokio::time::timeout(timeout, close_and_drain)
+        .await
+        .map_err(|_| {
+            format!(
+                "SQLite pool did not fully close within {} ms ({} connections remain)",
+                timeout.as_millis(),
+                db.size()
+            )
+        })
+}
+
+/// Close the pool before recovery; preserve the primary error and any recovery evidence.
 pub(crate) async fn record_migration_failure(
+    db: &SqlitePool,
     db_file: &Path,
     backup: Option<&Path>,
     app_data_dir: &Path,
@@ -291,6 +313,9 @@ pub(crate) async fn record_migration_failure(
         AppError::DbMigrationFailed(message) => message,
         other => other.to_string(),
     };
+    let close_error = close_migration_pool(db, std::time::Duration::from_secs(10))
+        .await
+        .err();
     let primary = message.clone();
     let db_file = db_file.to_path_buf();
     let backup = backup.map(Path::to_path_buf);
@@ -298,7 +323,13 @@ pub(crate) async fn record_migration_failure(
     // SQLx can finish returning/closing connections on this runtime. File-copy
     // and sharing-violation retries must not block its current-thread executor.
     match tokio::task::spawn_blocking(move || {
-        record_migration_failure_blocking(&db_file, backup.as_deref(), &app_data_dir, message)
+        record_migration_failure_blocking(
+            &db_file,
+            backup.as_deref(),
+            &app_data_dir,
+            message,
+            close_error,
+        )
     })
     .await
     {
@@ -315,17 +346,23 @@ fn record_migration_failure_blocking(
     backup: Option<&Path>,
     app_data_dir: &Path,
     mut message: String,
+    close_error: Option<String>,
 ) -> crate::error::AppError {
     use crate::error::AppError;
-    let recovery = match backup {
-        Some(path) => match restore_db_from_backup(db_file, path) {
-            Ok(()) => format!("Backup restored from {}", path.display()),
-            Err(error) => {
-                tracing::error!(target: "oclive_migrate", %error, "migration backup restore failed");
-                format!("Backup restore failed: {error}")
-            }
-        },
-        None => "Backup restore not attempted: no pre-migration backup".into(),
+    let recovery = if let Some(error) = close_error {
+        tracing::error!(target: "oclive_migrate", %error, "migration pool close incomplete; backup restore skipped");
+        format!("Backup restore not attempted: {error}")
+    } else {
+        match backup {
+            Some(path) => match restore_db_from_backup(db_file, path) {
+                Ok(()) => format!("Backup restored from {}", path.display()),
+                Err(error) => {
+                    tracing::error!(target: "oclive_migrate", %error, "migration backup restore failed");
+                    format!("Backup restore failed: {error}")
+                }
+            },
+            None => "Backup restore not attempted: no pre-migration backup".into(),
+        }
     };
     message.push_str(&format!("\n{recovery}"));
     if let Err(error) = write_migration_failed_marker(app_data_dir, &message) {
@@ -494,8 +531,8 @@ mod tests {
         std::fs::create_dir(&migrations).unwrap();
         std::fs::write(migrations.join("001_invalid.sql"), "THIS IS NOT VALID SQL;").unwrap();
         let original_error = run_sql_migrations(&pool, &migrations).await.unwrap_err();
-        pool.close().await;
         let error = record_migration_failure(
+            &pool,
             &database,
             Some(&backup),
             temp.path(),
@@ -528,6 +565,124 @@ mod tests {
         restored.close().await;
     }
 
+    #[tokio::test]
+    async fn migration_recovery_waits_for_remaining_pool_connections() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let pool = crate::infrastructure::sqlite_pool::connect_file(&database)
+            .await
+            .unwrap();
+        pool.execute("CREATE TABLE original(value TEXT); INSERT INTO original VALUES ('kept');")
+            .await
+            .unwrap();
+        let backup = backup_db_file(&pool, &database, temp.path()).await.unwrap();
+        pool.execute("UPDATE original SET value = 'after snapshot'")
+            .await
+            .unwrap();
+
+        let held = pool.acquire().await.unwrap();
+        let idle = pool.acquire().await.unwrap();
+        drop(idle);
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            while pool.num_idle() == 0 {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        // SQLx 0.8.6 can finish close with an idle connection closed but another
+        // still checked out. Recovery must not trust that return as quiescence.
+        pool.close().await;
+        assert!(
+            pool.size() > 0,
+            "fixture must retain a checked-out connection"
+        );
+        let recovery = record_migration_failure(
+            &pool,
+            &database,
+            Some(&backup),
+            temp.path(),
+            crate::error::AppError::DbMigrationFailed("fixture primary failure".into()),
+        );
+        tokio::pin!(recovery);
+        let early = tokio::time::timeout(std::time::Duration::from_millis(50), &mut recovery)
+            .await
+            .ok();
+        let returned_early = early.is_some();
+        held.close().await.unwrap();
+        let error = match early {
+            Some(error) => error,
+            None => recovery.await,
+        };
+        assert!(
+            !returned_early,
+            "recovery returned with a live SQLite connection"
+        );
+        assert!(error.to_string().contains("fixture primary failure"));
+        assert!(error.to_string().contains("Backup restored"), "{error}");
+        assert_eq!(pool.size(), 0);
+        let restored = crate::infrastructure::sqlite_pool::connect_file(&database)
+            .await
+            .unwrap();
+        let value: String = sqlx::query_scalar("SELECT value FROM original")
+            .fetch_one(&restored)
+            .await
+            .unwrap();
+        assert_eq!(value, "kept");
+        restored.close().await;
+        assert!(backup.is_file());
+    }
+
+    #[tokio::test]
+    async fn migration_recovery_skips_restore_when_pool_close_times_out() {
+        let temp = tempfile::tempdir().unwrap();
+        let database = temp.path().join("app.db");
+        let backup = temp.path().join("backup.db");
+        let wal = temp.path().join("app.db-wal");
+        // Sentinels detect any filesystem recovery attempted after the close
+        // timeout; the real held SQLite connection is in a separate memory DB.
+        std::fs::write(&database, "database retained").unwrap();
+        std::fs::write(&backup, "backup retained").unwrap();
+        std::fs::write(&wal, "wal retained").unwrap();
+        let pool = crate::infrastructure::sqlite_pool::connect_memory()
+            .await
+            .unwrap();
+        let held = pool.acquire().await.unwrap();
+        let close_error = close_migration_pool(&pool, std::time::Duration::from_millis(50))
+            .await
+            .unwrap_err();
+        let error = record_migration_failure_blocking(
+            &database,
+            Some(&backup),
+            temp.path(),
+            "fixture primary failure".into(),
+            Some(close_error),
+        );
+        held.close().await.unwrap();
+        pool.close().await;
+        assert_eq!(std::fs::read(&database).unwrap(), b"database retained");
+        assert_eq!(std::fs::read(&backup).unwrap(), b"backup retained");
+        assert_eq!(std::fs::read(&wal).unwrap(), b"wal retained");
+        assert_eq!(error.code(), "DB_MIGRATION_FAILED");
+        let crate::error::AppError::DbMigrationFailed(message) = error else {
+            panic!("expected the original migration error type");
+        };
+        assert!(message.starts_with("fixture primary failure\n"));
+        assert!(message.contains("Backup restore not attempted"));
+        assert!(message.contains("1 connections remain"));
+        assert!(!message.contains("Backup restored"));
+        let marker: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(temp.path().join("migration_failed.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(marker["message"], message);
+    }
+
+    fn empty_fixture_pool() -> SqlitePool {
+        // File-operation fixtures below hold raw OS handles, not a SQLite DB.
+        SqlitePool::connect_lazy("sqlite::memory:").unwrap()
+    }
+
     #[cfg(windows)]
     #[tokio::test]
     async fn recovery_allows_runtime_to_release_a_transient_sqlite_handle() {
@@ -552,6 +707,7 @@ mod tests {
             drop(held);
         });
         let error = record_migration_failure(
+            &empty_fixture_pool(),
             &database,
             Some(&backup),
             temp.path(),
@@ -571,6 +727,7 @@ mod tests {
         std::fs::write(&database, "retained database").unwrap();
         std::fs::write(temp.path().join("app.db-wal"), "retained wal").unwrap();
         let error = record_migration_failure(
+            &empty_fixture_pool(),
             &database,
             Some(&temp.path().join("missing.db")),
             temp.path(),
@@ -599,6 +756,7 @@ mod tests {
         let invalid_app_data = temp.path().join("data-is-a-file");
         std::fs::write(&invalid_app_data, "unchanged").unwrap();
         let error = record_migration_failure(
+            &empty_fixture_pool(),
             &database,
             Some(&backup),
             &invalid_app_data,
@@ -617,6 +775,7 @@ mod tests {
     async fn migration_failure_without_backup_is_explicit_and_marker_keeps_existing_shape() {
         let temp = tempfile::tempdir().unwrap();
         let error = record_migration_failure(
+            &empty_fixture_pool(),
             &temp.path().join("app.db"),
             None,
             temp.path(),
@@ -672,6 +831,7 @@ mod tests {
             drop(held);
         });
         let error = record_migration_failure(
+            &empty_fixture_pool(),
             &database,
             Some(&backup),
             temp.path(),

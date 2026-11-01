@@ -157,9 +157,9 @@ impl AppStateBuilder {
             None
         };
         if let Err(e) = run_migrations(&db, &migrations_dir).await {
-            db.close().await;
             return Err(
                 crate::infrastructure::sql_migrate::record_migration_failure(
+                    &db,
                     &self.db_path,
                     backup.as_deref(),
                     &self.app_data_dir,
