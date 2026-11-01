@@ -12,8 +12,8 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.6.0-rc.4**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
-| Windows MSI 数值版本 | **0.6.0.4**；与桌面候选版对应，独立于 CLI 和内核版本 |
+| 桌面应用语义化版本 | **0.6.0-rc.5**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
+| Windows MSI 数值版本 | **0.6.0.5**；与桌面候选版对应，独立于 CLI 和内核版本 |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**；分别见 [CLI](../../kernel/crates/oclive-cli/Cargo.toml)、[runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml)、[validation](../../kernel/crates/oclive_validation/Cargo.toml) |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
@@ -22,7 +22,7 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
-- **2026-11-01 rc.4 修补候选**：针对 Windows 迁移失败后，SQLite WAL/SHM 等待最后一个句柄关闭而返回拒绝访问的情况，增加仅限附属文件删除的有界等待。持续失败仍保留主要迁移原因和备份；不扩大备份读取或主库复制的重试。本候选的门禁、构建和验收应分别绑定最终 SHA 与随包清单，不能继承 rc.3 的通过结论。首发使用路径按维护者选择在本机隔离用户数据验收；全新 Windows 系统仍列为未验边界。
+- **2026-11-01 rc.5 修补候选**：迁移恢复入口在关闭连接池后，额外确认池内连接全部退出，总等待上限为 10 秒；持续占用时跳过恢复，保留数据库、备份和原迁移原因。rc.4 的本机隔离界面验收已通过，但合并后 Ubuntu CI 暴露恢复后重连失败，因此本候选需重新绑定正式 CI、构建与安装验收，不继承其交付结论。首发路径仍按维护者选择使用本机隔离用户数据，全新 Windows 系统仍未验。
 
 - **2026-10-30 rc.3 内测候选**：本轮汇总角色工作区与后续可靠性修补，执行与发包边界见 [rc.3 波次](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md)。桌面旧 rc.2 目录和 ZIP 已校验归档；新的安装器、随包内核与文档须绑定同一冻结提交，以 `PACKAGE-MANIFEST.txt` 和 `SHA256SUMS.txt` 核对本机交付物。未公开发行。
 
