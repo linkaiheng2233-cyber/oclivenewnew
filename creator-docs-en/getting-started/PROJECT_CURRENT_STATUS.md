@@ -4,7 +4,7 @@
 
 [中文](../../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**Snapshot date**: 2026-11-01. Update when versions or delivery status change; editing this page does not create new runtime verification.
+**Snapshot date**: 2026-11-02. Update when versions or delivery status change; editing this page does not create new runtime verification.
 
 ---
 
@@ -12,8 +12,8 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.6.0-rc.5** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
-| Windows MSI numeric version | **0.6.0.5**, mapped to the desktop candidate independently of CLI/kernel versions |
+| Desktop app semver | **0.6.0-rc.6** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
+| Windows MSI numeric version | **0.6.0.6**, mapped to the desktop candidate independently of CLI/kernel versions |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**; [CLI](../../kernel/crates/oclive-cli/Cargo.toml), [runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml), [validation](../../kernel/crates/oclive_validation/Cargo.toml) manifests |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
@@ -22,12 +22,12 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **2026-11-01 rc.5 patch candidate**: after closing the migration pool, confirm that every pool connection has exited within a total of 10 seconds. Persistent use skips restoration and retains the database, backup and primary migration error. The rc.4 isolated native UI path passed, but post-merge Ubuntu CI exposed a reconnect failure after recovery; this candidate therefore requires its own formal CI, build and installed acceptance evidence rather than inheriting completed-delivery status. First-run acceptance still uses isolated user data on this computer as selected by the maintainer; a fresh Windows OS remains unverified.
+- **2026-11-02 rc.6 interaction patch candidate**: consolidates model configuration reads and recovery, dialog layering and focus, IME confirmation, rapid Escape cancellation, and role-import ownership and progress. Installer, bundled kernel and guides must match this frozen source and `PACKAGE-MANIFEST.json`; source checks, formal CI, installed paths and fresh-machine results are recorded separately without inheriting older candidate acceptance. A fresh Windows environment still requires actual-device verification.
 
 - **2026-10-30 rc.3 internal candidate**: this candidate consolidates the role workspace and later reliability fixes; execution and packaging boundaries are owned by the [rc.3 wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md). The old desktop rc.2 directory and ZIP were verified and archived. Installer, bundled kernel and guides must bind the same frozen commit, identified by `PACKAGE-MANIFEST.txt` and `SHA256SUMS.txt`. No public release.
 
 - **Chat Pro internal candidate**: role library → character workspace, separate recent conversations per character, identity/relationship, records, model connection, categorized settings and Help & recovery. See [USER_MANUAL](USER_MANUAL.md) and the [legacy/deferred surface map](../../handoff/MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces). Installers bundle neither model runners nor weights.
-- **Candidate verification boundary**: rc.3 runs its own source gates, isolated install/upgrade and native startup checks; evaluate results against the recorded SHA and package manifest. The prior rc.2 local results belong only to `b4341eb22e987ffef4a19ccad3784e2402cd2bd1` and do not certify this package. Installers are unsigned; a fresh Windows environment and full manual product acceptance remain separate work.
+- **Candidate acceptance boundary**: rc.6 requires its own applicable source gates, formal remote CI, isolated installation and native-path checks, identified by this candidate SHA and package manifest. The installer has no Authenticode code signature; maintainer review approval does not replace code signing or fresh Windows testing.
 - **Runtime**: Tauri desktop, role-pack import, `process_message`, six slots, directory / Remote plugins, local HTTP `--api`, and the stable Rust in-process facade **`oclive_kernel_host::OcliveKernel`** that starts neither Tauri nor HTTP; see [architecture overview](OCLIVE_ARCHITECTURE_OVERVIEW.md).
 - **Included source scope**: workspace resolution, diagnostic authentication redaction and cloud-probe save/lifecycle handling are in the [first follow-up](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261027-CHATPRO-ROUND-REVIEW.md#review-fixes); role/grant/plugin/snapshot recovery is in the [batched fixes](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261028-REVIEW-FIXES.md), and RPC/migration/mirror ordering is in the [Host follow-up](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261029-HOST-RELIABILITY.md). Each wave retains its original SHA-bound evidence; the old rc.2 package does not automatically contain these changes.
 - **Kernel programme**: the **K0–K5** code paths are closed and complete in-process turns are verified. **P2 (OTA / remote logs, etc.)** and **V-EMBED-01 Linux/ARM/hardware, resource-budget, and long-soak proof** remain open; evidence: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).
