@@ -217,12 +217,17 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
     }
   }
   switch (command) {
+    case 'peek_role_pack_command':
+      return { id: 'role-a', name: 'Role Alpha', version: '1.0.1' }
+    case 'import_role_pack_command':
+      return 'role-a'
     case 'get_chat_storage_capabilities':
       return { backend_kind: 'hybrid', mirror_enabled: true, default_max_messages_per_session: 500, supports_search: true, supports_replay: false, supports_cleanup: true, supports_chat_threads: true }
     case 'get_chat_storage_stats':
       return []
     case 'list_chat_sessions':
-      return [...conversations.values()].map(row => row.meta)
+      return [...conversations.values()]
+        .map(row => row.meta)
         .filter(row => row.role_id === payload.roleId && row.scene_id === payload.sceneId)
         .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
     case 'fetch_chat_messages':

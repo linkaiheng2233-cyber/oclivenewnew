@@ -3,6 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoleStore } from '../stores/roleStore'
 import { useRolePackImport } from './useRolePackImport'
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((yes) => {
+    resolve = yes
+  })
+  return { promise, resolve }
+}
+
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 12; i++)
+    await Promise.resolve()
+}
+
 const mocks = vi.hoisted(() => ({ open: vi.fn(), peek: vi.fn(), install: vi.fn(), listen: vi.fn(), unlisten: vi.fn() }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: mocks.open }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: mocks.listen }))
@@ -77,6 +90,77 @@ describe('role package import integration', () => {
     await flow.runImportFlow('candidate.ocpak')
     expect(mocks.install).toHaveBeenCalledOnce()
     expect(notify).toHaveBeenCalledWith({ type: 'warning', message: 'errorUi.importRefreshFailed', details: 'library refresh offline' })
+    expect(flow.importProgressOpen.value).toBe(false)
+  })
+
+  it('opens only one native picker while the first selection is pending, then allows a new attempt', async () => {
+    const picking = deferred<string | null>()
+    mocks.open.mockReturnValueOnce(picking.promise).mockResolvedValue(null)
+    const flow = useRolePackImport()
+    const first = flow.runImportWithPicker('archive')
+    try {
+      await flow.runImportWithPicker('folder')
+      expect(mocks.open).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      picking.resolve(null)
+      await first
+    }
+    await flow.runImportWithPicker('archive')
+    expect(mocks.open).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not inspect a second package while the first package is being checked', async () => {
+    const inspecting = deferred<{ id: string, name: string, version: string }>()
+    mocks.peek.mockReturnValueOnce(inspecting.promise)
+    const flow = useRolePackImport()
+    const first = flow.runImportFlow('first.ocpak')
+    try {
+      await flow.runImportFlow('second.ocpak')
+      expect(mocks.peek).toHaveBeenCalledTimes(1)
+      expect(mocks.install).not.toHaveBeenCalled()
+    }
+    finally {
+      inspecting.resolve({ id: 'new-role', name: 'New role', version: '1' })
+      await first
+    }
+    expect(mocks.install).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the selected conflict until it is resolved rather than accepting another picker', async () => {
+    useRoleStore().roles = [{ id: 'new-role', name: 'Existing role' }]
+    const flow = useRolePackImport()
+    await flow.runImportFlow('first.ocpak')
+    await flow.runImportWithPicker('folder')
+    expect(mocks.open).not.toHaveBeenCalled()
+    expect(flow.conflictOpen.value).toBe(true)
+    flow.closeConflict()
+    mocks.open.mockResolvedValue(null)
+    await flow.runImportWithPicker('folder')
+    expect(mocks.open).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps an overwrite and its progress owned until the library refresh finishes', async () => {
+    useRoleStore().roles = [{ id: 'new-role', name: 'Existing role' }]
+    const refreshing = deferred<void>()
+    vi.mocked(useRoleStore().loadRoles).mockReturnValue(refreshing.promise)
+    const flow = useRolePackImport()
+    await flow.runImportFlow('first.ocpak')
+    const first = flow.confirmOverwrite()
+    await flushMicrotasks()
+    const second = flow.confirmOverwrite()
+    try {
+      await flushMicrotasks()
+      expect(mocks.install).toHaveBeenCalledTimes(1)
+      expect(flow.importProgressOpen.value).toBe(true)
+      flow.closeConflict()
+      expect(flow.conflictOpen.value).toBe(true)
+    }
+    finally {
+      refreshing.resolve()
+      await Promise.all([first, second])
+    }
+    expect(flow.conflictOpen.value).toBe(false)
     expect(flow.importProgressOpen.value).toBe(false)
   })
 })

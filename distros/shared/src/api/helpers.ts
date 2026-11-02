@@ -260,6 +260,7 @@ export async function invokeWithFriendlyError<T>(
   command: string,
   payload: Record<string, unknown> = {},
   signal?: AbortSignal,
+  presentation: { errorSummary?: string, reportToGlobal?: boolean } = {},
 ): Promise<T> {
   try {
     return await invoke<T>(command, payload)
@@ -270,15 +271,18 @@ export async function invokeWithFriendlyError<T>(
     if (signal?.aborted)
       throw err
     const friendly = toFriendlyError(err)
-    const display = toErrorPresentation(new ApiInvokeError(friendly))
+    const display = toErrorPresentation(new ApiInvokeError(friendly), presentation.errorSummary)
     recordDiagnostic({ level: 'error', source: command, code: friendly.code, ...display })
     // Friendly message may hide backend detail; see console for full raw when debugging
     console.error(`[tauri:${command}]`, friendly.code ?? '?', friendly.raw)
-    if (errorReporter) {
-      errorReporter(friendly)
-    }
-    else if (friendly.code) {
-      console.warn(`[api-error] code=${friendly.code} msg=${friendly.message}`)
+    // A form can own its operation-specific notice without losing diagnostics.
+    if (presentation.reportToGlobal !== false) {
+      if (errorReporter) {
+        errorReporter(friendly)
+      }
+      else if (friendly.code) {
+        console.warn(`[api-error] code=${friendly.code} msg=${friendly.message}`)
+      }
     }
     throw new ApiInvokeError(friendly)
   }

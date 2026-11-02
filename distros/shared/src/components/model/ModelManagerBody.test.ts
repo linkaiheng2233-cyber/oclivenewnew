@@ -209,12 +209,12 @@ describe('model manager async ownership', () => {
     )
     const wrapper = mountManager()
     await flushMicrotasks()
-    expect(mocks.getSettings).toHaveBeenCalledWith('role-a')
+    expect(mocks.getSettings).toHaveBeenCalledWith('role-a', undefined, expect.objectContaining({ signal: expect.anything() }))
 
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-b'
     await flushMicrotasks()
-    expect(mocks.getSettings).toHaveBeenCalledWith('role-b')
+    expect(mocks.getSettings).toHaveBeenCalledWith('role-b', undefined, expect.objectContaining({ signal: expect.anything() }))
 
     roleB.resolve(settingsFor('http://role-b.test'))
     await flushMicrotasks()
@@ -223,8 +223,8 @@ describe('model manager async ownership', () => {
 
     const baseUrl = wrapper.get('input[type="url"].mm-input')
     expect((baseUrl.element as HTMLInputElement).value).toBe('http://role-b.test')
-    expect(mocks.listOllama).toHaveBeenCalledWith('http://role-b.test')
-    expect(mocks.listOllama).not.toHaveBeenCalledWith('http://stale-role-a.test')
+    expect(mocks.listOllama).toHaveBeenCalledWith('http://role-b.test', expect.objectContaining({ signal: expect.anything() }))
+    expect(mocks.listOllama.mock.calls.some(([url]) => url === 'http://stale-role-a.test')).toBe(false)
 
     wrapper.unmount()
   })
@@ -274,6 +274,132 @@ describe('model manager async ownership', () => {
     expect(mocks.showToast).toHaveBeenCalledWith('error', 'global unavailable', '')
 
     wrapper.unmount()
+  })
+
+  it('shows a failed Ollama list request instead of the saved reachable status and can retry', async () => {
+    const settings = settingsFor('http://local.test')
+    settings.sessionOllamaModel = 'chosen:7b'
+    mocks.getSettings.mockResolvedValue(settings)
+    mocks.listOllama.mockResolvedValueOnce(['chosen:7b'])
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-status').classes()).toContain('mm-ok')
+
+    mocks.listOllama.mockRejectedValueOnce(new Error('[LLM_ERROR] list request failed'))
+    const refresh = wrapper.get('.mm-global-default .mm-row-actions button:last-child')
+    await refresh.trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-status').classes()).toContain('mm-bad')
+    expect(wrapper.get('.mm-status').text()).toBe('modelManager.ollamaListFailed')
+    expect(mocks.showToast).toHaveBeenCalledWith('error', 'modelManager.ollamaListFailureHint', expect.stringContaining('list request failed'))
+    expect(wrapper.findAll<HTMLSelectElement>('select.mm-select')[1].element.value).toBe('chosen:7b')
+    expect(refresh.attributes('disabled')).toBeUndefined()
+
+    mocks.listOllama.mockResolvedValueOnce(['chosen:7b', 'another:3b'])
+    await refresh.trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-status').classes()).toContain('mm-ok')
+    expect(wrapper.get('.mm-status').text()).toBe('modelManager.ollamaListReady')
+    expect(wrapper.findAll('option').some(option => option.attributes('value') === 'another:3b')).toBe(true)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('marks a changed Ollama address as unchecked until that address is refreshed', async () => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://saved.test'))
+    mocks.listOllama.mockResolvedValueOnce([])
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.get('input[type="url"].mm-input').setValue('http://edited.test')
+    expect(wrapper.get('.mm-status').classes()).not.toContain('mm-ok')
+    expect(wrapper.get('.mm-status').text()).toBe('modelManager.ollamaListUnchecked')
+    expect(mocks.listOllama).toHaveBeenCalledTimes(1)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it.each(['success', 'failure'])('ignores an older Ollama list %s while the new address is still loading', async (outcome) => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://saved.test'))
+    mocks.listOllama.mockResolvedValueOnce([])
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const previous = deferred<string[]>()
+    const current = deferred<string[]>()
+    mocks.listOllama.mockReturnValueOnce(previous.promise).mockReturnValueOnce(current.promise)
+    const url = wrapper.get('input[type="url"].mm-input')
+    const refresh = wrapper.get('.mm-global-default .mm-row-actions button:last-child')
+    await url.setValue('http://old.test')
+    await refresh.trigger('click')
+    await url.setValue('http://new.test')
+    expect(refresh.attributes('disabled')).toBeUndefined()
+    await refresh.trigger('click')
+    mocks.showToast.mockClear()
+    if (outcome === 'success')
+      previous.resolve(['stale-model'])
+    else
+      previous.reject(new Error('[LLM_ERROR] stale request'))
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    expect(wrapper.get('.mm-status').text()).toBe('modelManager.ollamaListChecking')
+    expect(refresh.attributes('disabled')).toBeDefined()
+    current.resolve(['current-model'])
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-status').classes()).toContain('mm-ok')
+    expect(wrapper.findAll('option').some(option => option.attributes('value') === 'stale-model')).toBe(false)
+    expect(wrapper.findAll('option').some(option => option.attributes('value') === 'current-model')).toBe(true)
+  })
+
+  it('does not accept an old list after editing away from and back to the same address', async () => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://saved.test'))
+    mocks.listOllama.mockResolvedValueOnce([])
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const previous = deferred<string[]>()
+    mocks.listOllama.mockReturnValueOnce(previous.promise)
+    const url = wrapper.get('input[type="url"].mm-input')
+    await wrapper.get('.mm-global-default .mm-row-actions button:last-child').trigger('click')
+    await url.setValue('http://different.test')
+    await url.setValue('http://saved.test')
+    previous.resolve(['stale-model'])
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-status').classes()).not.toContain('mm-ok')
+    expect(wrapper.findAll('option').some(option => option.attributes('value') === 'stale-model')).toBe(false)
+  })
+
+  it.each(['role switch', 'unmount'])('abandons an Ollama list failure after %s without notifying the new screen', async (action) => {
+    mocks.getSettings.mockResolvedValue(settingsFor('http://saved.test'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const previous = deferred<string[]>()
+    mocks.listOllama.mockReturnValueOnce(previous.promise)
+    await wrapper.get('.mm-global-default .mm-row-actions button:last-child').trigger('click')
+    const request = mocks.listOllama.mock.calls.at(-1)?.[1] as { signal: AbortSignal }
+    expect(request.signal.aborted).toBe(false)
+    if (action === 'unmount') {
+      wrapper.unmount()
+    }
+    else {
+      const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+      useRoleStore().currentRoleId = 'role-b'
+      await flushMicrotasks()
+    }
+    expect(request.signal.aborted).toBe(true)
+    mocks.showToast.mockClear()
+    previous.reject(new Error('[LLM_ERROR] abandoned list failure'))
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+  })
+
+  it('reports a manual fallback-list failure without interrupting an automatic GGUF setup probe', async () => {
+    const settings = settingsFor('http://fallback.test')
+    settings.localRuntimeMode = 'performance'
+    mocks.getSettings.mockResolvedValue(settings)
+    mocks.listOllama.mockRejectedValue(new Error('[LLM_ERROR] fallback list failed'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    expect(mocks.showToast).not.toHaveBeenCalled()
+    await wrapper.get('.mm-global-default .mm-row-actions button:last-child').trigger('click')
+    await flushMicrotasks()
+    expect(mocks.showToast).toHaveBeenCalledWith('error', 'modelManager.ollamaListFailureHint', expect.stringContaining('fallback list failed'))
+    expect(wrapper.findAll('.mm-footer button')[0].attributes('disabled')).toBeUndefined()
   })
 
   it('surfaces a folder scan failure and allows another scan without leaving the form blocked', async () => {
@@ -405,9 +531,70 @@ describe('model manager async ownership', () => {
     const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
     useRoleStore().currentRoleId = 'role-b'
     await flushMicrotasks()
-    expect(wrapper.findAll('.mm-footer button')[1].attributes('disabled')).toBeDefined()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(true)
+    expect(wrapper.find('.mm-footer').exists()).toBe(false)
     expect(mocks.probe).not.toHaveBeenCalled()
     wrapper.unmount()
+  })
+
+  it.each(['role switch', 'unmount'])('abandons the settings and global reads together after %s', async (action) => {
+    const previous = deferred<LlmUserSettings>()
+    mocks.getSettings.mockReturnValueOnce(previous.promise).mockResolvedValue(settingsFor('http://next.test'))
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    const read = mocks.getSettings.mock.calls[0][2] as { signal: AbortSignal }
+    const globalRead = mocks.getGlobal.mock.calls[0][0] as { signal: AbortSignal }
+    try {
+      expect(read.signal.aborted).toBe(false)
+      expect(globalRead.signal).toBe(read.signal)
+      if (action === 'unmount') {
+        wrapper.unmount()
+      }
+      else {
+        const { useRoleStore } = await import('@oclive/shared/stores/roleStore')
+        useRoleStore().currentRoleId = 'role-b'
+        await flushMicrotasks()
+      }
+      expect(read.signal.aborted).toBe(true)
+    }
+    finally {
+      mocks.showToast.mockClear()
+      previous.reject(new Error('abandoned settings failure'))
+      await flushMicrotasks()
+    }
+    expect(mocks.showToast).not.toHaveBeenCalled()
+  })
+
+  it('makes a failed initial settings read retryable without exposing an unknown form for saving', async () => {
+    mocks.getSettings.mockRejectedValueOnce(new Error('[IO_ERROR] model settings read failed')).mockResolvedValueOnce(cloudSettings())
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    expect(wrapper.get('.mm-load-error').text()).toContain('modelManager.settingsLoadFailed')
+    expect(wrapper.find('.mm-footer').exists()).toBe(false)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+    await wrapper.get('.mm-load-error button.ui-btn').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(false)
+    expect(wrapper.get<HTMLInputElement>('input[list="mm-cloud-model-list"]').element.value).toBe('saved-model')
+    expect(wrapper.get('.mm-footer button').attributes('disabled')).toBeUndefined()
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
+  })
+
+  it('keeps same-role edits through a failed settings refresh and its retry', async () => {
+    const original = { ...settingsFor('http://original.test'), localRuntimeMode: 'performance' as const }
+    mocks.getSettings.mockResolvedValueOnce(original).mockRejectedValueOnce(new Error('refresh temporarily failed')).mockResolvedValueOnce(original)
+    const wrapper = mountManager(true)
+    await flushMicrotasks()
+    await wrapper.get('input[type="url"].mm-input').setValue('http://unsaved.test')
+    await wrapper.get('.mm-lora-heading button').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.find('.mm-load-error').exists()).toBe(true)
+    expect(wrapper.get('.mm-footer button').attributes('disabled')).toBeDefined()
+    await wrapper.get('.mm-load-error button.ui-btn').trigger('click')
+    await flushMicrotasks()
+    expect(wrapper.get<HTMLInputElement>('input[type="url"].mm-input').element.value).toBe('http://unsaved.test')
+    expect(wrapper.find('.mm-load-error').exists()).toBe(false)
+    expect(mocks.saveSettings).not.toHaveBeenCalled()
   })
 
   it.each([

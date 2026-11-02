@@ -54,6 +54,9 @@ function onSetDraftInput(payload: unknown): void {
 
 function focusInput(): void {
   void nextTick(() => {
+    const activeDialog = document.activeElement?.closest('[aria-modal="true"],dialog[open]')
+    if (activeDialog && !activeDialog.contains(textAreaEl.value))
+      return
     textAreaEl.value?.focus()
   })
 }
@@ -80,6 +83,9 @@ function exitAdultInteraction() {
 defineExpose({ focusInput })
 
 function onKeydown(e: KeyboardEvent) {
+  // Enter can confirm an IME candidate rather than submit the message.
+  if (e.isComposing || e.keyCode === 229)
+    return
   if (e.key !== 'Enter')
     return
   /* Same as oclive-new Enter to send; Shift+Enter keeps newline */

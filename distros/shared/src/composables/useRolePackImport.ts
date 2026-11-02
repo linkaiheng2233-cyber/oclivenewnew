@@ -23,6 +23,7 @@ export function useRolePackImport(options?: {
   const conflictOpen = ref(false)
   const pendingPath = ref<string | null>(null)
   const pendingPeek = ref<{ id: string, name: string, version: string } | null>(null)
+  const importBusy = ref(false)
 
   const importProgressOpen = ref(false)
   const importPercent = ref(0)
@@ -70,6 +71,8 @@ export function useRolePackImport(options?: {
   }
 
   function closeConflict(): void {
+    if (importBusy.value)
+      return
     conflictOpen.value = false
     pendingPath.value = null
     pendingPeek.value = null
@@ -87,40 +90,62 @@ export function useRolePackImport(options?: {
     }
   }
 
+  async function installPack(path: string, overwrite: boolean, message: (roleId: string) => string): Promise<string> {
+    return withImportProgress(async () => {
+      const roleId = await importRolePack(path, overwrite)
+      await finishImport(roleId, message(roleId))
+      return roleId
+    })
+  }
+
   async function confirmOverwrite(): Promise<void> {
+    if (importBusy.value)
+      return
     const path = pendingPath.value
     if (!path) {
       closeConflict()
       return
     }
-    if (importProgressOpen.value)
-      return
+    importBusy.value = true
     try {
-      const roleId = await withImportProgress(() => importRolePack(path, true))
-      await finishImport(roleId, t('common.rolePack.importedOverwrite', { id: roleId }))
+      await installPack(path, true, roleId => t('common.rolePack.importedOverwrite', { id: roleId }))
     }
     catch (e) {
       const failure = toErrorPresentation(e)
       notify({ type: 'error', message: failure.summary, details: failure.details })
     }
     finally {
+      importBusy.value = false
       closeConflict()
     }
   }
 
-  async function runImportFlow(path: string): Promise<string | null> {
+  async function importFromPath(path: string): Promise<string | null> {
     const peek = await peekRolePack(path)
     const exists = roleStore.roles.some(r => r.id === peek.id)
     if (exists) {
       pendingPath.value = path
       pendingPeek.value = peek
+      // Waiting for consent is not background work. Enable Cancel before
+      // the dialog's focus restoration chooses its initial control.
+      importBusy.value = false
       conflictOpen.value = true
       return null
     }
 
-    const roleId = await withImportProgress(() => importRolePack(path, false))
-    await finishImport(roleId, t('common.rolePack.imported', { name: peek.name }))
-    return roleId
+    return installPack(path, false, () => t('common.rolePack.imported', { name: peek.name }))
+  }
+
+  async function runImportFlow(path: string): Promise<string | null> {
+    if (importBusy.value || conflictOpen.value)
+      return null
+    importBusy.value = true
+    try {
+      return await importFromPath(path)
+    }
+    finally {
+      importBusy.value = false
+    }
   }
 
   async function pickImportSource(mode: 'archive' | 'folder'): Promise<string | null> {
@@ -139,23 +164,28 @@ export function useRolePackImport(options?: {
   }
 
   async function runImportWithPicker(mode: 'archive' | 'folder'): Promise<string | null> {
-    if (importProgressOpen.value)
+    if (importBusy.value || conflictOpen.value)
       return null
+    importBusy.value = true
     try {
       const path = await pickImportSource(mode)
       if (!path)
         return null
-      return await runImportFlow(path)
+      return await importFromPath(path)
     }
     catch (e) {
       const failure = toErrorPresentation(e)
       notify({ type: 'error', message: failure.summary, details: failure.details })
       return null
     }
+    finally {
+      importBusy.value = false
+    }
   }
 
   return {
     conflictOpen,
+    importBusy,
     pendingPeek,
     importProgressOpen,
     importPercent,

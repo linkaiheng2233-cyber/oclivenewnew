@@ -15,7 +15,7 @@ const props = defineProps<{
 const { t } = useI18n()
 
 const cardRef = ref<HTMLElement | null>(null)
-useModalFocusRestore(toRef(props, 'open'), cardRef)
+useModalFocusRestore(toRef(props, 'open'), cardRef, { trapFocus: true })
 
 const fileLine = computed(() => {
   const cur = props.fileIndex
@@ -41,9 +41,11 @@ const currentFileLine = computed(() => {
       role="dialog"
       aria-modal="true"
       aria-busy="true"
+      aria-labelledby="import-progress-title"
+      @keydown.esc.stop.prevent
     >
       <div ref="cardRef" class="modal-card" tabindex="-1" @click.stop>
-        <h2 class="title">
+        <h2 id="import-progress-title" class="title">
           {{ t("common.importPackTitle") }}
         </h2>
         <div class="bar-track" aria-hidden="true">
@@ -70,7 +72,7 @@ const currentFileLine = computed(() => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10001;
+  z-index: 10071;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -6,6 +6,10 @@
 
 ### Fixed
 
+- **Chat Pro configuration and recovery**: model lists show state for the current address and request; failed configuration reads can retry in place, and saves require settings loaded for the current role. Help stays above settings and model dialogs, preserving edits and return focus, while save actions remain visible in short windows.
+- **Input and rapid interactions**: confirming an IME candidate no longer sends the message. Completed replies respect the active dialog, and abandoned window reads cannot notify over a replacement. Escape can cancel settings or model views before they load; nested Help closes only its own layer.
+- **Role package import ownership**: avoid duplicate operations during picking, inspection, installation and refresh. Conflict confirmation retains the original selection and initially focuses Cancel; progress remains until refresh completes. The shared Theatre entry also preserves its import target. The desktop candidate is `0.6.0-rc.6`, mapped to MSI `0.6.0.6`; fresh Windows acceptance must be recorded separately.
+
 - **Wait for migration connections to finish closing**: do not treat SQLx pool-close completion alone as permission to restore files. Allow a total of 10 seconds to confirm all pool connections have closed before restoring a backup. Persistent use skips file replacement and retains the database, backup, primary migration error and diagnostic reason. The desktop patch candidate is `0.6.0-rc.5`, with MSI version `0.6.0.5`.
 - **Windows delete-pending migration recovery**: after connections close, WAL/SHM files may still await their final handle and report access denied. Retry that code only for bounded sidecar deletion; do not broaden backup-read or database-copy retries. Persistent locks/denial still fail, preserving the primary migration error and backup.
 - **Non-blocking migration recovery**: backup restoration and diagnostic file writes run on a blocking worker, allowing current-thread Tokio to finish releasing connections while transient file sharing is retried. Primary migration errors, recovery outcomes and persistent-lock rejection remain intact.
