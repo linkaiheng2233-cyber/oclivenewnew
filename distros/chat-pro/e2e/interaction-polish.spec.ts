@@ -1,6 +1,6 @@
-import type { Locator, Page } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 import { expect, test } from '@playwright/test'
-import { gotoApp } from './helpers'
+import { gotoApp, unlockWin98 } from './helpers'
 
 async function expectCloseIcon(button: Locator, size = 34) {
   await expect(button).toBeVisible()
@@ -14,13 +14,6 @@ async function finishEntry(surface: Locator) {
   await surface.evaluate(async (element) => {
     await Promise.all(element.getAnimations().map(animation => animation.finished))
   })
-}
-
-async function unlock(page: Page) {
-  await page.locator('.workspace-header h1').click()
-  for (const key of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'])
-    await page.keyboard.press(key)
-  await expect(page.locator('html')).toHaveAttribute('data-skin', 'win98')
 }
 
 test('model, settings and recovery use the same close icon and return focus to their openers', async ({ page }, testInfo) => {
@@ -84,7 +77,7 @@ test('reduced motion and Win98 skip panel animation and keep consistent close co
   await expect(page.locator('.sv-close')).toHaveCSS('transition-duration', '0s')
   await page.keyboard.press('Escape')
   await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await unlock(page)
+  await unlockWin98(page)
   expect(await page.evaluate(() => document.documentElement.clientWidth)).toBeGreaterThan(1000)
   await page.locator('.nav-global').getByRole('button', { name: 'Models & connection', exact: true }).click()
   await expect(page.locator('.mm-dialog')).toHaveCSS('animation-name', 'none')

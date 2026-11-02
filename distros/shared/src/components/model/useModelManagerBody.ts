@@ -48,7 +48,14 @@ export function useModelManagerBody(options: {
   const saving = ref(false)
   const probing = ref(false)
   const cloudModelsLoading = ref(false)
-  const modelsLoading = ref(false)
+  const ollamaListState = ref<'unchecked' | 'checking' | 'ready' | 'error'>('unchecked')
+  const modelsLoading = computed(() => ollamaListState.value === 'checking')
+  const ollamaListStatusKey = computed(() => ({
+    unchecked: 'modelManager.ollamaListUnchecked',
+    checking: 'modelManager.ollamaListChecking',
+    ready: 'modelManager.ollamaListReady',
+    error: 'modelManager.ollamaListFailed',
+  })[ollamaListState.value])
   const importing = ref(false)
   const savingGlobal = ref(false)
   const loraMutating = ref(false)
@@ -58,6 +65,8 @@ export function useModelManagerBody(options: {
   const globalDefaultModel = ref('')
   const settings = ref<LlmUserSettings | null>(null)
   const settingsRoleId = ref<string | null>(null)
+  const settingsLoadError = ref<unknown>(null)
+  const settingsReady = computed(() => settings.value !== null && settingsRoleId.value === roleStore.currentRoleId)
   const ollamaModels = ref<string[]>([])
   const folderModelFiles = ref<LocalModelFile[]>([])
 
@@ -79,6 +88,17 @@ export function useModelManagerBody(options: {
   let cloudFormGeneration = 0
   let disposed = false
   let initialProvider = options.initialProvider
+  let ollamaListRequest: AbortController | null = null
+  // The global read can outlive the main settings read; retain their shared owner.
+  let settingsReadRequest: AbortController | null = null
+
+  function invalidateOllamaModels(preserveStatus = false): void {
+    ollamaListRequest?.abort()
+    ollamaListRequest = null
+    ollamaModelsLoadGeneration += 1
+    if (!preserveStatus || modelsLoading.value)
+      ollamaListState.value = 'unchecked'
+  }
 
   function formatAdapterSize(bytes: number): string {
     if (!Number.isFinite(bytes) || bytes <= 0)
@@ -217,7 +237,7 @@ export function useModelManagerBody(options: {
 
   const cloudProbeNeedsSave = computed(() => {
     const saved = settings.value
-    return loading.value || !saved || settingsRoleId.value !== roleStore.currentRoleId
+    return loading.value || settingsLoadError.value !== null || !saved || settingsRoleId.value !== roleStore.currentRoleId
       || saved.provider !== 'cloud' || providerTab.value !== 'cloud'
       || !remoteUrl.value.trim() || !remoteModel.value.trim() || !saved.remoteTokenConfigured
       || remoteUrl.value.trim() !== saved.remoteUrl.trim()
@@ -265,18 +285,21 @@ export function useModelManagerBody(options: {
   async function loadSettings({ preserveForm = false }: { preserveForm?: boolean } = {}): Promise<void> {
     if (disposed)
       return
+    settingsReadRequest?.abort()
+    const readRequest = new AbortController()
+    settingsReadRequest = readRequest
     invalidateCloudProbe()
+    settingsLoadError.value = null
     const generation = ++settingsLoadGeneration
     const roleId = roleStore.currentRoleId
     // A role switch owns all loading indicators from this point onward. Older
     // provider-list requests may still settle, but their generations cannot
     // overwrite the new role's form or leave its spinners active.
-    ollamaModelsLoadGeneration += 1
+    invalidateOllamaModels(preserveForm)
     cloudModelsLoadGeneration += 1
-    modelsLoading.value = false
     cloudModelsLoading.value = false
     loading.value = true
-    void getGlobalOllamaModel()
+    void getGlobalOllamaModel({ signal: readRequest.signal })
       .then((global) => {
         if (
           generation === settingsLoadGeneration
@@ -294,7 +317,7 @@ export function useModelManagerBody(options: {
         }
       })
     try {
-      const s = await getLlmUserSettings(roleId)
+      const s = await getLlmUserSettings(roleId, undefined, { signal: readRequest.signal })
       if (
         generation !== settingsLoadGeneration
         || roleStore.currentRoleId !== roleId
@@ -326,6 +349,7 @@ export function useModelManagerBody(options: {
         generation === settingsLoadGeneration
         && roleStore.currentRoleId === roleId
       ) {
+        settingsLoadError.value = e
         toastAsyncError(e)
       }
     }
@@ -337,6 +361,10 @@ export function useModelManagerBody(options: {
         loading.value = false
       }
     }
+  }
+
+  async function retryLoadSettings(): Promise<void> {
+    await loadSettings({ preserveForm: settingsReady.value })
   }
 
   async function refreshCloudModels(opts?: {
@@ -395,15 +423,21 @@ export function useModelManagerBody(options: {
     }
   }
 
-  async function refreshOllamaModels(): Promise<void> {
+  async function refreshOllamaModels(opts?: { userInitiated?: boolean }): Promise<void> {
+    ollamaListRequest?.abort()
+    const request = new AbortController()
+    ollamaListRequest = request
     const generation = ++ollamaModelsLoadGeneration
-    const requestBaseUrl = ollamaBaseUrl.value
-    modelsLoading.value = true
+    const requestBaseUrl = ollamaBaseUrl.value.trim()
+    ollamaListState.value = 'checking'
     try {
-      const models = await listOllamaModels(requestBaseUrl)
+      const models = await listOllamaModels(requestBaseUrl, {
+        signal: request.signal,
+        errorSummary: t('modelManager.ollamaListFailureHint'),
+      })
       if (
         generation !== ollamaModelsLoadGeneration
-        || ollamaBaseUrl.value !== requestBaseUrl
+        || ollamaBaseUrl.value.trim() !== requestBaseUrl
       ) {
         return
       }
@@ -417,18 +451,23 @@ export function useModelManagerBody(options: {
       ) {
         ollamaModels.value = [cur, ...ollamaModels.value]
       }
+      ollamaListState.value = 'ready'
     }
     catch (e) {
       if (
         generation === ollamaModelsLoadGeneration
-        && settings.value?.localRuntimeMode !== 'performance'
+        && ollamaBaseUrl.value.trim() === requestBaseUrl
       ) {
-        toastAsyncError(e)
+        ollamaListState.value = 'error'
+        if (opts?.userInitiated || settings.value?.localRuntimeMode !== 'performance') {
+          const failure = toErrorPresentation(e, t('modelManager.ollamaListFailureHint'))
+          showToast('error', failure.summary, failure.details)
+        }
       }
     }
     finally {
       if (generation === ollamaModelsLoadGeneration)
-        modelsLoading.value = false
+        ollamaListRequest = null
     }
   }
 
@@ -714,7 +753,7 @@ export function useModelManagerBody(options: {
   }
 
   async function onSave(): Promise<void> {
-    if (disposed || saving.value || loading.value)
+    if (disposed || saving.value || loading.value || !settingsReady.value || settingsLoadError.value !== null)
       return
     const generation = ++settingsSaveGeneration
     const roleId = roleStore.currentRoleId
@@ -827,6 +866,8 @@ export function useModelManagerBody(options: {
     }
   }
 
+  watch(ollamaBaseUrl, () => invalidateOllamaModels(), { flush: 'sync' })
+
   watch(providerTab, (tab) => {
     if (loading.value)
       return
@@ -863,9 +904,11 @@ export function useModelManagerBody(options: {
 
   onBeforeUnmount(() => {
     disposed = true
+    settingsReadRequest?.abort()
+    settingsReadRequest = null
     invalidateCloudProbe()
     settingsLoadGeneration += 1
-    ollamaModelsLoadGeneration += 1
+    invalidateOllamaModels()
     cloudModelsLoadGeneration += 1
     settingsSaveGeneration += 1
     globalSaveGeneration += 1
@@ -898,6 +941,8 @@ export function useModelManagerBody(options: {
     loraMutating,
     loraReplaceExisting,
     modelsLoading,
+    ollamaListState,
+    ollamaListStatusKey,
     ollamaBaseUrl,
     ollamaModels,
     ollamaModelsLoadGeneration,
@@ -929,6 +974,9 @@ export function useModelManagerBody(options: {
     selectedLocalModel,
     selectedLocalModelFile,
     settings,
+    settingsLoadError,
+    settingsReady,
+    retryLoadSettings,
     settingsLoadGeneration,
     settingsSaveGeneration,
     showToast,

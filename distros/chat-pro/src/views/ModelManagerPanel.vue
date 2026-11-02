@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const dialogRef = ref<HTMLElement | null>(null)
+defineExpose({ focus: () => dialogRef.value?.focus({ preventScroll: true }) })
 useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef, { trapFocus: true })
 </script>
 
@@ -112,6 +113,14 @@ useModalFocusRestore(computed(() => props.visible && !props.embedded), dialogRef
 .mm-dialog :deep(.mm-root) {
   padding: 18px 22px 22px;
   scrollbar-gutter: stable;
+  scroll-padding-bottom: 90px;
+}
+.mm-dialog :deep(.mm-footer) {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding-bottom: 12px;
+  background: var(--bg-primary);
 }
 @media (max-width: 600px) {
   .mm-header { padding: 14px 16px; }

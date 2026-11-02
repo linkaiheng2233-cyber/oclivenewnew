@@ -29,6 +29,13 @@ export async function openMoreMenu(page: Page): Promise<void> {
   await more.first().click()
 }
 
+export async function unlockWin98(page: Page): Promise<void> {
+  await page.locator('.workspace-header h1').click()
+  for (const key of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'])
+    await page.keyboard.press(key)
+  await expect(page.locator('html')).toHaveAttribute('data-skin', 'win98')
+}
+
 export async function openSimplePluginManager(page: Page): Promise<void> {
   const pluginsBtn = page
     .locator('nav.tool-activity-bar')

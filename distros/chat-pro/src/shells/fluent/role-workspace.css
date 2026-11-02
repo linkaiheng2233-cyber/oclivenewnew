@@ -91,7 +91,7 @@ button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); o
 .chat-empty { margin:auto; padding:24px; color:var(--text-secondary); text-align:center; font-size:14px; }
 .workspace-composer { flex-shrink:0; border-top:1px solid var(--border-light); }
 .stop-button { display:block; margin:10px auto 0; padding:7px 13px; border:1px solid var(--border-light); border-radius:6px; background:var(--bg-elevated); color:var(--text-primary); font-size:12px; }
-.workspace-modal-backdrop { position:fixed; inset:0; background:#17262066; backdrop-filter:blur(3px); display:flex; justify-content:center; align-items:center; padding:24px; z-index:10010; }
+.workspace-modal-backdrop { position:fixed; inset:0; background:#17262066; backdrop-filter:blur(3px); display:flex; justify-content:center; align-items:center; padding:24px; z-index:10058; }
 .workspace-help { width:min(1080px,100%); height:min(790px,calc(100dvh - 48px)); max-height:calc(100dvh - 48px); min-height:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg-primary); border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border-light)); border-radius:16px; padding:0; color:var(--text-primary); box-shadow:0 28px 90px #101e1933,0 0 0 1px #ffffff18; }
 .workspace-help:focus { outline:none; }
 .workspace-help-header { flex-shrink:0; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; padding:24px 26px 20px; border-bottom:1px solid var(--border-light); background:var(--bg-elevated,var(--bg-primary)); }

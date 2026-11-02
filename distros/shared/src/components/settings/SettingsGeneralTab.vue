@@ -70,6 +70,7 @@ const { skinUnlocked, win98Enabled, toggleWin98 } = useEasterEggSkin()
 const inlinePluginVueLocked = !isUnsafeInlinePluginVueEnabled()
 const activePage = computed(() => props.page ?? (props.generalSubTab === 'advanced' ? 'advanced' : 'appearance'))
 const settingsFailure = ref<{ error: unknown, summary: string, retry: () => Promise<void> } | null>(null)
+const settingsPageRef = ref<HTMLElement | null>(null)
 const remoteFallbackSaving = ref(false)
 const remoteFallbackReady = ref(false)
 const iframeSaving = ref(false)
@@ -82,6 +83,26 @@ function reportFailure(error: unknown, summary: string, retry: () => Promise<voi
   if (!props.visible || activePage.value !== page)
     return
   settingsFailure.value = { error, summary, retry }
+}
+
+function focusSettingsPage(): void {
+  // The notice's controls disappear on retry/dismiss. Keep keyboard focus in
+  // this page before removing them, without moving it after an async result.
+  if (settingsPageRef.value?.contains(document.activeElement))
+    settingsPageRef.value.focus({ preventScroll: true })
+}
+
+function retrySettingsFailure(): void {
+  const retry = settingsFailure.value?.retry
+  if (!retry)
+    return
+  focusSettingsPage()
+  void retry()
+}
+
+function dismissSettingsFailure(): void {
+  focusSettingsPage()
+  settingsFailure.value = null
 }
 watch(activePage, () => {
   settingsFailure.value = null
@@ -321,15 +342,15 @@ async function saveForceIframe(checked: boolean) {
 </script>
 
 <template>
-  <form class="sv-body sv-general-page" :class="{ 'sv-body--embedded': embedded }" @submit.prevent>
-    <ErrorNotice v-if="settingsFailure" :error="settingsFailure.error" :summary="t(settingsFailure.summary)" dismissible @dismiss="settingsFailure = null">
+  <form ref="settingsPageRef" class="sv-body sv-general-page" :class="{ 'sv-body--embedded': embedded }" tabindex="-1" @submit.prevent>
+    <ErrorNotice v-if="settingsFailure" :error="settingsFailure.error" :summary="t(settingsFailure.summary)" dismissible @dismiss="dismissSettingsFailure">
       <p class="sv-failure-reason">
         {{ toErrorPresentation(settingsFailure.error).summary }}
       </p>
       <p class="sv-muted">
         {{ t('settings.actionFailedHelp') }}
       </p>
-      <UiButton size="sm" variant="secondary" :disabled="envDiagLoading || envRepairLoading || remoteFallbackLoading || remoteFallbackSaving || iframeSaving" @click="settingsFailure?.retry()">
+      <UiButton size="sm" variant="secondary" :disabled="envDiagLoading || envRepairLoading || remoteFallbackLoading || remoteFallbackSaving || iframeSaving" @click="retrySettingsFailure">
         {{ t('settings.retryAction') }}
       </UiButton>
     </ErrorNotice>

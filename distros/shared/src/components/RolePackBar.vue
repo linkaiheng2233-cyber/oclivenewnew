@@ -31,6 +31,7 @@ function defaultExportFilename(): string {
 
 const {
   conflictOpen,
+  importBusy,
   pendingPeek,
   importProgressOpen,
   importPercent,
@@ -46,15 +47,18 @@ const {
   onNotify: payload => emit('notify', payload),
 })
 
-const conflictPrimaryRef = ref<HTMLButtonElement | null>(null)
+const conflictCancelRef = ref<HTMLButtonElement | null>(null)
 const conflictCardRef = ref<HTMLElement | null>(null)
+const importOpenerRef = ref<HTMLElement | null>(null)
 
 useModalFocusRestore(conflictOpen, conflictCardRef, {
-  primary: conflictPrimaryRef,
+  primary: conflictCancelRef,
+  opener: importOpenerRef,
+  trapFocus: true,
 })
 
 async function onExport(): Promise<void> {
-  if (props.disabled || !props.canExport || !roleStore.currentRoleId)
+  if (props.disabled || importBusy.value || conflictOpen.value || !props.canExport || !roleStore.currentRoleId)
     return
   const roleId = roleStore.currentRoleId
   try {
@@ -77,14 +81,11 @@ async function onExport(): Promise<void> {
   }
 }
 
-function onImport(): void {
-  if (!props.disabled)
-    void runImportWithPicker('archive')
-}
-
-function onImportFolder(): void {
-  if (!props.disabled)
-    void runImportWithPicker('folder')
+function onImport(mode: 'archive' | 'folder', event: Event): void {
+  if (props.disabled || importBusy.value || conflictOpen.value)
+    return
+  importOpenerRef.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  void runImportWithPicker(mode)
 }
 </script>
 
@@ -93,25 +94,29 @@ function onImportFolder(): void {
     class="pack-bar"
     :title="t('common.rolePack.barTitle')"
   >
-    <button v-if="canExport" type="button" class="btn" :disabled="disabled" @click="onExport">
+    <button v-if="canExport" type="button" class="btn" :disabled="disabled || importBusy || conflictOpen" @click="onExport">
       {{ t("common.rolePack.export") }}
     </button>
     <button
       type="button"
       class="btn"
-      :disabled="disabled || importProgressOpen"
-      @click="onImport"
+      :disabled="disabled || importBusy || conflictOpen"
+      @click="onImport('archive', $event)"
     >
       {{ t("common.rolePack.importArchive") }}
     </button>
     <button
       type="button"
       class="btn"
-      :disabled="disabled || importProgressOpen"
-      @click="onImportFolder"
+      :disabled="disabled || importBusy || conflictOpen"
+      @click="onImport('folder', $event)"
     >
       {{ t("common.rolePack.importFolder") }}
     </button>
+
+    <span v-if="importBusy && !importProgressOpen && !conflictOpen" class="pack-busy" role="status">
+      {{ t('common.preparing') }}
+    </span>
 
     <ImportProgressModal
       :open="importProgressOpen"
@@ -145,18 +150,18 @@ function onImportFolder(): void {
           </p>
           <div class="modal-actions">
             <button
+              ref="conflictCancelRef"
               type="button"
               class="btn btn-ghost"
-              :disabled="importProgressOpen"
+              :disabled="importBusy"
               @click="closeConflict"
             >
               {{ t("common.cancel") }}
             </button>
             <button
-              ref="conflictPrimaryRef"
               type="button"
               class="btn btn-danger"
-              :disabled="importProgressOpen"
+              :disabled="importBusy"
               @click="confirmOverwrite"
             >
               {{ t("common.rolePack.overwrite") }}
@@ -174,6 +179,11 @@ function onImportFolder(): void {
   gap: 6px;
   flex-wrap: wrap;
 }
+.pack-busy {
+  align-self: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
 .btn {
   font-size: 11px;
   padding: 4px 8px;
@@ -190,7 +200,7 @@ function onImportFolder(): void {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 10070;
   display: flex;
   align-items: center;
   justify-content: center;

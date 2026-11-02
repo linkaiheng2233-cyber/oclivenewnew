@@ -124,6 +124,7 @@ watch(
 )
 
 const settingsDialogRef = ref<HTMLElement | null>(null)
+defineExpose({ focus: () => settingsDialogRef.value?.focus({ preventScroll: true }) })
 let previousFocus: HTMLElement | null = null
 
 function restoreFocus() {

@@ -76,6 +76,15 @@ test('environment diagnostics explains a failed check and recovers in place', as
   await notice.getByRole('button', { name: 'Retry this action' }).click()
   await expect(notice).toHaveCount(0)
   await expect(settings.locator('.sv-env-results')).toBeVisible()
+  await expect(settings.locator('.sv-general-page')).toBeFocused()
+  await failOnce(page, 'run_environment_diagnostics')
+  await settings.getByRole('button', { name: 'Run check', exact: true }).click()
+  await notice.getByRole('button', { name: 'Dismiss notification', exact: true }).click()
+  await expect(notice).toHaveCount(0)
+  await expect(settings.locator('.sv-general-page')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(settings).toHaveCount(0)
+  await expect(page.locator('.nav-global').getByRole('button', { name: 'App settings', exact: true })).toBeFocused()
 })
 
 test('narrow settings keep navigation, switches and close controls usable', async ({ page }) => {

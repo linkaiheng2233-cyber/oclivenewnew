@@ -138,6 +138,7 @@ const castAdaptBusy = computed(() =>
 
 const {
   conflictOpen,
+  importBusy,
   pendingPeek,
   importProgressOpen,
   importPercent,
@@ -214,6 +215,8 @@ function onSlotChange(slot: CastSlotKey, roleId: string) {
 }
 
 async function onImport(slot: CastSlotKey, mode: 'archive' | 'folder') {
+  if (importBusy.value || conflictOpen.value)
+    return
   importTarget.value = slot
   await runImportWithPicker(mode)
 }
@@ -408,7 +411,7 @@ watch(
           <UiButton
             size="sm"
             variant="secondary"
-            :disabled="importProgressOpen"
+            :disabled="importBusy || conflictOpen"
             @click="onImport(slot, 'archive')"
           >
             {{ t('common.rolePack.importArchive') }}
@@ -416,7 +419,7 @@ watch(
           <UiButton
             size="sm"
             variant="secondary"
-            :disabled="importProgressOpen"
+            :disabled="importBusy || conflictOpen"
             @click="onImport(slot, 'folder')"
           >
             {{ t('common.rolePack.importFolder') }}
@@ -542,13 +545,13 @@ watch(
             }}
           </p>
           <div class="theater-cast-conflict-actions">
-            <UiButton size="sm" variant="secondary" @click="closeConflict">
+            <UiButton size="sm" variant="secondary" :disabled="importBusy" @click="closeConflict">
               {{ t('common.cancel') }}
             </UiButton>
             <UiButton
               size="sm"
               variant="primary"
-              :disabled="importProgressOpen"
+              :disabled="importBusy"
               @click="confirmOverwrite"
             >
               {{ t('common.rolePack.overwrite') }}

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+import ErrorNotice from '../ErrorNotice.vue'
 import HelpHint from '../shared/HelpHint.vue'
 import UiButton from '../ui/UiButton.vue'
 import { useModelManagerBody } from './useModelManagerBody'
@@ -31,6 +33,8 @@ const {
   loraMutating,
   loraReplaceExisting,
   modelsLoading,
+  ollamaListState,
+  ollamaListStatusKey,
   ollamaBaseUrl,
   ollamaModels,
   onProbeCloud,
@@ -55,22 +59,39 @@ const {
   selectedLocalModel,
   selectedLocalModelFile,
   settings,
+  settingsLoadError,
+  settingsReady,
+  retryLoadSettings,
   t,
   toggleLora,
 } = useModelManagerBody({ initialProvider: props.initialProvider, onSaved: roleId => emit('saved', roleId) })
+const bodyRef = ref<HTMLElement | null>(null)
+
+function retrySettings(): void {
+  // Keep focus in this form when the retry control is replaced by loading UI.
+  if (bodyRef.value?.contains(document.activeElement))
+    bodyRef.value.focus({ preventScroll: true })
+  void retryLoadSettings()
+}
 </script>
 
 <template>
-  <div class="mm-root tool-mgmt-panel">
+  <div ref="bodyRef" class="mm-root tool-mgmt-panel" tabindex="-1">
     <p class="mm-lead">
       {{ t("modelManager.lead") }}
     </p>
+
+    <ErrorNotice v-if="settingsLoadError" class="mm-load-error" :error="settingsLoadError" :summary="t('modelManager.settingsLoadFailed')">
+      <UiButton size="sm" :disabled="loading" @click="retrySettings">
+        {{ t('modelManager.retryLoadSettings') }}
+      </UiButton>
+    </ErrorNotice>
 
     <p v-if="loading" class="mm-muted">
       {{ t("modelManager.loading") }}
     </p>
 
-    <template v-else>
+    <template v-else-if="settingsReady">
       <section v-if="providerTab === 'local'" class="mm-panel mm-global-default">
         <h3 class="mm-h3">
           {{
@@ -136,7 +157,7 @@ const {
             type="button"
             class="mm-btn"
             :disabled="modelsLoading || savingGlobal"
-            @click="refreshOllamaModels"
+            @click="refreshOllamaModels({ userInitiated: true })"
           >
             {{
               modelsLoading
@@ -265,7 +286,7 @@ const {
             type="button"
             class="mm-btn"
             :disabled="modelsLoading || saving"
-            @click="refreshOllamaModels"
+            @click="refreshOllamaModels({ userInitiated: true })"
           >
             {{
               modelsLoading
@@ -275,16 +296,14 @@ const {
           </button>
           <span
             v-if="settings"
+            id="mm-ollama-list-status"
             class="mm-status"
-            :class="settings.ollamaReachable ? 'mm-ok' : 'mm-bad'"
+            role="status"
+            aria-live="polite"
+            :data-state="ollamaListState"
+            :class="{ 'mm-ok': ollamaListState === 'ready', 'mm-bad': ollamaListState === 'error' }"
           >
-            {{
-              settings.ollamaReachable
-                ? t("settings.envCheckOllamaOk")
-                : settings.localRuntimeMode === "performance"
-                  ? t("modelManager.ollamaFallbackUnavailable")
-                  : t("settings.envCheckOllamaFail")
-            }}
+            {{ t(ollamaListStatusKey) }}
           </span>
         </div>
 
@@ -293,6 +312,7 @@ const {
           <select
             v-model="selectedLocalModel"
             class="mm-select"
+            :aria-describedby="!selectedLocalIsFile ? 'mm-ollama-list-status' : undefined"
             :disabled="localModelSelectOptions.length === 0 && !modelsLoading"
           >
             <option v-if="!selectedLocalModel" value="" disabled>
@@ -675,7 +695,7 @@ const {
         <UiButton
           size="sm"
           variant="primary"
-          :disabled="saving || loading"
+          :disabled="saving || loading || !settingsReady || !!settingsLoadError"
           @click="onSave"
         >
           {{ saving ? t("modelManager.saving") : t("modelManager.saveApply") }}
