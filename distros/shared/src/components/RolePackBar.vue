@@ -49,9 +49,11 @@ const {
 
 const conflictCancelRef = ref<HTMLButtonElement | null>(null)
 const conflictCardRef = ref<HTMLElement | null>(null)
+const importOpenerRef = ref<HTMLElement | null>(null)
 
 useModalFocusRestore(conflictOpen, conflictCardRef, {
   primary: conflictCancelRef,
+  opener: importOpenerRef,
   trapFocus: true,
 })
 
@@ -79,14 +81,11 @@ async function onExport(): Promise<void> {
   }
 }
 
-function onImport(): void {
-  if (!props.disabled)
-    void runImportWithPicker('archive')
-}
-
-function onImportFolder(): void {
-  if (!props.disabled)
-    void runImportWithPicker('folder')
+function onImport(mode: 'archive' | 'folder', event: Event): void {
+  if (props.disabled || importBusy.value || conflictOpen.value)
+    return
+  importOpenerRef.value = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  void runImportWithPicker(mode)
 }
 </script>
 
@@ -102,7 +101,7 @@ function onImportFolder(): void {
       type="button"
       class="btn"
       :disabled="disabled || importBusy || conflictOpen"
-      @click="onImport"
+      @click="onImport('archive', $event)"
     >
       {{ t("common.rolePack.importArchive") }}
     </button>
@@ -110,7 +109,7 @@ function onImportFolder(): void {
       type="button"
       class="btn"
       :disabled="disabled || importBusy || conflictOpen"
-      @click="onImportFolder"
+      @click="onImport('folder', $event)"
     >
       {{ t("common.rolePack.importFolder") }}
     </button>

@@ -12,8 +12,8 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.6.0-rc.6** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
-| Windows MSI numeric version | **0.6.0.6**, mapped to the desktop candidate independently of CLI/kernel versions |
+| Desktop app semver | **0.6.0-rc.7** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
+| Windows MSI numeric version | **0.6.0.7**, mapped to the desktop candidate independently of CLI/kernel versions |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**; [CLI](../../kernel/crates/oclive-cli/Cargo.toml), [runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml), [validation](../../kernel/crates/oclive_validation/Cargo.toml) manifests |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
@@ -22,7 +22,7 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **2026-11-02 rc.6 interaction patch candidate**: consolidates model configuration reads and recovery, dialog layering and focus, IME confirmation, rapid Escape cancellation, and role-import ownership and progress. Installer, bundled kernel and guides must match this frozen source and `PACKAGE-MANIFEST.json`; source checks, formal CI, installed paths and fresh-machine results are recorded separately without inheriting older candidate acceptance. A fresh Windows environment still requires actual-device verification.
+- **2026-11-02 rc.7 interaction patch candidate**: consolidates model configuration reads and recovery, dialog layering and focus, IME confirmation, rapid Escape cancellation, and role-import ownership and progress. Installer, bundled kernel and guides must match this frozen source and `PACKAGE-MANIFEST.json`; source checks, formal CI, installed paths and fresh-machine results are recorded separately without inheriting older candidate acceptance. A fresh Windows environment still requires actual-device verification.
 
 - **2026-10-30 rc.3 internal candidate**: this candidate consolidates the role workspace and later reliability fixes; execution and packaging boundaries are owned by the [rc.3 wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md). The old desktop rc.2 directory and ZIP were verified and archived. Installer, bundled kernel and guides must bind the same frozen commit, identified by `PACKAGE-MANIFEST.txt` and `SHA256SUMS.txt`. No public release.
 

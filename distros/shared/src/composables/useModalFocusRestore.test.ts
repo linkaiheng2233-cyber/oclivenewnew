@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+
+import type { Ref } from 'vue'
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
@@ -6,12 +8,12 @@ import { useModalFocusRestore } from './useModalFocusRestore'
 
 const wrappers: Array<ReturnType<typeof mount>> = []
 let opener: HTMLButtonElement
-function render(initial = true, trapFocus = true) {
+function render(initial = true, trapFocus = true, explicitOpener?: Ref<HTMLElement | null>) {
   const open = ref(initial)
   const root = ref<HTMLElement | null>(null)
   const wrapper = mount(defineComponent({
     setup() {
-      useModalFocusRestore(open, root, { trapFocus })
+      useModalFocusRestore(open, root, { trapFocus, opener: explicitOpener })
       return () => open.value
         ? h('section', { ref: root, tabindex: -1 }, [
             h('button', { id: 'first-control' }, 'First'),
@@ -66,6 +68,17 @@ describe('modal focus lifecycle', () => {
 
   it('restores the opener when the controlled dialog closes', async () => {
     const { open } = render()
+    await flushPromises()
+    open.value = false
+    await flushPromises()
+    expect(document.activeElement).toBe(opener)
+  })
+
+  it('returns to an explicit trigger that lost focus before an async dialog opened', async () => {
+    const returnTo = ref<HTMLElement | null>(opener)
+    opener.blur()
+    expect(document.activeElement).not.toBe(opener)
+    const { open } = render(true, true, returnTo)
     await flushPromises()
     open.value = false
     await flushPromises()

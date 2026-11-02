@@ -12,8 +12,8 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.6.0-rc.6**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
-| Windows MSI 数值版本 | **0.6.0.6**；与桌面候选版对应，独立于 CLI 和内核版本 |
+| 桌面应用语义化版本 | **0.6.0-rc.7**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
+| Windows MSI 数值版本 | **0.6.0.7**；与桌面候选版对应，独立于 CLI 和内核版本 |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**；分别见 [CLI](../../kernel/crates/oclive-cli/Cargo.toml)、[runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml)、[validation](../../kernel/crates/oclive_validation/Cargo.toml) |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
@@ -22,7 +22,7 @@
 
 ## 交付面（本仓库 `oclivenewnew`）
 
-- **2026-11-02 rc.6 交互修补候选**：汇总模型配置读取与恢复、窗口层级和焦点、中文输入法确认、快速 Esc、角色包导入防重及进度衔接改进。安装器、随包内核和说明必须对应本轮冻结源码及 `PACKAGE-MANIFEST.json`；源码、正式 CI、安装与新机实测分别留证，不继承旧候选的验收结论。新 Windows 环境仍待实际设备验证。
+- **2026-11-02 rc.7 交互修补候选**：汇总模型配置读取与恢复、窗口层级和焦点、中文输入法确认、快速 Esc、角色包导入防重及进度衔接改进。安装器、随包内核和说明必须对应本轮冻结源码及 `PACKAGE-MANIFEST.json`；源码、正式 CI、安装与新机实测分别留证，不继承旧候选的验收结论。新 Windows 环境仍待实际设备验证。
 
 - **2026-10-30 rc.3 内测候选**：本轮汇总角色工作区与后续可靠性修补，执行与发包边界见 [rc.3 波次](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md)。桌面旧 rc.2 目录和 ZIP 已校验归档；新的安装器、随包内核与文档须绑定同一冻结提交，以 `PACKAGE-MANIFEST.txt` 和 `SHA256SUMS.txt` 核对本机交付物。未公开发行。
 

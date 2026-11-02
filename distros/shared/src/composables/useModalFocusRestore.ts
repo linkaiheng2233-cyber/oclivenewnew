@@ -8,7 +8,7 @@ import { nextTick, onBeforeUnmount, watch } from 'vue'
 export function useModalFocusRestore(
   isOpen: Ref<boolean>,
   dialogRoot: Ref<HTMLElement | null>,
-  options?: { primary?: Ref<HTMLElement | null | undefined>, trapFocus?: boolean },
+  options?: { primary?: Ref<HTMLElement | null | undefined>, opener?: Ref<HTMLElement | null | undefined>, trapFocus?: boolean },
 ): void {
   let opener: HTMLElement | null = null
   let generation = 0
@@ -29,7 +29,8 @@ export function useModalFocusRestore(
   watch(isOpen, (open) => {
     const attempt = ++generation
     if (open) {
-      const el = document.activeElement
+      // An async operation may disable and blur its trigger before opening.
+      const el = options?.opener?.value ?? document.activeElement
       opener = el instanceof HTMLElement ? el : null
       void nextTick(() => {
         if (attempt === generation && isOpen.value) {
