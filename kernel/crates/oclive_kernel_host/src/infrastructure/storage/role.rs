@@ -760,7 +760,7 @@ mod tests {
     #[test]
     fn existing_role_assets_remain_readable_after_library_reopen() {
         let temp = tempdir().unwrap();
-        let root = temp.path().join("roles");
+        let root = temp.path().join("test-role-library");
         fs::create_dir_all(root.join("mumu/assets/images")).unwrap();
         fs::write(
             root.join("mumu/assets/images/neutral.png"),
@@ -804,7 +804,7 @@ mod tests {
     #[test]
     fn filesystem_identity_does_not_allow_symlink_escapes() {
         let temp = tempdir().unwrap();
-        let root = temp.path().join("roles");
+        let root = temp.path().join("test-role-library");
         fs::create_dir_all(root.join("mumu/assets")).unwrap();
         let outside = temp.path().join("outside.png");
         fs::write(&outside, b"private").unwrap();
