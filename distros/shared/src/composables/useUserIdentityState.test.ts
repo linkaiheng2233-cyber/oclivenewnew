@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { OCLIVE_DEFAULT_IDENTITY_SENTINEL } from '@oclive/shared/api'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, reactive } from 'vue'
 import { useUserIdentityState } from './useUserIdentityState'
 
 const mocks = vi.hoisted(() => ({
@@ -110,6 +110,8 @@ function effectiveState(id: string, followingDefault: boolean) {
 describe('user identity catalog adult lifecycle', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mocks.roleStore = reactive(mocks.roleStore)
+    mocks.uiStore = reactive(mocks.uiStore)
     mocks.roleStore.currentRoleId = 'role'
     mocks.roleStore.roleInfo.identityBinding = 'per_scene'
     mocks.uiStore.sceneId = 'home'
@@ -171,6 +173,62 @@ describe('user identity catalog adult lifecycle', () => {
     expect(mocks.setIdentity).toHaveBeenCalledWith('role', OCLIVE_DEFAULT_IDENTITY_SENTINEL)
     expect(mocks.setSceneIdentity).not.toHaveBeenCalled()
     expect(wrapper.vm.identitySelectValue).toBe(OCLIVE_DEFAULT_IDENTITY_SENTINEL)
+    wrapper.unmount()
+  })
+
+  it('continues following roles after the first identity consumer was unmounted', async () => {
+    const first = mount(DefaultHarness)
+    await vi.waitFor(() => expect(first.get('span').text()).toBe('本人'))
+    first.unmount()
+    const current = mount(DefaultHarness)
+    await vi.waitFor(() => expect(current.get('span').text()).toBe('本人'))
+    mocks.getIdentity.mockResolvedValue({ ...identityState('partner'), role_id: 'other-role' })
+    mocks.roleStore.currentRoleId = 'other-role'
+    await vi.waitFor(() => expect(current.get('span').text()).toBe('伴侣'))
+    expect(mocks.getIdentity).toHaveBeenLastCalledWith('other-role', 'home')
+    mocks.getIdentity.mockResolvedValue(identityState('self'))
+    mocks.roleStore.currentRoleId = 'role'
+    await vi.waitFor(() => expect(current.get('span').text()).toBe('本人'))
+    current.unmount()
+  })
+
+  it('discards an earlier role response after a rapid A-B-A switch', async () => {
+    const wrapper = mount(DefaultHarness)
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('本人'))
+    let finishOther!: (value: ReturnType<typeof identityState>) => void
+    mocks.getIdentity.mockImplementationOnce(() => new Promise((resolve) => {
+      finishOther = resolve
+    }))
+    mocks.roleStore.currentRoleId = 'other-role'
+    expect(wrapper.vm.identityState).toBeNull()
+    mocks.getIdentity.mockResolvedValue(identityState('self'))
+    mocks.roleStore.currentRoleId = 'role'
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('本人'))
+    finishOther({ ...identityState('partner'), role_id: 'other-role' })
+    await flushPromises()
+    expect(wrapper.get('span').text()).toBe('本人')
+    wrapper.unmount()
+  })
+
+  it('does not apply a late explicit identity change to a newly selected role', async () => {
+    mocks.roleStore.roleInfo.identityBinding = 'global'
+    mocks.getIdentity.mockResolvedValue(effectiveState('choice', false))
+    const wrapper = mount(DefaultHarness)
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('Explicit identity'))
+    let finishChange!: (value: ReturnType<typeof effectiveState>) => void
+    mocks.setIdentity.mockImplementationOnce(() => new Promise((resolve) => {
+      finishChange = resolve
+    }))
+    await wrapper.get('button').trigger('click')
+    await vi.waitFor(() => expect(mocks.setIdentity).toHaveBeenCalled())
+    mocks.getIdentity.mockResolvedValue({ ...identityState('partner'), role_id: 'other-role' })
+    mocks.roleStore.currentRoleId = 'other-role'
+    await vi.waitFor(() => expect(wrapper.get('span').text()).toBe('伴侣'))
+    finishChange(effectiveState('host', true))
+    await flushPromises()
+    expect(wrapper.get('span').text()).toBe('伴侣')
+    expect(mocks.setIdentity).toHaveBeenCalledWith('role', OCLIVE_DEFAULT_IDENTITY_SENTINEL)
+    expect(mocks.roleStore.refreshRoleInfo).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 })

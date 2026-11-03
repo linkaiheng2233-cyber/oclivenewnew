@@ -48,6 +48,20 @@ fn should_skip_roles_subdir(name: &str) -> bool {
     name == "blueprint"
 }
 
+/// Compare existing directory identities instead of folding Windows path text.
+/// This also keeps case-sensitive directories and symlink escapes distinct.
+fn resolved_path_is_within(resolved: &Path, root: &Path) -> std::io::Result<bool> {
+    if resolved.starts_with(root) {
+        return Ok(true);
+    }
+    for parent in resolved.ancestors().skip(1).filter(|path| path.has_root()) {
+        if same_file::is_same_file(parent, root)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 impl RoleStorage {
     /// Creates a new role storage instance.
     pub fn new(roles_dir: impl AsRef<Path>) -> Self {
@@ -74,7 +88,7 @@ impl RoleStorage {
         if candidate.exists() {
             let root = self.roles_dir.canonicalize().map_err(AppError::IoError)?;
             let resolved = candidate.canonicalize().map_err(AppError::IoError)?;
-            if !resolved.starts_with(&root) {
+            if !resolved_path_is_within(&resolved, &root).map_err(AppError::IoError)? {
                 return Err(AppError::InvalidParameter(
                     "role directory escapes roles root".into(),
                 ));
@@ -110,7 +124,7 @@ impl RoleStorage {
         let candidate = role_dir.join(rel);
         if candidate.exists() {
             let resolved = candidate.canonicalize().map_err(AppError::IoError)?;
-            if !resolved.starts_with(&role_dir) {
+            if !resolved_path_is_within(&resolved, &role_dir).map_err(AppError::IoError)? {
                 return Err(AppError::InvalidParameter(
                     "role asset escapes role directory".into(),
                 ));
@@ -639,7 +653,7 @@ impl RoleStorage {
 
 #[cfg(test)]
 mod tests {
-    use super::{should_skip_roles_subdir, RoleStorage};
+    use super::{resolved_path_is_within, should_skip_roles_subdir, RoleStorage};
     use std::fs;
     use std::path::Path;
     use tempfile::tempdir;
@@ -741,6 +755,67 @@ mod tests {
                 .unwrap()
                 .join("scenes/default/scene.json")
         );
+    }
+
+    #[test]
+    fn existing_role_assets_remain_readable_after_library_reopen() {
+        let temp = tempdir().unwrap();
+        let root = temp.path().join("roles");
+        fs::create_dir_all(root.join("mumu/assets/images")).unwrap();
+        fs::write(
+            root.join("mumu/assets/images/neutral.png"),
+            b"image fixture",
+        )
+        .unwrap();
+        for _ in 0..3 {
+            let storage = RoleStorage::new(&root);
+            let path = storage
+                .role_asset_path("mumu", "assets/images/neutral.png")
+                .unwrap();
+            assert_eq!(fs::read(path).unwrap(), b"image fixture");
+        }
+        let unrelated = temp.path().join("unrelated");
+        fs::create_dir(&unrelated).unwrap();
+        assert!(!resolved_path_is_within(
+            &unrelated.canonicalize().unwrap(),
+            &root.canonicalize().unwrap()
+        )
+        .unwrap());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn filesystem_identity_accepts_windows_case_aliases_without_folding_paths() {
+        let temp = tempdir().unwrap();
+        let root = temp.path().join("MixedCaseRoles");
+        fs::create_dir_all(root.join("mumu/assets")).unwrap();
+        fs::write(root.join("mumu/assets/test.png"), b"image").unwrap();
+        let file = root.join("mumu/assets/test.png").canonicalize().unwrap();
+        let alias = temp.path().join("mixedcaseroles");
+        assert!(!file.starts_with(&alias));
+        assert!(resolved_path_is_within(&file, &alias).unwrap());
+        assert!(RoleStorage::new(alias)
+            .role_asset_path("mumu", "assets/test.png")
+            .unwrap()
+            .is_file());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn filesystem_identity_does_not_allow_symlink_escapes() {
+        let temp = tempdir().unwrap();
+        let root = temp.path().join("roles");
+        fs::create_dir_all(root.join("mumu/assets")).unwrap();
+        let outside = temp.path().join("outside.png");
+        fs::write(&outside, b"private").unwrap();
+        std::os::unix::fs::symlink(&outside, root.join("mumu/assets/link.png")).unwrap();
+        assert!(RoleStorage::new(&root)
+            .role_asset_path("mumu", "assets/link.png")
+            .is_err());
+        let outside_role = temp.path().join("outside-role");
+        fs::create_dir(&outside_role).unwrap();
+        std::os::unix::fs::symlink(&outside_role, root.join("escape")).unwrap();
+        assert!(RoleStorage::new(root).role_dir_path("escape").is_err());
     }
 
     #[test]

@@ -49,6 +49,15 @@ pub(crate) async fn begin_adult_stage_route(
         .map_err(adult_stage_api_error)
 }
 
+pub(crate) async fn cancel_chat(
+    State(state): State<Arc<AppState>>,
+    Json(request): Json<crate::models::dto::CancelChatRequest>,
+) -> Result<Json<bool>, ApiError> {
+    crate::domain::chat_engine::cancel_message(&state, &request)
+        .map(Json)
+        .map_err(adult_stage_api_error)
+}
+
 pub(crate) async fn generate_adult_staged_beat_route(
     State(state): State<Arc<AppState>>,
     Json(request): Json<StageAdultBeatRequest>,

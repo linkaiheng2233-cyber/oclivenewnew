@@ -1,4 +1,6 @@
 export default {
+  stoppedBadge: '已停止',
+  stopping: '正在停止…',
   receiveStopped: '已停止接收上一轮回复。重新打开对话可查看已保存的内容。',
   switching: '切换中...',
   historyExpandTitle: '在此展开此前的对话',

@@ -49,6 +49,7 @@ once_cell = { workspace = true }
 tempfile = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
+same-file = { workspace = true }
 semver = { workspace = true }
 notify = { workspace = true }
 zip = { workspace = true }

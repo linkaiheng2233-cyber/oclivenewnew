@@ -7,17 +7,22 @@ pub(super) fn validate(req: &SendMessageRequest) -> Result<()> {
     let Some(raw) = req.chat_thread_id.as_deref() else {
         return Ok(());
     };
+    validate_id(raw)?;
+    if req.adult.is_some() {
+        return Err(AppError::InvalidParameter(
+            "transcript-only threads do not support staged adult interactions".into(),
+        ));
+    }
+    Ok(())
+}
+
+pub(super) fn validate_id(raw: &str) -> Result<()> {
     let id = uuid::Uuid::parse_str(raw).map_err(|_| {
         AppError::InvalidParameter("chat_thread_id must be a canonical UUID".into())
     })?;
     if id.is_nil() || id.to_string() != raw {
         return Err(AppError::InvalidParameter(
             "chat_thread_id must be a canonical non-nil UUID".into(),
-        ));
-    }
-    if req.adult.is_some() {
-        return Err(AppError::InvalidParameter(
-            "transcript-only threads do not support staged adult interactions".into(),
         ));
     }
     Ok(())

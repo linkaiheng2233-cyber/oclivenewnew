@@ -1,4 +1,4 @@
-import { mockInvoke } from './fixtures'
+import { mockInvoke, stoppedRequestIds } from './fixtures'
 
 /** Build-time stand-in for Tauri's IPC channel; mock-browser tests use plain sends. */
 export class Channel<T> {
@@ -19,7 +19,20 @@ export async function invoke<T>(
   } as Record<string, string>)[command]
   if (hold && localStorage.getItem(`oclive.e2e.hold${hold}`) === '1') {
     await new Promise<void>((resolve) => {
-      window.addEventListener(`oclive:e2e:release-${hold.toLowerCase()}`, () => resolve(), { once: true })
+      const id = String((args.req as Record<string, unknown> | undefined)?.client_request_id)
+      const released = () => {
+        window.removeEventListener(`oclive:e2e:release-${hold.toLowerCase()}`, released)
+        window.removeEventListener('oclive:e2e:stop-send', stopped)
+        resolve()
+      }
+      const stopped = (event: Event) => {
+        if (hold === 'Send' && (event as CustomEvent).detail === id)
+          released()
+      }
+      window.addEventListener(`oclive:e2e:release-${hold.toLowerCase()}`, released)
+      window.addEventListener('oclive:e2e:stop-send', stopped)
+      if (hold === 'Send' && stoppedRequestIds.has(id))
+        released()
     })
   }
   const result = mockInvoke(command, args)

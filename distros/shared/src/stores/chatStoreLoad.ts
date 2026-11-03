@@ -25,6 +25,7 @@ export function parseMessageTimestamp(iso?: string | null): number {
 export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
   let emotion: string | undefined
   let replyIsFallback: boolean | undefined
+  let replyStopped: boolean | undefined
   if (m.metadata) {
     try {
       const meta = JSON.parse(m.metadata) as Record<string, unknown>
@@ -33,6 +34,8 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
           emotion = meta.bot_emotion
         if (typeof meta.reply_is_fallback === 'boolean')
           replyIsFallback = meta.reply_is_fallback
+        if (typeof meta.reply_stopped === 'boolean')
+          replyStopped = meta.reply_stopped
       }
     }
     catch {
@@ -51,6 +54,7 @@ export function storedMessageToChatMessage(m: StoredMessage): ChatMessage {
     timestamp: parseMessageTimestamp(m.created_at),
     emotion,
     replyIsFallback,
+    replyStopped,
   }
 }
 

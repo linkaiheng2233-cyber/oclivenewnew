@@ -29,6 +29,7 @@ export default {
   dataUnavailable: 'The data directory is not writable. Check disk space and directory permissions.',
   file: 'Log file',
   noFiles: 'No log files',
+  logsUnavailable: 'Logs could not be read. Check the reason above and refresh to retry.',
   level: 'Level',
   search: 'Search loaded logs',
   searchHint: 'Error code, module or keyword',

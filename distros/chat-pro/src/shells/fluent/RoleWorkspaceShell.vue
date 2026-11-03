@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { useMainShell } from '../../composables/useMainShell'
+import { toastAsyncError } from '@oclive/shared/api'
 import ChatInput from '@oclive/shared/components/chat/ChatInput.vue'
 import ChatMessageList from '@oclive/shared/components/chat/ChatMessageList.vue'
 import ErrorNotice from '@oclive/shared/components/ErrorNotice.vue'
@@ -85,7 +86,12 @@ const helpCard = ref<HTMLElement | null>(null)
 const helpOpener = ref<HTMLButtonElement | null>(null)
 const modelManagerPanel = ref<{ focus: () => void } | null>(null)
 const settingsPanel = ref<{ focus: () => void } | null>(null)
-useModalFocusRestore(helpOpen, helpCard, { trapFocus: true })
+useModalFocusRestore(helpOpen, helpCard, {
+  trapFocus: true,
+  onEscape: () => {
+    helpOpen.value = false
+  },
+})
 const blocked = computed(() => busy.value || roleSwitching.value || startupState.value !== 'ready')
 const runtimeReady = computed(() => page.value === 'chat' && !!activeSession.value && !!roleStore.currentRoleId)
 const ui = useUiStore()
@@ -328,8 +334,8 @@ function openRecoveryFromNotice(): void {
                 <ChatMessageList ref="chatListRef" :key="activeChatKey" :messages="messages" :history-split-index="0" :loading="chatListLoading" :role-switching="blocked" />
               </div>
               <div class="workspace-composer">
-                <button v-if="chatStore.isLoading" class="stop-button" type="button" @click="chatStore.cancelPendingSend()">
-                  ■ {{ t('workspace.stop') }}
+                <button v-if="chatStore.isLoading" class="stop-button" type="button" :disabled="chatStore.stopRequested" @click="chatStore.stopPendingSend().catch(toastAsyncError)">
+                  ■ {{ t(chatStore.stopRequested ? 'chat.stopping' : 'workspace.stop') }}
                 </button>
                 <ChatInput ref="chatInputRef" :key="activeChatKey" v-model="draft" :disabled="blocked" :loading="chatListLoading" :role-name="roleName" @send="submitMessage" @adult-action="onAdultAction" />
               </div>

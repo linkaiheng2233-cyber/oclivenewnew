@@ -27,6 +27,18 @@ pub enum ChatBackend {
 }
 
 impl ChatBackend {
+    pub async fn stop_message(
+        &self,
+        req: &oclive_kernel_types::models::dto::CancelChatRequest,
+    ) -> Result<bool, AppError> {
+        match self {
+            Self::Http(conn) => KernelHttpClient::stop_message_via_http(conn, req).await,
+            Self::Local(state) => {
+                oclive_kernel_host::domain::chat_engine::cancel_message(state, req)
+            }
+        }
+    }
+
     pub async fn send_minimal_conversation(
         &self,
         req: &MinimalRoleLocalConversationRequest,

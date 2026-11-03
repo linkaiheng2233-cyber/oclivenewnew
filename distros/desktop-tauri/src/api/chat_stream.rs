@@ -34,6 +34,19 @@ use tokio::sync::watch;
 /// Transport-level terminal code used only by this IPC bridge; it is not a kernel error code.
 pub const CHAT_STREAM_CANCELLED: &str = "CHAT_STREAM_CANCELLED";
 
+/// Stop the logical generation while leaving the result channel attached.
+#[tauri::command]
+pub async fn stop_message(
+    req: oclive_kernel_types::models::dto::CancelChatRequest,
+    app: AppHandle,
+    state: State<'_, SharedAppState>,
+) -> Result<bool, CommandError> {
+    ChatBackend::from_app(&app, state.inner().clone())
+        .stop_message(&req)
+        .await
+        .map_err(Into::into)
+}
+
 /// Incremental and terminal events for one streamed turn, delivered in emission order.
 ///
 /// Tokens arrive as the Host emits them; the authoritative DTO is the command's typed return value,

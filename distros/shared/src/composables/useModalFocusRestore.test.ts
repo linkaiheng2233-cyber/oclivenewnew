@@ -8,12 +8,20 @@ import { useModalFocusRestore } from './useModalFocusRestore'
 
 const wrappers: Array<ReturnType<typeof mount>> = []
 let opener: HTMLButtonElement
-function render(initial = true, trapFocus = true, explicitOpener?: Ref<HTMLElement | null>) {
+function render(initial = true, trapFocus = true, explicitOpener?: Ref<HTMLElement | null>, ownsEscape = false) {
   const open = ref(initial)
   const root = ref<HTMLElement | null>(null)
   const wrapper = mount(defineComponent({
     setup() {
-      useModalFocusRestore(open, root, { trapFocus, opener: explicitOpener })
+      useModalFocusRestore(open, root, {
+        trapFocus,
+        opener: explicitOpener,
+        onEscape: ownsEscape
+          ? () => {
+              open.value = false
+            }
+          : undefined,
+      })
       return () => open.value
         ? h('section', { ref: root, tabindex: -1 }, [
             h('button', { id: 'first-control' }, 'First'),
@@ -104,5 +112,36 @@ describe('modal focus lifecycle', () => {
     const { root } = render(true, false)
     await flushPromises()
     expect(tab(root.value!).defaultPrevented).toBe(false)
+  })
+
+  it('closes the recovery dialog before global handlers even if native focus left its subtree', async () => {
+    const lowerWindow = vi.fn()
+    window.addEventListener('keydown', lowerWindow)
+    const { open } = render(true, true, undefined, true)
+    await flushPromises()
+    opener.focus()
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    opener.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    expect(open.value).toBe(false)
+    expect(lowerWindow).not.toHaveBeenCalled()
+    await flushPromises()
+    expect(document.activeElement).toBe(opener)
+    opener.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    expect(lowerWindow).toHaveBeenCalledTimes(1)
+    window.removeEventListener('keydown', lowerWindow)
+  })
+
+  it('closes only the top dialog when another modal opens above recovery', async () => {
+    const lower = render(true, true, undefined, true)
+    await flushPromises()
+    const upper = render(true, true, undefined, true)
+    await flushPromises()
+    opener.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(upper.open.value).toBe(false)
+    expect(lower.open.value).toBe(true)
+    await flushPromises()
+    opener.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    expect(lower.open.value).toBe(false)
   })
 })

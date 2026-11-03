@@ -89,7 +89,7 @@ const tabs = ['status', 'errors', 'logs'] as const
           <label>
             {{ t('support.file') }}
             <select :value="snapshot?.selectedFile ?? ''" :aria-label="t('support.file')" :disabled="loading || !snapshot?.files.length" @change="refreshLogs(($event.target as HTMLSelectElement).value)">
-              <option v-if="!snapshot?.files.length" value="">{{ t('support.noFiles') }}</option>
+              <option v-if="!snapshot?.files.length" value="">{{ t(error ? 'support.logsUnavailable' : 'support.noFiles') }}</option>
               <option v-for="file in snapshot?.files" :key="file.name" :value="file.name">{{ file.name }} · {{ Math.ceil(file.sizeBytes / 1024) }} KB</option>
             </select>
           </label>
@@ -116,7 +116,7 @@ const tabs = ['status', 'errors', 'logs'] as const
           {{ t('support.truncated') }}
         </p>
         <div v-if="!filteredLines.length" class="support-empty">
-          {{ loading ? t('support.loading') : snapshot?.text ? t('support.noMatch') : t('support.noLogs') }}
+          {{ loading ? t('support.loading') : error ? t('support.logsUnavailable') : snapshot?.text ? t('support.noMatch') : t('support.noLogs') }}
         </div>
         <div v-else class="support-log-view" tabindex="0" :aria-label="t('support.logs')">
           <div v-for="line in filteredLines" :key="line.index" class="support-log-line" :class="`support-log-line--${line.severity}`">

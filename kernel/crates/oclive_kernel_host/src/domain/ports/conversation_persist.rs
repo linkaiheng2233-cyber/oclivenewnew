@@ -43,6 +43,7 @@ pub struct TurnPersistRequest {
     pub user_message_hidden: bool,
     pub assistant_reply: String,
     pub reply_is_fallback: bool,
+    pub reply_stopped: bool,
     pub model_name: Option<String>,
     pub response_ms: u64,
     pub user_emotion: Option<String>,

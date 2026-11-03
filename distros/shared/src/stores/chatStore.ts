@@ -32,6 +32,7 @@ import {
   cancelActiveChatSend,
   resumeAdultBeatQueueForChat,
   sendChatStoreMessage,
+  stopActiveChatSend,
 } from './chatStoreSend'
 import { useRoleStore } from './roleStore'
 import { useUiStore } from './uiStore'
@@ -47,6 +48,7 @@ export interface ChatMessage {
   presenceVariant?: PresenceMode
   /** Fallback short reply when primary LLM fails (matches backend `reply_is_fallback`) */
   replyIsFallback?: boolean
+  replyStopped?: boolean
   /** Narration/inner thought/action split from main reply (assistant only; main content is dialogue) */
   aside?: string
   /** True while SSE tokens are still arriving */
@@ -214,6 +216,7 @@ export const useChatStore = defineStore(
     state: () => ({
       messageMap: {} as RoleSceneMessageMap,
       isLoading: false,
+      stopRequested: false,
       sceneHistorySplitIndex: {} as SceneHistorySplitIndex,
       lastAssistantAside: {} as Record<string, string>,
       messagesHydrated: false,
@@ -350,7 +353,11 @@ export const useChatStore = defineStore(
         resumeAdultBeatQueueForChat(
           {
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,
-            setLoading: loading => (this.isLoading = loading),
+            setLoading: (loading) => {
+              this.isLoading = loading
+              if (!loading)
+                this.stopRequested = false
+            },
             getMessageCountForRoleScene: (rid, scene) =>
               this.getMessageCountForRoleScene(rid, scene),
             addMessage: (rid, scene, msg, options) =>
@@ -632,7 +639,11 @@ export const useChatStore = defineStore(
           {
             getChatThreadId: (rid, sid) => this.chatThreadId(rid, sid),
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,
-            setLoading: loading => (this.isLoading = loading),
+            setLoading: (loading) => {
+              this.isLoading = loading
+              if (!loading)
+                this.stopRequested = false
+            },
             getMessageCountForRoleScene: (roleId, sid) => this.getMessageCountForRoleScene(roleId, sid),
             addMessage: (roleId, sid, msg, options) => this.addMessage(roleId, sid, msg, options),
             patchMessageById: (roleId, sid, localId, patch) =>
@@ -675,7 +686,11 @@ export const useChatStore = defineStore(
         const response = await sendChatStoreMessage(
           {
             sceneHistorySplitIndex: this.sceneHistorySplitIndex,
-            setLoading: loading => (this.isLoading = loading),
+            setLoading: (loading) => {
+              this.isLoading = loading
+              if (!loading)
+                this.stopRequested = false
+            },
             getMessageCountForRoleScene: (roleId, sid) => this.getMessageCountForRoleScene(roleId, sid),
             addMessage: (roleId, sid, msg, options) => this.addMessage(roleId, sid, msg, options),
             patchMessageById: (roleId, sid, localId, patch) =>
@@ -702,6 +717,19 @@ export const useChatStore = defineStore(
       cancelPendingSend() {
         cancelActiveChatSend()
         this.isLoading = false
+        this.stopRequested = false
+      },
+      async stopPendingSend() {
+        if (!this.isLoading || this.stopRequested)
+          return
+        this.stopRequested = true
+        try {
+          await stopActiveChatSend()
+        }
+        catch (error) {
+          this.stopRequested = false
+          throw error
+        }
       },
     },
   },

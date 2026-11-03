@@ -4,11 +4,12 @@ import type { SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage } from './chatStore'
 import type { ChatStoreSendContext } from './chatStoreSend'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { cancelActiveChatSend, sendChatStoreMessage } from './chatStoreSend'
+import { cancelActiveChatSend, sendChatStoreMessage, stopActiveChatSend } from './chatStoreSend'
 
 const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   recoverMessage: vi.fn(),
+  stopMessage: vi.fn(),
   sendMessageStream: vi.fn(),
   streamEnabled: false,
   startQueue: vi.fn(),
@@ -62,6 +63,7 @@ vi.mock('@oclive/shared/api', async (importOriginal) => {
     ...actual,
     sendMessage: mocks.sendMessage,
     recoverMessage: mocks.recoverMessage,
+    stopMessage: mocks.stopMessage,
     sendMessageStream: mocks.sendMessageStream,
     toastAsyncError: vi.fn(),
   }
@@ -183,6 +185,7 @@ describe('chat store send presentation', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.sendMessageStream.mockReset()
+    mocks.stopMessage.mockReset().mockResolvedValue(true)
     mocks.streamEnabled = false
     mocks.roleStore.currentRoleId = 'role'
     mocks.roleStore.roleInfo.interactionMode = 'immersive'
@@ -201,6 +204,63 @@ describe('chat store send presentation', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it.each(['已经显示的半段', ''])('stops upstream without detaching, preserves %j and waits for its durable outcome', async (prefix) => {
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.streamEnabled = true
+    let finish!: (result: SendMessageResponse) => void
+    let streamSignal!: AbortSignal
+    mocks.sendMessageStream.mockImplementationOnce((_request, options) => {
+      streamSignal = options.signal
+      options.onToken(prefix, prefix)
+      return new Promise<SendMessageResponse>((resolve) => {
+        finish = resolve
+      })
+    })
+    const messages: ChatMessage[] = []
+    const ctx = context(messages)
+    const pending = sendChatStoreMessage(ctx, 'hello', 'home')
+    await vi.waitFor(() => expect(mocks.sendMessageStream).toHaveBeenCalledOnce())
+    expect(await stopActiveChatSend()).toBe(true)
+    expect(await stopActiveChatSend()).toBe(true)
+    expect(mocks.stopMessage).toHaveBeenCalledOnce()
+    expect(mocks.stopMessage).toHaveBeenCalledWith({
+      role_id: 'role',
+      client_request_id: mocks.sendMessageStream.mock.calls[0]![0].client_request_id,
+    })
+    expect(streamSignal.aborted).toBe(false)
+    expect(ctx.setLoading).not.toHaveBeenCalledWith(false)
+    finish({ ...ordinaryResponse(prefix), reply_stopped: true })
+    await pending
+    expect(messages.filter(message => message.role === 'assistant')).toMatchObject([
+      { id: 'assistant-1', content: prefix, replyStopped: true, streaming: false, replyIsFallback: false },
+    ])
+    expect(messages.some(message => message.role === 'system')).toBe(false)
+    expect(mocks.recoverMessage).not.toHaveBeenCalled()
+    expect(mocks.emitBuiltin).toHaveBeenCalledWith('message:sent', expect.objectContaining({ skip_auto_tts: true }))
+    expect(ctx.setLoading).toHaveBeenLastCalledWith(false)
+    expect(await stopActiveChatSend()).toBe(false)
+    mocks.sendMessageStream.mockResolvedValueOnce(ordinaryResponse('next reply'))
+    await sendChatStoreMessage(ctx, 'next turn', 'home')
+    expect(messages.some(message => message.content === 'next reply')).toBe(true)
+  })
+
+  it('allows retrying a failed stop request without losing the visible stream', async () => {
+    mocks.roleStore.roleInfo.adultExtensionAvailable = false
+    mocks.streamEnabled = true
+    let finish!: (result: SendMessageResponse) => void
+    mocks.sendMessageStream.mockImplementationOnce(() => new Promise<SendMessageResponse>((resolve) => {
+      finish = resolve
+    }))
+    const pending = sendChatStoreMessage(context([]), 'hello', 'home')
+    await vi.waitFor(() => expect(mocks.sendMessageStream).toHaveBeenCalledOnce())
+    mocks.stopMessage.mockRejectedValueOnce(new Error('network interrupted')).mockResolvedValueOnce(true)
+    await expect(stopActiveChatSend()).rejects.toThrow('network interrupted')
+    expect(await stopActiveChatSend()).toBe(true)
+    finish({ ...ordinaryResponse('partial'), reply_stopped: true })
+    await pending
+    expect(mocks.stopMessage).toHaveBeenCalledTimes(2)
   })
 
   it('keeps transcript identity across stream recovery without isolating role memory', async () => {

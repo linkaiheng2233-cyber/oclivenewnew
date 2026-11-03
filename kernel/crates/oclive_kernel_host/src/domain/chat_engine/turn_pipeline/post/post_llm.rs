@@ -317,6 +317,7 @@ fn assemble_send_message_response(ctx: &PostLlmCtx<'_>) -> SendMessageResponse {
         offer_destination_picker,
         offer_together_travel,
         reply_is_fallback: llm.main_llm_fallback,
+        reply_stopped: false,
         llm_fallback_reason: llm.llm_fallback_reason.clone(),
         knowledge_chunks_in_prompt: middle.knowledge_chunk_count,
         timestamp: chrono::Utc::now().timestamp_millis(),
