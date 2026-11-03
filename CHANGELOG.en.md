@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- **Chat Pro rc.8 acceptance candidate**: consolidate the independent-machine follow-ups into a separate candidate, mapped to Windows MSI `0.6.0.8`. Source, installer and bundled kernel are verified against one frozen commit. rc.7 machine results do not establish an rc.8 pass; original issues, single-instance behavior and preserved stopped replies require retesting.
 - **Chat Pro single window and generation stop (source)**: launching again raises the existing window instead of starting another desktop kernel. Stopping ordinary chat now cancels upstream generation, saves the generated prefix and marks it stopped. Reopening history and recovering the same request keep this outcome instead of replacing it with a connection-error fallback. Persistence already in progress finishes normally; unexpected transport disconnects retain the existing receipt recovery behavior.
 - **Saved Ollama endpoints take effect**: fix model lists using a newly saved address while chat still called the startup address. Apply the saved endpoint to the shared chat client; new requests use it while in-flight requests retain their original connection and proxy policy.
 - **Async executor patch**: update the newly yanked `async-executor 1.14.0` to `1.14.1`, fixing a use-after-free when a waker fires during executor destruction, without broad dependency upgrades or expanded audit ignores.

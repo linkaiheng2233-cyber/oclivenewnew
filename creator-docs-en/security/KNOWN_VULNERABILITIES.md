@@ -9,6 +9,8 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 
 ## Current status
 
+Rerunning `cargo audit --json` for rc.8 preparation still reports 699 dependencies, 0 vulnerabilities and 10 existing warnings, exit 0. This lockfile change only synchronizes the desktop crate candidate version; no further dependencies or ignores change.
+
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |

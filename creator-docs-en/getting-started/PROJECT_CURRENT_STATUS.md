@@ -12,8 +12,8 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.6.0-rc.7** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
-| Windows MSI numeric version | **0.6.0.7**, mapped to the desktop candidate independently of CLI/kernel versions |
+| Desktop app semver | **0.6.0-rc.8** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
+| Windows MSI numeric version | **0.6.0.8**, mapped to the desktop candidate independently of CLI/kernel versions |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**; [CLI](../../kernel/crates/oclive-cli/Cargo.toml), [runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml), [validation](../../kernel/crates/oclive_validation/Cargo.toml) manifests |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
@@ -21,6 +21,8 @@
 ---
 
 ## What this repo (`oclivenewnew`) delivers
+
+- **2026-11-03 rc.8 acceptance-candidate preparation**: promote these fixes to a distinct desktop candidate; version manifests and the corresponding MSI mapping change while CLI / runtime / validation versions remain independent. Build, formal CI, installed-image checks and independent-machine retests are identified by the new package manifest. This page does not predeclare delivery or acceptance complete.
 
 - **2026-11-03 rc.7 independent-machine feedback**: installation, real local 7B chat and restart continuation ran on a separate Windows machine with existing VC++ / WebView2. The 16-item record has 9 passes, 5 failures and 2 untested items; overall acceptance has not passed. Source follow-ups for portraits, internal markers, identity display, Help Escape and log reading are in the [CHANGELOG](../../CHANGELOG.en.md) and require a new installed candidate to be retested; delivered rc.7 artifacts remain unchanged. This is not clean-Windows proof. Missing-dependency environments, old-data upgrades and database recovery do not inherit a pass.
 
