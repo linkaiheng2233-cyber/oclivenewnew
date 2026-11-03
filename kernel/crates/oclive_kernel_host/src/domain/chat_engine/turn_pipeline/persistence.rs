@@ -358,6 +358,7 @@ pub(crate) async fn append_turn_to_chat_storage(
         user_message_hidden,
         assistant_reply: reply.to_string(),
         reply_is_fallback: llm.main_llm_fallback,
+        reply_stopped: false,
         model_name: Some(pre.memory.ollama_model.clone()),
         response_ms: llm.main_llm_ms,
         user_emotion: Some(pre.hints.user_emotion_str.clone()),
@@ -387,6 +388,7 @@ pub(crate) struct AgentChatTurn<'a> {
     pub user_emotion: &'a str,
     pub bot_emotion: &'a str,
     pub chat_thread_id: Option<&'a str>,
+    pub reply_stopped: bool,
 }
 
 pub(crate) async fn append_agent_turn_to_chat_storage(
@@ -406,8 +408,9 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         user_emotion,
         bot_emotion,
         chat_thread_id,
+        reply_stopped,
     } = turn;
-    if reply.trim().is_empty() {
+    if reply.trim().is_empty() && !reply_stopped {
         return ChatAppendIds::default();
     }
     let persist = TurnPersistRequest {
@@ -419,6 +422,7 @@ pub(crate) async fn append_agent_turn_to_chat_storage(
         user_message_hidden: false,
         assistant_reply: reply.to_string(),
         reply_is_fallback: false,
+        reply_stopped,
         model_name: None,
         response_ms: 0,
         user_emotion: Some(user_emotion.to_string()),

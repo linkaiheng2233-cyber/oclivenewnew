@@ -1,4 +1,6 @@
 export default {
+  stoppedBadge: 'Stopped',
+  stopping: 'Stopping…',
   receiveStopped: 'Stopped receiving the previous reply. Reopen this conversation to see what was saved.',
   switching: 'Switching…',
   historyExpandTitle: 'Show earlier messages here',

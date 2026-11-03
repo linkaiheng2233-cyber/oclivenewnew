@@ -307,9 +307,13 @@ pub(crate) fn decode_non_streaming_body(
 
 /// Ollama HTTP client.
 pub struct OllamaClient {
+    endpoint: arc_swap::ArcSwap<OllamaEndpoint>,
+    timeout: Duration,
+}
+
+struct OllamaEndpoint {
     base_url: String,
     client: Client,
-    timeout: Duration,
 }
 
 /// Builds the `POST /api/generate` body for one non-streaming text-generation call.
@@ -340,16 +344,28 @@ fn normalize_base_url(url: String) -> String {
 impl OllamaClient {
     /// Creates a new Ollama client.
     pub fn new(base_url: impl Into<String>) -> Self {
-        let base_url = normalize_base_url(base_url.into());
+        Self {
+            endpoint: arc_swap::ArcSwap::from_pointee(Self::endpoint(base_url.into())),
+            timeout: ollama_timeouts::http_client_timeout(),
+        }
+    }
+
+    fn endpoint(base_url: String) -> OllamaEndpoint {
+        let base_url = normalize_base_url(base_url);
         let client = if crate::infrastructure::is_loopback_endpoint(&base_url) {
             OLLAMA_LOOPBACK_HTTP_CLIENT.clone()
         } else {
             OLLAMA_HTTP_CLIENT.clone()
         };
-        Self {
-            base_url,
-            client,
-            timeout: ollama_timeouts::http_client_timeout(),
+        OllamaEndpoint { base_url, client }
+    }
+
+    /// Apply a saved endpoint to subsequent requests. Each in-flight request keeps
+    /// its original URL/client pair, including the matching loopback proxy policy.
+    pub fn update_base_url(&self, base_url: impl Into<String>) {
+        let endpoint = Self::endpoint(base_url.into());
+        if self.endpoint.load().base_url != endpoint.base_url {
+            self.endpoint.store(Arc::new(endpoint));
         }
     }
 
@@ -359,8 +375,9 @@ impl OllamaClient {
     ///
     /// Returns an error when Ollama is unreachable or rejects the model.
     pub async fn preload(&self, model: &str, keep_alive: &str) -> Result<()> {
-        let url = format!("{}/api/generate", self.base_url);
-        let response = self
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/generate", endpoint.base_url);
+        let response = endpoint
             .client
             .post(&url)
             .json(&OllamaRequest {
@@ -405,9 +422,10 @@ impl OllamaClient {
     /// Returns [`Err`] with a human-readable message when the operation fails.
     /// Checks whether the Ollama service is reachable.
     pub async fn health_check(&self) -> Result<bool> {
-        let url = format!("{}/api/tags", self.base_url);
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/tags", endpoint.base_url);
 
-        match self.client.get(&url).timeout(self.timeout).send().await {
+        match endpoint.client.get(&url).timeout(self.timeout).send().await {
             Ok(response) => Ok(response.status().is_success()),
             Err(_) => Ok(false),
         }
@@ -417,7 +435,8 @@ impl OllamaClient {
     /// Returns [`Err`] with a human-readable message when the operation fails.
     /// Lists available models.
     pub async fn list_models(&self) -> Result<Vec<String>> {
-        let url = format!("{}/api/tags", self.base_url);
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/tags", endpoint.base_url);
 
         #[derive(Deserialize)]
         struct TagsResponse {
@@ -429,7 +448,7 @@ impl OllamaClient {
             name: String,
         }
 
-        let response = self
+        let response = endpoint
             .client
             .get(&url)
             .timeout(self.timeout)
@@ -524,10 +543,11 @@ impl OllamaClient {
             top_p,
             opts,
         } = settings;
-        let url = format!("{}/api/generate", self.base_url);
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/generate", endpoint.base_url);
         let request = non_streaming_request(model, prompt, temperature, top_p, opts);
 
-        let response = self
+        let response = endpoint
             .client
             .post(&url)
             .json(&request)
@@ -545,7 +565,7 @@ impl OllamaClient {
         decode_non_streaming_body(
             status,
             &body,
-            &self.base_url,
+            &endpoint.base_url,
             model,
             opts.is_some_and(|o| o.want_metrics),
         )
@@ -595,7 +615,8 @@ impl OllamaClient {
     ) -> Result<OllamaGenerateResult> {
         use futures_util::StreamExt;
 
-        let url = format!("{}/api/generate", self.base_url);
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/generate", endpoint.base_url);
 
         let request = OllamaRequest {
             model: model.to_string(),
@@ -605,7 +626,7 @@ impl OllamaClient {
             keep_alive: opts.and_then(|o| o.keep_alive.clone()),
         };
 
-        let response = self
+        let response = endpoint
             .client
             .post(&url)
             .json(&request)
@@ -725,14 +746,15 @@ impl OllamaClient {
     ///
     /// Returns [`crate::error::AppError`] when the HTTP request fails or Ollama rejects the create payload.
     pub async fn create_model_from_path(&self, name: &str, model_path: &str) -> Result<()> {
-        let url = format!("{}/api/create", self.base_url);
+        let endpoint = self.endpoint.load_full();
+        let url = format!("{}/api/create", endpoint.base_url);
         let path_escaped = model_path.replace('\\', "/");
         let modelfile = format!("FROM \"{path_escaped}\"\n");
         let body = serde_json::json!({
             "name": name.trim(),
             "modelfile": modelfile,
         });
-        let response = self
+        let response = endpoint
             .client
             .post(&url)
             .json(&body)
@@ -762,7 +784,7 @@ mod tests {
     #[test]
     fn test_ollama_client_new() {
         let client = OllamaClient::new("http://localhost:11434");
-        assert_eq!(client.base_url, "http://localhost:11434");
+        assert_eq!(client.endpoint.load().base_url, "http://localhost:11434");
     }
 
     #[test]

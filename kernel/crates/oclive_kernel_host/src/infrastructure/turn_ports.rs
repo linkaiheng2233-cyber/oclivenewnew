@@ -107,6 +107,7 @@ impl ConversationPersistPort for StoreConversationPersistPort {
                 user_message_hidden: input.user_message_hidden,
                 assistant_reply: input.assistant_reply,
                 reply_is_fallback: input.reply_is_fallback,
+                reply_stopped: input.reply_stopped,
                 model_name: input.model_name,
                 response_ms: input.response_ms,
                 user_emotion: input.user_emotion,

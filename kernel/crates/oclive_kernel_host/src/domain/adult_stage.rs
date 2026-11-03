@@ -255,6 +255,7 @@ pub async fn commit_adult_staged_beat(
             user_message_hidden: true,
             assistant_reply: stored.transcript_reply.clone(),
             reply_is_fallback: stored.response.reply_is_fallback,
+            reply_stopped: stored.response.reply_stopped,
             model_name: stored.model_name.clone(),
             response_ms: stored.response_ms,
             user_emotion: Some("neutral".to_string()),

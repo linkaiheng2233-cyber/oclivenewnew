@@ -14,6 +14,18 @@ export interface SendMessageRequest {
   adult?: AdultInteractionRequest | null
 }
 
+export interface CancelChatRequest {
+  role_id: string
+  client_request_id: string
+  session_id?: string | null
+  chat_thread_id?: string | null
+}
+
+/** Explicit business stop; keep listening for the persisted partial result. */
+export function stopMessage(req: CancelChatRequest): Promise<boolean> {
+  return invokeWithFriendlyError<boolean>('stop_message', { req })
+}
+
 /** Reference Host local converter output; this is not a universal package layout. */
 export interface MinimalRoleLocalSource {
   role_id: string
@@ -141,6 +153,8 @@ export interface SendMessageResponse {
   /** @deprecated prefer `display_metrics.relation_summary` */
   relation_state: string
   reply: string
+  /** A durable user stop, distinct from transport errors and fallback replies. */
+  reply_stopped?: boolean
   adult_beat?: AdultBeatDto | null
   /** Optional segmented presentation for the `reply_mode` side channel */
   reply_presentation?: ReplyPresentationDto | null

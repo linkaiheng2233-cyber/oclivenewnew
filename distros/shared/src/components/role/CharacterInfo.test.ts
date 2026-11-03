@@ -54,7 +54,7 @@ describe('character info role portrait', () => {
       value: {},
     })
     mocks.resolveRoleAssetPath.mockResolvedValue('D:\\roles\\mumu\\assets\\images\\normal-v2.png')
-    mocks.readRoleAssetBytes.mockResolvedValue([137, 80, 78, 71])
+    mocks.readRoleAssetBytes.mockImplementation(async (role: string, rel: string) => role === 'other' || rel.includes('missing') ? null : [137, 80, 78, 71])
     mocks.createObjectURL.mockReturnValue('blob:role-portrait')
     Object.defineProperties(URL, {
       createObjectURL: { configurable: true, value: mocks.createObjectURL },
@@ -73,10 +73,7 @@ describe('character info role portrait', () => {
     const wrapper = mountCharacter()
     await flushPromises()
 
-    expect(mocks.resolveRoleAssetPath).toHaveBeenCalledWith(
-      'mumu',
-      'assets/images/normal-v2.png',
-    )
+    expect(mocks.resolveRoleAssetPath).not.toHaveBeenCalled()
     expect(mocks.readRoleAssetBytes).toHaveBeenCalledWith(
       'mumu',
       'assets/images/normal-v2.png',
@@ -86,6 +83,16 @@ describe('character info role portrait', () => {
 
     wrapper.unmount()
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:role-portrait')
+  })
+
+  it('does not gate Tauri byte loading on a swallowed absolute-path lookup failure', async () => {
+    mocks.resolveRoleAssetPath.mockRejectedValue(new Error('absolute lookup unavailable'))
+    const wrapper = mountCharacter()
+    await flushPromises()
+    expect(wrapper.get('img.avatar').attributes('src')).toBe('blob:role-portrait')
+    expect(mocks.resolveRoleAssetPath).not.toHaveBeenCalled()
+    expect(mocks.convertFileSrc).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('loads all seven emotion families and three intensities from the actual Mumu catalog', async () => {
@@ -162,11 +169,13 @@ describe('character info role portrait', () => {
 
   it('shows a safe emoji when no assets exist or an image fails to decode', async () => {
     mocks.resolveRoleAssetPath.mockResolvedValue(null)
+    mocks.readRoleAssetBytes.mockResolvedValue(null)
     const wrapper = mountCharacter()
     await flushPromises()
     expect(wrapper.find('img.avatar').exists()).toBe(false)
     expect(wrapper.get('.avatar-fallback').text()).toBe('😐')
     mocks.resolveRoleAssetPath.mockResolvedValue('normal.png')
+    mocks.readRoleAssetBytes.mockResolvedValue([137, 80, 78, 71])
     await wrapper.setProps({ emotion: 'shy', portraitAssetRelPath: null })
     await flushPromises()
     await wrapper.get('img.avatar').trigger('error')
@@ -206,6 +215,7 @@ describe('character info role portrait', () => {
 
   it('uses the role initial when a library preview is missing', async () => {
     mocks.resolveRoleAssetPath.mockResolvedValue(null)
+    mocks.readRoleAssetBytes.mockResolvedValue(null)
     const wrapper = mountCharacter()
     await wrapper.setProps({ layout: 'preview' })
     await flushPromises()

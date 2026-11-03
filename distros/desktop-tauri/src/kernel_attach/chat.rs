@@ -284,6 +284,30 @@ impl KernelHttpClient {
         Self::map_recover_response(status, &text)
     }
 
+    /// Explicit user stop; never infer cancellation from an SSE disconnect.
+    pub async fn stop_message_via_http(
+        conn: &KernelConnection,
+        req: &oclive_kernel_types::models::dto::CancelChatRequest,
+    ) -> Result<bool, AppError> {
+        let result = conn
+            .http_client()
+            .post(format!("{}/chat/cancel", conn.base_url))
+            .json(req)
+            .send()
+            .await
+            .map_err(|e| Self::map_send_err(&conn.base_url, "stop chat request", e))?;
+        let status = result.status();
+        let body = result
+            .text()
+            .await
+            .map_err(|e| AppError::OllamaError(format!("stop chat response: {e}")))?;
+        if !status.is_success() {
+            return Err(app_error_from_http_response(status.as_u16(), &body));
+        }
+        serde_json::from_str(&body)
+            .map_err(|e| AppError::OllamaError(format!("stop chat JSON: {e}")))
+    }
+
     pub async fn send_message_via_http(
         conn: &KernelConnection,
         role_path: &Path,

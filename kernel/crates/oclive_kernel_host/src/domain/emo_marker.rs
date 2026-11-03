@@ -48,6 +48,42 @@ const INTERNAL_STATUS_MARKERS: [&str; 8] = [
     "[分析中...]",
     "[生成中...]",
 ];
+
+/// Incremental Markdown code-delimiter state, shared by final and streamed
+/// orphan-closer hygiene. Literal examples must remain readable as code.
+#[derive(Default)]
+struct CodeLiteral {
+    delimiter: usize,
+    pending_ticks: usize,
+}
+
+impl CodeLiteral {
+    fn finish_ticks(&mut self) {
+        if self.pending_ticks > 0 {
+            if self.delimiter == 0 {
+                self.delimiter = self.pending_ticks;
+            } else if self.delimiter == self.pending_ticks {
+                self.delimiter = 0;
+            }
+            self.pending_ticks = 0;
+        }
+    }
+
+    fn consume(&mut self, text: &str) {
+        for character in text.chars() {
+            if character == '`' {
+                self.pending_ticks += 1;
+            } else {
+                self.finish_ticks();
+            }
+        }
+    }
+
+    fn contains_marker(&mut self) -> bool {
+        self.finish_ticks();
+        self.delimiter > 0
+    }
+}
 /// `ComplexEmotionOutput.source` for marker-derived output.
 pub const EMO_MARKER_SOURCE: &str = "llm_emo_marker";
 /// `ComplexEmotionOutput.source` for the degraded keep branch (no marker, non-plugin backend).
@@ -78,7 +114,20 @@ fn strip_internal_status_markers(reply: &str) -> String {
     for marker in INTERNAL_STATUS_MARKERS {
         cleaned = cleaned.replace(marker, "");
     }
-    cleaned.trim_end().to_string()
+    let mut visible = String::with_capacity(cleaned.len());
+    let mut literal = CodeLiteral::default();
+    let mut end = 0;
+    for (start, marker) in cleaned.match_indices(EMO_MARKER_CLOSE) {
+        let text = &cleaned[end..start];
+        visible.push_str(text);
+        literal.consume(text);
+        if literal.contains_marker() {
+            visible.push_str(marker);
+        }
+        end = start + marker.len();
+    }
+    visible.push_str(&cleaned[end..]);
+    visible.trim_end().to_string()
 }
 
 /// Applies the contract limit without splitting UTF-8 code points.
@@ -393,6 +442,23 @@ fn is_conflicting_pair(a: EmoLabel, b: EmoLabel) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn orphan_closers_are_not_dialogue_but_quoted_code_is_preserved() {
+        for raw in ["64。[/EMO]", "64。[/EMO]  ", "[/EMO]64。[/EMO]"] {
+            let parsed = parse_reply(raw);
+            assert_eq!(parsed.reply, "64。");
+            assert!(parsed.emotion.is_none());
+            assert!(parsed.portrait_hint.is_none());
+        }
+        for raw in [
+            "标记 `[/EMO]` 的作用是什么？",
+            "```text\n[/EMO]\n```",
+            "普通中文与 JSON：{\"answer\":64}",
+        ] {
+            assert_eq!(parse_reply(raw).reply, raw);
+        }
+    }
 
     fn marker(labels: &[&str], intensity: f64, hint: Option<&str>) -> EmoMarker {
         let labels = labels

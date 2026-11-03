@@ -4,6 +4,7 @@
 import type { SessionMeta, StoredMessage } from '../distros/shared/src/api/chatStorage'
 
 const conversations = new Map<string, { meta: SessionMeta, messages: StoredMessage[] }>()
+export const stoppedRequestIds = new Set<string>()
 const savedModelSettings = new Map<string, ReturnType<typeof llmUserSettings>>()
 export interface MockRole { id: string, name: string, version: string, author: string }
 
@@ -250,9 +251,18 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
         currentRoleId = roleId
       return roleInfo(roleId)
     }
+    case 'stop_message': {
+      const req = payload.req as Record<string, unknown>
+      const id = String(req.client_request_id)
+      stoppedRequestIds.add(id)
+      window.dispatchEvent(new CustomEvent('oclive:e2e:stop-send', { detail: id }))
+      return true
+    }
     case 'send_message': {
       const req = payload.req as Record<string, unknown>
       const userMessage = String(req?.user_message ?? '')
+      const stopped = stoppedRequestIds.has(String(req.client_request_id))
+      const reply = stopped ? '' : `Echo: ${userMessage}`
       const roleId = String(req.role_id)
       const sessionId = req.chat_thread_id ? `${req.chat_thread_id}:chat:${roleId}` : roleId
       const now = new Date().toISOString()
@@ -264,16 +274,17 @@ export function mockInvoke(command: string, payload: Record<string, unknown> = {
       const replyId = crypto.randomUUID()
       conversation.messages.push(
         { id: userId, session_id: sessionId, turn_index: conversation.messages.length, sender: 'user', content: userMessage, created_at: now },
-        { id: replyId, session_id: sessionId, turn_index: conversation.messages.length, sender: 'assistant', content: `Echo: ${userMessage}`, created_at: now },
+        { id: replyId, session_id: sessionId, turn_index: conversation.messages.length, sender: 'assistant', content: reply, metadata: JSON.stringify({ reply_stopped: stopped }), created_at: now },
       )
-      Object.assign(conversation.meta, { updated_at: now, message_count: conversation.messages.length, last_message_snippet: `Echo: ${userMessage}` })
+      Object.assign(conversation.meta, { updated_at: now, message_count: conversation.messages.length, last_message_snippet: reply })
       conversations.set(sessionId, conversation)
       return {
         api_version: 1,
         schema: 1,
         presence_mode: 'co_present',
         relation_state: 'Stranger',
-        reply: `Echo: ${userMessage}`,
+        reply,
+        reply_stopped: stopped,
         emotion: {
           joy: 0,
           sadness: 0,

@@ -105,6 +105,7 @@ pub type SharedAppState = Arc<AppState>;
 use crate::domain::startup_health::StartupHealthCache;
 
 pub struct AppState {
+    pub(crate) chat_cancellations: crate::domain::chat_engine::cancellation::ChatCancellations,
     pub db_manager: Arc<DbManager>,
     /// SQLite + JSON mirror chat history (decoupled from memory tables).
     pub conversation_store: Arc<dyn ConversationStore>,

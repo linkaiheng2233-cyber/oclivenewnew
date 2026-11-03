@@ -263,3 +263,82 @@ async fn all_mumu_expressions_and_intensities_reach_the_response_without_stream_
     assert_eq!(independent.visual_state_id.as_deref(), Some("shy_moderate"));
     assert_ne!(independent.bot_emotion, "shy");
 }
+
+#[tokio::test]
+async fn orphan_closer_is_clean_in_stream_history_and_recent_title_after_reopen() {
+    use oclive_kernel_host::domain::chat_engine::process_message_stream;
+    use oclive_kernel_host::state::AppStateBuilder;
+
+    let data = tempfile::tempdir().expect("isolated transcript");
+    let database = data.path().join("chat.db");
+    let roles = oclive_kernel_runtime::chat_pro_roles_dir(&[std::path::PathBuf::from(env!(
+        "CARGO_MANIFEST_DIR"
+    ))])
+    .expect("official roles, read only");
+    let llm = Arc::new(ScriptedLlm(Mutex::new("64。[/EMO]".into())));
+    let state = AppStateBuilder::production(&database, roles.clone(), data.path())
+        .with_llm_client(llm.clone())
+        .build()
+        .await
+        .expect("persistent isolated Host");
+    let visible = Arc::new(Mutex::new(String::new()));
+    let wire = visible.clone();
+    let user = "8乘8等于多少？用户原文包含 `[/EMO]`。";
+    let response = process_message_stream(
+        &state,
+        &SendMessageRequest {
+            role_id: "mumu".into(),
+            user_message: user.into(),
+            session_id: Some("orphan-closer-reopen".into()),
+            ..Default::default()
+        },
+        Arc::new(move |token| wire.lock().expect("wire").push_str(token)),
+    )
+    .await
+    .expect("streamed turn");
+    assert_eq!(visible.lock().expect("visible").as_str(), "64。");
+    assert_eq!(response.reply, "64。");
+    assert!(!response.reply_is_fallback);
+    let sessions = state
+        .conversation_store
+        .list_sessions_by_role("mumu")
+        .await
+        .expect("recent conversations");
+    assert_eq!(sessions.len(), 1);
+    assert_eq!(sessions[0].last_message_snippet, "64。");
+    let session_id = sessions[0].session_id.clone();
+    let before = state
+        .conversation_store
+        .fetch_messages(&session_id, 20, 0)
+        .await
+        .expect("saved messages");
+    assert_eq!(before.len(), 2);
+    assert_eq!(before[0].content, user);
+    assert_eq!(before[1].content, "64。");
+    state.db_manager.close_pool().await;
+    drop(state);
+    let reopened = AppStateBuilder::production(&database, roles, data.path())
+        .with_llm_client(llm)
+        .build()
+        .await
+        .expect("reopened Host");
+    let after = reopened
+        .conversation_store
+        .fetch_messages(&session_id, 20, 0)
+        .await
+        .expect("reopened messages");
+    assert_eq!(after[0].id, before[0].id);
+    assert_eq!(after[1].id, before[1].id);
+    assert_eq!(after[0].content, user);
+    assert_eq!(after[1].content, "64。");
+    assert_eq!(
+        reopened
+            .conversation_store
+            .list_sessions_by_role("mumu")
+            .await
+            .expect("reopened recent")[0]
+            .last_message_snippet,
+        "64。"
+    );
+    reopened.db_manager.close_pool().await;
+}

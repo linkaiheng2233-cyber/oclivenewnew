@@ -33,6 +33,8 @@
 
 ## 仍属后续增强（不挡 A1.2 本切片收口）
 
+**显式停止生成（独立覆盖）**：`stop_message` 经 `ChatBackend` 的带鉴权 HTTP 客户端调用 `/chat/cancel`，不替代传输级 `cancel_message_stream`。行为覆盖见 [`chat_stop_persistence.rs`](../kernel/crates/oclive_kernel_host/tests/chat_stop_persistence.rs)（上游 HTTP 关闭、鉴权、回执、重开和下一轮）与 [`chatStoreSend.test.ts`](../distros/shared/src/stores/chatStoreSend.test.ts)（保留连接等待终态、前缀、空回复和停止失败重试），不计作上表已有 invoke 矩阵项目。
+
 | 方向 | 说明 |
 |------|------|
 | **全命令表** | `lib.rs` 中其余 `invoke` 按需再挂矩阵行 |

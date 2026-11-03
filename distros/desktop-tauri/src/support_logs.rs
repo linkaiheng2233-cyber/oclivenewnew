@@ -73,15 +73,21 @@ pub(crate) fn read_log_tail(
     }
     let file_path = canonical_root.join(&name);
     let metadata = std::fs::symlink_metadata(&file_path).map_err(|error| error.to_string())?;
-    if metadata.file_type().is_symlink()
-        || !metadata.is_file()
-        || file_path
-            .canonicalize()
-            .map_err(|error| error.to_string())?
-            .parent()
-            != Some(canonical_root.as_path())
-    {
-        return Err("Log file must stay inside the application log directory".into());
+    let resolved = file_path
+        .canonicalize()
+        .map_err(|error| error.to_string())?;
+    let own_directory = match resolved.parent() {
+        Some(parent) => {
+            same_file::is_same_file(parent, &canonical_root).map_err(|error| error.to_string())?
+        }
+        None => false,
+    };
+    if metadata.file_type().is_symlink() || !metadata.is_file() || !own_directory {
+        return Err(format!(
+            "Log file must stay inside the application log directory (root: {}; resolved: {})",
+            canonical_root.display(),
+            resolved.display(),
+        ));
     }
     let mut file = File::open(&file_path).map_err(|error| error.to_string())?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
@@ -160,6 +166,43 @@ mod tests {
         assert!(preview.text.contains("1499"));
         assert!(!preview.text.contains('\u{fffd}'));
         assert!(preview.text.len() <= MAX_BYTES as usize);
+    }
+
+    #[test]
+    fn reads_existing_logs_after_directory_rename_and_reopen() {
+        let temp = tempfile::tempdir().unwrap();
+        let before = temp.path().join("before");
+        let after = temp.path().join("after");
+        std::fs::create_dir(&before).unwrap();
+        std::fs::write(before.join("oclive.log"), "INFO first startup").unwrap();
+        assert_eq!(
+            read_log_tail(&before, None).unwrap().text,
+            "INFO first startup"
+        );
+        std::fs::rename(&before, &after).unwrap();
+        assert_eq!(
+            read_log_tail(&after, Some("oclive.log")).unwrap().text,
+            "INFO first startup"
+        );
+        std::fs::write(after.join("oclive-next.log"), "INFO restarted").unwrap();
+        assert_eq!(
+            read_log_tail(&after, Some("oclive-next.log")).unwrap().text,
+            "INFO restarted"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn reads_owned_log_through_a_windows_directory_case_alias() {
+        let temp = tempfile::tempdir().unwrap();
+        let directory = temp.path().join("MixedCaseLogs");
+        std::fs::create_dir(&directory).unwrap();
+        std::fs::write(directory.join("owned.log"), "INFO owned").unwrap();
+        let alias = temp.path().join("mixedcaselogs");
+        assert_eq!(
+            read_log_tail(&alias, Some("owned.log")).unwrap().text,
+            "INFO owned"
+        );
     }
 
     #[cfg(unix)]

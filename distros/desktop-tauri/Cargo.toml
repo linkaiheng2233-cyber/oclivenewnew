@@ -1,6 +1,6 @@
 [package]
 name = "oclivenewnew-tauri"
-version = "0.6.0-rc.7"
+version = "0.6.0-rc.8"
 edition = "2021"
 license = "Apache-2.0"
 description = "oclive desktop companion ? Tauri + Vue + Rust dialogue engine"
@@ -19,7 +19,7 @@ doctest = false
 [features]
 default = ["custom-protocol", "desktop"]
 custom-protocol = ["tauri/custom-protocol"]
-desktop = ["dep:tauri-plugin-deep-link"]
+desktop = ["dep:tauri-plugin-deep-link", "dep:tauri-plugin-single-instance"]
 dual_core = ["oclive_kernel_host/dual_core"]
 loom-tests = ["dep:loom"]
 # CP-INT B9-B11 R1: compile-time gated test harness. `default` must NOT include these, so a normal
@@ -58,6 +58,7 @@ once_cell = { workspace = true }
 tempfile = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
+same-file = { workspace = true }
 semver = { workspace = true }
 notify = { workspace = true }
 zip = { workspace = true }
@@ -68,6 +69,7 @@ tower-http = { workspace = true, features = ["cors"] }
 sha2 = { workspace = true }
 indexmap = { workspace = true }
 tauri-plugin-deep-link = { version = "2", optional = true }
+tauri-plugin-single-instance = { version = "2", optional = true }
 loom = { version = "0.7", features = ["checkpoint"], optional = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]

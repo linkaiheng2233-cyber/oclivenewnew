@@ -24,7 +24,7 @@ import type { ChatStoreSendContext } from '../stores/chatStoreSend'
 import { i18n } from '@oclive/shared/i18n/index'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hostEventBus } from '../lib/hostEventBus'
-import { sendChatStoreMessage } from '../stores/chatStoreSend'
+import { sendChatStoreMessage, stopActiveChatSend } from '../stores/chatStoreSend'
 
 interface Deferred<T> {
   promise: Promise<T>
@@ -263,6 +263,8 @@ describe('cP-INT R2 authenticated IPC stream transport → Tauri recovery identi
         }
         if (command === 'cancel_message_stream')
           return true
+        if (command === 'stop_message')
+          return true
         if (command === 'recover_message')
           return recovery.promise
         throw new Error(`unexpected invoke ${command}`)
@@ -487,7 +489,24 @@ describe('cP-INT R2 authenticated IPC stream transport → Tauri recovery identi
       .toEqual(['assistant-first', 'assistant-second'])
   })
 
-  it('cancels only this transport instance and drops tokens that arrive after the cancel', async () => {
+  it('stops a logical turn through real IPC argument construction without detaching its result channel', async () => {
+    const transport = ipcTransport(0)
+    const messages: ChatMessage[] = []
+    const pending = sendChatStoreMessage(context(messages), USER_TEXT, 'home')
+    await vi.waitFor(() => expect(commands('send_message_stream')).toHaveLength(1))
+    transport.token(STALE_PREFIX)
+    await stopActiveChatSend()
+    const sentRequest = payloadOf('send_message_stream')?.req as Record<string, unknown>
+    expect(payloadOf('stop_message')?.req).toEqual({ role_id: 'mumu', client_request_id: sentRequest.client_request_id })
+    expect(commands('cancel_message_stream')).toHaveLength(0)
+    expect(assistants(messages)[0]?.content).toBe(STALE_PREFIX)
+    transport.done({ ...response(STALE_PREFIX, 'assistant-stopped'), reply_stopped: true })
+    await pending
+    expect(assistants(messages)).toMatchObject([{ id: 'assistant-stopped', content: STALE_PREFIX, replyStopped: true }])
+    expect(commands('recover_message')).toHaveLength(0)
+  })
+
+  it('detaches only this transport instance and drops tokens that arrive after context cancellation', async () => {
     const transport = ipcTransport(0)
     const messages: ChatMessage[] = []
 
@@ -497,7 +516,7 @@ describe('cP-INT R2 authenticated IPC stream transport → Tauri recovery identi
     transport.token(STALE_PREFIX)
     await vi.waitFor(() => expect(assistants(messages)).toHaveLength(1))
 
-    // 真实产品动作：主动取消。
+    // 切换角色/对话导致的传输脱离，与用户按“停止生成”分开。
     const { cancelActiveChatSend } = await import('../stores/chatStoreSend')
     cancelActiveChatSend()
     await vi.waitFor(() => expect(commands('cancel_message_stream')).toHaveLength(1))

@@ -65,6 +65,19 @@ pub struct SendMessageRequest {
     pub adult: Option<AdultInteractionRequest>,
 }
 
+/// Stop one logical user turn without detaching its result transport.
+/// All namespace fields must match the original send. The completed response
+/// remains recoverable with that send's `client_request_id`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CancelChatRequest {
+    pub role_id: String,
+    pub client_request_id: String,
+    #[serde(default)]
+    pub session_id: Option<String>,
+    #[serde(default)]
+    pub chat_thread_id: Option<String>,
+}
+
 /// UI-only affect metrics (simulation values; must not drive PromptBuilder mechanics).
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DisplayMetricsDto {
@@ -125,6 +138,10 @@ pub struct SendMessageResponse {
     #[deprecated(note = "use display_metrics.relation_summary")]
     pub relation_state: String,
     pub reply: String,
+    /// Explicit user cancellation preserved the visible prefix. This is a
+    /// successful, persisted outcome, not a provider failure or fallback.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reply_stopped: bool,
     /// Structured adult beat. `reply` remains the dialogue-only compatibility field.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub adult_beat: Option<AdultBeatDto>,

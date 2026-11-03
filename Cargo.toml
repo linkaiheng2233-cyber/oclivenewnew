@@ -53,6 +53,7 @@ once_cell = "1.0"
 tempfile = "3.8"
 toml = "1"
 walkdir = "2.5"
+same-file = "1.0.6"
 semver = "1.0"
 notify = "6"
 # 9.x 起 `deflate` 元特性会把 flate2 后端切到 zlib-rs，那会连带改掉 `png` 与

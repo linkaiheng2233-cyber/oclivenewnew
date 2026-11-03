@@ -84,6 +84,7 @@ pub(crate) async fn build_minimal_response(
             user_emotion: user_emotion_str.as_str(),
             bot_emotion: bot_emotion.as_str(),
             chat_thread_id,
+            reply_stopped: false,
         },
     )
     .await;
@@ -113,6 +114,7 @@ pub(crate) async fn build_minimal_response(
         offer_destination_picker: false,
         offer_together_travel: false,
         reply_is_fallback: false,
+        reply_stopped: false,
         llm_fallback_reason: None,
         knowledge_chunks_in_prompt: 0,
         timestamp: chrono::Utc::now().timestamp_millis(),

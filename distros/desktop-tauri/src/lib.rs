@@ -168,7 +168,24 @@ fn isolated_test_mode() -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let context = tauri::generate_context!();
+    let mut builder = tauri::Builder::default();
+    #[cfg(all(desktop, feature = "desktop"))]
+    if context.config().identifier == oclive_kernel_runtime::TAURI_APP_IDENTIFIER {
+        // Register first: duplicate Chat Pro launches exit before shell/kernel setup.
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                for result in [window.show(), window.unminimize(), window.set_focus()] {
+                    if let Err(error) = result {
+                        tracing::warn!(target: "oclive_desktop", %error, "could not raise the existing Chat Pro window");
+                    }
+                }
+            }
+            seed_pending_install_urls_from_args(args);
+            let _ = app.emit("protocol:pending_install", serde_json::json!({ "reason": "single-instance" }));
+        }));
+    }
+    builder = builder
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init());
@@ -347,6 +364,7 @@ pub fn run() {
             api::chat::recover_message,
             api::chat_stream::send_message_stream,
             api::chat_stream::cancel_message_stream,
+            api::chat_stream::stop_message,
             api::chat::begin_adult_stage_generation,
             api::chat::generate_adult_staged_beat,
             api::chat::commit_adult_staged_beat,
@@ -474,7 +492,7 @@ pub fn run() {
             api::plugin_config::get_plugin_settings_ui,
             api::plugin_config::set_plugin_settings_config,
         ])
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             if let tauri::RunEvent::ExitRequested { .. } = event {

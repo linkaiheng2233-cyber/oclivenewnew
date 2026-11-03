@@ -29,6 +29,7 @@ export default {
   dataUnavailable: '数据目录暂时无法写入，请检查磁盘空间和目录权限。',
   file: '日志文件',
   noFiles: '暂无日志文件',
+  logsUnavailable: '日志暂时无法读取，请查看上方原因并刷新重试。',
   level: '级别',
   search: '搜索已加载日志',
   searchHint: '错误码、模块名或关键词',

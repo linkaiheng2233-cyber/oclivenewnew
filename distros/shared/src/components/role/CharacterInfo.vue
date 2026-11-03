@@ -62,21 +62,6 @@ const emotionDisplayLabel = computed(() => {
 })
 
 async function tryLoadRelativeAsset(rel: string, gen: number): Promise<boolean> {
-  let path: string | null
-  try {
-    path = await resolveRoleAssetPath(props.roleId, rel)
-  }
-  catch (e) {
-    if (gen !== portraitGeneration)
-      return false
-    console.warn('[CharacterInfo] catalog asset resolve failed', e)
-    return false
-  }
-  if (!path)
-    return false
-  if (gen !== portraitGeneration)
-    return false
-
   const filename = rel.split('/').pop() ?? rel
   if (isTauri()) {
     try {
@@ -98,11 +83,16 @@ async function tryLoadRelativeAsset(rel: string, gen: number): Promise<boolean> 
       return true
     }
     catch (e) {
-      console.warn('[CharacterInfo] catalog readRoleAssetBytes failed', e)
+      if (gen === portraitGeneration)
+        console.warn('[CharacterInfo] readRoleAssetBytes failed', e)
+      return false
     }
   }
 
   try {
+    const path = await resolveRoleAssetPath(props.roleId, rel)
+    if (!path)
+      return false
     if (gen !== portraitGeneration)
       return false
     showPortrait(convertFileSrc(path))
@@ -145,60 +135,9 @@ async function refreshPortrait(): Promise<void> {
     if (gen !== portraitGeneration)
       return
     const rel = `assets/images/${filename}`
-    let path: string | null
-    try {
-      path = await resolveRoleAssetPath(props.roleId, rel)
-    }
-    catch (e) {
-      if (gen !== portraitGeneration)
-        return
-      console.warn('[CharacterInfo] find_role_asset_path failed', e)
-      portraitLoadFailed.value = true
-      return
-    }
-    if (!path)
-      continue
-    if (gen !== portraitGeneration)
-      return
-
-    /* Prefer Tauri command + Blob: avoids custom asset protocol and net::ERR_CONNECTION_REFUSED */
-    if (isTauri()) {
-      try {
-        const bytes = await readRoleAssetBytes(props.roleId, rel)
-        if (gen !== portraitGeneration)
-          return
-        if (!bytes)
-          continue
-        const mime = filename.endsWith('.webp')
-          ? 'image/webp'
-          : filename.endsWith('.jpg') || filename.endsWith('.jpeg')
-            ? 'image/jpeg'
-            : filename.endsWith('.gif')
-              ? 'image/gif'
-              : 'image/png'
-        const blob = new Blob([new Uint8Array(bytes)], { type: mime })
-        const url = URL.createObjectURL(blob)
-        showPortrait(url, true)
-        loaded = true
-        break
-      }
-      catch (e) {
-        console.warn(
-          '[CharacterInfo] readRoleAssetBytes failed, fallback convertFileSrc',
-          e,
-        )
-      }
-    }
-
-    try {
-      if (gen !== portraitGeneration)
-        return
-      showPortrait(convertFileSrc(path))
+    if (await tryLoadRelativeAsset(rel, gen)) {
       loaded = true
       break
-    }
-    catch (e) {
-      console.warn('[CharacterInfo] convertFileSrc failed', e)
     }
   }
 

@@ -9,16 +9,20 @@ This file treats **vulnerability-level** hits from `cargo audit` on the workspac
 
 ## Current status
 
+Rerunning `cargo audit --json` for rc.8 preparation still reports 699 dependencies, 0 vulnerabilities and 10 existing warnings, exit 0. This lockfile change only synchronizes the desktop crate candidate version; no further dependencies or ignores change.
+
 | Item | Value |
 |------|-----|
 | **cargo-audit version** | **0.22.2** (pin this major line for comparable reports) |
-| **Last scan date** | **2026-11-02** (local `cargo audit --json` against a refreshed advisory-db: **1,395** advisories; **698** dependency entries scanned; 0 vulnerabilities / 10 warnings; exit code **0**; this lock change only synchronizes the desktop rc.7 version and preserves the third-party dependency graph) |
+| **Last scan date** | **2026-11-03** (after refreshing advisory-db, `cargo audit --no-fetch --json` checked the same snapshot: **1,402** advisories; final scan **699** dependency entries, 0 vulnerabilities / 10 warnings, exit code **0**. Add direct edges to already locked `same-file 1.0.6` and the official `tauri-plugin-single-instance 2.4.5`; update `async-executor 1.14.0 → 1.14.1`. Preserve other existing package versions, dependency edges and ignores) |
 | **Current npm scan** | Production **0**; full graph **3 low / 42 moderate / 0 high / 0 critical**. This new advisory snapshot does not rewrite earlier observations. Existing production/full `--audit-level=high` gates remain; no ignore expansion or unrelated dependency upgrade |
 | **Scan path** | Workspace root `Cargo.lock` |
 | **Vulnerability-level count** | **0** (`cargo audit --json` exit code **0**) |
 | **Warning-level count** | **10 reported / 11 matched** (`glib`, five `unic-*`, `zbus_names`/`zvariant`/`zvariant_derive`, and `unsafe-libyaml`, all *unmaintained*/*unsound*; `proc-macro-error` RUSTSEC-2024-0370 remains suppressed by the [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist — see "Warning-level tracking" below) |
 
 > If CI or your machine cannot fetch advisory-db: `cargo audit --no-fetch --stale` (requires a previously fetched local DB).
+
+After the registry refresh on 2026-11-03, existing `async-executor 1.14.0` newly reported as *yanked*: the pre-patch scan had 0 vulnerabilities / 11 warnings, exit 0. Following the [upstream changelog](https://github.com/smol-rs/async-executor/blob/master/CHANGELOG.md), lock non-yanked **1.14.1** to fix a use-after-free when a waker fires during executor destruction. The final result returns to **0 / 10**. Only this package's version/checksum change; apart from adding the single-instance plugin, no other package upgrades or unrelated resolver edge rewrites remain, and ignores are unchanged.
 
 On 2026-10-29 the workspace Tokio minimum becomes **1.53.3**, and the lock moves from **1.53.2 → 1.53.3**. Only Tokio's version/checksum change in the lockfile; existing features, dependency edges and every other locked package are preserved, remediating **RUSTSEC-2026-0386**. On the same advisory snapshot, reported warnings decrease from **11 → 10**. An external no-ignore check of the identical lockfile against cached advisories reports **11**; the only additional entry remains `proc-macro-error`, and the main allowlist bytes are unchanged. No direct `AsyncFd` call was found in tracked Rust source, but this is not complete transitive-dependency/Unix reachability acceptance. Removing this advisory from the locked graph does not guarantee security for every runtime configuration. The independent kernel revision migration and installer repackaging remain separate work.
 
@@ -111,6 +115,7 @@ On 2026-10-20 two more upstream advisories (same CVE-2026-111943, emSign root tr
 | **RUSTSEC-2024-0429** | `glib` | **Open** | `VariantStrIter` path; host does not use (Linux wry) |
 | **RUSTSEC-2026-0386** | `tokio` | **Remediated in locked graph · 1.53.3** | Updated and minimum raised on 2026-10-29; refreshed audit no longer matches, with no new ignore. The Unix `AsyncFd` constructor fix does not replace platform/caller acceptance |
 | yanked | `spin` 0.9.8 | **Fixed** — lockfile **0.9.9** | 2026-08-21 compatible-range lockfile refresh; still pulled through `flume` → `sqlx-sqlite` |
+| yanked | `async-executor` 1.14.0 | **Source lock at 1.14.1; old deliveries do not update automatically** | Compatible patch on 2026-11-03 after the registry newly reported the yank; only version/checksum change, and the final audit no longer reports it |
 | yanked | `chacha20` 0.10.1 | **Locally patched; formal batch acceptance pending** | Updated to non-yanked **0.10.2** on 2026-10-07; only lock version / checksum changed, with no post-update audit hit. The 2026-09-05 observation remains historical. RNG APIs, TLS, and the ignore policy are unchanged |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **Cleared** | 2026-07-14 K-PLATFORM-01a Full · no `rand` 0.7 after Tauri 2 |
 | **RUSTSEC-2026-0190** | `anyhow` | **Fixed** — lockfile **1.0.104** | 2026-08-21 lockfile verification |

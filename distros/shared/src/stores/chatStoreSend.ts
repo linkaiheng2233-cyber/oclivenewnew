@@ -1,6 +1,6 @@
 import type { AdultInteractionAction, SendMessageResponse } from '@oclive/shared/api'
 import type { ChatMessage, SceneHistorySplitIndex } from './chatStore'
-import { recoverMessage, sendMessage, sendMessageStream, toastAsyncError } from '@oclive/shared/api'
+import { recoverMessage, sendMessage, sendMessageStream, stopMessage, toastAsyncError } from '@oclive/shared/api'
 import { rt } from '@oclive/shared/i18n/runtimeT'
 import {
   cancelAdultBeatQueue,
@@ -54,6 +54,7 @@ export interface ChatStoreSendContext {
 
 let activeSendSeq = 0
 let inFlightStreamAbort: AbortController | null = null
+let inFlightStop: (() => Promise<boolean>) | null = null
 let adultScheduleSeq = 0
 
 /** Snapshot consumers must not apply results obtained before a new/abandoned turn. */
@@ -75,6 +76,12 @@ export function cancelActiveChatSend(): void {
   cancelAdultBeatSchedule()
   inFlightStreamAbort?.abort()
   inFlightStreamAbort = null
+  inFlightStop = null
+}
+
+/** User stop keeps the stream and send identity alive until durable completion. */
+export async function stopActiveChatSend(): Promise<boolean> {
+  return inFlightStop ? inFlightStop() : false
 }
 
 function isAbortError(err: unknown, signal?: AbortSignal): boolean {
@@ -258,6 +265,21 @@ export async function sendChatStoreMessage(
       adult: adultRequest,
       ...(!adultRequest ? { client_request_id: crypto.randomUUID() } : {}),
     }
+    if (request.client_request_id) {
+      const clientRequestId = request.client_request_id
+      let stopResult: Promise<boolean> | undefined
+      inFlightStop = () => {
+        stopResult ??= stopMessage({
+          role_id: roleId,
+          client_request_id: clientRequestId,
+          ...(chatThreadId ? { chat_thread_id: chatThreadId } : {}),
+        }).catch((error) => {
+          stopResult = undefined
+          throw error
+        })
+        return stopResult
+      }
+    }
     let res: SendMessageResponse
     // Structured adult output must be parsed as one complete envelope. Ordinary
     // role packs retain the low-TTFT SSE path.
@@ -320,16 +342,20 @@ export async function sendChatStoreMessage(
     }
 
     const pres = presentationFromSendResponse(res)
-    const preSplit = res.adult_beat
-      ? {
-          dialogue: res.adult_beat.dialogue,
-          aside: res.adult_beat.narration,
-        }
-      : splitRoleplayReply(pres.replyText)
+    const preSplit = res.reply_stopped
+      ? { dialogue: res.reply, aside: '' }
+      : res.adult_beat
+        ? {
+            dialogue: res.adult_beat.dialogue,
+            aside: res.adult_beat.narration,
+          }
+        : splitRoleplayReply(pres.replyText)
     const aside = preSplit.aside.trim()
-    const drafts = res.adult_beat
-      ? [{ text: preSplit.dialogue, delayMs: 0 }]
-      : draftsFromPresentation(pres.replyText, res.reply_presentation)
+    const drafts = res.reply_stopped
+      ? [{ text: res.reply, delayMs: 0 }]
+      : res.adult_beat
+        ? [{ text: preSplit.dialogue, delayMs: 0 }]
+        : draftsFromPresentation(pres.replyText, res.reply_presentation)
 
     const revealedBeforeFinal = new Set(revealedStreamSegmentIndexes)
     const dueAtBeforeFinal = new Map(streamSegmentDueAt)
@@ -352,7 +378,7 @@ export async function sendChatStoreMessage(
       if (isStale())
         return
       const segmentSplit = splitRoleplayReply(drafts[i].text)
-      const segmentDialogue = assistantDialogueFromSplit(drafts[i].text, segmentSplit)
+      const segmentDialogue = res.reply_stopped ? drafts[i].text : assistantDialogueFromSplit(drafts[i].text, segmentSplit)
       context.addMessage(roleId, sid, {
         id: segmentIds[i],
         role: 'assistant',
@@ -361,6 +387,7 @@ export async function sendChatStoreMessage(
         emotion: pres.assistantEmotionLabel,
         presenceVariant: pres.presenceVariant,
         replyIsFallback: pres.replyIsFallback,
+        replyStopped: res.reply_stopped === true,
         streaming: false,
         ...(i === drafts.length - 1 && aside.length > 0 ? { aside } : {}),
       }, { persistIdbCache: false })
@@ -402,7 +429,7 @@ export async function sendChatStoreMessage(
       role_id: roleId,
       scene_id: sid,
       turn_id: streamId,
-      skip_auto_tts: voiceTextOnlyForTurn,
+      skip_auto_tts: voiceTextOnlyForTurn || res.reply_stopped === true,
     })
     const countAfterTurn = context.getMessageCountForRoleScene(roleId, sid)
     context.clampSceneHistorySplitForBucket(
@@ -412,6 +439,8 @@ export async function sendChatStoreMessage(
       countAfterTurn,
       countBeforeTurn,
     )
+    if (res.reply_stopped)
+      return res
     if (adultStore.backgroundQueueEnabled) {
       void startAdultBeatQueue(
         roleId,
@@ -438,8 +467,10 @@ export async function sendChatStoreMessage(
   }
   finally {
     clearStreamSegmentTimers()
-    if (sendSeq === activeSendSeq)
+    if (sendSeq === activeSendSeq) {
       context.setLoading(false)
+      inFlightStop = null
+    }
     if (inFlightStreamAbort === streamAbort)
       inFlightStreamAbort = null
   }

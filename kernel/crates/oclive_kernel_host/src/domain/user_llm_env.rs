@@ -189,6 +189,12 @@ pub async fn apply_user_llm_env(state: &AppState) -> crate::error::Result<()> {
         secrets.set_cached_remote_llm_token(None);
     }
     let provider = apply_user_llm_env_from_db_unlocked(&settings).await?;
+    if let Some(ollama) = state.ollama.as_ref() {
+        ollama.update_base_url(
+            std::env::var("OLLAMA_BASE_URL")
+                .unwrap_or_else(|_| "http://localhost:11434".to_string()),
+        );
+    }
     tracing::info!(
         target: "oclive_llm",
         provider = %provider,

@@ -9,16 +9,20 @@
 
 ## 当前状态
 
+rc.8 准备时重新执行 `cargo audit --json`：仍为 699 个依赖、0 个漏洞、10 项既有警告，退出 0；本次锁文件只同步桌面 crate 的候选版本，没有进一步调整依赖或忽略项。
+
 | 项 | 值 |
 |----|-----|
 | **cargo-audit 版本** | **0.22.2**（建议固定该主版本以便报告可比） |
-| **最近扫描日期** | **2026-11-02**（本地 `cargo audit --json` 刷新 advisory-db，共 **1395** 条；扫描 **698** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**；本轮锁文件仅同步桌面 rc.7 版本，第三方依赖锁定图不变） |
+| **最近扫描日期** | **2026-11-03**（本地刷新 advisory-db 后以 `cargo audit --no-fetch --json` 核同一快照，共 **1402** 条；最终扫描 **699** 个依赖条目；漏洞级 **0**、警告级 **10**；退出码 **0**。增加已锁定的 `same-file 1.0.6` 直接依赖与官方 `tauri-plugin-single-instance 2.4.5`；`async-executor 1.14.0 → 1.14.1`，其余既有包版本、依赖边与忽略项保留） |
 | **本轮 npm 扫描** | 生产依赖 **0**；完整依赖图 **3 low / 42 moderate / 0 high / 0 critical**。该新公告快照不改写旧扫描结果；现行 production/full `--audit-level=high` 标准保持，未扩 ignore 或升级无关依赖 |
 | **扫描路径** | 工作区根目录 `Cargo.lock` |
 | **漏洞级命中数** | **0**（`cargo audit --json` 退出码 **0**） |
 | **警告级命中数** | **报出 10 / 实际命中 11**（`glib`、5 个 `unic-*`、`zbus_names`/`zvariant`/`zvariant_derive`、`unsafe-libyaml`，均为 *unmaintained*/*unsound*；`proc-macro-error` RUSTSEC-2024-0370 仍由 [`.cargo/audit.toml`](../../.cargo/audit.toml) allowlist 抑制，见下「警告级跟踪」） |
 
 > 若 CI 或本机无法拉取 advisory-db，可使用：`cargo audit --no-fetch --stale`（依赖本地已 fetch 的数据库）。
+
+2026-11-03 注册表刷新后，原有 `async-executor 1.14.0` 新报 *yanked*，修补前为漏洞级 **0**、警告级 **11**、退出 **0**。按[上游变更记录](https://github.com/smol-rs/async-executor/blob/master/CHANGELOG.md)锁到未撤回的 **1.14.1**，修补执行器销毁期间唤醒导致的释放后访问；最终恢复 **0 / 10**。只改该包 version/checksum，除新增单实例插件外未升级其它包，未保留解析器造成的无关依赖边改写，未扩大忽略项。
 
 2026-10-29 将 workspace Tokio 最低版本收紧到 **1.53.3**，锁文件从 **1.53.2 → 1.53.3**；锁差量仅 Tokio 的 version / checksum，既有 feature、依赖边及其余锁定包全部保留，修补 **RUSTSEC-2026-0386**。同一公告库快照下，主仓报出警告由 **11 → 10**；在仓库外对相同锁文件做无 ignore 的缓存复核为 **11** 条，唯一多出项仍为 `proc-macro-error`，主仓 allowlist 原字节未改。跟踪的 Rust 源码未发现直接 `AsyncFd` 调用，但这不是完整的传递依赖／Unix 可达性验收；锁定图消除此项公告也不等于所有运行配置的安全保证。新独立内核 revision 接入与安装包重打包仍单独进行。
 
@@ -113,6 +117,7 @@
 | **RUSTSEC-2024-0429** | `glib` | **开放** | `VariantStrIter` 路径；宿主未使用（Linux wry） |
 | **RUSTSEC-2026-0386** | `tokio` | **锁定图已修补 · 1.53.3** | 2026-10-29 升级并收紧最低版本；刷新审计不再命中，未添加 ignore。Unix `AsyncFd` 安全构造器的修补不替代平台与调用链验收 |
 | yanked | `spin` 0.9.8 | **已修复** — 锁文件 **0.9.9** | 2026-08-21 兼容范围锁文件更新；仍经 `flume` → `sqlx-sqlite` 引入 |
+| yanked | `async-executor` 1.14.0 | **源码锁定 1.14.1，旧交付包不自动更新** | 2026-11-03 注册表新增撤回信息后做兼容补丁；仅 version/checksum 两行变动，最终审计不再命中此项 |
 | yanked | `chacha20` 0.10.1 | **本地补丁已修复，合批正式验收待证** | 2026-10-07 更新至未撤回的 **0.10.2**；仅锁 version / checksum，后置 audit 不再命中。2026-09-05 的原观察保留为历史；不改随机数 API、TLS 或 ignore 策略 |
 | **RUSTSEC-2026-0097** | `rand` 0.7 | **已清零** | 2026-07-14 K-PLATFORM-01a Full · Tauri 2 后无 `rand` 0.7 |
 | **RUSTSEC-2026-0190** | `anyhow` | **已修复** — 锁文件 **1.0.104** | 2026-08-21 锁文件复核 |

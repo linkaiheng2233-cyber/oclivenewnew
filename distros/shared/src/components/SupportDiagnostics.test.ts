@@ -57,6 +57,9 @@ describe('help diagnostics interactions', () => {
     await flushPromises()
     expect(wrapper.find('[role=alert]').exists()).toBe(true)
     await wrapper.find('#support-tab-logs').trigger('click')
+    expect(wrapper.text()).toContain('Logs could not be read')
+    expect(wrapper.text()).not.toContain('No log files')
+    expect(wrapper.text()).not.toContain('No runtime logs')
     const refresh = wrapper.findAll('button').find(button => button.text() === 'Refresh logs')!
     await refresh.trigger('click')
     await flushPromises()

@@ -11,6 +11,7 @@ const props = withDefaults(
     presenceVariant?: 'co_present' | 'remote_stub' | 'remote_life'
     /** Matches backend `reply_is_fallback` */
     replyIsFallback?: boolean
+    replyStopped?: boolean
     /** Silent narration/action bubble rendered after assistant dialogue. */
     aside?: string
     /** True while SSE tokens are still arriving */
@@ -99,6 +100,7 @@ function hhmm(ts: number): string {
         </div>
       </div>
       <div class="bubble-meta">
+        <span v-if="props.role === 'assistant' && props.replyStopped" class="stopped-hint">{{ t('chat.stoppedBadge') }} · </span>
         <span class="time">{{ hhmm(props.timestamp) }}</span>
       </div>
     </div>

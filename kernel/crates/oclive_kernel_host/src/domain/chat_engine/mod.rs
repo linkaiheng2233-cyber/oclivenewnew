@@ -3,6 +3,7 @@
 //! Pure turn logic lives in [`super::chat_turn`]; this module handles async orchestration and `AppState`.
 //! Scene and favorability sub-logic: [`context`], [`scene`], [`favor`].
 
+pub(crate) mod cancellation;
 pub mod chat_stage;
 mod chat_thread;
 pub(crate) mod context;
@@ -24,6 +25,7 @@ pub(crate) mod turn_error;
 pub(crate) mod turn_pipeline;
 pub mod turn_prefetch;
 
+pub use cancellation::cancel_message;
 pub use process_message::{
     process_message, process_message_stream, process_message_stream_with_origin,
     process_message_with_origin, process_minimal_local_conversation, process_minimal_local_message,
@@ -164,6 +166,7 @@ pub(super) async fn process_remote_stub(ctx: &TurnContext<'_>) -> Result<SendMes
         offer_destination_picker: false,
         offer_together_travel: false,
         reply_is_fallback: false,
+        reply_stopped: false,
         llm_fallback_reason: None,
         knowledge_chunks_in_prompt: 0,
         timestamp: chrono::Utc::now().timestamp_millis(),

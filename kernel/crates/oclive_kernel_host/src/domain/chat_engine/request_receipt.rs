@@ -82,14 +82,7 @@ pub(super) async fn recover(
 }
 
 fn identity(req: &SendMessageRequest, id: &str) -> Result<(String, String, String)> {
-    let parsed = uuid::Uuid::parse_str(id).map_err(|_| {
-        AppError::InvalidParameter("client_request_id must be a canonical UUID".into())
-    })?;
-    if parsed.is_nil() || parsed.to_string() != id {
-        return Err(AppError::InvalidParameter(
-            "client_request_id must be a canonical non-nil UUID".into(),
-        ));
-    }
+    validate_client_request_id(id)?;
     if req.user_message.trim().is_empty() {
         return Err(AppError::EmptyMessage);
     }
@@ -108,6 +101,18 @@ fn identity(req: &SendMessageRequest, id: &str) -> Result<(String, String, Strin
     let fingerprint = format!("{:x}", Sha256::digest(serde_json::to_vec(&payload)?));
     let namespace = conversation_state_role_id(&req.role_id, req.session_id.as_deref());
     Ok((scope, fingerprint, namespace))
+}
+
+pub(super) fn validate_client_request_id(id: &str) -> Result<()> {
+    let parsed = uuid::Uuid::parse_str(id).map_err(|_| {
+        AppError::InvalidParameter("client_request_id must be a canonical UUID".into())
+    })?;
+    if parsed.is_nil() || parsed.to_string() != id {
+        return Err(AppError::InvalidParameter(
+            "client_request_id must be a canonical non-nil UUID".into(),
+        ));
+    }
+    Ok(())
 }
 
 async fn recover_existing(

@@ -1,6 +1,8 @@
 import type { Ref } from 'vue'
 import { nextTick, onBeforeUnmount, watch } from 'vue'
 
+const modalRoots: HTMLElement[] = []
+
 /**
  * When a modal opens: stash `document.activeElement`, then focus dialog root or primary control.
  * When it closes: restore focus to the opener.
@@ -8,7 +10,7 @@ import { nextTick, onBeforeUnmount, watch } from 'vue'
 export function useModalFocusRestore(
   isOpen: Ref<boolean>,
   dialogRoot: Ref<HTMLElement | null>,
-  options?: { primary?: Ref<HTMLElement | null | undefined>, opener?: Ref<HTMLElement | null | undefined>, trapFocus?: boolean },
+  options?: { primary?: Ref<HTMLElement | null | undefined>, opener?: Ref<HTMLElement | null | undefined>, trapFocus?: boolean, onEscape?: () => void },
 ): void {
   let opener: HTMLElement | null = null
   let generation = 0
@@ -47,6 +49,7 @@ export function useModalFocusRestore(
   watch([isOpen, dialogRoot], ([open, root], _previous, cleanup) => {
     if (!open || !root || !options?.trapFocus)
       return
+    modalRoots.push(root)
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key !== 'Tab' || event.defaultPrevented)
         return
@@ -68,7 +71,27 @@ export function useModalFocusRestore(
       }
     }
     root.addEventListener('keydown', onKeydown)
-    cleanup(() => root.removeEventListener('keydown', onKeydown))
+    // Native WebView activation can place keyboard focus on the document,
+    // outside the dialog subtree. The foreground recovery dialog still owns
+    // Escape and must consume it before lower-window global handlers run.
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing || !isOpen.value
+        || modalRoots.at(-1) !== root || !options.onEscape) {
+        return
+      }
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      options.onEscape()
+    }
+    if (options.onEscape)
+      window.addEventListener('keydown', onEscape, true)
+    cleanup(() => {
+      const index = modalRoots.lastIndexOf(root)
+      if (index >= 0)
+        modalRoots.splice(index, 1)
+      root.removeEventListener('keydown', onKeydown)
+      window.removeEventListener('keydown', onEscape, true)
+    })
   }, { flush: 'post' })
 
   onBeforeUnmount(() => {

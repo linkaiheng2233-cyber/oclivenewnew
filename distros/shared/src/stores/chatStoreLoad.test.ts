@@ -40,6 +40,21 @@ describe('splitAssistantMessages', () => {
 })
 
 describe('storedMessagesToChatMessages', () => {
+  it('restores the exact stopped prefix and its durable status, including an empty prefix', () => {
+    const messages = storedMessagesToChatMessages(['已生成的一半', ''].map((content, index) => ({
+      id: `stopped-${index}`,
+      session_id: 'role',
+      turn_index: index,
+      sender: 'assistant',
+      content,
+      metadata: JSON.stringify({ reply_stopped: true, reply_is_fallback: false }),
+      created_at: '2026-11-03T12:00:00.000Z',
+    })))
+    expect(messages).toMatchObject([
+      { content: '已生成的一半', replyStopped: true, replyIsFallback: false },
+      { content: '', replyStopped: true, replyIsFallback: false },
+    ])
+  })
   it('restores every persisted reply-mode segment as a sibling bubble', () => {
     const messages = storedMessagesToChatMessages([{
       id: 'assistant-1',

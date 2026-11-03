@@ -13,7 +13,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 const identityState = ref<UserIdentityStateResponse | null>(null)
 const loading = ref(false)
-let watchersBound = false
 let identityRefreshGeneration = 0
 let identitySetGeneration = 0
 
@@ -54,15 +53,18 @@ export function useUserIdentityState() {
   const adultStore = useAdultInteractionStore()
   const uiStore = useUiStore()
 
-  if (!watchersBound) {
-    watchersBound = true
-    watch(
-      () => [roleStore.currentRoleId, uiStore.sceneId, roleStore.roleInfo.identityBinding] as const,
-      () => {
-        void refreshIdentityState()
-      },
-    )
-  }
+  // Each mounted consumer owns its watcher. A module-wide "bound" flag used
+  // to outlive the first component's scope, leaving later consumers stale.
+  watch(
+    () => [roleStore.currentRoleId, uiStore.sceneId, roleStore.roleInfo.identityBinding] as const,
+    () => {
+      identityState.value = null
+      identitySetGeneration += 1
+      loading.value = false
+      void refreshIdentityState()
+    },
+    { flush: 'sync' },
+  )
 
   onMounted(() => {
     void refreshIdentityState()

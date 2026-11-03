@@ -33,7 +33,7 @@ for (const skin of ['default', 'win98']) {
   })
 }
 
-test('stopping a pending reply lets the next message complete while the older result stays out of the foreground', async ({ page }) => {
+test('stopping a pending reply saves a stopped outcome and then lets the next message complete', async ({ page }) => {
   await gotoApp(page)
   await page.evaluate(() => localStorage.setItem('oclive.e2e.holdSend', '1'))
   const input = page.locator('#chat-user-message')
@@ -41,6 +41,7 @@ test('stopping a pending reply lets the next message complete while the older re
   await input.press('Enter')
   await page.locator('.stop-button').click()
   await expect(page.locator('.stop-button')).toHaveCount(0)
+  await expect(page.locator('.workspace-messages .stopped-hint')).toContainText(/Stopped|已停止/)
   await page.evaluate(() => localStorage.removeItem('oclive.e2e.holdSend'))
   await input.fill('new foreground request')
   await input.press('Enter')

@@ -20,6 +20,7 @@ mod tests {
             user_message_hidden: false,
             assistant_reply: "hi there".into(),
             reply_is_fallback: false,
+            reply_stopped: false,
             model_name: None,
             response_ms: 1,
             user_emotion: None,

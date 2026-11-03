@@ -1,7 +1,8 @@
 //! Display-only stream hygiene. The unchanged raw outcome is parsed by the parent.
 
 use super::{
-    EMO_MARKER_CLOSE, EMO_MARKER_OPEN, INTERNAL_STATUS_MARKERS, LABEL_PREFIXES, MALFORMED_OPENERS,
+    CodeLiteral, EMO_MARKER_CLOSE, EMO_MARKER_OPEN, INTERNAL_STATUS_MARKERS, LABEL_PREFIXES,
+    MALFORMED_OPENERS,
 };
 use oclive_kernel_contracts::LlmTokenSink;
 use std::sync::{Arc, Mutex};
@@ -18,10 +19,12 @@ enum State {
 struct DisplayStream {
     state: State,
     pending: String,
+    literal: CodeLiteral,
 }
 
 fn openers() -> impl Iterator<Item = &'static str> {
     std::iter::once(EMO_MARKER_OPEN)
+        .chain(std::iter::once(EMO_MARKER_CLOSE))
         .chain(MALFORMED_OPENERS)
         .chain(LABEL_PREFIXES)
         .chain(INTERNAL_STATUS_MARKERS)
@@ -57,8 +60,13 @@ impl DisplayStream {
                         .min_by_key(|(at, _)| *at);
                     if let Some((at, marker)) = next {
                         visible.push_str(&self.pending[..at]);
+                        self.literal.consume(&self.pending[..at]);
                         self.pending.drain(..at + marker.len());
-                        if marker == EMO_MARKER_OPEN {
+                        if marker == EMO_MARKER_CLOSE {
+                            if self.literal.contains_marker() {
+                                visible.push_str(marker);
+                            }
+                        } else if marker == EMO_MARKER_OPEN {
                             self.state = State::EmotionBlock;
                         } else if !INTERNAL_STATUS_MARKERS.contains(&marker) {
                             // Malformed marker/JSON is withheld; authoritative final parsing
@@ -71,6 +79,7 @@ impl DisplayStream {
                         let held = ambiguous_suffix(&self.pending, openers());
                         let end = self.pending.len() - held;
                         visible.push_str(&self.pending[..end]);
+                        self.literal.consume(&self.pending[..end]);
                         self.pending.drain(..end);
                         break;
                     }
@@ -153,6 +162,21 @@ mod tests {
             "你好🙂 [链接](https://example.test) `x[0]` （普通说明） {\"foo\":123}",
             "你好🙂 [链接](https://example.test) `x[0]` （普通说明） {\"foo\":123}",
         );
+    }
+
+    #[test]
+    fn hides_orphan_closers_across_every_token_boundary() {
+        check_all_splits("64。[/EMO]", "64。");
+        check_all_splits("前[/EMO]后。[/EMO]", "前后。");
+    }
+
+    #[test]
+    fn preserves_closers_discussed_as_markdown_code() {
+        check_all_splits(
+            "闭合标记是 `[/EMO]`，不是正文。",
+            "闭合标记是 `[/EMO]`，不是正文。",
+        );
+        check_all_splits("```text\n[/EMO]\n```", "```text\n[/EMO]\n```");
     }
 
     #[test]

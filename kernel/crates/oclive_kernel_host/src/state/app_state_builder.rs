@@ -455,6 +455,7 @@ impl AppStateBuilder {
             high_risk_grants,
             turn_locks: dashmap::DashMap::new(),
             adult_stage_cancellations: dashmap::DashMap::new(),
+            chat_cancellations: Default::default(),
             startup_health: parking_lot::RwLock::new(
                 crate::domain::startup_health::StartupHealthCache::default(),
             ),
