@@ -4,7 +4,7 @@
 
 [中文](../../creator-docs/getting-started/PROJECT_CURRENT_STATUS.md)
 
-**Snapshot date**: 2026-11-02. Update when versions or delivery status change; editing this page does not create new runtime verification.
+**Snapshot date**: 2026-11-03. Update when versions or delivery status change; editing this page does not create new runtime verification.
 
 ---
 
@@ -22,12 +22,14 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **2026-11-02 rc.7 interaction patch candidate**: consolidates model configuration reads and recovery, dialog layering and focus, IME confirmation, rapid Escape cancellation, and role-import ownership and progress. Installer, bundled kernel and guides must match this frozen source and `PACKAGE-MANIFEST.json`; source checks, formal CI, installed paths and fresh-machine results are recorded separately without inheriting older candidate acceptance. A fresh Windows environment still requires actual-device verification.
+- **2026-11-03 rc.7 independent-machine feedback**: installation, real local 7B chat and restart continuation ran on a separate Windows machine with existing VC++ / WebView2. The 16-item record has 9 passes, 5 failures and 2 untested items; overall acceptance has not passed. Source follow-ups for portraits, internal markers, identity display, Help Escape and log reading are in the [CHANGELOG](../../CHANGELOG.en.md) and require a new installed candidate to be retested; delivered rc.7 artifacts remain unchanged. This is not clean-Windows proof. Missing-dependency environments, old-data upgrades and database recovery do not inherit a pass.
+
+- **Product rules confirmed in this follow-up**: Chat Pro keeps one window and raises it on a second launch. Explicit ordinary-chat stop cancels upstream generation, preserves generated text and marks it stopped. Source implementation and local checks do not replace the next installed candidate's independent-machine acceptance.
 
 - **2026-10-30 rc.3 internal candidate**: this candidate consolidates the role workspace and later reliability fixes; execution and packaging boundaries are owned by the [rc.3 wave](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261030-CHATPRO-RC3.md). The old desktop rc.2 directory and ZIP were verified and archived. Installer, bundled kernel and guides must bind the same frozen commit, identified by `PACKAGE-MANIFEST.txt` and `SHA256SUMS.txt`. No public release.
 
 - **Chat Pro internal candidate**: role library → character workspace, separate recent conversations per character, identity/relationship, records, model connection, categorized settings and Help & recovery. See [USER_MANUAL](USER_MANUAL.md) and the [legacy/deferred surface map](../../handoff/MODULE_MAP_AND_HANDOFF.md#chatpro-deferred-surfaces). Installers bundle neither model runners nor weights.
-- **Candidate acceptance boundary**: rc.6 requires its own applicable source gates, formal remote CI, isolated installation and native-path checks, identified by this candidate SHA and package manifest. The installer has no Authenticode code signature; maintainer review approval does not replace code signing or fresh Windows testing.
+- **Candidate acceptance boundary**: each new candidate requires its own applicable source gates, formal remote CI, isolated installation and native-path checks, identified by that candidate SHA and package manifest. The installer has no Authenticode code signature; maintainer review approval does not replace code signing or fresh Windows testing.
 - **Runtime**: Tauri desktop, role-pack import, `process_message`, six slots, directory / Remote plugins, local HTTP `--api`, and the stable Rust in-process facade **`oclive_kernel_host::OcliveKernel`** that starts neither Tauri nor HTTP; see [architecture overview](OCLIVE_ARCHITECTURE_OVERVIEW.md).
 - **Included source scope**: workspace resolution, diagnostic authentication redaction and cloud-probe save/lifecycle handling are in the [first follow-up](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261027-CHATPRO-ROUND-REVIEW.md#review-fixes); role/grant/plugin/snapshot recovery is in the [batched fixes](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261028-REVIEW-FIXES.md), and RPC/migration/mirror ordering is in the [Host follow-up](https://github.com/linkaiheng2233-cyber/oclivenewnew/blob/925310c83c94d53dda66fda8eb0c0f1cd9f50de4/handoff/debt-marathon/waves/WAVE-20261029-HOST-RELIABILITY.md). Each wave retains its original SHA-bound evidence; the old rc.2 package does not automatically contain these changes.
 - **Kernel programme**: the **K0–K5** code paths are closed and complete in-process turns are verified. **P2 (OTA / remote logs, etc.)** and **V-EMBED-01 Linux/ARM/hardware, resource-budget, and long-soak proof** remain open; evidence: [KERNEL_IMPLEMENTATION_PLAN.md](KERNEL_IMPLEMENTATION_PLAN.md) and root [AGENTS.md](../../AGENTS.md).

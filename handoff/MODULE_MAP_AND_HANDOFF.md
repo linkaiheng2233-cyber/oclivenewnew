@@ -799,6 +799,8 @@ Resource Coordinator 已落地 NVIDIA 多设备、系统 RAM 与 CPU snapshot，
 | Chat Pro / Theater | 壳、页面挂载、发行版策略 | 明确能力适用发行版；Chat Pro 的 Fluent/Tool 不得只更新一壳 |
 | 目录插件 | manifest、Vue 入口、iframe 回退、RPC/事件声明 | `entry` 与 `vueComponent` 均可解析；Bridge/RPC 声明与宿主实现对齐；失败可降级且可诊断 |
 | Chat Pro staged beat | `types::dto` → `domain/adult_stage.rs` → `db/adult_stage.rs` → HTTP/Tauri → `adultBeatQueue.ts` | stage 只生成并持久化结构化文本，不得触发正式 turn 的聊天/记忆/关系/事件/人格写入；commit 按 generation+sequence 有序且幂等，cancel 删除未提交拍；其他发行版无需实现此 Chat Pro 扩展 |
+| 显式停止用户生成 | `CancelChatRequest` → HTTP `/chat/cancel` / Tauri `stop_message` → `chat_engine/cancellation` → `turn_pipeline` → chat metadata / receipt → shared store / bubble | 匹配原角色、会话、对话与请求 ID；取消在途生成，保留可见前缀并标注 `reply_stopped`；开始提交后不截断写入。传输断连继续使用既有回执恢复；完整边界见 [CHAT_STORAGE_ARCHITECTURE](./CHAT_STORAGE_ARCHITECTURE.md#explicit-user-stop)。 |
+| 保存本地模型连接 | `llm_settings` → DB / `apply_user_llm_env` → 共享 `OllamaClient` endpoint 快照 → 直接调用与 Performance fallback | URL 与 HTTP client（含 loopback 代理策略）作为一份快照切换；新调用读取新快照，已在途调用保留旧快照，不只更新模型列表。行为覆盖见 [ollama_endpoint_refresh.rs](../kernel/crates/oclive_kernel_host/tests/ollama_endpoint_refresh.rs)。 |
 
 **仓内结构门禁**：`npm run check:module-compat` 对拍内核/前端 10 个嵌入插槽、官方插件 manifest、Vue/iframe 资源、RPC timeout 声明与插件索引版本。它证明结构兼容，**不替代**行为集成测或跨版本能力协商。
 
