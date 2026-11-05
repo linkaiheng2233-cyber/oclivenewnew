@@ -537,6 +537,36 @@ mod tests {
     }
 
     #[test]
+    fn desktop_profiles_consolidate_explicit_memory_without_promoting_casual_chat() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        for path in [
+            "distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml",
+            "examples/distro-profiles/desktop.oclive.toml",
+        ] {
+            let host =
+                crate::domain::host_profile::load_host_profile_file(&root.join(path)).unwrap();
+            for (message, expected) in [
+                ("请记住我偏好温的无糖麦茶。", TurnThinkingMode::Deep),
+                ("以后别忘了这个代号。", TurnThinkingMode::Deep),
+                ("认真听我说。", TurnThinkingMode::Deep),
+                ("今天天气不错。", TurnThinkingMode::Fast),
+                ("以前告诉你的饮品是什么？", TurnThinkingMode::Fast),
+            ] {
+                let plan = resolve_turn_thinking(
+                    &host,
+                    &test_role(),
+                    message,
+                    &neutral_emotion(),
+                    &[],
+                    EventType::Ignore,
+                    false,
+                );
+                assert_eq!(plan.mode, expected, "{path}: {message}");
+            }
+        }
+    }
+
+    #[test]
     fn auto_long_message_is_deep() {
         let msg = "a".repeat(100);
         let plan = resolve_turn_thinking(

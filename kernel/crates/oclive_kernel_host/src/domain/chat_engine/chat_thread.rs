@@ -40,8 +40,160 @@ pub(crate) fn storage_id(state_namespace: &str, thread: Option<&str>) -> String 
 #[cfg(test)]
 mod tests {
     use crate::domain::chat_engine::process_message;
+    use crate::domain::host_profile::load_host_profile_file;
     use crate::state::AppState;
+    use crate::state::AppStateBuilder;
+    use oclive_kernel_contracts::LlmClient;
+    use parking_lot::Mutex;
     use std::sync::Arc;
+
+    #[derive(Default)]
+    struct MemoryPromptProbe {
+        prompts: Mutex<Vec<String>>,
+    }
+
+    #[async_trait::async_trait]
+    impl LlmClient for MemoryPromptProbe {
+        async fn generate(&self, _model: &str, prompt: &str) -> crate::error::Result<String> {
+            self.prompts.lock().push(prompt.to_string());
+            Ok("收到，我会根据已有的信息回答。".into())
+        }
+
+        async fn generate_tag(&self, model: &str, prompt: &str) -> crate::error::Result<String> {
+            crate::infrastructure::MockLlmClient {
+                reply: "neutral".into(),
+            }
+            .generate_tag(model, prompt)
+            .await
+        }
+    }
+
+    #[tokio::test]
+    async fn desktop_explicit_memory_reaches_new_transcript_prompt_after_reopen() {
+        let temp = tempfile::tempdir().unwrap();
+        let db_path = temp.path().join("app.db");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let roles = oclive_kernel_runtime::chat_pro_roles_dir(std::slice::from_ref(&root)).unwrap();
+        let profile = load_host_profile_file(
+            &root.join("distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml"),
+        )
+        .unwrap();
+        let probe = Arc::new(MemoryPromptProbe::default());
+        let state = AppStateBuilder::in_memory_test(probe.clone(), &roles, None)
+            .with_test_db_path(&db_path)
+            .with_app_data_dir(temp.path())
+            .with_host_profile(profile.clone())
+            .build()
+            .await
+            .unwrap();
+        let first_thread = uuid::Uuid::new_v4().to_string();
+        for message in [
+            "请记住我们的虚构验收代号是松岚7319，我偏好温的无糖麦茶。以后新对话也请记住。",
+            "再确认一下，松岚7319是验收代号，我喜欢温的无糖麦茶。",
+            "最后再记一下：验收代号松岚7319，饮品偏好是温的无糖麦茶。",
+        ] {
+            process_message(
+                &state,
+                &SendMessageRequest {
+                    role_id: "mumu".into(),
+                    user_message: message.into(),
+                    scene_id: Some("home".into()),
+                    chat_thread_id: Some(first_thread.clone()),
+                    client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        }
+        let memories = state
+            .db_manager
+            .load_memories_for_context("mumu", 10, false)
+            .await
+            .unwrap();
+        assert!(
+            memories
+                .iter()
+                .any(|m| m.content.contains("松岚7319") && m.content.contains("温的无糖麦茶")),
+            "an explicit remember request must survive the desktop Fast/Deep persistence gate"
+        );
+        // Move the facts outside the recent-context window. Otherwise STM can
+        // hide a regression in LTM retrieval and prompt injection.
+        for index in 0..6 {
+            process_message(
+                &state,
+                &SendMessageRequest {
+                    role_id: "mumu".into(),
+                    user_message: format!("这是第{index}次普通闲聊，聊聊今天的日常。"),
+                    scene_id: Some("home".into()),
+                    chat_thread_id: Some(first_thread.clone()),
+                    client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        }
+        let recent = state
+            .db_manager
+            .list_short_term_recent_turns("mumu", 6, false)
+            .await
+            .unwrap();
+        assert_eq!(recent.len(), 6);
+        assert!(recent
+            .iter()
+            .all(|(user, reply)| !user.contains("松岚7319") && !reply.contains("松岚7319")));
+        drop(state);
+
+        let reopened = AppStateBuilder::in_memory_test(probe.clone(), &roles, None)
+            .with_test_db_path(&db_path)
+            .with_app_data_dir(temp.path())
+            .with_host_profile(profile)
+            .build()
+            .await
+            .unwrap();
+        probe.prompts.lock().clear();
+        let new_thread = uuid::Uuid::new_v4().to_string();
+        let query = "之前告诉你的验收代号和我偏好的饮品是什么？";
+        process_message(
+            &reopened,
+            &SendMessageRequest {
+                role_id: "mumu".into(),
+                user_message: query.into(),
+                scene_id: Some("home".into()),
+                chat_thread_id: Some(new_thread.clone()),
+                client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert!(probe.prompts.lock().iter().any(|p| p.contains(query) && p.contains("松岚7319") && p.contains("温的无糖麦茶")),
+            "a fresh transcript must receive the saved user facts without being re-taught the answers");
+        assert_eq!(
+            reopened
+                .db_manager
+                .get_chat_message_count(&storage_id("mumu", Some(&first_thread)))
+                .await
+                .unwrap(),
+            18
+        );
+        assert_eq!(
+            reopened
+                .db_manager
+                .get_chat_message_count(&storage_id("mumu", Some(&new_thread)))
+                .await
+                .unwrap(),
+            2
+        );
+        assert!(reopened
+            .db_manager
+            .get_role_runtime_snapshot(&storage_id("mumu", Some(&new_thread)))
+            .await
+            .unwrap()
+            .is_none());
+    }
+
     #[tokio::test]
     async fn transcript_selection_survives_database_reopen_without_splitting_role_state() {
         let temp = tempfile::tempdir().unwrap();

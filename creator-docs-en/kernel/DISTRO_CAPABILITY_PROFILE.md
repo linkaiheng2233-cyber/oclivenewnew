@@ -118,9 +118,11 @@ Same as role pack (`snake_case`): memory, emotion, event, prompt, llm, agent —
 
 ### 3.2.1 `[turn_thinking]` (orchestration · not a six-slot)
 
-Fast / Deep per turn via `TurnThinkingRouter` in `co_present`. Fields: `default` (`fast`|`deep`|`auto`), `fast_skip_complex_emotion`, `auto_deep_min_chars`, `fast_knowledge_limit`, `fast_memory_cap`, `deep_capsule`, `prompt_prefix_cache`, `fast_persistence` (`legacy`|`strong_only`). RFC: [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
+Fast / Deep per turn via `TurnThinkingRouter` in `co_present`. Fields: `default` (`fast`|`deep`|`auto`), `fast_skip_complex_emotion`, `auto_deep_min_chars`, `auto_deep_keywords` (an explicit list replaces the Host defaults; pack OR rules remain additive), `fast_knowledge_limit`, `fast_memory_cap`, `deep_capsule`, `prompt_prefix_cache`, `fast_persistence` (`legacy`|`strong_only`). RFC: [RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md](../rfc/RFC_TURN_THINKING_PERSISTENCE_SUMMARY.md).
 
 **Chat Pro default (`desktop`)**: `default = auto`, `fast_persistence = strong_only`; streaming via `POST /chat/stream`; Deep capsule when pack enables it.
+
+The bundled and example desktop profiles route explicit Chinese memory requests such as `请记住`, `记住我`, `别忘`, and `记一下` to Deep even when short. Casual Fast turns retain the existing `strong_only` behavior. Memory policy, retrieval, and model generation still apply; this does not guarantee recall for every phrasing/model or automatically replay old chat history into long-term memory.
 
 ### 3.2.2 `[resource_coordination]` (host control plane, not a blueprint field)
 

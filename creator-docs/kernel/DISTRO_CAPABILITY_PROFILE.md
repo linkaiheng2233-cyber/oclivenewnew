@@ -225,6 +225,7 @@ target_adapter_id = "builtin.voice.cosyvoice2"
 | `default` | `fast` \| `deep` \| `auto` | `auto`：闲聊→Fast；长句 / 高唤醒情绪 / Quarrel 事件链 / 关键词→Deep |
 | `fast_skip_complex_emotion` | bool | Fast 轮跳过 Deep / 插件 provider，并改用本地确定性强度；可与 `host_flags.skip_complex_emotion` 叠加 |
 | `auto_deep_min_chars` | usize | Auto 触发 Deep 的最小用户句字符数 |
+| `auto_deep_keywords` | string[] | Auto 关键词规则；显式配置替换 Host 默认关键词，角色包 OR 规则仍追加 |
 | `fast_knowledge_limit` | usize | Fast 轮知识检索条数上限 |
 | `fast_memory_cap` | usize | Fast 轮注入 prompt 的记忆条数上限 |
 | `deep_capsule` | bool（**Wave D**，兼容字段名） | 发行版强制开/关离线 persona capsule；`true` 且角色含 `prompts/deep_capsule.txt` + `meta.deep_capsule_enabled` 时，Small 模型的 Fast/Deep 轮均用 capsule 替代全量 `core_personality` |
@@ -239,12 +240,14 @@ Release 安装包 bundled [`resources/distro-profiles/desktop.oclive.toml`](../.
 
 | 能力 | 默认 | 用户感知 |
 |------|------|----------|
-| **`[turn_thinking]`** | `default = "auto"` · `fast_persistence = "strong_only"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链 → Deep；Fast 闲聊不写 long_term / favor（强事件仍写） |
+| **`[turn_thinking]`** | `default = "auto"` · `fast_persistence = "strong_only"` | 闲聊走 Fast；长句 / 高唤醒情绪 / Quarrel 链及“请记住、记住我、别忘、记一下”等显式记忆请求 → Deep；Fast 闲聊不写 long_term / favor（强事件仍写） |
 | **流式回复** | 主 UI `sendMessageStream` → `POST /chat/stream` | 回复**逐字显示**（降低**感知延迟**）；SSE 失败自动回退 blocking `/chat` |
 | **Persona capsule** | 角色包 `meta.deep_capsule_enabled` + `prompts/deep_capsule.txt` | Small 模型的 Fast/Deep 轮使用离线 capsule（沿用 Wave D 文件名） |
 | **本地性能模式** | `[llm_runtime].mode = "performance"` | 可选 llama-server runtime + GGUF；组件缺失或首 token 前失败时降级 Ollama |
 
 **Bench 区分**：`desktop-latency` profile（`event_impact_llm = false`）用于 TTFT 开发 bench；**正式用户默认**为 `desktop` profile。流式改善**感知延迟**，不改变 [`handoff/TTFT_BENCHMARK.md`](../../handoff/TTFT_BENCHMARK.md) 中 stream TTFT 数值定义。设置 → 常规 → 高级可关闭「流式回复」。
+
+显式记忆请求走 Deep 后仍经过记忆策略、检索和模型生成，并不保证任意说法或任意模型都能准确回忆；未进入长期记忆的旧闲聊不会被自动重放或从聊天记录补入。
 
 > 说明：六槽 `none` 语义见 [MODULE_NONE_SEMANTICS.md](./MODULE_NONE_SEMANTICS.md)。发行版关闭 Agent 可用 `host_flags.skip_agent` 或 `[plugin_backends] agent = "none"`。
 

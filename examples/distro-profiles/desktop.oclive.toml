@@ -58,6 +58,8 @@ automatic_preemption = true
 default = "auto"
 fast_skip_complex_emotion = true
 auto_deep_min_chars = 80
+# Route short, explicit memory requests through Deep before memory policy checks.
+auto_deep_keywords = ["认真", "很重要", "别敷衍", "请记住", "记住我", "别忘", "记一下"]
 fast_knowledge_limit = 4
 fast_memory_cap = 4
 fast_persistence = "strong_only"
