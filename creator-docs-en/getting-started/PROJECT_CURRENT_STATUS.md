@@ -12,8 +12,8 @@
 
 | Item | Value |
 |------|--------|
-| Desktop app semver | **0.6.0-rc.8** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree; a candidate, not a public release) |
-| Windows MSI numeric version | **0.6.0.8**, mapped to the desktop candidate independently of CLI/kernel versions |
+| Desktop app semver | **0.6.0-rc.9** ([package.json](../../package.json), [Tauri config](../../distros/desktop-tauri/tauri.conf.json), [desktop manifest](../../distros/desktop-tauri/Cargo.toml) agree, for internal testing) |
+| Windows MSI numeric version | **0.6.0.9**, mapped to the desktop candidate independently of CLI/kernel versions |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**; [CLI](../../kernel/crates/oclive-cli/Cargo.toml), [runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml), [validation](../../kernel/crates/oclive_validation/Cargo.toml) manifests |
 | Default HTTP API (`--api`) | `http://127.0.0.1:8420` (`GET /health` is public for readiness; all other routes require `OCLIVE_API_TOKEN` by default) |
 | User-visible change log | **[CHANGELOG.en.md](../../CHANGELOG.en.md)** (English) · **[CHANGELOG.md](../../CHANGELOG.md)** (Chinese; keep both in sync for each entry) |
@@ -21,6 +21,8 @@
 ---
 
 ## What this repo (`oclivenewnew`) delivers
+
+- **2026-11-05 rc.9 internal candidate.** Includes fixes for explicit memory routing, history database startup protection, desktop startup diagnostics and EXE uninstall registration. The frozen manifest identifies the installers, development-machine evidence and independent-machine checks still due. Public release follows its own formal gates.
 
 - **2026-11-05 rc.8 follow-up and source repair.** Independent-machine testing found failures in history retrieval and cross-conversation recall of user facts. The desktop routing fix for explicit memory requests passed targeted local regression testing. The read-only archive confirmed that SQLite lacked the target conversation while its mirror survived. An isolated local test reproduced silent empty database creation and verified the startup guard. The original runtime path and the cause of the database change remain unconfirmed. Archive recovery and acceptance of a new installed candidate are pending. The next candidate needs verification against its own frozen revision.
 

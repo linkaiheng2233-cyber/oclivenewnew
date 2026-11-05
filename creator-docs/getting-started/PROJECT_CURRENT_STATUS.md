@@ -12,8 +12,8 @@
 
 | 项 | 值 |
 |----|-----|
-| 桌面应用语义化版本 | **0.6.0-rc.8**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐；候选版，不等于公开发行） |
-| Windows MSI 数值版本 | **0.6.0.8**；与桌面候选版对应，独立于 CLI 和内核版本 |
+| 桌面应用语义化版本 | **0.6.0-rc.9**（[package.json](../../package.json)、[Tauri 配置](../../distros/desktop-tauri/tauri.conf.json)、[桌面 manifest](../../distros/desktop-tauri/Cargo.toml) 对齐，供内测验收） |
+| Windows MSI 数值版本 | **0.6.0.9**，与桌面候选版对应，独立于 CLI 和内核版本 |
 | CLI / runtime / validation | **0.1.0 / 0.2.0 / 0.1.0**；分别见 [CLI](../../kernel/crates/oclive-cli/Cargo.toml)、[runtime](../../kernel/crates/oclive_kernel_runtime/Cargo.toml)、[validation](../../kernel/crates/oclive_validation/Cargo.toml) |
 | 默认 HTTP API（`--api`） | `http://127.0.0.1:8420`（`GET /health` 公开探活；其余路由默认强制 `OCLIVE_API_TOKEN`） |
 | 用户可见变更流水 | **[CHANGELOG.md](../../CHANGELOG.md)**（中文）· **[CHANGELOG.en.md](../../CHANGELOG.en.md)**（英文，与中文同步维护条目） |
@@ -21,6 +21,8 @@
 ---
 
 ## 交付面（本仓库 `oclivenewnew`）
+
+- **2026-11-05 rc.9 内测候选**。收录显式记忆路由、历史库启动保护、桌面启动诊断与 EXE 卸载登记保护四项修补。安装器身份、开发机验证和测试机待验项随冻结清单交接。公开发布按正式门禁另行判定。
 
 - **2026-11-05 rc.8 补测与源码修正**。测试机发现历史取回和跨对话事实回忆两项问题。显式记忆请求的默认路由修正已通过本机定向回归。历史问题的只读归档确认目标会话缺少 SQLite 记录，镜像仍在。本机隔离复现了缺库时静默建空库的行为，并验证了新启动保护。原机实际数据库路径与库文件变化原因尚待证实，归档历史恢复和新版安装验收仍待进行。下一候选以其冻结提交为准。
 
