@@ -31,8 +31,15 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
   }),
 
   getters: {
-    display(state): KernelDisplay {
-      if (state.phase === 'checking') {
+    startupFailure(state): string | null {
+      const status = state.status
+      if (!status || status.healthy || status.degraded) {
+        return null
+      }
+      return status.statusMessage?.trim() || null
+    },
+    display(): KernelDisplay {
+      if (this.phase === 'checking') {
         return {
           labelKey: 'kernel.status.checking',
           detailKey: null,
@@ -41,7 +48,7 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
           checking: true,
         }
       }
-      if (state.busy || state.status?.mode === 'reconnecting') {
+      if (this.busy || this.status?.mode === 'reconnecting') {
         return {
           labelKey: 'kernel.status.reconnecting',
           detailKey: null,
@@ -50,18 +57,16 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
           checking: false,
         }
       }
-      if (!state.status?.healthy) {
-        if (state.lastError) {
-          return {
-            labelKey: 'kernel.status.offlineRetryFailed',
-            detailKey: null,
-            clickable: true,
-            ok: false,
-            checking: false,
-          }
+      if (!this.status?.healthy) {
+        let labelKey = 'kernel.status.offlineTapReconnect'
+        if (this.startupFailure) {
+          labelKey = 'kernel.status.startupFailed'
+        }
+        else if (this.lastError) {
+          labelKey = 'kernel.status.offlineRetryFailed'
         }
         return {
-          labelKey: 'kernel.status.offlineTapReconnect',
+          labelKey,
           detailKey: null,
           clickable: true,
           ok: false,
@@ -69,8 +74,8 @@ export const useKernelConnectionStore = defineStore('kernelConnection', {
         }
       }
       return {
-        labelKey: kernelStatusLabelKey(state.status),
-        detailKey: kernelProfileDetailKey(state.status),
+        labelKey: kernelStatusLabelKey(this.status),
+        detailKey: kernelProfileDetailKey(this.status),
         clickable: false,
         ok: true,
         checking: false,

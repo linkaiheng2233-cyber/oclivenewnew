@@ -31,6 +31,7 @@ pub struct KernelConnectionStatus {
     pub healthy: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub degraded: Option<bool>,
+    /// Profile detail when degraded, or the reason the last startup failed.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub status_message: Option<String>,
     /// UX hint key for profile scheduling (`profile_compatible`, `degraded`, …).
@@ -96,7 +97,22 @@ impl KernelConnection {
     }
 
     pub fn set_mode(&self, mode: DesktopKernelMode) {
-        *self.mode.write() = mode;
+        let mut current = self.mode.write();
+        if matches!(
+            mode,
+            DesktopKernelMode::Attached | DesktopKernelMode::Spawned
+        ) && !*self.degraded.read()
+        {
+            *self.status_message.write() = None;
+        }
+        *current = mode;
+    }
+
+    pub(crate) fn set_startup_failure(&self, error: String) {
+        let mut mode = self.mode.write();
+        self.set_status_hint(false, Some(error));
+        self.set_profile_hint_key(None);
+        *mode = DesktopKernelMode::Offline;
     }
 
     pub fn mode_snapshot(&self) -> DesktopKernelMode {

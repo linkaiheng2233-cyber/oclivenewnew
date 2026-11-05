@@ -62,6 +62,7 @@ onBeforeUnmount(() => {
 
 async function refreshDiagnostics(): Promise<void> {
   const attempt = ++generation
+  const previousStatus = kernelStore.status
   loading.value = true
   error.value = null
   try {
@@ -69,7 +70,8 @@ async function refreshDiagnostics(): Promise<void> {
     if (attempt !== generation || !props.active)
       return
     kernelDiag.value = result
-    kernelStore.applyStatus(kernelDiag.value.status)
+    if (kernelStore.status === previousStatus)
+      kernelStore.applyStatus(result.status)
   }
   catch (err) {
     if (attempt === generation && props.active)
@@ -102,7 +104,8 @@ async function onReconnect(): Promise<void> {
     showToast('info', t('kernel.status.reconnect'))
   }
   catch (err) {
-    error.value = err
+    if (!kernelStore.startupFailure)
+      error.value = err
     const failure = toErrorPresentation(err)
     showToast('error', failure.summary, failure.details)
   }
@@ -114,7 +117,12 @@ async function onReconnect(): Promise<void> {
 
 <template>
   <div class="kernel-panel">
-    <ErrorNotice v-if="error" :error="error" dismissible @dismiss="error = null" />
+    <ErrorNotice
+      v-if="kernelStore.startupFailure"
+      :summary="t('kernel.diagnostics.startupFailed')"
+      :details="kernelStore.startupFailure"
+    />
+    <ErrorNotice v-else-if="error" :error="error" dismissible @dismiss="error = null" />
     <div
       class="kernel-panel__status"
       :class="`kernel-panel__status--${statusTone}`"
@@ -135,7 +143,7 @@ async function onReconnect(): Promise<void> {
         <p v-else-if="kernelStore.alreadyConnected" class="kernel-panel__detail">
           {{ t('kernel.diagnostics.alreadyConnectedHint') }}
         </p>
-        <p v-else-if="kernelStore.lastError" class="kernel-panel__detail kernel-panel__detail--error">
+        <p v-else-if="kernelStore.lastError && !kernelStore.startupFailure" class="kernel-panel__detail kernel-panel__detail--error">
           {{ kernelStore.lastError }}
         </p>
       </div>
@@ -161,28 +169,28 @@ async function onReconnect(): Promise<void> {
       </UiButton>
     </div>
 
-    <div v-if="kernelDiag" class="kernel-panel__facts">
+    <div v-if="kernelDiag && kernelStore.status" class="kernel-panel__facts">
       <p class="kernel-panel__fact">
         <span class="kernel-panel__fact-key">{{ t('kernel.diagnostics.mode') }}</span>
-        <span>{{ kernelDiag.status.mode }}</span>
+        <span>{{ kernelStore.status.mode }}</span>
         <span
           class="kernel-panel__health"
-          :class="kernelDiag.status.healthy ? 'kernel-panel__health--ok' : 'kernel-panel__health--bad'"
+          :class="kernelStore.status.healthy ? 'kernel-panel__health--ok' : 'kernel-panel__health--bad'"
         >
           {{
-            kernelDiag.status.healthy
+            kernelStore.status.healthy
               ? t('kernel.diagnostics.healthyYes')
               : t('kernel.diagnostics.healthyNo')
           }}
         </span>
       </p>
-      <p v-if="kernelDiag.status.binaryPath" class="kernel-panel__fact">
+      <p v-if="kernelStore.status.binaryPath" class="kernel-panel__fact">
         <span class="kernel-panel__fact-key">{{ t('kernel.diagnostics.binary') }}</span>
-        <code class="kernel-panel__code">{{ kernelDiag.status.binaryPath }}</code>
+        <code class="kernel-panel__code">{{ kernelStore.status.binaryPath }}</code>
       </p>
-      <p v-if="kernelDiag.status.kernelTier" class="kernel-panel__fact">
+      <p v-if="kernelStore.status.kernelTier" class="kernel-panel__fact">
         <span class="kernel-panel__fact-key">{{ t('kernel.diagnostics.tier') }}</span>
-        <span>{{ kernelDiag.status.kernelTier }}</span>
+        <span>{{ kernelStore.status.kernelTier }}</span>
       </p>
       <p class="kernel-panel__fact">
         <span class="kernel-panel__fact-key">{{ t('kernel.diagnostics.sharedRuntime') }}</span>
@@ -190,7 +198,7 @@ async function onReconnect(): Promise<void> {
       </p>
     </div>
 
-    <details v-if="kernelDiag?.healthJson" class="kernel-panel__raw">
+    <details v-if="kernelStore.status?.healthy && kernelDiag?.healthJson" class="kernel-panel__raw">
       <summary class="kernel-panel__raw-summary">
         {{ t('kernel.diagnostics.healthJson') }}
       </summary>

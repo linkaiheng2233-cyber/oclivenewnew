@@ -6,6 +6,7 @@
 
 ### Fixed
 
+- **Chat Pro kernel startup diagnostics.** Connection status retains the latest startup or reconnect failure. Help & Recovery shows a short summary with expandable, redacted details. A failed kernel reconnect reports a startup failure, and restoring the connection clears the old notice.
 - **Chat Pro history database startup guard.** Startup reports a missing or zero-byte database when chat mirrors remain in the default folder, preserving the mirrors for recovery. The desktop-launched kernel records the resolved database path and process ID in the local diagnostic log.
 - **Explicit Chat Pro memory requests**: The desktop profile now routes short requests such as `请记住` through Deep so Fast casual-chat persistence does not discard them. Ordinary casual turns keep their existing lightweight policy. Old transcripts are not automatically replayed into memory; recall accuracy still needs validation with the actual role and model.
 - **Chat Pro rc.8 acceptance candidate**: consolidate the independent-machine follow-ups into a separate candidate, mapped to Windows MSI `0.6.0.8`. Source, installer and bundled kernel are verified against one frozen commit. rc.7 machine results do not establish an rc.8 pass; original issues, single-instance behavior and preserved stopped replies require retesting.

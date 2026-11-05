@@ -138,10 +138,11 @@ pub async fn reconnect_once(
                 emit_kernel_status(app, &status, StatusEmit::Reconnected);
                 Ok(status)
             } else {
-                conn.set_mode(DesktopKernelMode::Offline);
+                let error = "kernel spawned but /health did not become ready".to_owned();
+                conn.set_startup_failure(error.clone());
                 let status = build_ui_status(conn, false);
                 emit_kernel_status(app, &status, StatusEmit::None);
-                Err("kernel spawned but /health did not become ready".into())
+                Err(error)
             }
         }
         Err(e) => {
@@ -150,7 +151,7 @@ pub async fn reconnect_once(
                 error = %e,
                 "policy reconnect failed"
             );
-            conn.set_mode(DesktopKernelMode::Offline);
+            conn.set_startup_failure(e.clone());
             let status = build_ui_status(conn, false);
             emit_kernel_status(app, &status, StatusEmit::None);
             Err(e)

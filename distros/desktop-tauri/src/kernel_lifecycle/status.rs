@@ -121,4 +121,27 @@ mod tests {
             DesktopKernelMode::Reconnecting
         );
     }
+
+    #[test]
+    fn startup_failure_clears_after_connecting_without_hiding_degraded_status() {
+        let conn = KernelConnection::new("http://127.0.0.1:8420", 8420);
+        conn.set_startup_failure("history database missing".into());
+        assert_eq!(conn.mode_snapshot(), DesktopKernelMode::Offline);
+        assert_eq!(
+            build_ui_status(&conn, false).status_message.as_deref(),
+            Some("history database missing")
+        );
+        conn.set_mode(DesktopKernelMode::Reconnecting);
+        assert!(build_ui_status(&conn, false).status_message.is_some());
+        conn.set_mode(DesktopKernelMode::Attached);
+        assert!(build_ui_status(&conn, true).status_message.is_none());
+        assert!(build_ui_status(&conn, false).status_message.is_none());
+
+        conn.set_status_hint(true, Some("fallback kernel".into()));
+        conn.set_mode(DesktopKernelMode::Spawned);
+        assert_eq!(
+            build_ui_status(&conn, true).status_message.as_deref(),
+            Some("fallback kernel")
+        );
+    }
 }

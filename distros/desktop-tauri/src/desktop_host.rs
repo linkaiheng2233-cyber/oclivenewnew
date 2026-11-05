@@ -171,12 +171,12 @@ pub fn finish_desktop_setup(
                 emit_kernel_status(&app, &status, StatusEmit::Reconnected);
             }
             Err(error) => {
-                kernel.set_mode(DesktopKernelMode::Offline);
                 tracing::warn!(
                     target: "oclive_desktop",
                     error = %error,
                     "background kernel bring-up failed; watchdog will continue recovery"
                 );
+                kernel.set_startup_failure(error);
                 let status = probe_health_status(&kernel).await;
                 emit_kernel_status(&app, &status, StatusEmit::None);
             }

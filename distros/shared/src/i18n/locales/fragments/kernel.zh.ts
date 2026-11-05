@@ -13,6 +13,7 @@ export default {
       checking: '检测连接中…',
       offlineTapReconnect: '离线 · 点击重连',
       offlineRetryFailed: '重连失败 · 点击重试',
+      startupFailed: '内核启动失败 · 点击重连',
       reconnecting: '正在重连内核…',
       reconnect: '重连内核',
       aria: '内核连接状态',
@@ -34,6 +35,7 @@ export default {
     },
     diagnostics: {
       title: '内核与连接',
+      startupFailed: '本地内核未能启动。请展开技术详情，处理后再重连。',
       mode: '模式',
       port: '端口',
       binary: '二进制',

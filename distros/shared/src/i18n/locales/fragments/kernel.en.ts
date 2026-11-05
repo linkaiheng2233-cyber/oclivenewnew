@@ -13,6 +13,7 @@ export default {
       checking: 'Checking connection…',
       offlineTapReconnect: 'Offline · tap to reconnect',
       offlineRetryFailed: 'Reconnect failed · tap to retry',
+      startupFailed: 'Kernel startup failed · retry',
       reconnecting: 'Reconnecting to kernel…',
       reconnect: 'Reconnect kernel',
       aria: 'Kernel connection status',
@@ -34,6 +35,7 @@ export default {
     },
     diagnostics: {
       title: 'Kernel & connection',
+      startupFailed: 'The local kernel could not start. Expand the details, resolve the issue, then reconnect.',
       mode: 'Mode',
       port: 'Port',
       binary: 'Binary',
