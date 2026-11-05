@@ -22,7 +22,7 @@
 
 ## What this repo (`oclivenewnew`) delivers
 
-- **2026-11-05 rc.8 follow-up and source repair**: Independent-machine follow-up exposed failures in retrieving earlier history and recalling user facts across conversations. Full acceptance has not passed. The desktop routing fix for explicit memory requests has targeted local regression evidence; history still requires read-only diagnosis on the affected machine. These source changes have not been repackaged, and the original rc.8 delivery does not include them. The next candidate needs verification against its own frozen revision.
+- **2026-11-05 rc.8 follow-up and source repair.** Independent-machine testing found failures in history retrieval and cross-conversation recall of user facts. The desktop routing fix for explicit memory requests passed targeted local regression testing. The read-only archive confirmed that SQLite lacked the target conversation while its mirror survived. An isolated local test reproduced silent empty database creation and verified the startup guard. The original runtime path and the cause of the database change remain unconfirmed. Archive recovery and acceptance of a new installed candidate are pending. The next candidate needs verification against its own frozen revision.
 
 - **2026-11-03 rc.8 acceptance-candidate preparation**: promote these fixes to a distinct desktop candidate; version manifests and the corresponding MSI mapping change while CLI / runtime / validation versions remain independent. Build, formal CI, installed-image checks and independent-machine retests are identified by the new package manifest. This page does not predeclare delivery or acceptance complete.
 

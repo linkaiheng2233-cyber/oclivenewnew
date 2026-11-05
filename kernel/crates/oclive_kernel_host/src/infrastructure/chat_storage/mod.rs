@@ -23,6 +23,7 @@ mod types;
 
 pub use backends::HybridConversationStore;
 pub use cleanup::{apply_auto_cleanup, apply_auto_cleanup_sqlite, AutoCleanupConfig};
+pub(crate) use config::has_local_chat_mirror;
 pub use config::{
     is_path_writable, load_max_messages_per_session, load_role_chat_storage_root, load_session_dir,
     load_storage_root, load_storage_root_with_role, migrate_mirror_tree,

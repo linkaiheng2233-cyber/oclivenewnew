@@ -52,6 +52,34 @@ pub fn load_storage_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join(DEFAULT_SUBDIR)
 }
 
+/// Check the default local mirror layout for a nonempty session file before
+/// opening a missing database. Custom roots are not part of this preflight.
+pub(crate) fn has_local_chat_mirror(app_data_dir: &Path) -> std::result::Result<bool, String> {
+    let root = app_data_dir.join(DEFAULT_SUBDIR);
+    match std::fs::symlink_metadata(&root) {
+        Ok(metadata) if !metadata.is_dir() => return Ok(false),
+        Ok(_) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(format!("Inspect chat mirrors {}: {error}", root.display())),
+    }
+
+    for entry in walkdir::WalkDir::new(&root)
+        .min_depth(3)
+        .max_depth(3)
+        .follow_root_links(false)
+    {
+        let entry =
+            entry.map_err(|error| format!("Inspect chat mirrors {}: {error}", root.display()))?;
+        if entry.file_type().is_file()
+            && entry.path().extension().and_then(|ext| ext.to_str()) == Some("json")
+            && entry.metadata().map_err(|error| error.to_string())?.len() > 0
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 /// Probes whether a directory is writable (checks permissions if it exists, parent otherwise).
 /// On Windows, also performs a probe write (temp file) beyond `readonly()` for more reliable fallback.
 #[must_use]

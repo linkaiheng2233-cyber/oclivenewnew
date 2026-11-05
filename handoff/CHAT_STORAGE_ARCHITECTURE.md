@@ -93,6 +93,8 @@ Selection order:
 
 Implementation: `hybrid_store.rs` + `factory.rs::resolve_mirror_enabled`.
 
+Persistent desktop and HTTP startup checks the default `chats/<role>/<scene>/` mirror layout before initializing a missing or zero-byte database. A nonempty JSON mirror file stops startup with a recovery message. Keep the original data directory intact during diagnosis. Resume with a verified database backup for that directory when one is available. A mirror can support an explicit history recovery on a separate copy, while SQLite remains the runtime authority.
+
 ### Mirror publication and ordering
 
 Background turn persistence, edits, imports, explicit rebuilds and JSON export publish a fresh SQLite snapshot after entering the mirror IO queue. They do not replay a captured turn delta over a newer mirror. The queue is shared across store instances by canonical storage root; different roots remain independent. The current bound is process-local, relying on the existing single-writer Host ownership rather than providing a cross-process filesystem lock.

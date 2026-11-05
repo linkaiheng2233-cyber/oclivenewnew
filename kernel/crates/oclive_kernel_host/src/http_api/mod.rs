@@ -354,10 +354,6 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
     }
 
     let (app_data_dir, mode) = find_app_data_dir_for_api(port);
-    ensure_app_data_dir(&app_data_dir)?;
-    if mode == AppDataMode::Persistent {
-        crate::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data_dir)?;
-    }
     let db_path = if mode == AppDataMode::Temp {
         temp_api_db_path(port)
     } else {
@@ -368,8 +364,14 @@ pub async fn build_api_app_state(port: u16) -> Result<Arc<AppState>, String> {
         app_data = %app_data_dir.display(),
         db = %db_path.display(),
         mode = ?mode,
+        db_file_present = db_path.is_file(),
+        process_id = std::process::id(),
         "resolved HTTP API app data"
     );
+    ensure_app_data_dir(&app_data_dir)?;
+    if mode == AppDataMode::Persistent {
+        crate::infrastructure::app_data_migration::ensure_canonical_app_data_ready(&app_data_dir)?;
+    }
     let app_state = AppState::new(&db_path, Some(roles_dir), &app_data_dir)
         .await
         .map_err(|e| e.to_string())?;

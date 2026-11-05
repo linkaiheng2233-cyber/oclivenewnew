@@ -85,6 +85,12 @@ fn spawn_env(
             roles_dir.to_string_lossy().into_owned(),
         ),
     ];
+    if !std::env::var("OCLIVE_LOG_DIR").is_ok_and(|value| !value.trim().is_empty()) {
+        pairs.push((
+            "OCLIVE_LOG_DIR".into(),
+            app_data.to_string_lossy().into_owned(),
+        ));
+    }
     if let Some(parent) = kernel_binary.parent() {
         let migrations = parent.join("migrations");
         if oclive_kernel_host::infrastructure::sql_migrate::is_migrations_dir(&migrations) {
