@@ -51,3 +51,63 @@ FunctionEnd
     !insertmacro OCLIVE_REFRESH_SHORTCUT "$SMPROGRAMS\${PRODUCTNAME}.lnk"
   !endif
 !macroend
+
+; Match the registry view selected by Tauri's SetContext. Return the Win32
+; result in $0 and close any opened handle before continuing.
+!macro OCLIVE_OPEN_UNINSTALL_REGISTRATION Access
+  StrCpy $1 ${Access}
+  ${If} ${RunningX64}
+    !if "${ARCH}" == "x64"
+      IntOp $1 $1 | 0x0100
+    !else if "${ARCH}" == "arm64"
+      IntOp $1 $1 | 0x0100
+    !else
+      IntOp $1 $1 | 0x0200
+    !endif
+  ${EndIf}
+  System::Call 'advapi32::RegOpenKeyExW(p 0x80000001, w "${UNINSTKEY}", i 0, i r1, *p .r2) i.r0'
+  ${If} $0 = 0
+    System::Call 'advapi32::RegCloseKey(p r2)'
+  ${EndIf}
+!macroend
+
+!macro NSIS_HOOK_PREUNINSTALL
+  !if "${INSTALLMODE}" == "currentUser"
+    Push $0
+    Push $1
+    Push $2
+    ; DELETE. A missing key or parent leaves nothing for the uninstaller to remove.
+    !insertmacro OCLIVE_OPEN_UNINSTALL_REGISTRATION 0x10000
+    ${If} $0 <> 0
+    ${AndIf} $0 <> 2
+    ${AndIf} $0 <> 3
+      DetailPrint "Uninstall stopped because Windows denied access to the registration (error $0)."
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Windows could not grant access to remove the Chat Pro entry from Installed apps (error $0). Chat Pro is still installed. Retry from the installing account or contact support." /SD IDOK
+      SetErrorLevel 2
+      Quit
+    ${EndIf}
+    Pop $2
+    Pop $1
+    Pop $0
+  !endif
+!macroend
+
+!macro NSIS_HOOK_POSTUNINSTALL
+  !if "${INSTALLMODE}" == "currentUser"
+    Push $0
+    Push $1
+    Push $2
+    ; KEY_QUERY_VALUE. Confirm the registration actually went away.
+    !insertmacro OCLIVE_OPEN_UNINSTALL_REGISTRATION 0x0001
+    ${If} $0 <> 2
+    ${AndIf} $0 <> 3
+      DetailPrint "Could not verify removal of the uninstall registration (registry result $0)."
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The uninstaller could not verify that the Chat Pro entry was removed from Installed apps (registry result $0). Keep this message for support." /SD IDOK
+      SetErrorLevel 2
+      Quit
+    ${EndIf}
+    Pop $2
+    Pop $1
+    Pop $0
+  !endif
+!macroend
