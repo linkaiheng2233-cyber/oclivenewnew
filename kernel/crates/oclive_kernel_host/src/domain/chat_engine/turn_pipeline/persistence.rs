@@ -603,6 +603,7 @@ mod persist_non_profile_tests {
             ai_event_confidence: 0.0,
             personality,
             prompt: String::new(),
+            user_fact_recall: None,
             favor_delta: 0.0,
             relation_after: RelationState::Stranger,
             prompt_stable_hash: None,

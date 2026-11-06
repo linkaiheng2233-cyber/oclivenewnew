@@ -39,7 +39,7 @@ pub(crate) fn storage_id(state_namespace: &str, thread: Option<&str>) -> String 
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::chat_engine::process_message;
+    use crate::domain::chat_engine::{process_message, process_message_stream};
     use crate::domain::host_profile::load_host_profile_file;
     use crate::state::AppState;
     use crate::state::AppStateBuilder;
@@ -50,13 +50,18 @@ mod tests {
     #[derive(Default)]
     struct MemoryPromptProbe {
         prompts: Mutex<Vec<String>>,
+        reply: Mutex<Option<String>>,
     }
 
     #[async_trait::async_trait]
     impl LlmClient for MemoryPromptProbe {
         async fn generate(&self, _model: &str, prompt: &str) -> crate::error::Result<String> {
             self.prompts.lock().push(prompt.to_string());
-            Ok("收到，我会根据已有的信息回答。".into())
+            Ok(self
+                .reply
+                .lock()
+                .clone()
+                .unwrap_or_else(|| "收到，我会根据已有的信息回答。".into()))
         }
 
         async fn generate_tag(&self, model: &str, prompt: &str) -> crate::error::Result<String> {
@@ -66,6 +71,111 @@ mod tests {
             .generate_tag(model, prompt)
             .await
         }
+    }
+
+    #[tokio::test]
+    async fn desktop_verified_memory_recall_corrects_plain_and_streamed_replies() {
+        let temp = tempfile::tempdir().unwrap();
+        let db_path = temp.path().join("app.db");
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../..");
+        let roles = oclive_kernel_runtime::chat_pro_roles_dir(std::slice::from_ref(&root)).unwrap();
+        let profile = load_host_profile_file(
+            &root.join("distros/desktop-tauri/resources/distro-profiles/desktop.oclive.toml"),
+        )
+        .unwrap();
+        let probe = Arc::new(MemoryPromptProbe::default());
+        let state = AppStateBuilder::in_memory_test(probe.clone(), &roles, None)
+            .with_test_db_path(&db_path)
+            .with_app_data_dir(temp.path())
+            .with_host_profile(profile.clone())
+            .build()
+            .await
+            .unwrap();
+        let teaching_thread = uuid::Uuid::new_v4().to_string();
+        for message in [
+            "请记住，我的项目代号是银湾9246",
+            "请记住，我常喝热的无糖玄米茶",
+        ] {
+            process_message(
+                &state,
+                &SendMessageRequest {
+                    role_id: "mumu".into(),
+                    user_message: message.into(),
+                    scene_id: Some("home".into()),
+                    chat_thread_id: Some(teaching_thread.clone()),
+                    client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+        }
+        let saved = state
+            .db_manager
+            .load_memories_for_context("mumu", 10, false)
+            .await
+            .unwrap();
+        for value in ["银湾9246", "热的无糖玄米茶"] {
+            assert!(
+                saved.iter().any(|memory| memory.content.contains(value)),
+                "{value}"
+            );
+        }
+        drop(state);
+
+        let state = AppStateBuilder::in_memory_test(probe.clone(), &roles, None)
+            .with_test_db_path(&db_path)
+            .with_app_data_dir(temp.path())
+            .with_host_profile(profile)
+            .build()
+            .await
+            .unwrap();
+        let expected = "你之前告诉过我，你的项目代号是银湾9246，你常喝的饮品是热的无糖玄米茶。";
+        let req = || SendMessageRequest {
+            role_id: "mumu".into(),
+            user_message: "你记得我的项目代号和常喝的饮品吗？".into(),
+            scene_id: Some("home".into()),
+            chat_thread_id: Some(uuid::Uuid::new_v4().to_string()),
+            client_request_id: Some(uuid::Uuid::new_v4().to_string()),
+            ..Default::default()
+        };
+        *probe.reply.lock() = Some("我的项目代号是银湾9246，你常喝无糖玄米茶。".into());
+        let plain = process_message(&state, &req()).await.unwrap();
+        assert_eq!(plain.reply, expected);
+        assert!(!plain.reply_is_fallback);
+
+        let tokens = Arc::new(Mutex::new(String::new()));
+        let captured = Arc::clone(&tokens);
+        let stream_req = req();
+        let streamed = process_message_stream(
+            &state,
+            &stream_req,
+            Arc::new(move |token| captured.lock().push_str(token)),
+        )
+        .await
+        .unwrap();
+        assert_eq!(streamed.reply, expected);
+        assert_eq!(tokens.lock().as_str(), expected);
+        assert!(!streamed.reply_is_fallback);
+        let stored = state
+            .conversation_store
+            .fetch_messages(
+                &storage_id("mumu", stream_req.chat_thread_id.as_deref()),
+                10,
+                0,
+            )
+            .await
+            .unwrap();
+        assert_eq!(stored.len(), 2);
+        assert_eq!(stored[1].content, expected);
+
+        let character_reply = "当然记得啦，你的项目代号是银湾9246，你常喝热的无糖玄米茶。";
+        *probe.reply.lock() = Some(character_reply.into());
+        let reply = process_message(&state, &req()).await.unwrap();
+        assert_eq!(reply.reply, character_reply);
+        assert!(probe.prompts.lock().iter().any(|prompt| {
+            prompt.contains("【本轮回忆依据】") && prompt.ends_with("只输出本轮回复。")
+        }));
     }
 
     #[tokio::test]

@@ -109,6 +109,7 @@ pub(crate) async fn run_middle(
         ai_event_confidence,
         personality,
         prompt,
+        user_fact_recall: None,
         favor_delta,
         relation_after,
         prompt_stable_hash: None,

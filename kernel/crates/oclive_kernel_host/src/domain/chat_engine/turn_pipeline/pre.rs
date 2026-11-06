@@ -16,6 +16,7 @@ use super::super::relation_snapshot::load_relation_snapshot;
 use super::super::staged::StageRunner;
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
+use super::recall::UserFactRecall;
 use crate::domain::chat_engine::chat_stage::ChatStage;
 
 pub(crate) const STAGES: StageRunner = StageRunner;
@@ -111,6 +112,7 @@ pub(crate) struct MiddleOutput {
     pub ai_event_confidence: f32,
     pub personality: PersonalityVector,
     pub prompt: String,
+    pub(super) user_fact_recall: Option<UserFactRecall>,
     pub favor_delta: f64,
     pub relation_after: RelationState,
     pub prompt_stable_hash: Option<u64>,

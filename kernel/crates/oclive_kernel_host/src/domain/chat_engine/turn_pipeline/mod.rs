@@ -4,6 +4,7 @@ mod co_present;
 pub(crate) mod persistence;
 mod post;
 mod pre;
+mod recall;
 mod remote_life;
 mod stopped;
 

@@ -12,6 +12,7 @@ use std::time::Instant;
 use super::super::turn_context::TurnContext;
 use super::super::turn_error::TurnResult;
 use super::pre::{latest_recent_turn_pair, MainLlmOutput, MiddleOutput, PreLlmOutput};
+use super::recall::UserFactRecall;
 use oclive_kernel_contracts::LlmGenerateOpts;
 #[cfg(feature = "dual_core")]
 use oclive_validation::plugin_backends_for_slot_entry;
@@ -479,6 +480,7 @@ fn build_reply_repair_prompt(
     rejected_raw: &str,
     reason: &str,
     original_prompt: &str,
+    recall: Option<&UserFactRecall>,
 ) -> String {
     let persona = role
         .deep_capsule
@@ -487,8 +489,9 @@ fn build_reply_repair_prompt(
         .unwrap_or(role.core_personality.as_str());
     let persona: String = persona.chars().take(1_200).collect();
     let (rejected_visible, _) = crate::domain::emo_marker::parse_and_strip(rejected_raw);
+    let evidence = recall.map(UserFactRecall::guidance).unwrap_or_default();
     format!(
-        "你是{}。\n\n【角色短胶囊】\n{}\n\n【最新用户消息】\n{}\n\n【本轮专项约束】\n{}\n\n【上一候选被拒原因】\n{}\n\n【不得复用的上一候选】\n{}\n\n重新写一条只回应最新消息的自然角色台词，严格满足所有‘候选必须／不得／短语次数’约束。只输出台词正文，不输出分析、规则、标题、说话人标签、JSON 或情绪标记。",
+        "你是{}。\n\n【角色短胶囊】\n{}\n\n【最新用户消息】\n{}\n\n【本轮专项约束】\n{}\n\n【上一候选被拒原因】\n{}\n\n【不得复用的上一候选】\n{}{evidence}\n\n重新写一条只回应最新消息的自然角色台词，严格满足所有‘候选必须／不得／短语次数’约束。只输出台词正文，不输出分析、规则、标题、说话人标签、JSON 或情绪标记。",
         role.name,
         persona.trim(),
         user_message.trim(),
@@ -496,6 +499,17 @@ fn build_reply_repair_prompt(
         reason,
         rejected_visible.trim()
     )
+}
+
+fn keep_verified_recall(
+    recall: Option<&UserFactRecall>,
+    user_message: &str,
+    reply: String,
+) -> String {
+    match recall {
+        Some(recall) if !recall.verifies(&reply, user_message) => recall.grounded_reply(),
+        _ => reply,
+    }
 }
 
 fn rejected_reply_fallback(user_message: &str) -> String {
@@ -609,7 +623,12 @@ pub(crate) async fn run_main_llm(
     };
     let (_, previous_assistant_reply) = latest_recent_turn_pair(&pre.memory.recent_turns);
     if !main_llm_fallback {
-        if let Some(mut reason) = candidate_rejection_reason(
+        let recall = middle.user_fact_recall.as_ref();
+        if let Some(recall) =
+            recall.filter(|recall| !recall.verifies(&reply_out.reply, user_message))
+        {
+            reply_out.reply = recall.grounded_reply();
+        } else if let Some(mut reason) = candidate_rejection_reason(
             &reply_out.reply,
             user_message,
             previous_assistant_reply.as_str(),
@@ -625,6 +644,7 @@ pub(crate) async fn run_main_llm(
                     &reply_out.reply,
                     reason,
                     &middle.prompt,
+                    recall,
                 );
                 match SlotRunner::generate_llm(
                     pl,
@@ -660,7 +680,9 @@ pub(crate) async fn run_main_llm(
                 }
             }
             if !repaired_ok {
-                if let Some(pack_reply) =
+                if let Some(recall) = recall {
+                    reply_out.reply = recall.grounded_reply();
+                } else if let Some(pack_reply) =
                     prompt_contract_safe_reply(&middle.prompt).filter(|reply| {
                         candidate_rejection_reason(
                             reply,
@@ -721,6 +743,11 @@ pub(crate) async fn run_main_llm(
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
     ));
+    let reply = if main_llm_fallback {
+        reply
+    } else {
+        keep_verified_recall(middle.user_fact_recall.as_ref(), user_message, reply)
+    };
 
     Ok(MainLlmOutput {
         reply,
@@ -748,8 +775,15 @@ pub(crate) async fn run_main_llm_stream(
     // A transport failure must never append the fallback reply to a stale partial prefix on
     // the wire, so the streaming path tracks what was actually forwarded to the client.
     let (tracked_on_token, streamed_token_count) = tracked_token_sink(Arc::clone(&on_token));
-    let display_on_token =
+    let filtered_on_token =
         crate::domain::emo_marker::display_token_sink(Arc::clone(&tracked_on_token));
+    // An incorrect ownership claim must never appear as a provisional token.
+    let recall = middle.user_fact_recall.as_ref();
+    let display_on_token: oclive_kernel_contracts::LlmTokenSink = if recall.is_some() {
+        Arc::new(|_: &str| {})
+    } else {
+        Arc::clone(&filtered_on_token)
+    };
     #[cfg(feature = "dual_core")]
     let selected_lora = selected_lora_llm(ctx);
     #[cfg(feature = "dual_core")]
@@ -891,6 +925,13 @@ pub(crate) async fn run_main_llm_stream(
         middle.ai_impact_factor_final,
         middle.relation_after.as_str(),
     ));
+    let reply = if !main_llm_fallback && recall.is_some() {
+        let verified = keep_verified_recall(recall, user_message, reply);
+        filtered_on_token(&verified);
+        verified
+    } else {
+        reply
+    };
 
     Ok(MainLlmOutput {
         reply,
@@ -1070,6 +1111,7 @@ mod inference_profile_tests {
             "你对我是朋友。",
             "主体倒置",
             original,
+            None,
         );
         assert!(repair.contains("短胶囊"));
         assert!(repair.contains("你怎么看我"));

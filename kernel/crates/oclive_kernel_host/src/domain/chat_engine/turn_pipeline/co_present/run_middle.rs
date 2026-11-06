@@ -20,6 +20,7 @@ use oclive_kernel_types::PromptExtraSection;
 
 use super::super::super::turn_context::TurnContext;
 use super::super::super::turn_error::TurnResult;
+use super::super::recall::UserFactRecall;
 use super::super::{
     build_complex_emotion_turn_input, compute_turn_favor, latest_recent_turn_pair,
     skipped_complex_emotion, worldview_snippet_from_chunks, MiddleOutput, PreLlmOutput, STAGES,
@@ -200,6 +201,11 @@ pub(crate) async fn run_middle(
         .take(memory_cap)
         .cloned()
         .collect();
+    let user_fact_recall = if state.host_profile.distro_id == "desktop" && req.adult.is_none() {
+        UserFactRecall::from_memories(user_message, &pre.memory.relevant, &pre.memory.recent_turns)
+    } else {
+        None
+    };
     let activated_recollection = STAGES
         .stage(
             ChatStage::MemoryRecollection,
@@ -480,7 +486,10 @@ pub(crate) async fn run_middle(
             .await?;
         (prompt, None, None, None, false)
     };
-    let prompt = apply_adult_output_boundary(prompt, adult_prompt.as_str());
+    let mut prompt = apply_adult_output_boundary(prompt, adult_prompt.as_str());
+    if let Some(recall) = &user_fact_recall {
+        prompt.push_str(&recall.guidance());
+    }
 
     Ok(MiddleOutput {
         turn_thinking: thinking,
@@ -491,6 +500,7 @@ pub(crate) async fn run_middle(
         ai_event_confidence,
         personality,
         prompt,
+        user_fact_recall,
         favor_delta,
         relation_after,
         prompt_stable_hash,
