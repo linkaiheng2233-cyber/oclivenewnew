@@ -3,13 +3,13 @@
 use std::io::ErrorKind;
 use std::path::Path;
 
-/// Prepare the persistent data directory for the desktop or HTTP kernel.
+/// Check that the history database can be initialized without hiding local chats.
 ///
 /// # Errors
 ///
-/// Returns an error on a filesystem or migration failure, or if local chat
+/// Returns an error on a filesystem inspection failure, or if local chat
 /// mirrors remain while the authoritative database is missing or zero bytes.
-pub fn ensure_canonical_app_data_ready(canonical: &Path) -> Result<(), String> {
+pub fn check_persistent_history_before_init(canonical: &Path) -> Result<(), String> {
     let db = oclive_kernel_runtime::find_db_path(canonical);
     let needs_database = match std::fs::metadata(&db) {
         Ok(metadata) => metadata.is_file() && metadata.len() == 0,
@@ -24,7 +24,16 @@ pub fn ensure_canonical_app_data_ready(canonical: &Path) -> Result<(), String> {
         tracing::error!(target: "oclive_app_data", %error, "persistent database initialization blocked");
         return Err(error);
     }
+    Ok(())
+}
 
+/// Prepare the persistent data directory for the desktop or HTTP kernel.
+///
+/// # Errors
+///
+/// Returns a history preflight, filesystem, or migration error.
+pub fn ensure_canonical_app_data_ready(canonical: &Path) -> Result<(), String> {
+    check_persistent_history_before_init(canonical)?;
     oclive_kernel_runtime::ensure_canonical_app_data_ready(canonical)
 }
 

@@ -5,9 +5,11 @@ use super::policy::{reconnect_with_policy, KernelBringUpOptions};
 use super::spawn::wait_for_health;
 use super::status::{build_ui_status, probe_health_status};
 use crate::kernel_attach::KernelHttpClient;
-use oclive_kernel_runtime::parse_distro_requirements_file;
+use oclive_kernel_host::infrastructure::app_data_migration::check_persistent_history_before_init;
+use oclive_kernel_runtime::{find_app_data_dir_for_host, parse_distro_requirements_file};
+use oclive_kernel_types::AppError;
 use parking_lot::Mutex;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
@@ -83,21 +85,37 @@ pub fn emit_kernel_status(app: &AppHandle, status: &KernelConnectionStatus, kind
     }
 }
 
+fn startup_failure(conn: &KernelConnection, error: String) -> AppError {
+    conn.set_startup_failure(error.clone());
+    AppError::StartupHealthFailed(error)
+}
+
+fn check_reconnect_history(conn: &KernelConnection, app_data: &Path) -> Result<(), AppError> {
+    check_persistent_history_before_init(app_data).map_err(|error| startup_failure(conn, error))
+}
+
 /// One reconnect cycle: attach probe → discover/spawn → final health probe.
 ///
 /// # Errors
 ///
-/// Returns a human-readable message when no kernel becomes healthy.
+/// Returns a startup health error if local history blocks startup or no kernel becomes healthy.
 pub async fn reconnect_once(
     app: &AppHandle,
     conn: &KernelConnection,
     opts: &ReconnectOptions,
-) -> Result<KernelConnectionStatus, String> {
+) -> Result<KernelConnectionStatus, AppError> {
     // Healthy kernel: no-op (do not kill spawned child — that caused false "offline" errors).
     if KernelHttpClient::probe_health(&conn.base_url).await {
         let status = probe_health_status(conn).await;
         emit_kernel_status(app, &status, StatusEmit::None);
         return Ok(status);
+    }
+
+    // A local launch will use this directory. Surface a known history block
+    // before waiting for an offline port or starting a child.
+    if let Err(error) = check_reconnect_history(conn, &find_app_data_dir_for_host()) {
+        emit_kernel_status(app, &build_ui_status(conn, false), StatusEmit::None);
+        return Err(error);
     }
 
     conn.set_mode(DesktopKernelMode::Reconnecting);
@@ -138,8 +156,10 @@ pub async fn reconnect_once(
                 emit_kernel_status(app, &status, StatusEmit::Reconnected);
                 Ok(status)
             } else {
-                let error = "kernel spawned but /health did not become ready".to_owned();
-                conn.set_startup_failure(error.clone());
+                let error = startup_failure(
+                    conn,
+                    "kernel spawned but /health did not become ready".into(),
+                );
                 let status = build_ui_status(conn, false);
                 emit_kernel_status(app, &status, StatusEmit::None);
                 Err(error)
@@ -151,10 +171,10 @@ pub async fn reconnect_once(
                 error = %e,
                 "policy reconnect failed"
             );
-            conn.set_startup_failure(e.clone());
+            let error = startup_failure(conn, e);
             let status = build_ui_status(conn, false);
             emit_kernel_status(app, &status, StatusEmit::None);
-            Err(e)
+            Err(error)
         }
     }
 }
@@ -169,4 +189,31 @@ pub fn new_auto_reconnect_policy() -> SharedAutoReconnectPolicy {
 /// Reset auto-reconnect budget (manual reconnect).
 pub fn reset_auto_reconnect(policy: &SharedAutoReconnectPolicy) {
     policy.lock().reset();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_history_is_a_startup_failure_before_reconnect() {
+        let data = tempfile::tempdir().unwrap();
+        let chat = data.path().join("chats/mumu/home");
+        std::fs::create_dir_all(&chat).unwrap();
+        let mirror = chat.join("202611040433179_fixture.json");
+        let contents = br#"{"schema_version":1,"session_id":"fixture","messages":[{"sender":"user","content":"fixture"}]}"#;
+        std::fs::write(&mirror, contents).unwrap();
+        let conn = KernelConnection::new("http://127.0.0.1:8420", 8420);
+
+        let error = check_reconnect_history(&conn, data.path()).unwrap_err();
+        assert_eq!(error.kernel_error_body().code, "STARTUP_HEALTH_FAILED");
+        let status = build_ui_status(&conn, false);
+        assert_eq!(status.mode, DesktopKernelMode::Offline);
+        assert!(status
+            .status_message
+            .as_deref()
+            .is_some_and(|message| message.contains("local chat mirrors are still present")));
+        assert!(!oclive_kernel_runtime::find_db_path(data.path()).exists());
+        assert_eq!(std::fs::read(mirror).unwrap(), contents);
+    }
 }

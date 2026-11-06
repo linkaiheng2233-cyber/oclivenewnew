@@ -75,9 +75,7 @@ pub async fn reconnect_kernel(
         bundled_binary,
     };
 
-    Ok(reconnect_once(&app, &conn, &opts)
-        .await
-        .map_err(AppError::StartupHealthFailed)?)
+    Ok(reconnect_once(&app, &conn, &opts).await?)
 }
 
 /// Extended kernel diagnostics for settings UI.
