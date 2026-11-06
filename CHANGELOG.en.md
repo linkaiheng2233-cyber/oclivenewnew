@@ -6,7 +6,7 @@
 
 ### Fixed
 
-- **Chat Pro EXE uninstall registration.** The current-user uninstaller checks whether it can remove its Windows Installed apps entry before deleting program files. If Windows refuses access, it reports the reason and preserves the program files and uninstaller for a retry. It verifies that the entry was removed before completing.
+- **Chat Pro EXE uninstall registration.** The uninstaller checks ownership and delete access for the current user's Installed apps entry. It retries removal once if the entry for this installation is still present. It keeps the uninstaller available for a retry until it verifies that the entry is gone.
 - **Chat Pro kernel startup diagnostics.** Connection status retains the latest startup or reconnect failure. Help & Recovery shows a short summary with expandable, redacted details. A failed kernel reconnect reports a startup failure, and restoring the connection clears the old notice.
 - **Chat Pro history database startup guard.** Startup reports a missing or zero-byte database when chat mirrors remain in the default folder, preserving the mirrors for recovery. The desktop-launched kernel records the resolved database path and process ID in the local diagnostic log.
 - **Explicit Chat Pro memory requests**: The desktop profile now routes short requests such as `请记住` through Deep so Fast casual-chat persistence does not discard them. Ordinary casual turns keep their existing lightweight policy. Old transcripts are not automatically replayed into memory; recall accuracy still needs validation with the actual role and model.
